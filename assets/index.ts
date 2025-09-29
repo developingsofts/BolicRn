@@ -13,6 +13,15 @@ export const Send = require('../assets/send.png');
 export const ImageFile = require('../assets/image_file.png');
 export const Trash = require('../assets/trash.png');
 export const Exit = require('../assets/exit.png');
+export const Chat = require('../assets/chat.png');
+export const Settings = require('../assets/settings.png');
+export const CircleEdit = require('../assets/circle_edit.png');
+export const Fire = require('../assets/fire.png');
+export const Thunder = require('../assets/thunder.png');
+export const Users = require('../assets/users.png');
+export const Awards = require('../assets/awards.png');
+
+
 
 
 

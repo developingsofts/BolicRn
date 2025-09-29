@@ -176,6 +176,14 @@ export const COLORS = {
   _FF1616:"#FF1616",
   _E2E2E2:"#E2E2E2",
   _EB3434:"#EB3434",
+  _E6E6E7:"#E6E6E7",
+  _EAEBF4:"#EAEBF4",
+  _616888:"#616888",
+  _CCCCCC:"#CCCCCC",
+  _D2E7FF:"#D2E7FF",
+  _0B80FF:"#0B80FF",
+  _3FE363:"#3FE363",
+  _F3A455:"#F3A455",
 
 };
 

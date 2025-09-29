@@ -16,7 +16,6 @@ import { COLORS, DIMENSIONS } from "../../config/constants";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Add, ArrowDown } from "../../../assets";
 import FontWeight from "../../hooks/useInterFonts";
-import { useResponsive } from "../../hooks/responsiveDesignHook";
 import { Group } from "../../types";
 import { r } from "../../designing/responsiveDesigns";
 import GroupDetails from "./GroupDetails";

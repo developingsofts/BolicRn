@@ -7,6 +7,7 @@ import AppNavigator from "./src/navigation/AppNavigator";
 import { useFonts } from "@expo-google-fonts/inter";
 import { useInterFonts } from "./src/hooks/useInterFonts";
 import LoadingScreen from "./src/components/LoadingScreen";
+import { NavigationContainer } from "@react-navigation/native";
 
 export default function App() {
   const fontsLoaded = useInterFonts();
