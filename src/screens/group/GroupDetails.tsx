@@ -9,6 +9,7 @@ import {
   FlatList,
   Image,
   TextInput,
+  Modal,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -28,16 +29,19 @@ import {
   Send,
 } from "../../../assets";
 import { Group } from "../../types";
+import ManageGroup from "./ManageGroup";
 
 interface GroupDetailsProps {
   // Make navigation optional for modal usage
   navigation?: any;
   // Make route optional for modal usage
+
   route?: {
     params: {
       group: Group;
     };
   };
+
   // Add direct props for modal usage
   group?: Group | null;
   onClose?: () => void;
@@ -50,9 +54,12 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
   onClose,
 }) => {
   const styles = useResponsive(baseStyles);
+  const [showManageGroup, setManageGroup] = React.useState(false);
+  const [selectedGroup, setSelectedGroup] = React.useState<Group | null>(null);
+
   const group = propGroup ||
     route?.params?.group || {
-      id: 1,
+      id: "1",
       name: "Downtown Fitness Club",
       trainingTypes: ["Gym"],
       memberCount: 156,
@@ -187,7 +194,10 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
               pretium a posuere pharetra vitae nisi.
             </Text>
 
-            <Pressable style={styles.manageButton} onPress={() => navigation?.navigate("ManageGroup", { group })}>
+            <Pressable
+              style={styles.manageButton}
+              onPress={() => navigation?.navigate("ManageGroup", { group })}
+            >
               <Image source={Edit} style={{ width: 16, height: 16 }} />
               <Text style={styles.manageButtonText}>Manage Group</Text>
             </Pressable>

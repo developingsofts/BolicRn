@@ -27,6 +27,8 @@ interface ManageGroupProps {
       isEditing?: boolean;
     };
   };
+  group?: Group | null;
+  onClose?: () => void;
 }
 
 interface Member {
@@ -36,7 +38,12 @@ interface Member {
   avatar: string;
 }
 
-const ManageGroup: React.FC<ManageGroupProps> = ({ navigation, route }) => {
+const ManageGroup: React.FC<ManageGroupProps> = ({
+  navigation,
+  route,
+  group: propGroup,
+  onClose,
+}) => {
   const isEditing = route?.params?.isEditing ?? true;
   const group = route?.params?.group || {
     id: "1",
@@ -93,9 +100,7 @@ const ManageGroup: React.FC<ManageGroupProps> = ({ navigation, route }) => {
     },
   ];
 
-  const handleClose = () => {
-    navigation.goBack();
-  };
+
 
   const handleSave = () => {
     if (!groupName.trim()) {
@@ -185,12 +190,18 @@ const ManageGroup: React.FC<ManageGroupProps> = ({ navigation, route }) => {
   return (
     <SafeAreaView edges={["left", "right"]} style={styles.container}>
       {/* Hero Header */}
-      <View style={styles.heroSection}>
+      <View style={styles.heroSection} />
+
+      <ScrollView
+        style={styles.content}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: r(100) }}
+      >
         <View style={styles.heroHeader}>
           <Text style={styles.heroTitle}>
             {isEditing ? "Manage Group" : "Add Group"}
           </Text>
-          <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
+          <TouchableOpacity onPress={navigation.goBack} style={styles.closeButton}>
             <Image
               source={Close}
               style={{ width: 24, height: 24 }}
@@ -209,10 +220,6 @@ const ManageGroup: React.FC<ManageGroupProps> = ({ navigation, route }) => {
             <Text style={styles.tagText}>{groupType}</Text>
           </View>
         </View>
-      </View>
-
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}   contentContainerStyle={{ paddingBottom: r(100) }}
->
         {/* Group Info Card */}
         <View style={styles.groupInfoCard}>
           <View style={styles.inputGroup}>
@@ -430,6 +437,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.gradient3,
     paddingTop: DIMENSIONS.spacing.xxl,
     paddingBottom: r(74),
+    height: r(180),
     paddingHorizontal: r(16),
   },
   heroHeader: {
@@ -437,6 +445,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: r(16),
+    marginTop: r(16),
   },
   heroTitle: {
     fontSize: 24,
@@ -475,8 +484,12 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     marginTop: 20,
+    position: "absolute",
+    left: 0,
+    top: 0,
+    right: 0,
+    bottom: 0,
     paddingHorizontal: r(16),
-    top: -r(85),
   },
   groupInfoCard: {
     backgroundColor: "white",
@@ -491,6 +504,11 @@ const styles = StyleSheet.create({
   },
   inputGroup: {
     marginBottom: r(10),
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
   },
   inputLabel: {
     fontSize: 13,
