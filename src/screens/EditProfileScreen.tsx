@@ -7,13 +7,15 @@ import {
   TouchableOpacity,
   Image,
   ScrollView,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { COLORS } from "../config/constants";
+import { COLORS, DIMENSIONS } from "../config/constants";
 import FontWeight from "../hooks/useInterFonts";
 import { useAuth } from "../contexts/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
-import { Trash , DropDownWhite } from "../../assets";
+import { Trash, ArrowDown } from "../../assets";
 
 interface EditProfileScreenProps {
   navigation: any;
@@ -50,7 +52,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
       <View style={styles.profileHeader}>
         <View style={styles.headerActions}>
           <Text style={styles.editProfileTitle}>Edit Profile</Text>
-          <Image source={DropDownWhite} style={styles.iconSize} />
+          <Image source={ArrowDown} style={styles.iconSize} />
         </View>
 
         <View style={styles.avatarRow}>
@@ -114,22 +116,34 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
   );
   return (
     <SafeAreaView edges={["top"]} style={styles.container}>
-      {renderProfileAvatar()}
-      <View style={styles.formWrapper}>
-        {renderProfileForm()}
-        <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
-          <Text style={styles.saveBtnText}>Save Changes</Text>
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
+      <KeyboardAvoidingView
+        behavior={"height"}
+      >
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1 }}
+          // keyboardShouldPersistTaps="handled"
+        >
+          {renderProfileAvatar()}
+          <View style={styles.formWrapper}>
+            {renderProfileForm()}
+          <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
+            <Text style={styles.saveBtnText}>Save Changes</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
+    <View style={{ flex:1,backgroundColor:COLORS.white }} />
+  </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: 10,
+    paddingTop: DIMENSIONS.spacing.lg,
     backgroundColor: COLORS.gradient3,
+    zIndex: -1,
+    position: "relative",
   },
   profileHeader: {
     backgroundColor: COLORS.gradient3,
@@ -137,7 +151,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     alignItems: "center",
     position: "relative",
-    zIndex: 1,
+    zIndex: 0,
   },
   headerActions: {
     flexDirection: "row",
@@ -227,28 +241,21 @@ const styles = StyleSheet.create({
     tintColor: COLORS.white,
   },
   formWrapper: {
-    flex: 1,
+    zIndex: 10,
     backgroundColor: COLORS.white,
     paddingHorizontal: 20,
+    justifyContent: "space-between",
+    minHeight: '100%',
   },
   profileFormContainer: {
     width: "100%",
     padding: 20,
     alignSelf: "center",
     marginTop: -40,
-    marginBottom: 20,
     backgroundColor: COLORS.white,
-    // Shadow for iOS
-    shadowColor: "#6B6B6B",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    // Shadow for Android
-    elevation: 4,
     borderRadius: 8,
-    borderWidth: 1,
-    zIndex: 1,
-    borderColor: COLORS._E6E6E7,
+    boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
+    elevation: 4,
   },
   profileFormTitle: {
     fontSize: 22,

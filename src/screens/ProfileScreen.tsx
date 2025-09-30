@@ -304,6 +304,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
                 />
               </TouchableOpacity>
               <TouchableOpacity
+            
                 onPress={() => navigation.navigate("Settings")}
                 style={styles.headerIconBtn}
               >
@@ -582,12 +583,13 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
       style={[styles.container, isGuest && styles.guestContainer]}
     >
       {/* <View style={styles.profileHeader} /> */}
-      {renderProfileAvatar()}
+
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+              {renderProfileAvatar()}
         {renderActionButtons()}
         {renderTabBar()}
         {renderTabContent()}
@@ -653,7 +655,6 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-    paddingTop: 30,
     backgroundColor: COLORS.white,
   },
   scrollContent: {
@@ -835,7 +836,7 @@ const styles = StyleSheet.create({
   tabBar: {
     flexDirection: "row",
     marginHorizontal: 20,
-    marginTop: 20,
+    marginTop: 40,
     overflow: "hidden",
   },
   tab: {

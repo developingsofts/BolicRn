@@ -18,6 +18,7 @@ import WorkoutSessionScreen from "../screens/WorkoutSessionScreen";
 import CreatePostScreen from "../screens/CreatePostScreen";
 import SettingsScreen from "../screens/SettingsScreen";
 import EditProfileScreen from "../screens/EditProfileScreen";
+import ShareWorkoutScreen from "../screens/ShareWorkoutScreen";
 
 // Import components
 import LoadingScreen from "../components/LoadingScreen";
@@ -131,6 +132,7 @@ const AppNavigator: React.FC = () => {
             <Stack.Screen name="GroupDetails" component={GroupDetails} />
             <Stack.Screen name="ManageGroup" component={ManageGroup} />
             <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+            <Stack.Screen name="ShareWorkout" component={ShareWorkoutScreen} />
 
           </>
         ) : (

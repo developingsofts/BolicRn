@@ -695,7 +695,8 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         <View style={styles.section}>
           <TouchableOpacity
             style={styles.createPostButton}
-            onPress={() => navigation.navigate("CreatePost")}
+            // onPress={() => navigation.navigate("CreatePost")}
+              onPress={() => navigation.navigate("ShareWorkout")}
           >
             <Text style={styles.createPostIcon}>✏️</Text>
             <Text style={styles.createPostText}>Share your workout</Text>

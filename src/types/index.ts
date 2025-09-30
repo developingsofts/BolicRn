@@ -296,6 +296,8 @@ export type RootStackParamList = {
   ForgotPassword: undefined;
   GroupDetails: { group: Group };
   ManageGroup: { group: Group };
+  ShareWorkout: undefined;
+  EditProfile: { userId?: string; isGuest?: boolean } | undefined;
 };
 
 export type MainTabParamList = {
