@@ -1,5 +1,6 @@
 import React from "react";
-import { Text } from "react-native";
+import {  Text } from "react-native";
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
@@ -16,6 +17,7 @@ import ChatScreen from "../screens/ChatScreen";
 import WorkoutSessionScreen from "../screens/WorkoutSessionScreen";
 import CreatePostScreen from "../screens/CreatePostScreen";
 import SettingsScreen from "../screens/SettingsScreen";
+import EditProfileScreen from "../screens/EditProfileScreen";
 
 // Import components
 import LoadingScreen from "../components/LoadingScreen";
@@ -30,6 +32,7 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 // Main Tab Navigator
 const MainTabNavigator: React.FC = () => {
   return (
+    <SafeAreaView style={{ flex: 1 }} edges={["bottom"]}>
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
@@ -37,9 +40,8 @@ const MainTabNavigator: React.FC = () => {
           backgroundColor: "#FFFFFF",
           borderTopWidth: 1,
           borderTopColor: "#E5E5E5",
-          paddingBottom: 5,
           paddingTop: 5,
-          height: 85,
+          height: 75,
         },
         tabBarActiveTintColor: "#007AFF",
         tabBarInactiveTintColor: "#8E8E93",
@@ -95,6 +97,7 @@ const MainTabNavigator: React.FC = () => {
         }}
       />
     </Tab.Navigator>
+    </SafeAreaView>
   );
 };
 
@@ -127,6 +130,7 @@ const AppNavigator: React.FC = () => {
             <Stack.Screen name="Settings" component={SettingsScreen} />
             <Stack.Screen name="GroupDetails" component={GroupDetails} />
             <Stack.Screen name="ManageGroup" component={ManageGroup} />
+            <Stack.Screen name="EditProfile" component={EditProfileScreen} />
 
           </>
         ) : (

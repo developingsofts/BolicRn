@@ -60,7 +60,6 @@ interface Connection {
 
 const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
   const { user, logout } = useAuth();
-  const styles = useResponsive(baseStyles);
   const activityPosts = [
     {
       id: "1",
@@ -257,6 +256,21 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
     </View>
   );
 
+  const renderFollowingView = () => {
+    return (
+      <View style={styles.followingRow}>
+        <View style={styles.followingMainBtn}>
+          <View style={styles.followingMainBtnContent}>
+            <Image source={Fire} style={styles.smallIconSize} />
+            <Text style={styles.followingText}>Following</Text>
+          </View>
+        </View>
+        <View style={styles.followingIconBtn}>
+          <Image source={Fire} style={styles.smallIconSize} />
+        </View>
+      </View>
+    );
+  };
   const renderProfileAvatar = () => {
     const initial = user?.displayName?.charAt(0) || (isGuest ? "G" : "D");
     const displayName =
@@ -265,37 +279,41 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
 
     return (
       <View style={styles.profileHeader}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
-          <Ionicons
-            name="chevron-down"
-            size={24}
-            color={COLORS.white}
-            style={{ transform: [{ rotate: "90deg" }] }}
-          />
-        </TouchableOpacity>
-
         {!isGuest && isOwnProfile && (
           <View style={styles.headerActions}>
-            <TouchableOpacity style={styles.headerIcon}>
-              <Image
-                source={CircleEdit}
-                resizeMode="contain"
-                style={styles.iconSize}
-              />
-            </TouchableOpacity>
             <TouchableOpacity
-              style={styles.headerIcon}
-              onPress={() => navigation.navigate("Settings")}
+              onPress={() => navigation.goBack()}
+              style={styles.headerIconBtn}
             >
-              <Image
-                source={Settings}
-                resizeMode="contain"
-                style={styles.iconSize}
+              <Ionicons
+                name="chevron-down"
+                size={24}
+                color={COLORS.white}
+                style={{ transform: [{ rotate: "90deg" }] }}
               />
             </TouchableOpacity>
+            <View style={styles.headerIconsContainer}>
+              <TouchableOpacity
+                style={styles.headerIconBtn}
+                onPress={() => navigation.navigate("EditProfile")}
+              >
+                <Image
+                  source={CircleEdit}
+                  resizeMode="contain"
+                  style={styles.iconSize}
+                />
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => navigation.navigate("Settings")}
+                style={styles.headerIconBtn}
+              >
+                <Image
+                  source={Settings}
+                  resizeMode="contain"
+                  style={styles.iconSize}
+                />
+              </TouchableOpacity>
+            </View>
           </View>
         )}
 
@@ -311,6 +329,8 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
           Fitness enthusiast on a mission to lift heavy and inspire others.
           Let's connect and crush some goals together! 🚀
         </Text>
+        {isGuest &&  renderFollowingView()}
+        {renderStatsRow()}
       </View>
     );
   };
@@ -507,7 +527,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
                 <Image source={Awards} style={styles.achievementIconText} />
               </View>
               {achievement.completed && (
-                <View style={styles.achievementBadgeIcon}>
+                <View style={styles.achievementIcon}>
                   <Image source={Awards} style={styles.achievementIconText} />
                 </View>
               )}
@@ -558,23 +578,21 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
 
   return (
     <SafeAreaView
-      edges={["top", "left", "right"]}
+      edges={[ "top", "left", "right"]}
       style={[styles.container, isGuest && styles.guestContainer]}
     >
-      <View style={styles.profileHeader} />
-
+      {/* <View style={styles.profileHeader} /> */}
+      {renderProfileAvatar()}
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {renderProfileAvatar()}
-        {renderStatsRow()}
         {renderActionButtons()}
         {renderTabBar()}
         {renderTabContent()}
       </ScrollView>
-
+     
       {isOwnProfile && !isGuest && (
         <View style={styles.logoutSection}>
           <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
@@ -582,26 +600,61 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
             <Text style={styles.logoutButtonText}>Logout</Text>
           </TouchableOpacity>
         </View>
-      )}
+      )} 
     </SafeAreaView>
   );
 };
 
-const baseStyles = StyleSheet.create({
+const styles = StyleSheet.create({
+  followingRow: {
+    width: "90%",
+    alignSelf: "center",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+    marginTop: 15,
+  },
+  followingMainBtn: {
+    backgroundColor: "white",
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 12,
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  followingMainBtnContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3.5,
+  },
+  followingText: {
+    fontSize: 14,
+    color: COLORS.gradient1,
+    fontFamily: FontWeight.Medium,
+    fontWeight: "500",
+  },
+  followingIconBtn: {
+    backgroundColor: "white",
+    paddingHorizontal: 10,
+    paddingVertical: 12,
+    borderRadius: 8,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+  },
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.gradient3,
   },
   guestContainer: {
     backgroundColor: "red",
   },
   scrollView: {
     flex: 1,
-    position: "absolute",
-    top: 0,
-    bottom: 0,
-    left: 0,
-    right: 0,
+    paddingTop: 30,
+    backgroundColor: COLORS.white,
   },
   scrollContent: {
     paddingBottom: 100,
@@ -622,7 +675,11 @@ const baseStyles = StyleSheet.create({
   // Profile Header Styles
   profileHeader: {
     backgroundColor: COLORS.gradient3,
-    height: r(260),
+    // height: r(260),
+    paddingBottom: 60,
+    alignItems: "center",
+    position: "relative",
+   zIndex: 1
   },
   backButton: {
     position: "absolute",
@@ -635,11 +692,22 @@ const baseStyles = StyleSheet.create({
     color: "white",
   },
   headerActions: {
-    position: "absolute",
-    right: 20,
-    top: 45,
     flexDirection: "row",
-    gap: 10,
+    alignItems: "center",
+    justifyContent: "space-between",
+    width: "100%",
+    paddingHorizontal: 10,
+    paddingTop: 10,
+    // marginTop: 10,
+    marginBottom: 16,
+  },
+  headerIconsContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+  },
+  headerIconBtn: {
+    // padding: 6,
   },
   headerIconText: {
     fontSize: 20,
@@ -647,7 +715,7 @@ const baseStyles = StyleSheet.create({
   },
   avatarContainer: {
     alignItems: "center",
-    marginTop: r(70),
+
   },
   avatar: {
     width: 80,
@@ -690,11 +758,16 @@ const baseStyles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-around",
     backgroundColor: "white",
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    marginHorizontal: 20,
-    marginTop: -10,
-    borderRadius: 15,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    borderRadius: 10,
+    width: "90%",
+    bottom: 0,
+    position: "absolute",
+    alignSelf: "center",
+    // Vertically center half out of the header dynamically
+    // bottom: -40, // removed, now handled by transform
+    transform: [{ translateY: "50%" }],
     elevation: 3,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -1119,7 +1192,7 @@ const baseStyles = StyleSheet.create({
   logoutButtonText: {
     color: COLORS._EB3434,
     fontSize: 14,
-    left:5,
+    left: 5,
     fontFamily: FontWeight.Medium,
   },
 

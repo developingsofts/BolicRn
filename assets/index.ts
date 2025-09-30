@@ -20,6 +20,7 @@ export const Fire = require('../assets/fire.png');
 export const Thunder = require('../assets/thunder.png');
 export const Users = require('../assets/users.png');
 export const Awards = require('../assets/awards.png');
+export const DropDownWhite = require('../assets/drop_down_white.png');
 
 
 
