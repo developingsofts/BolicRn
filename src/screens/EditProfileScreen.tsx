@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
 import { COLORS, DIMENSIONS } from "../config/constants";
 import STRINGS from "../config/strings";
 import FontWeight from "../hooks/useInterFonts";
@@ -49,7 +50,12 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
     const location = user?.location || "San Francisco, CA";
 
     return (
-      <View style={styles.profileHeader}>
+      <LinearGradient
+        colors={['#1B1F35', '#222B68', '#334691']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.profileHeader}
+      >
         <View style={styles.headerActions}>
           <Text style={styles.editProfileTitle}>{STRINGS.EDIT_PROFILE.title}</Text>
           <TouchableOpacity onPress={() => navigation.goBack()}>
@@ -75,7 +81,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
             </View>
           </View>
         </View>
-      </View>
+      </LinearGradient>
     );
   };
 
