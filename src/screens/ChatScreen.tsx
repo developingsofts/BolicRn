@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,15 +7,14 @@ import {
   Image,
   KeyboardAvoidingView,
   Platform,
-  TouchableWithoutFeedback,
-  Keyboard,
   FlatList,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { COLORS, DIMENSIONS } from "../config/constants";
+import STRINGS from "../config/strings";
 import { useAuth } from "../contexts/AuthContext";
 import FontWeight from "../hooks/useInterFonts";
-import { ArrowDown, ImageFile, Send } from "../../assets";
+import { ArrowDown, ImageFile, Send, Like, Close } from "../../assets";
 import { TextInput } from "react-native-gesture-handler";
 
 interface ChatScreenProps {
@@ -30,6 +29,7 @@ interface Message {
   timestamp: Date;
   showDateSeparator?: boolean;
   dateSeparator?: string;
+  isLiked?: boolean;
 }
 
 // Mock messages data
@@ -41,6 +41,7 @@ const mockMessages: Message[] = [
     timestamp: new Date("2025-02-22T10:30:00"),
     showDateSeparator: true,
     dateSeparator: "22/2/2025",
+    isLiked: true,
   },
   {
     id: "2",
@@ -69,6 +70,7 @@ const mockMessages: Message[] = [
     timestamp: new Date("2025-09-30T08:00:00"),
     showDateSeparator: true,
     dateSeparator: "Today",
+    isLiked: true,
   },
   {
     id: "6",
@@ -107,13 +109,25 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
   const { partnerId, partnerName } = route.params || {};
   const { user } = useAuth();
   const initial = user?.displayName?.charAt(0);
+  const flatListRef = useRef<FlatList>(null);
+
+  // Auto-scroll to the latest message on mount
+  useEffect(() => {
+    if (mockMessages.length > 0) {
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    }
+  }, []);
+
   return (
     <SafeAreaView edges={["top", "bottom"]} style={styles.container}>
       <KeyboardAvoidingView
         style={styles.keyboardAvoidingView}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
       >
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        
           <View style={styles.mainContent}>
             <View style={styles.header}>
               <View style={styles.headerLeft}>
@@ -123,28 +137,42 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
                   </View>
                 </View>
                 <Text style={styles.title}>
-                  {partnerName ? partnerName : "Chat"}
+                  {partnerName ? partnerName : STRINGS.CHAT.defaultTitle}
                 </Text>
               </View>
-              <Image
-                source={ArrowDown}
-                style={styles.headerIcon}
-              />
+              <TouchableOpacity onPress={() => navigation.goBack()}>
+                <Image
+                  source={Close}
+                  style={styles.headerIcon}
+                />
+              </TouchableOpacity>
             </View>
             <View style={styles.messagesWrapper}>
               <FlatList
+                ref={flatListRef}
                 data={mockMessages}
                 keyExtractor={(item) => item.id}
                 style={styles.flatList}
                 contentContainerStyle={styles.flatListContent}
-                keyboardShouldPersistTaps="handled"
                 showsVerticalScrollIndicator={true}
+                scrollEnabled={true}
+                directionalLockEnabled={true}
+                scrollEventThrottle={16}
+                removeClippedSubviews={false}
+                maxToRenderPerBatch={20}
+                updateCellsBatchingPeriod={30}
+                initialNumToRender={20}
+                windowSize={10}
+                decelerationRate={0.98}
                 bounces={true}
-                removeClippedSubviews={Platform.OS === 'android'}
-                maxToRenderPerBatch={10}
-                updateCellsBatchingPeriod={50}
-                initialNumToRender={10}
-                windowSize={21}
+                alwaysBounceVertical={true}
+                overScrollMode="always"
+                disableScrollViewPanResponder={false}
+                keyboardShouldPersistTaps="handled"
+                onContentSizeChange={() => {
+                  flatListRef.current?.scrollToEnd({ animated: true });
+                }}
+                ListFooterComponent={<View style={{ height: 20 }} />}
                 renderItem={({ item }) => (
                   <View>
                     {item.showDateSeparator && (
@@ -156,22 +184,33 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
                         <View style={styles.dateSeparatorLine} />
                       </View>
                     )}
-                    <View
-                      style={[
-                        styles.messageContainer,
-                        item.isMe ? styles.myMessage : styles.theirMessage,
-                      ]}
-                    >
-                      <Text
+                    <View style={[
+                      styles.messageRow,
+                     
+                    ]}>
+                      <View
                         style={[
-                          styles.messageText,
-                          item.isMe
-                            ? styles.myMessageText
-                            : styles.theirMessageText,
+                          styles.messageContainer,
+                          item.isMe ? styles.myMessage : styles.theirMessage,
                         ]}
                       >
-                        {item.text}
-                      </Text>
+                        <Text
+                          style={[
+                            styles.messageText,
+                            item.isMe
+                              ? styles.myMessageText
+                              : styles.theirMessageText,
+                          ]}
+                        >
+                          {item.text}
+                        </Text>
+                      </View>
+                      {!item.isMe && item.isLiked && (
+                        <Image
+                          source={Like}
+                          style={styles.likeIcon}
+                        />
+                      )}
                     </View>
                   </View>
                 )}
@@ -181,7 +220,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
               <View style={styles.inputRow}>
                 <View style={styles.inputWrapper}>
                   <TextInput
-                    placeholder="Type a message..."
+                    placeholder={STRINGS.CHAT.placeholder}
                     placeholderTextColor={COLORS.gradient1}
                     style={styles.textInput}
                   />
@@ -211,7 +250,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
               </View>
             </View>
           </View>
-        </TouchableWithoutFeedback>
+        
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -291,6 +330,7 @@ const styles = StyleSheet.create({
   headerIcon: {
     width: 24,
     height: 24,
+    marginTop:-10,
     tintColor: COLORS.white,
   },
   backButton: {
@@ -313,11 +353,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.chatMessageListBg,
     borderRadius: 20,
+    paddingBottom: DIMENSIONS.spacing.md,
     overflow: 'hidden',
   },
   flatListContent: {
     padding: DIMENSIONS.spacing.md,
-    paddingBottom: 20,
+    paddingBottom: 30,
+    flexGrow: 1,
   },
   placeholder: {
     fontSize: 16,
@@ -346,11 +388,24 @@ const styles = StyleSheet.create({
     maxWidth: 300,
     minHeight: 33,
     paddingTop: 5.5,
+
     paddingRight: 12,
     paddingBottom: 5.5,
     paddingLeft: 12,
     borderRadius: 9,
+    // marginTop: DIMENSIONS.spacing.lg,
+  },
+  messageRow: {
+    flexDirection: "row",
+    alignItems: "center",
     marginTop: DIMENSIONS.spacing.lg,
+    justifyContent: "space-between",
+  },
+
+  likeIcon: {
+    width: 16,
+    height: 16,
+    tintColor: COLORS.text,
   },
   myMessage: {
     alignSelf: "flex-end",

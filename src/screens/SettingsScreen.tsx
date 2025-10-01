@@ -9,8 +9,9 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { COLORS, DIMENSIONS } from "../config/constants";
+import STRINGS from "../config/strings";
 import { useAuth } from "../contexts/AuthContext";
-import { ArrowDown, Deactivate } from "../../assets";
+import { ArrowDown, Close, Deactivate } from "../../assets";
 import FontWeight from "../hooks/useInterFonts";
 
 interface SettingsScreenProps {
@@ -36,14 +37,16 @@ const preferenceOptions = [
     <SafeAreaView edges={["top","bottom"]} style={styles.container}>
      <View>
        <View style={styles.headerActions}>
-        <Text style={styles.editProfileTitle}>Settings</Text>
-        <Image source={ArrowDown} style={styles.iconSize} />
+        <Text style={styles.editProfileTitle}>{STRINGS.SETTINGS.title}</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Image source={Close} style={styles.iconSize} />
+        </TouchableOpacity>
       </View>
       {/* Notification Settings */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Notifications</Text>
+        <Text style={styles.sectionTitle}>{STRINGS.SETTINGS.notifications}</Text>
         <View style={styles.settingRow}>
-          <Text style={styles.settingLabel}>Enable Notifications</Text>
+          <Text style={styles.settingLabel}>{STRINGS.SETTINGS.enableNotifications}</Text>
           <Switch
             value={notificationsEnabled}
             onValueChange={setNotificationsEnabled}
@@ -55,9 +58,9 @@ const preferenceOptions = [
         </View>
       </View>
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Profile Visiblity</Text>
+        <Text style={styles.sectionTitle}>{STRINGS.SETTINGS.profileVisibility}</Text>
         <View style={styles.settingRow}>
-          <Text style={styles.settingLabel}>Enable Public Profile Visibility</Text>
+          <Text style={styles.settingLabel}>{STRINGS.SETTINGS.enablePublicProfile}</Text>
           <Switch
             value={profileVisibilityEnabled}
             onValueChange={setProfileVisibilityEnabled}
@@ -69,9 +72,9 @@ const preferenceOptions = [
         </View>
       </View>
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Matching Preferences</Text>
+        <Text style={styles.sectionTitle}>{STRINGS.SETTINGS.matchingPreferences}</Text>
         <View style={styles.settingRow}>
-          <Text style={styles.settingLabel}>Enable Preferences?</Text>
+          <Text style={styles.settingLabel}>{STRINGS.SETTINGS.enablePreferences}</Text>
           <Switch
             value={preferencesEnabled}
             onValueChange={setPreferencesEnabled}
@@ -97,12 +100,14 @@ const preferenceOptions = [
         </View>
       </View>
      </View>
-
+     <View>
+      <View style={styles.lineSeparator} />
+   
       <TouchableOpacity onPress={handleLogout} style={styles.deactivateBtn}>  
         <Image source={Deactivate} style={styles.deactivateIcon} />
-        <Text style={styles.logoutText}>Deactivate Account?</Text>
+        <Text style={styles.logoutText}>{STRINGS.SETTINGS.deactivateAccount}</Text>
       </TouchableOpacity>
-    
+    </View>
     
     </SafeAreaView>
   );
@@ -111,7 +116,7 @@ const preferenceOptions = [
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "rgba(242, 242, 247, 1)",
+    backgroundColor: COLORS.background,
     paddingHorizontal: DIMENSIONS.spacing.lg,
     paddingVertical: DIMENSIONS.spacing.lg,
     justifyContent: 'space-between',
@@ -185,6 +190,11 @@ const styles = StyleSheet.create({
   },
   preferenceBtnTextGray: {
     color: COLORS.buttonGrayText,
+  },
+  lineSeparator: {
+    height: 1,
+    backgroundColor: COLORS._E6E6E7,
+    marginBottom: DIMENSIONS.spacing.sm,
   },
   deactivateBtn: {
     marginTop: DIMENSIONS.spacing.lg,

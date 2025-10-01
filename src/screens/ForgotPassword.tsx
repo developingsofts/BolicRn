@@ -15,8 +15,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import FontWeight from "../hooks/useInterFonts";
 import { COLORS } from "../config/constants";
+import STRINGS from "../config/strings";
 import { useResponsive } from "../hooks/responsiveDesignHook";
-import { Colors } from "react-native/Libraries/NewAppScreen";
 import { EyeHide } from "../../assets";
 import PasswordInput from "../components/PasswordInput";
 
@@ -37,12 +37,12 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ navigation }) => {
 
   const handleSendLink = async () => {
     if (!email.trim()) {
-      Alert.alert("Error", "Please enter your email address");
+      Alert.alert(STRINGS.COMMON.error, STRINGS.FORGOT_PASSWORD.errors.enterEmail);
       return;
     }
 
     if (!email.includes("@")) {
-      Alert.alert("Error", "Please enter a valid email address");
+      Alert.alert(STRINGS.COMMON.error, STRINGS.FORGOT_PASSWORD.errors.validEmail);
       return;
     }
 
@@ -52,7 +52,7 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ navigation }) => {
       await new Promise((resolve) => setTimeout(resolve, 2000));
       setCurrentStep("waiting");
     } catch (error) {
-      Alert.alert("Error", "Failed to send reset link. Please try again.");
+      Alert.alert(STRINGS.COMMON.error, STRINGS.FORGOT_PASSWORD.errors.failedToSend);
     } finally {
       setLoading(false);
     }
@@ -63,9 +63,9 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ navigation }) => {
     try {
       // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 1000));
-      Alert.alert("Success", "Reset link sent again to your email");
+      Alert.alert(STRINGS.COMMON.success, STRINGS.FORGOT_PASSWORD.success);
     } catch (error) {
-      Alert.alert("Error", "Failed to resend email. Please try again.");
+      Alert.alert(STRINGS.COMMON.error, STRINGS.FORGOT_PASSWORD.errors.failedToResend);
     } finally {
       setLoading(false);
     }
@@ -73,17 +73,17 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ navigation }) => {
 
   const handleUpdatePassword = async () => {
     if (!newPassword.trim()) {
-      Alert.alert("Error", "Please enter a new password");
+      Alert.alert(STRINGS.COMMON.error, STRINGS.FORGOT_PASSWORD.errors.enterNewPassword);
       return;
     }
 
     if (newPassword.length < 6) {
-      Alert.alert("Error", "Password must be at least 6 characters long");
+      Alert.alert(STRINGS.COMMON.error, STRINGS.FORGOT_PASSWORD.errors.passwordLength);
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      Alert.alert("Error", "Passwords do not match");
+      Alert.alert(STRINGS.COMMON.error, STRINGS.FORGOT_PASSWORD.errors.passwordMismatch);
       return;
     }
 
@@ -93,7 +93,7 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ navigation }) => {
       await new Promise((resolve) => setTimeout(resolve, 2000));
       setCurrentStep("success");
     } catch (error) {
-      Alert.alert("Error", "Failed to update password. Please try again.");
+      Alert.alert(STRINGS.COMMON.error, STRINGS.FORGOT_PASSWORD.errors.failedToUpdate);
     } finally {
       setLoading(false);
     }

@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView } from 'react-native';
 import { COLORS, DIMENSIONS } from '../config/constants';
+import STRINGS from '../config/strings';
 
 interface MessagesScreenProps {
   navigation: any;
@@ -17,8 +18,8 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Messages</Text>
-        <Text style={styles.subtitle}>Chat with your training partners</Text>
+        <Text style={styles.title}>{STRINGS.MESSAGES.title}</Text>
+        <Text style={styles.subtitle}>{STRINGS.MESSAGES.subtitle}</Text>
       </View>
 
       <ScrollView style={styles.conversationsContainer}>
@@ -50,7 +51,7 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ navigation }) => {
       </ScrollView>
 
       <View style={styles.footer}>
-        <Text style={styles.footerText}>Real-time messaging coming soon!</Text>
+        <Text style={styles.footerText}>{STRINGS.MESSAGES.footer}</Text>
       </View>
     </SafeAreaView>
   );

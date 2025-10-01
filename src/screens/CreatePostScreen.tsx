@@ -14,12 +14,12 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS, DIMENSIONS } from "../config/constants";
+import STRINGS from "../config/strings";
 import FontWeight from "../hooks/useInterFonts";
 import { useResponsive } from "../hooks/responsiveDesignHook";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Achievement, Close, Media } from "../../assets";
 import { Divider } from "react-native-paper";
-import { SCALE, wp } from "../designing/responsiveDesigns";
 
 interface CreatePostScreenProps {
   navigation: any;
@@ -69,7 +69,7 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({ navigation }) => {
 
   const openDeviceSettings = () => {
     Linking.openSettings().catch(() => {
-      Alert.alert("Error", "Unable to open settings");
+      Alert.alert(STRINGS.COMMON.error, STRINGS.CREATE_POST.errors.unableToOpenSettings);
     });
   };
 
@@ -94,12 +94,12 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({ navigation }) => {
 
   const handlePost = () => {
     if (!postText.trim() && selectedImages.length === 0) {
-      Alert.alert("Error", "Please add some content to your post");
+      Alert.alert(STRINGS.COMMON.error, STRINGS.CREATE_POST.errors.addContent);
       return;
     }
 
-    Alert.alert("Success", "Post created successfully!", [
-      { text: "OK", onPress: () => navigation.goBack() },
+    Alert.alert(STRINGS.COMMON.success, STRINGS.CREATE_POST.success.postCreated, [
+      { text: STRINGS.COMMON.ok, onPress: () => navigation.goBack() },
     ]);
   };
 
@@ -120,14 +120,14 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({ navigation }) => {
           <TouchableOpacity onPress={handleBack} style={styles.backButton}>
             <Ionicons name="chevron-back" size={24} color={COLORS.white} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Create Post</Text>
+          <Text style={styles.headerTitle}>{STRINGS.CREATE_POST.title}</Text>
         </View>
-        <Text style={styles.subtitle}>Share your workout or achievement</Text>
+        <Text style={styles.subtitle}>{STRINGS.CREATE_POST.subtitle}</Text>
       </View>
 
       <View style={{ paddingHorizontal: 20 }}>
         <Pressable style={styles.shareWorkoutCard} onPress={() => {}}>
-          <Text style={styles.shareWorkoutText}>Share Workout?</Text>
+          <Text style={styles.shareWorkoutText}>{STRINGS.CREATE_POST.shareWorkout}</Text>
           <Ionicons name="chevron-forward" size={24} color={COLORS.app_black} />
         </Pressable>
 
@@ -141,7 +141,7 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({ navigation }) => {
             <View style={styles.textInputContainer}>
               <TextInput
                 style={styles.textInput}
-                placeholder="What's on your mind?"
+                placeholder={STRINGS.CREATE_POST.captionPlaceholder}
                 placeholderTextColor={COLORS._5E5E5E}
                 value={postText}
                 onChangeText={setPostText}
@@ -158,7 +158,7 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({ navigation }) => {
               >
                 <Image source={Media} style={styles.actionButtonImage} />
                 <Text style={[styles.actionButtonText, { marginLeft: 5 }]}>
-                  Photo/Video
+                  {STRINGS.CREATE_POST.photoVideo}
                 </Text>
               </TouchableOpacity>
 
@@ -168,7 +168,7 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({ navigation }) => {
               >
                 <Image source={Achievement} style={styles.actionButtonImage} />
                 <Text style={[styles.actionButtonText, { marginLeft: 2 }]}>
-                  Achievement
+                  {STRINGS.CREATE_POST.achievement}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -178,7 +178,7 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({ navigation }) => {
               <View style={styles.achievementContainer}>
                 <View style={styles.achievementHeader}>
                   <Text style={styles.achievementTitle}>
-                    ACHIEVEMENT UNLOCKED!
+                    {STRINGS.CREATE_POST.achievementUnlocked}
                   </Text>
                   <TouchableOpacity onPress={removeAchievement}>
                     <Image
@@ -217,12 +217,12 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({ navigation }) => {
                     justifyContent: "space-between",
                   }}
                 >
-                  <Text style={styles.imagesTitle}>Uploaded Image</Text>
+                  <Text style={styles.imagesTitle}>{STRINGS.CREATE_POST.uploadedImage}</Text>
                   <Pressable onPress={() => removeImage(0)}>
                     <Text
                       style={[styles.imagesTitle, { color: COLORS._FF1616 }]}
                     >
-                      Remove
+                      {STRINGS.COMMON.remove}
                     </Text>
                   </Pressable>
                 </View>
@@ -250,7 +250,7 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({ navigation }) => {
             <View style={styles.modalOverlay}>
               <View style={styles.modalContent}>
                 <View style={styles.modalHeader}>
-                  <Text style={styles.modalTitle}>Select an Achievement</Text>
+                  <Text style={styles.modalTitle}>{STRINGS.CREATE_POST.selectAchievement}</Text>
                   <TouchableOpacity
                     onPress={() => setShowAchievementModal(false)}
                   >
@@ -294,7 +294,7 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({ navigation }) => {
           </Modal>
 
           <TouchableOpacity style={styles.postButton} onPress={handlePost}>
-            <Text style={styles.postButtonText}>Post</Text>
+            <Text style={styles.postButtonText}>{STRINGS.CREATE_POST.post}</Text>
           </TouchableOpacity>
         </View>
       </View>

@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { COLORS, DIMENSIONS } from "../config/constants";
-import { Ionicons } from "@expo/vector-icons";
+import STRINGS from "../config/strings";
 import { Achievement, ImageFile, LeftArrow } from "../../assets";
 import FontWeight from "../hooks/useInterFonts";
 
@@ -77,7 +77,7 @@ const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
             >
               <Image source={LeftArrow} style={{ width: 24, height: 24 }} />
             </TouchableOpacity>
-            <Text style={styles.heading}>Share Workout</Text>
+            <Text style={styles.heading}>{STRINGS.SHARE_WORKOUT.title}</Text>
           </View>
           <Text
             style={{
@@ -88,7 +88,7 @@ const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
               fontFamily: FontWeight.Medium,
             }}
           >
-            Share your workout or achievement
+            {STRINGS.SHARE_WORKOUT.subtitle}
           </Text>
         </View>
 
@@ -123,11 +123,11 @@ const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
                 style={{
                   fontSize: 14,
                   fontWeight: "400",
-                  color: "#5E5E5E",
+                  color: COLORS._5E5E5E,
                   fontFamily: FontWeight.Regular,
                 }}
               >
-                Completed: {workout.completedDate}
+                {STRINGS.SHARE_WORKOUT.completed} {workout.completedDate}
               </Text>
             </TouchableOpacity>
           ))}
@@ -146,23 +146,23 @@ const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
               numberOfLines={6}
               style={styles.textArea}
               multiline
-              placeholderTextColor="#999"
-              placeholder="what's on your mind?"
+              placeholderTextColor={COLORS._999999}
+              placeholder={STRINGS.SHARE_WORKOUT.whatsOnMind}
               value={postText}
               onChangeText={setPostText}
             />
             <View style={styles.actionRow}>
               <TouchableOpacity style={styles.actionBtn}>
                 <Image source={ImageFile} style={{ width: 22, height: 22 }} />
-                <Text style={styles.actionBtnText}>Photo/Video</Text>
+                <Text style={styles.actionBtnText}>{STRINGS.SHARE_WORKOUT.photoVideo}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.actionBtn}>
                 <Image source={Achievement} style={{ width: 22, height: 22 }} />
-                <Text style={styles.actionBtnText}>Achievement</Text>
+                <Text style={styles.actionBtnText}>{STRINGS.SHARE_WORKOUT.achievement}</Text>
               </TouchableOpacity>
             </View>
             <TouchableOpacity style={styles.postBtn}>
-              <Text style={styles.postBtnText}>Post</Text>
+              <Text style={styles.postBtnText}>{STRINGS.SHARE_WORKOUT.post}</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -241,7 +241,7 @@ const styles = StyleSheet.create({
   },
   workoutDetail: {
     fontSize: 12,
-    color: "#151515",
+    color: COLORS.app_black,
     fontFamily: FontWeight.Medium,
     fontWeight: "500",
   },
@@ -256,7 +256,7 @@ const styles = StyleSheet.create({
     minHeight: 130,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#D9D9D9",
+    borderColor: COLORS._D9D9D9,
     backgroundColor: COLORS.white,
     textAlignVertical: "top",
     padding: 10,

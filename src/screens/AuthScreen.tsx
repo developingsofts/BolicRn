@@ -20,6 +20,7 @@ import {
   GENDER_OPTIONS,
   GENDER_PREFERENCE_OPTIONS,
 } from "../config/constants";
+import STRINGS from "../config/strings";
 import { mockPhoneAuthService } from "../services/phoneAuth";
 
 const { width, height } = Dimensions.get("window");
@@ -87,7 +88,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
     }
 
     if (!email || !password || (isSignUp && !displayName)) {
-      Alert.alert("Error", "Please fill in all required fields");
+      Alert.alert(STRINGS.COMMON.error, STRINGS.AUTH.errors.fillAllFields);
       return;
     }
 
@@ -200,8 +201,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
       }
     } catch (error) {
       Alert.alert(
-        "Error",
-        "Failed to send verification code. Please try again."
+        STRINGS.COMMON.error,
+        STRINGS.AUTH.errors.failedToSend
       );
     } finally {
       setIsSendingCode(false);
@@ -210,7 +211,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
 
   const verifyCode = async () => {
     if (!verificationCode || verificationCode.length !== 6) {
-      Alert.alert("Error", "Please enter the 6-digit verification code");
+      Alert.alert(STRINGS.COMMON.error, STRINGS.AUTH.errors.enterCode);
       return;
     }
 
@@ -220,16 +221,16 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
 
       if (result.success) {
         setIsPhoneVerified(true);
-        Alert.alert("Success", "Phone number verified successfully!");
+        Alert.alert(STRINGS.COMMON.success, STRINGS.AUTH.success.phoneVerified);
         nextStep();
       } else {
         Alert.alert(
-          "Error",
-          result.error || "Invalid verification code. Please try again."
+          STRINGS.COMMON.error,
+          result.error || STRINGS.AUTH.errors.invalidCode
         );
       }
     } catch (error) {
-      Alert.alert("Error", "Failed to verify code. Please try again.");
+      Alert.alert(STRINGS.COMMON.error, STRINGS.AUTH.errors.failedToVerify);
     } finally {
       setIsVerifyingCode(false);
     }
@@ -240,12 +241,12 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
       case 0: // Email/Password
         return (
           <View style={styles.stepContainer}>
-            <Text style={styles.stepTitle}>Create Account</Text>
-            <Text style={styles.stepSubtitle}>Step 1 of 7</Text>
+            <Text style={styles.stepTitle}>{STRINGS.AUTH.createAccount}</Text>
+            <Text style={styles.stepSubtitle}>{STRINGS.AUTH.steps.step1}</Text>
 
             <TextInput
               style={styles.input}
-              placeholder="Email"
+              placeholder={STRINGS.AUTH.email}
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
@@ -254,14 +255,14 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
 
             <TextInput
               style={styles.input}
-              placeholder="Password"
+              placeholder={STRINGS.AUTH.password}
               value={password}
               onChangeText={setPassword}
               secureTextEntry
             />
 
             <TouchableOpacity style={styles.nextButton} onPress={nextStep}>
-              <Text style={styles.nextButtonText}>Next</Text>
+              <Text style={styles.nextButtonText}>{STRINGS.AUTH.next}</Text>
             </TouchableOpacity>
           </View>
         );
@@ -269,22 +270,22 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
       case 1: // Display Name
         return (
           <View style={styles.stepContainer}>
-            <Text style={styles.stepTitle}>Your Name</Text>
-            <Text style={styles.stepSubtitle}>Step 2 of 7</Text>
+            <Text style={styles.stepTitle}>{STRINGS.AUTH.yourName}</Text>
+            <Text style={styles.stepSubtitle}>{STRINGS.AUTH.steps.step2}</Text>
 
             <TextInput
               style={styles.input}
-              placeholder="Display Name"
+              placeholder={STRINGS.AUTH.displayName}
               value={displayName}
               onChangeText={setDisplayName}
             />
 
             <View style={styles.stepButtons}>
               <TouchableOpacity style={styles.backButton} onPress={prevStep}>
-                <Text style={styles.backButtonText}>Back</Text>
+                <Text style={styles.backButtonText}>{STRINGS.AUTH.back}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.nextButton} onPress={nextStep}>
-                <Text style={styles.nextButtonText}>Next</Text>
+                <Text style={styles.nextButtonText}>{STRINGS.AUTH.next}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -293,16 +294,16 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
       case 2: // Phone Number
         return (
           <View style={styles.stepContainer}>
-            <Text style={styles.stepTitle}>Phone Number</Text>
-            <Text style={styles.stepSubtitle}>Step 3 of 7</Text>
+            <Text style={styles.stepTitle}>{STRINGS.AUTH.phoneNumber}</Text>
+            <Text style={styles.stepSubtitle}>{STRINGS.AUTH.steps.step3}</Text>
 
             <Text style={styles.fieldLabel}>
-              We'll send a verification code to verify your phone number
+              {STRINGS.AUTH.labels.verificationMessage}
             </Text>
 
             <TextInput
               style={styles.input}
-              placeholder="Phone Number (e.g., +1234567890)"
+              placeholder={STRINGS.AUTH.phoneNumber}
               value={phoneNumber}
               onChangeText={setPhoneNumber}
               keyboardType="phone-pad"
@@ -317,16 +318,16 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
               disabled={isSendingCode}
             >
               <Text style={styles.sendCodeButtonText}>
-                {isSendingCode ? "Sending..." : "Send Verification Code"}
+                {isSendingCode ? STRINGS.AUTH.sending : STRINGS.AUTH.sendCode}
               </Text>
             </TouchableOpacity>
 
             <View style={styles.stepButtons}>
               <TouchableOpacity style={styles.backButton} onPress={prevStep}>
-                <Text style={styles.backButtonText}>Back</Text>
+                <Text style={styles.backButtonText}>{STRINGS.AUTH.back}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.nextButton} onPress={nextStep}>
-                <Text style={styles.nextButtonText}>Next</Text>
+                <Text style={styles.nextButtonText}>{STRINGS.AUTH.next}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -335,16 +336,16 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
       case 3: // Phone Verification
         return (
           <View style={styles.stepContainer}>
-            <Text style={styles.stepTitle}>Verify Phone Number</Text>
-            <Text style={styles.stepSubtitle}>Step 4 of 7</Text>
+            <Text style={styles.stepTitle}>{STRINGS.AUTH.verifyCode}</Text>
+            <Text style={styles.stepSubtitle}>{STRINGS.AUTH.steps.step4}</Text>
 
             <Text style={styles.fieldLabel}>
-              Enter the 6-digit code sent to {phoneNumber}
+              {STRINGS.AUTH.labels.enterCodeMessage} {phoneNumber}
             </Text>
 
             <TextInput
               style={styles.input}
-              placeholder="Enter 6-digit code"
+              placeholder={STRINGS.AUTH.verificationCode}
               value={verificationCode}
               onChangeText={setVerificationCode}
               keyboardType="numeric"
@@ -360,7 +361,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
               disabled={isVerifyingCode}
             >
               <Text style={styles.verifyButtonText}>
-                {isVerifyingCode ? "Verifying..." : "Verify Code"}
+                {isVerifyingCode ? STRINGS.AUTH.verifying : STRINGS.AUTH.verifyCode}
               </Text>
             </TouchableOpacity>
 
@@ -368,12 +369,12 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
               style={styles.resendButton}
               onPress={sendVerificationCode}
             >
-              <Text style={styles.resendButtonText}>Resend Code</Text>
+              <Text style={styles.resendButtonText}>{STRINGS.AUTH.resendCode}</Text>
             </TouchableOpacity>
 
             <View style={styles.stepButtons}>
               <TouchableOpacity style={styles.backButton} onPress={prevStep}>
-                <Text style={styles.backButtonText}>Back</Text>
+                <Text style={styles.backButtonText}>{STRINGS.AUTH.back}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[
@@ -383,7 +384,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
                 onPress={nextStep}
                 disabled={!isPhoneVerified}
               >
-                <Text style={styles.nextButtonText}>Next</Text>
+                <Text style={styles.nextButtonText}>{STRINGS.AUTH.next}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -392,12 +393,12 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
       case 4: // Age
         return (
           <View style={styles.stepContainer}>
-            <Text style={styles.stepTitle}>Your Age</Text>
-            <Text style={styles.stepSubtitle}>Step 5 of 7</Text>
+            <Text style={styles.stepTitle}>{STRINGS.AUTH.yourAge}</Text>
+            <Text style={styles.stepSubtitle}>{STRINGS.AUTH.steps.step5}</Text>
 
             <TextInput
               style={styles.input}
-              placeholder="Age"
+              placeholder={STRINGS.AUTH.age}
               value={age}
               onChangeText={setAge}
               keyboardType="numeric"
@@ -405,10 +406,10 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
 
             <View style={styles.stepButtons}>
               <TouchableOpacity style={styles.backButton} onPress={prevStep}>
-                <Text style={styles.backButtonText}>Back</Text>
+                <Text style={styles.backButtonText}>{STRINGS.AUTH.back}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.nextButton} onPress={nextStep}>
-                <Text style={styles.nextButtonText}>Next</Text>
+                <Text style={styles.nextButtonText}>{STRINGS.AUTH.next}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -417,8 +418,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
       case 5: // Training Types
         return (
           <View style={styles.stepContainer}>
-            <Text style={styles.stepTitle}>Training Types</Text>
-            <Text style={styles.stepSubtitle}>Step 6 of 7</Text>
+            <Text style={styles.stepTitle}>{STRINGS.AUTH.trainingTypes}</Text>
+            <Text style={styles.stepSubtitle}>{STRINGS.AUTH.steps.step6}</Text>
 
             <ScrollView style={styles.trainingTypesContainer}>
               {TRAINING_TYPES.map((type) => (
@@ -446,10 +447,10 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
 
             <View style={styles.stepButtons}>
               <TouchableOpacity style={styles.backButton} onPress={prevStep}>
-                <Text style={styles.backButtonText}>Back</Text>
+                <Text style={styles.backButtonText}>{STRINGS.AUTH.back}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.nextButton} onPress={nextStep}>
-                <Text style={styles.nextButtonText}>Next</Text>
+                <Text style={styles.nextButtonText}>{STRINGS.AUTH.next}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -458,10 +459,10 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
       case 6: // Gender Preferences
         return (
           <View style={styles.stepContainer}>
-            <Text style={styles.stepTitle}>Gender & Preferences</Text>
-            <Text style={styles.stepSubtitle}>Step 7 of 7</Text>
+            <Text style={styles.stepTitle}>{STRINGS.AUTH.genderPreferences}</Text>
+            <Text style={styles.stepSubtitle}>{STRINGS.AUTH.steps.step7}</Text>
 
-            <Text style={styles.fieldLabel}>Your Gender:</Text>
+            <Text style={styles.fieldLabel}>{STRINGS.AUTH.yourGender}</Text>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -488,7 +489,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
               ))}
             </ScrollView>
 
-            <Text style={styles.fieldLabel}>Training Partner Preference:</Text>
+            <Text style={styles.fieldLabel}>{STRINGS.AUTH.trainingPartnerPreference}</Text>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -517,13 +518,13 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
 
             <View style={styles.stepButtons}>
               <TouchableOpacity style={styles.backButton} onPress={prevStep}>
-                <Text style={styles.backButtonText}>Back</Text>
+                <Text style={styles.backButtonText}>{STRINGS.AUTH.back}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.submitButton}
                 onPress={handleSubmit}
               >
-                <Text style={styles.submitButtonText}>Create Account</Text>
+                <Text style={styles.submitButtonText}>{STRINGS.AUTH.createAccount}</Text>
               </TouchableOpacity>
             </View>
           </View>

@@ -165,6 +165,7 @@ export const COLORS = {
   app_black:"#151515",
   _5E5E5E:"#5E5E5E",
   _818181:"#818181",
+  _999999:"#999999",
   _C9C9C9:"#C9C9C9",
   _FFC362:"#FFC362",
   _FFF5E9:"#FFF5E9",

@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { Menu, Button, Chip } from 'react-native-paper';
 import { COLORS, DIMENSIONS } from '../config/constants';
+import STRINGS from '../config/strings';
 import SwipeableCard, { TrainingPartner, Trainer, SwipeableItem } from '../components/SwipeableCard';
-import RatingStars from '../components/RatingStars';
 import RatingModal from '../components/RatingModal';
 
 interface FindScreenProps {
@@ -183,19 +183,19 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation }) => {
 
   const handleSwipeRight = (item: SwipeableItem) => {
     const message = activeTab === 'partners' 
-      ? `You and ${item.name} are a great match! Would you like to start a conversation?`
-      : `Great choice! ${item.name} is available for training. Would you like to book a session?`;
+      ? `${STRINGS.FIND.alerts.youAnd} ${item.name} ${STRINGS.FIND.alerts.matchMessage}`
+      : `${STRINGS.FIND.alerts.greatChoice} ${item.name} ${STRINGS.FIND.alerts.bookTrainerMessage}`;
     
     Alert.alert(
-      activeTab === 'partners' ? 'Match! 🎉' : 'Book Trainer! 💪',
+      activeTab === 'partners' ? STRINGS.FIND.alerts.matchTitle : STRINGS.FIND.alerts.bookTrainerTitle,
       message,
       [
         {
-          text: 'Not Now',
+          text: STRINGS.FIND.alerts.notNow,
           style: 'cancel',
         },
         {
-          text: 'Rate Experience',
+          text: STRINGS.FIND.alerts.rateExperience,
           onPress: () => {
             setSelectedUserForRating({
               name: item.name,
@@ -205,7 +205,7 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation }) => {
           },
         },
         {
-          text: activeTab === 'partners' ? 'Start Chat' : 'Book Session',
+          text: activeTab === 'partners' ? STRINGS.FIND.alerts.startChat : STRINGS.FIND.alerts.bookSession,
           onPress: () => {
             if (activeTab === 'partners') {
               navigation.navigate('Chat', {
@@ -214,7 +214,7 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation }) => {
               });
             } else {
               // Handle trainer booking
-              Alert.alert('Booking', `Booking session with ${item.name}`);
+              Alert.alert(STRINGS.FIND.alerts.bookingTitle, `${STRINGS.FIND.alerts.bookingMessage} ${item.name}`);
             }
           },
         },
@@ -231,9 +231,9 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation }) => {
   const handleRatingSubmit = (rating: number, comment: string) => {
     if (selectedUserForRating) {
       Alert.alert(
-        'Rating Submitted! ⭐',
-        `Thank you for rating ${selectedUserForRating.name} with ${rating} stars!`,
-        [{ text: 'OK' }]
+        STRINGS.FIND.alerts.ratingSubmittedTitle,
+        `${STRINGS.FIND.alerts.ratingSubmittedMessage} ${selectedUserForRating.name} ${STRINGS.FIND.alerts.withStars} ${rating} ${STRINGS.FIND.alerts.stars}`,
+        [{ text: STRINGS.COMMON.ok }]
       );
       // Here you would typically save the rating to your backend
     }
@@ -279,8 +279,8 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation }) => {
       {/* Header Section */}
       <View style={styles.headerSection}>
         <View style={styles.header}>
-          <Text style={styles.title}>Find Partners & Trainers</Text>
-          <Text style={styles.subtitle}>Swipe to discover</Text>
+          <Text style={styles.title}>{STRINGS.FIND.title}</Text>
+          <Text style={styles.subtitle}>{STRINGS.FIND.subtitle}</Text>
         </View>
 
         {/* Tab Toggle */}
@@ -300,7 +300,7 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation }) => {
               styles.tabText,
               activeTab === 'partners' && styles.tabTextActive
             ]}>
-              Partners
+              {STRINGS.FIND.partners}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -318,7 +318,7 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation }) => {
               styles.tabText,
               activeTab === 'trainers' && styles.tabTextActive
             ]}>
-              Trainers
+              {STRINGS.FIND.trainers}
             </Text>
           </TouchableOpacity>
         </View>
@@ -338,8 +338,8 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation }) => {
                   labelStyle={styles.dropdownButtonLabel}
                 >
                   {selectedFilters.includes('All') || selectedFilters.length === 0 
-                    ? 'All Categories' 
-                    : `${selectedFilters.length} selected`}
+                    ? STRINGS.FIND.allCategories 
+                    : `${selectedFilters.length} ${STRINGS.FIND.selected}`}
                 </Button>
               }
             >
@@ -396,12 +396,12 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation }) => {
           />
         ) : (
           <View style={styles.noMoreCards}>
-            <Text style={styles.noMoreCardsTitle}>No More Cards</Text>
+            <Text style={styles.noMoreCardsTitle}>{STRINGS.FIND.noMoreCardsTitle}</Text>
             <Text style={styles.noMoreCardsText}>
-              You've seen all available {activeTab} for this filter.
+              {STRINGS.FIND.noMoreCardsText} {activeTab} {STRINGS.FIND.forThisFilter}
             </Text>
             <TouchableOpacity style={styles.resetButton} onPress={resetCards}>
-              <Text style={styles.resetButtonText}>Reset</Text>
+              <Text style={styles.resetButtonText}>{STRINGS.FIND.reset}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -410,14 +410,14 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation }) => {
       {/* Progress Indicator */}
       <View style={styles.progressContainer}>
         <Text style={styles.progressText}>
-          {currentIndex + 1} of {currentData.length}
+          {currentIndex + 1} {STRINGS.FIND.progressOf} {currentData.length}
         </Text>
         {hasMoreCards && (
           <TouchableOpacity 
             style={styles.skipButton} 
             onPress={() => handleSwipeLeft(currentItem)}
           >
-            <Text style={styles.skipButtonText}>Skip</Text>
+            <Text style={styles.skipButtonText}>{STRINGS.FIND.skip}</Text>
           </TouchableOpacity>
         )}
       </View>

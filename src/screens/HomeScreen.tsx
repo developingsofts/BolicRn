@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { useAuth } from "../contexts/AuthContext";
 import { COLORS, DIMENSIONS } from "../config/constants";
+import STRINGS from "../config/strings";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -192,10 +193,10 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   };
 
   const deleteNote = async (noteId: string) => {
-    Alert.alert("Delete Note", "Are you sure you want to delete this note?", [
-      { text: "Cancel", style: "cancel" },
+    Alert.alert(STRINGS.HOME.deleteNoteTitle, STRINGS.HOME.deleteNoteMessage, [
+      { text: STRINGS.HOME.cancel, style: "cancel" },
       {
-        text: "Delete",
+        text: STRINGS.COMMON.delete,
         style: "destructive",
         onPress: async () => {
           const updatedNotes = notes.filter((note) => note.id !== noteId);
@@ -273,9 +274,9 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         {/* Weekly Goal Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>🎯 Weekly Goal</Text>
+            <Text style={styles.sectionTitle}>{STRINGS.HOME.weeklyGoal}</Text>
             <TouchableOpacity onPress={() => navigation.navigate("Settings")}>
-              <Text style={styles.editButton}>Edit</Text>
+              <Text style={styles.editButton}>{STRINGS.HOME.edit}</Text>
             </TouchableOpacity>
           </View>
           <View style={styles.weeklyGoalCard}>
@@ -308,7 +309,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         {/* Workout of the Day */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>🔥 Workout of the Day</Text>
+            <Text style={styles.sectionTitle}>{STRINGS.HOME.workoutOfDay}</Text>
             <Text style={styles.workoutDate}>
               {new Date().toLocaleDateString("en-US", {
                 weekday: "long",
@@ -367,7 +368,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                   onPress={startWorkoutOfTheDay}
                 >
                   <Text style={styles.startWorkoutButtonText}>
-                    Start Workout
+                    {STRINGS.HOME.startWorkout}
                   </Text>
                 </TouchableOpacity>
               ) : (
@@ -386,7 +387,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>🔥 Community Highlights</Text>
             <TouchableOpacity onPress={() => navigation.navigate("Messages")}>
-              <Text style={styles.viewAllButton}>View All</Text>
+              <Text style={styles.viewAllButton}>{STRINGS.HOME.viewAll}</Text>
             </TouchableOpacity>
           </View>
           <View style={styles.socialFeed}>
@@ -564,12 +565,12 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
         {/* Notes Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>📝 Quick Notes</Text>
+          <Text style={styles.sectionTitle}>{STRINGS.HOME.quickNotes}</Text>
           <View style={styles.notesCard}>
             <View style={styles.notesInputContainer}>
               <TextInput
                 style={styles.notesInput}
-                placeholder="Add a quick note..."
+                placeholder={STRINGS.HOME.addNote}
                 placeholderTextColor={COLORS.placeholder}
                 value={newNote}
                 onChangeText={setNewNote}
@@ -577,7 +578,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                 maxLength={200}
               />
               <TouchableOpacity style={styles.addNoteButton} onPress={saveNote}>
-                <Text style={styles.addNoteButtonText}>Add</Text>
+                <Text style={styles.addNoteButtonText}>{STRINGS.COMMON.add}</Text>
               </TouchableOpacity>
             </View>
 

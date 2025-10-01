@@ -9,16 +9,13 @@ import {
 } from "react-native";
 import { useAuth } from "../contexts/AuthContext";
 import { COLORS, DIMENSIONS } from "../config/constants";
-import RatingStars from "../components/RatingStars";
-import { useResponsive } from "../hooks/responsiveDesignHook";
+import STRINGS from "../config/strings";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { r } from "../designing/responsiveDesigns";
 import { Ionicons } from "@expo/vector-icons";
 import {
   Awards,
   CircleEdit,
   Comment,
-  Edit,
   Exit,
   Fire,
   Like,
@@ -228,11 +225,11 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
             <Text style={styles.workoutInfo}>{item.difficulty}</Text>
           </View>
           <Text style={styles.workoutCompleted}>
-            Completed: {item.completedDate}
+            {STRINGS.PROFILE.workoutCompleted} {item.completedDate}
           </Text>
         </View>
         <TouchableOpacity style={styles.postItButton}>
-          <Text style={styles.postItButtonText}>Post it</Text>
+          <Text style={styles.postItButtonText}>{STRINGS.PROFILE.buttons.postIt}</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -251,7 +248,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
         style={styles.postItButton}
         onPress={() => handleMessageUser(connection.id)}
       >
-        <Text style={styles.postItButtonText}>Message</Text>
+        <Text style={styles.postItButtonText}>{STRINGS.PROFILE.buttons.message}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -262,7 +259,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
         <View style={styles.followingMainBtn}>
           <View style={styles.followingMainBtnContent}>
             <Image source={Fire} style={styles.smallIconSize} />
-            <Text style={styles.followingText}>Following</Text>
+            <Text style={styles.followingText}>{STRINGS.PROFILE.following}</Text>
           </View>
         </View>
         <View style={styles.followingIconBtn}>
@@ -274,8 +271,8 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
   const renderProfileAvatar = () => {
     const initial = user?.displayName?.charAt(0) || (isGuest ? "G" : "D");
     const displayName =
-      user?.displayName || (isGuest ? "Guest User" : "Development User");
-    const location = user?.location || "San Francisco, CA";
+      user?.displayName || (isGuest ? STRINGS.PROFILE.guestUser : STRINGS.PROFILE.developmentUser);
+    const location = user?.location || STRINGS.PROFILE.defaultLocation;
 
     return (
       <View style={styles.profileHeader}>
@@ -327,8 +324,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
         </View>
 
         <Text style={styles.bioText}>
-          Fitness enthusiast on a mission to lift heavy and inspire others.
-          Let's connect and crush some goals together! 🚀
+          {STRINGS.PROFILE.bio}
         </Text>
         {isGuest &&  renderFollowingView()}
         {renderStatsRow()}
@@ -341,25 +337,25 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
       <View style={styles.statItem}>
         <Image source={Thunder} style={styles.smallIconSize} />
         <Text style={styles.statNumber}>157</Text>
-        <Text style={styles.statLabel}>WORKOUTS</Text>
+        <Text style={styles.statLabel}>{STRINGS.PROFILE.statsLabels.workouts}</Text>
       </View>
       <View style={styles.statDivider} />
       <View style={styles.statItem}>
         <Image source={Fire} style={styles.smallIconSize} />
         <Text style={styles.statNumber}>157</Text>
-        <Text style={styles.statLabel}>STREAK</Text>
+        <Text style={styles.statLabel}>{STRINGS.PROFILE.statsLabels.streak}</Text>
       </View>
       <View style={styles.statDivider} />
       <View style={styles.statItem}>
         <Image source={Users} style={[styles.smallIconSize, { top: 2 }]} />
         <Text style={styles.statNumber}>12</Text>
-        <Text style={styles.statLabel}>PARTNERS</Text>
+        <Text style={styles.statLabel}>{STRINGS.PROFILE.statsLabels.partners}</Text>
       </View>
       <View style={styles.statDivider} />
       <View style={styles.statItem}>
         <Image source={Awards} style={[styles.smallIconSize, { top: 2 }]} />
         <Text style={styles.statNumber}>8</Text>
-        <Text style={styles.statLabel}>AWARDS</Text>
+        <Text style={styles.statLabel}>{STRINGS.PROFILE.statsLabels.awards}</Text>
       </View>
     </View>
   );
@@ -373,7 +369,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
             onPress={handleFollowToggle}
           >
             <Text style={styles.followButtonText}>
-              {isFollowing ? "👤 Following" : "👤 Following"}
+              {isFollowing ? STRINGS.PROFILE.buttons.following : STRINGS.PROFILE.buttons.following}
             </Text>
           </TouchableOpacity>
         </View>
@@ -388,14 +384,14 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
             onPress={handleFollowToggle}
           >
             <Text style={styles.followButtonText}>
-              {isFollowing ? "Following" : "Follow"}
+              {isFollowing ? STRINGS.PROFILE.following : STRINGS.PROFILE.buttons.follow}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.actionButton, styles.messageButton]}
             onPress={() => handleMessageUser(route?.params?.userId || "")}
           >
-            <Text style={styles.messageButtonText}>Message</Text>
+            <Text style={styles.messageButtonText}>{STRINGS.PROFILE.buttons.message}</Text>
           </TouchableOpacity>
         </View>
       );
@@ -429,7 +425,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
             activeTab === "achievements" && styles.activeTabText,
           ]}
         >
-          Achievements
+          {STRINGS.PROFILE.achievements}
         </Text>
       </TouchableOpacity>
     </View>
@@ -451,7 +447,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
               activeSubTab === "posts" && styles.activeSubTabText,
             ]}
           >
-            Posts
+            {STRINGS.PROFILE.posts}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -467,7 +463,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
               activeSubTab === "workouts" && styles.activeSubTabText,
             ]}
           >
-            Workouts
+            {STRINGS.PROFILE.workouts}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -599,7 +595,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
         <View style={styles.logoutSection}>
           <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
             <Image source={Exit} style={styles.smallIconSize} />
-            <Text style={styles.logoutButtonText}>Logout</Text>
+            <Text style={styles.logoutButtonText}>{STRINGS.PROFILE.logout}</Text>
           </TouchableOpacity>
         </View>
       )} 

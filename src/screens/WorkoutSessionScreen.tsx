@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, SafeAreaView } from 'react-native';
 import { COLORS, DIMENSIONS } from '../config/constants';
+import STRINGS from '../config/strings';
 
 interface WorkoutSessionScreenProps {
   navigation: any;
@@ -13,14 +14,13 @@ const WorkoutSessionScreen: React.FC<WorkoutSessionScreenProps> = ({ navigation,
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        <Text style={styles.title}>Workout Session</Text>
+        <Text style={styles.title}>{STRINGS.WORKOUT_SESSION.title}</Text>
         <Text style={styles.subtitle}>
-          {sessionId ? 'Edit workout session' : 'Start new workout session'}
+          {sessionId ? STRINGS.WORKOUT_SESSION.subtitle : STRINGS.WORKOUT_SESSION.subtitleNew}
         </Text>
-        <Text style={styles.comingSoon}>Coming Soon!</Text>
+        <Text style={styles.comingSoon}>{STRINGS.WORKOUT_SESSION.comingSoon}</Text>
         <Text style={styles.description}>
-          This screen will allow users to track their workouts,
-          log exercises, sets, reps, and monitor their progress.
+          {STRINGS.WORKOUT_SESSION.description}
         </Text>
       </View>
     </SafeAreaView>

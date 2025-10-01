@@ -8,14 +8,14 @@ import {
   Image,
   ScrollView,
   KeyboardAvoidingView,
-  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { COLORS, DIMENSIONS } from "../config/constants";
+import STRINGS from "../config/strings";
 import FontWeight from "../hooks/useInterFonts";
 import { useAuth } from "../contexts/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
-import { Trash, ArrowDown } from "../../assets";
+import { Trash, ArrowDown, Close } from "../../assets";
 
 interface EditProfileScreenProps {
   navigation: any;
@@ -51,8 +51,10 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
     return (
       <View style={styles.profileHeader}>
         <View style={styles.headerActions}>
-          <Text style={styles.editProfileTitle}>Edit Profile</Text>
-          <Image source={ArrowDown} style={styles.iconSize} />
+          <Text style={styles.editProfileTitle}>{STRINGS.EDIT_PROFILE.title}</Text>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Image source={Close} style={styles.iconSize} />
+          </TouchableOpacity>
         </View>
 
         <View style={styles.avatarRow}>
@@ -65,7 +67,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
             </View>
             <View style={styles.avatarActionsRow}>
               <TouchableOpacity style={styles.uploadBtn}>
-                <Text style={styles.uploadBtnText}>Upload New </Text>
+                <Text style={styles.uploadBtnText}>{STRINGS.EDIT_PROFILE.uploadNew}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.deleteBtn}>
                 <Image source={Trash} style={styles.deleteIcon} />
@@ -79,34 +81,34 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
 
   const renderProfileForm = () => (
     <View style={styles.profileFormContainer}>
-      <Text style={styles.profileFormTitle}>Update Personal Details</Text>
+      <Text style={styles.profileFormTitle}>{STRINGS.EDIT_PROFILE.updateDetails}</Text>
       <View style={styles.inputGroup}>
-        <Text style={styles.inputLabel}>Name</Text>
+        <Text style={styles.inputLabel}>{STRINGS.EDIT_PROFILE.name}</Text>
         <TextInput
           style={styles.inputField}
           value={name}
           onChangeText={setName}
-          placeholder="Enter your name"
+          placeholder={STRINGS.EDIT_PROFILE.namePlaceholder}
           placeholderTextColor={COLORS._D9D9D9}
         />
       </View>
       <View style={styles.inputGroup}>
-        <Text style={styles.inputLabel}>Location</Text>
+        <Text style={styles.inputLabel}>{STRINGS.EDIT_PROFILE.location}</Text>
         <TextInput
           style={styles.inputField}
           value={location}
           onChangeText={setLocation}
-          placeholder="Example Location"
+          placeholder={STRINGS.EDIT_PROFILE.locationPlaceholder}
           placeholderTextColor={COLORS._D9D9D9}
         />
       </View>
       <View style={styles.inputGroup}>
-        <Text style={styles.inputLabel}>Bio</Text>
+        <Text style={styles.inputLabel}>{STRINGS.EDIT_PROFILE.bio}</Text>
         <TextInput
           style={styles.inputFieldBio}
           value={bio}
           onChangeText={setBio}
-          placeholder="Share something about yourself..."
+          placeholder={STRINGS.EDIT_PROFILE.bioPlaceholder}
           placeholderTextColor={COLORS._D9D9D9}
           multiline
           numberOfLines={4}
@@ -126,12 +128,14 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
           {renderProfileAvatar()}
           <View style={styles.formWrapper}>
             {renderProfileForm()}
+          
           <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
-            <Text style={styles.saveBtnText}>Save Changes</Text>
+            <Text style={styles.saveBtnText}>{STRINGS.EDIT_PROFILE.saveChanges}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
+
     <View style={{ flex:1,backgroundColor:COLORS.white }} />
   </SafeAreaView>
   );
@@ -244,8 +248,7 @@ const styles = StyleSheet.create({
     zIndex: 10,
     backgroundColor: COLORS.white,
     paddingHorizontal: 20,
-    justifyContent: "space-between",
-    minHeight: '100%',
+    gap: 20,
   },
   profileFormContainer: {
     width: "100%",
@@ -279,7 +282,7 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingRight: 10,
     paddingLeft: 10,
-    backgroundColor: "rgba(242, 242, 247, 1)",
+    backgroundColor:COLORS.background,
     opacity: 1,
     fontSize: 16,
     color: COLORS.app_black,
@@ -292,12 +295,15 @@ const styles = StyleSheet.create({
     paddingRight: 10,
     paddingBottom: 12,
     paddingLeft: 10,
-    backgroundColor: "rgba(242, 242, 247, 1)",
+    backgroundColor:COLORS.background,
     opacity: 1,
     fontSize: 16,
     color: COLORS.app_black,
     marginBottom: 10,
     textAlignVertical: "top",
+  },
+  savePostContainer:{
+    
   },
   saveBtn: {
     backgroundColor: COLORS.primary,
