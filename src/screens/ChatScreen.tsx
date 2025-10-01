@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   FlatList,
+  Keyboard,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { COLORS, DIMENSIONS } from "../config/constants";
@@ -110,6 +111,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
   const { user } = useAuth();
   const initial = user?.displayName?.charAt(0);
   const flatListRef = useRef<FlatList>(null);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   // Auto-scroll to the latest message on mount
   useEffect(() => {
@@ -120,15 +122,30 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
     }
   }, []);
 
+  // Handle keyboard events
+  useEffect(() => {
+    const keyboardWillShow = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      (e) => {
+        setKeyboardHeight(e.endCoordinates.height);
+      }
+    );
+    const keyboardWillHide = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => {
+        setKeyboardHeight(0);
+      }
+    );
+
+    return () => {
+      keyboardWillShow.remove();
+      keyboardWillHide.remove();
+    };
+  }, []);
+
   return (
-    <SafeAreaView edges={["top", "bottom"]} style={styles.container}>
-      <KeyboardAvoidingView
-        style={styles.keyboardAvoidingView}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
-      >
-        
-          <View style={styles.mainContent}>
+    <SafeAreaView edges={["top","bottom"]} style={styles.container}>
+      <View style={[styles.mainContent, { paddingBottom: keyboardHeight }]}>
             <View style={styles.header}>
               <View style={styles.headerLeft}>
                 <View style={styles.avatarContainer}>
@@ -250,8 +267,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
               </View>
             </View>
           </View>
-        
-      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
