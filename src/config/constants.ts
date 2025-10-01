@@ -187,6 +187,12 @@ export const COLORS = {
   // Added for SettingsScreen buttons
   buttonGrayBg: 'rgba(223, 223, 223, 1)',
   buttonGrayText: 'rgba(102, 102, 102, 1)',
+  // Chat message background
+  chatReceiverBg: '#9398F61F',
+  // Chat screen colors
+  chatMessageListBg: '#E4E4E466',
+  chatDateSeparatorLine: '#0B123633',
+  chatDateSeparatorText: '#051A5C9E',
 };
 
 // Dimensions
