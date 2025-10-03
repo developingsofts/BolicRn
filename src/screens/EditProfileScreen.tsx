@@ -16,6 +16,7 @@ import FontWeight from "../hooks/useInterFonts";
 import { useAuth } from "../contexts/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
 import { Trash, ArrowDown, Close } from "../../assets";
+import { LinearGradient } from "expo-linear-gradient";
 
 interface EditProfileScreenProps {
   navigation: any;
@@ -50,7 +51,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
 
     return (
       <View style={styles.profileHeader}>
-      
+
         <View style={styles.headerActions}>
           <Text style={styles.editProfileTitle}>
             {STRINGS.EDIT_PROFILE.title}
