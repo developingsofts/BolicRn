@@ -50,14 +50,12 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
     const location = user?.location || "San Francisco, CA";
 
     return (
-      <LinearGradient
-        colors={['#1B1F35', '#222B68', '#334691']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.profileHeader}
-      >
+      <View style={styles.profileHeader}>
+        <LinearGradient colors={["#4c669f", "#3b5998", "#192f6a"]} style={{}} />
         <View style={styles.headerActions}>
-          <Text style={styles.editProfileTitle}>{STRINGS.EDIT_PROFILE.title}</Text>
+          <Text style={styles.editProfileTitle}>
+            {STRINGS.EDIT_PROFILE.title}
+          </Text>
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <Image source={Close} style={styles.iconSize} />
           </TouchableOpacity>
@@ -73,7 +71,9 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
             </View>
             <View style={styles.avatarActionsRow}>
               <TouchableOpacity style={styles.uploadBtn}>
-                <Text style={styles.uploadBtnText}>{STRINGS.EDIT_PROFILE.uploadNew}</Text>
+                <Text style={styles.uploadBtnText}>
+                  {STRINGS.EDIT_PROFILE.uploadNew}
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.deleteBtn}>
                 <Image source={Trash} style={styles.deleteIcon} />
@@ -81,13 +81,15 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
             </View>
           </View>
         </View>
-      </LinearGradient>
+      </View>
     );
   };
 
   const renderProfileForm = () => (
     <View style={styles.profileFormContainer}>
-      <Text style={styles.profileFormTitle}>{STRINGS.EDIT_PROFILE.updateDetails}</Text>
+      <Text style={styles.profileFormTitle}>
+        {STRINGS.EDIT_PROFILE.updateDetails}
+      </Text>
       <View style={styles.inputGroup}>
         <Text style={styles.inputLabel}>{STRINGS.EDIT_PROFILE.name}</Text>
         <TextInput
@@ -124,9 +126,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
   );
   return (
     <SafeAreaView edges={["top"]} style={styles.container}>
-      <KeyboardAvoidingView
-        behavior={"height"}
-      >
+      <KeyboardAvoidingView behavior={"height"}>
         <ScrollView
           contentContainerStyle={{ flexGrow: 1 }}
           // keyboardShouldPersistTaps="handled"
@@ -134,16 +134,18 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
           {renderProfileAvatar()}
           <View style={styles.formWrapper}>
             {renderProfileForm()}
-          
-          <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
-            <Text style={styles.saveBtnText}>{STRINGS.EDIT_PROFILE.saveChanges}</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
 
-    <View style={{ flex:1,backgroundColor:COLORS.white }} />
-  </SafeAreaView>
+            <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
+              <Text style={styles.saveBtnText}>
+                {STRINGS.EDIT_PROFILE.saveChanges}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+
+      <View style={{ flex: 1, backgroundColor: COLORS.white }} />
+    </SafeAreaView>
   );
 };
 
@@ -288,7 +290,7 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingRight: 10,
     paddingLeft: 10,
-    backgroundColor:COLORS.background,
+    backgroundColor: COLORS.background,
     opacity: 1,
     fontSize: 16,
     color: COLORS.app_black,
@@ -301,16 +303,14 @@ const styles = StyleSheet.create({
     paddingRight: 10,
     paddingBottom: 12,
     paddingLeft: 10,
-    backgroundColor:COLORS.background,
+    backgroundColor: COLORS.background,
     opacity: 1,
     fontSize: 16,
     color: COLORS.app_black,
     marginBottom: 10,
     textAlignVertical: "top",
   },
-  savePostContainer:{
-    
-  },
+  savePostContainer: {},
   saveBtn: {
     backgroundColor: COLORS.primary,
     borderRadius: 8,
