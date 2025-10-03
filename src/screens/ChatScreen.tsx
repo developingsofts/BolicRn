@@ -433,7 +433,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.gradient3,
     paddingHorizontal: DIMENSIONS.spacing.md,
     paddingTop: 20,
-    paddingBottom: 45,
+    paddingBottom: 55,
     borderTopLeftRadius: 10,
     borderTopRightRadius: 10,
     position: "absolute",
