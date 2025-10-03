@@ -13,6 +13,7 @@ import { COLORS, DIMENSIONS } from "../config/constants";
 import STRINGS from "../config/strings";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SafeAreaView } from "react-native-safe-area-context";
+import FontWeight from "../hooks/useInterFonts";
 
 interface HomeScreenProps {
   navigation: any;
@@ -243,10 +244,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView
-      edges={["top", "left", "right"]}
-      style={styles.container}
-    >
+    <SafeAreaView edges={["top", "left", "right"]} style={styles.container}>
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
@@ -271,437 +269,452 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
           </TouchableOpacity>
         </View>
 
-        {/* Weekly Goal Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>{STRINGS.HOME.weeklyGoal}</Text>
-            <TouchableOpacity onPress={() => navigation.navigate("Settings")}>
-              <Text style={styles.editButton}>{STRINGS.HOME.edit}</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.weeklyGoalCard}>
-            <View style={styles.weeklyGoalHeader}>
-              <Text style={styles.weeklyGoalTitle}>{weeklyGoal.title}</Text>
-              <Text style={styles.weeklyGoalProgress}>
-                {weeklyGoal.current}/{weeklyGoal.target} {weeklyGoal.unit}
-              </Text>
+        <View style={styles.mainContent}>
+          {/* Weekly Goal Section */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>{STRINGS.HOME.weeklyGoal}</Text>
+              <TouchableOpacity onPress={() => navigation.navigate("Settings")}>
+                <Text style={styles.editButton}>{STRINGS.HOME.edit}</Text>
+              </TouchableOpacity>
             </View>
-            <View style={styles.weeklyGoalBar}>
-              <View
-                style={[
-                  styles.weeklyGoalFill,
-                  {
-                    width: `${(weeklyGoal.current / weeklyGoal.target) * 100}%`,
-                  },
-                ]}
-              />
-            </View>
-            {weeklyGoal.completed && (
-              <View style={styles.weeklyGoalCompleted}>
-                <Text style={styles.weeklyGoalCompletedText}>
-                  🎉 Goal Completed!
+            <View style={styles.weeklyGoalCard}>
+              <View style={styles.weeklyGoalHeader}>
+                <Text style={styles.weeklyGoalTitle}>{weeklyGoal.title}</Text>
+                <Text style={styles.weeklyGoalProgress}>
+                  {weeklyGoal.current}/{weeklyGoal.target} {weeklyGoal.unit}
                 </Text>
               </View>
-            )}
-          </View>
-        </View>
-
-        {/* Workout of the Day */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>{STRINGS.HOME.workoutOfDay}</Text>
-            <Text style={styles.workoutDate}>
-              {new Date().toLocaleDateString("en-US", {
-                weekday: "long",
-                month: "short",
-                day: "numeric",
-              })}
-            </Text>
-          </View>
-          <View style={styles.workoutOfTheDayCard}>
-            <View style={styles.workoutOfTheDayHeader}>
-              <Text style={styles.workoutOfTheDayTitle}>
-                {workoutOfTheDay.title}
-              </Text>
-              <View style={styles.workoutOfTheDayMeta}>
-                <Text style={styles.workoutOfTheDayType}>
-                  {workoutOfTheDay.type}
-                </Text>
-                <Text style={styles.workoutOfTheDayDuration}>
-                  {workoutOfTheDay.duration} min
-                </Text>
-                <Text style={styles.workoutOfTheDayDifficulty}>
-                  {workoutOfTheDay.difficulty}
-                </Text>
+              <View style={styles.weeklyGoalBar}>
+                <View
+                  style={[
+                    styles.weeklyGoalFill,
+                    {
+                      width: `${
+                        (weeklyGoal.current / weeklyGoal.target) * 100
+                      }%`,
+                    },
+                  ]}
+                />
               </View>
-            </View>
-            <Text style={styles.workoutOfTheDayDescription}>
-              {workoutOfTheDay.description}
-            </Text>
-
-            <View style={styles.workoutOfTheDayExercises}>
-              <Text style={styles.workoutOfTheDayExercisesTitle}>
-                Exercises ({workoutOfTheDay.exercises.length})
-              </Text>
-              {workoutOfTheDay.exercises.slice(0, 3).map((exercise, index) => (
-                <View key={index} style={styles.workoutOfTheDayExercise}>
-                  <Text style={styles.workoutOfTheDayExerciseName}>
-                    {exercise.name}
-                  </Text>
-                  <Text style={styles.workoutOfTheDayExerciseDetails}>
-                    {exercise.sets} sets × {exercise.reps} reps
-                    {exercise.weight && ` @ ${exercise.weight}lbs`}
-                  </Text>
-                </View>
-              ))}
-              {workoutOfTheDay.exercises.length > 3 && (
-                <Text style={styles.workoutOfTheDayMoreExercises}>
-                  +{workoutOfTheDay.exercises.length - 3} more exercises
-                </Text>
-              )}
-            </View>
-
-            <View style={styles.workoutOfTheDayActions}>
-              {!workoutOfTheDay.completed ? (
-                <TouchableOpacity
-                  style={styles.startWorkoutButton}
-                  onPress={startWorkoutOfTheDay}
-                >
-                  <Text style={styles.startWorkoutButtonText}>
-                    {STRINGS.HOME.startWorkout}
-                  </Text>
-                </TouchableOpacity>
-              ) : (
-                <View style={styles.workoutCompleted}>
-                  <Text style={styles.workoutCompletedText}>
-                    ✅ Completed Today
+              {weeklyGoal.completed && (
+                <View style={styles.weeklyGoalCompleted}>
+                  <Text style={styles.weeklyGoalCompletedText}>
+                    🎉 Goal Completed!
                   </Text>
                 </View>
               )}
             </View>
           </View>
-        </View>
 
-        {/* Social Feed */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>🔥 Community Highlights</Text>
-            <TouchableOpacity onPress={() => navigation.navigate("Messages")}>
-              <Text style={styles.viewAllButton}>{STRINGS.HOME.viewAll}</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.socialFeed}>
-            <View style={styles.socialPost}>
-              <View style={styles.socialPostHeader}>
-                <View style={styles.socialPostAvatar}>
-                  <Text style={styles.socialPostAvatarText}>MJ</Text>
-                </View>
-                <View style={styles.socialPostInfo}>
-                  <Text style={styles.socialPostName}>Mike Johnson</Text>
-                  <Text style={styles.socialPostTime}>2h ago</Text>
-                </View>
-                <TouchableOpacity style={styles.socialPostMenu}>
-                  <Text style={styles.socialPostMenuText}>⋯</Text>
-                </TouchableOpacity>
-              </View>
-              <Text style={styles.socialPostContent}>
-                Just crushed my PR on deadlifts! 💪 315lbs for 3 reps. The grind
-                never stops! Who's hitting the gym today?
+          {/* Workout of the Day */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>
+                {STRINGS.HOME.workoutOfDay}
               </Text>
-              <View style={styles.socialPostStats}>
-                <View style={styles.socialPostStat}>
-                  <Text style={styles.socialPostStatIcon}>❤️</Text>
-                  <Text style={styles.socialPostStatText}>24</Text>
-                </View>
-                <View style={styles.socialPostStat}>
-                  <Text style={styles.socialPostStatIcon}>💬</Text>
-                  <Text style={styles.socialPostStatText}>8</Text>
-                </View>
-                <View style={styles.socialPostStat}>
-                  <Text style={styles.socialPostStatIcon}>🤝</Text>
-                  <Text style={styles.socialPostStatText}>3</Text>
-                </View>
-              </View>
+              <Text style={styles.workoutDate}>
+                {new Date().toLocaleDateString("en-US", {
+                  weekday: "long",
+                  month: "short",
+                  day: "numeric",
+                })}
+              </Text>
             </View>
-
-            <View style={styles.socialPost}>
-              <View style={styles.socialPostHeader}>
-                <View style={styles.socialPostAvatar}>
-                  <Text style={styles.socialPostAvatarText}>SL</Text>
-                </View>
-                <View style={styles.socialPostInfo}>
-                  <Text style={styles.socialPostName}>Sarah Lee</Text>
-                  <Text style={styles.socialPostTime}>4h ago</Text>
-                </View>
-                <TouchableOpacity style={styles.socialPostMenu}>
-                  <Text style={styles.socialPostMenuText}>⋯</Text>
-                </TouchableOpacity>
-              </View>
-              <Text style={styles.socialPostContent}>
-                Morning cardio session complete! 🏃‍♀️ 5 miles in 42 minutes.
-                Looking for a running buddy for tomorrow's long run!
-              </Text>
-              <View style={styles.socialPostStats}>
-                <View style={styles.socialPostStat}>
-                  <Text style={styles.socialPostStatIcon}>❤️</Text>
-                  <Text style={styles.socialPostStatText}>18</Text>
-                </View>
-                <View style={styles.socialPostStat}>
-                  <Text style={styles.socialPostStatIcon}>💬</Text>
-                  <Text style={styles.socialPostStatText}>5</Text>
-                </View>
-                <View style={styles.socialPostStat}>
-                  <Text style={styles.socialPostStatIcon}>🤝</Text>
-                  <Text style={styles.socialPostStatText}>2</Text>
+            <View style={styles.workoutOfTheDayCard}>
+              <View style={styles.workoutOfTheDayHeader}>
+                <Text style={styles.workoutOfTheDayTitle}>
+                  {workoutOfTheDay.title}
+                </Text>
+                <View style={styles.workoutOfTheDayMeta}>
+                  <Text style={styles.workoutOfTheDayType}>
+                    {workoutOfTheDay.type}
+                  </Text>
+                  <Text style={styles.workoutOfTheDayDuration}>
+                    {workoutOfTheDay.duration} min
+                  </Text>
+                  <Text style={styles.workoutOfTheDayDifficulty}>
+                    {workoutOfTheDay.difficulty}
+                  </Text>
                 </View>
               </View>
-            </View>
-          </View>
-        </View>
-
-        {/* Friend Suggestions */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>👥 Suggested Partners</Text>
-            <TouchableOpacity onPress={() => navigation.navigate("Find")}>
-              <Text style={styles.viewAllButton}>Find More</Text>
-            </TouchableOpacity>
-          </View>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.friendSuggestions}
-          >
-            <View style={styles.friendSuggestionCard}>
-              <View style={styles.friendSuggestionAvatar}>
-                <Text style={styles.friendSuggestionAvatarText}>DJ</Text>
-              </View>
-              <Text style={styles.friendSuggestionName}>David Kim</Text>
-              <Text style={styles.friendSuggestionDetails}>
-                Strength Training • 2.3 miles away
+              <Text style={styles.workoutOfTheDayDescription}>
+                {workoutOfTheDay.description}
               </Text>
-              <TouchableOpacity style={styles.friendSuggestionButton}>
-                <Text style={styles.friendSuggestionButtonText}>Connect</Text>
-              </TouchableOpacity>
-            </View>
 
-            <View style={styles.friendSuggestionCard}>
-              <View style={styles.friendSuggestionAvatar}>
-                <Text style={styles.friendSuggestionAvatarText}>EM</Text>
-              </View>
-              <Text style={styles.friendSuggestionName}>Emma Martinez</Text>
-              <Text style={styles.friendSuggestionDetails}>
-                Cardio • 1.8 miles away
-              </Text>
-              <TouchableOpacity style={styles.friendSuggestionButton}>
-                <Text style={styles.friendSuggestionButtonText}>Connect</Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.friendSuggestionCard}>
-              <View style={styles.friendSuggestionAvatar}>
-                <Text style={styles.friendSuggestionAvatarText}>CW</Text>
-              </View>
-              <Text style={styles.friendSuggestionName}>Chris Wilson</Text>
-              <Text style={styles.friendSuggestionDetails}>
-                CrossFit • 3.1 miles away
-              </Text>
-              <TouchableOpacity style={styles.friendSuggestionButton}>
-                <Text style={styles.friendSuggestionButtonText}>Connect</Text>
-              </TouchableOpacity>
-            </View>
-          </ScrollView>
-        </View>
-
-        {/* Quick Actions */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Quick Actions</Text>
-          <View style={styles.quickActionsGrid}>
-            <TouchableOpacity
-              style={styles.quickActionCard}
-              onPress={() => navigation.navigate("Groups")}
-            >
-              <Text style={styles.quickActionIcon}>👥</Text>
-              <Text style={styles.quickActionTitle}>Find Groups</Text>
-              <Text style={styles.quickActionSubtitle}>
-                Join training communities
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.quickActionCard}
-              onPress={() => navigation.navigate("Find")}
-            >
-              <Text style={styles.quickActionIcon}>🤝</Text>
-              <Text style={styles.quickActionTitle}>Find Partners</Text>
-              <Text style={styles.quickActionSubtitle}>
-                Connect with fitness buddies
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.quickActionCard}
-              onPress={() => navigation.navigate("CreatePost")}
-            >
-              <Text style={styles.quickActionIcon}>📝</Text>
-              <Text style={styles.quickActionTitle}>Share Progress</Text>
-              <Text style={styles.quickActionSubtitle}>
-                Post your achievements
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.quickActionCard}
-              onPress={() => navigation.navigate("Profile")}
-            >
-              <Text style={styles.quickActionIcon}>📊</Text>
-              <Text style={styles.quickActionTitle}>View Stats</Text>
-              <Text style={styles.quickActionSubtitle}>
-                Check your progress
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Notes Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{STRINGS.HOME.quickNotes}</Text>
-          <View style={styles.notesCard}>
-            <View style={styles.notesInputContainer}>
-              <TextInput
-                style={styles.notesInput}
-                placeholder={STRINGS.HOME.addNote}
-                placeholderTextColor={COLORS.placeholder}
-                value={newNote}
-                onChangeText={setNewNote}
-                multiline
-                maxLength={200}
-              />
-              <TouchableOpacity style={styles.addNoteButton} onPress={saveNote}>
-                <Text style={styles.addNoteButtonText}>{STRINGS.COMMON.add}</Text>
-              </TouchableOpacity>
-            </View>
-
-            {notes.length > 0 && (
-              <View style={styles.notesList}>
-                {notes.slice(0, 3).map((note) => (
-                  <View key={note.id} style={styles.noteItem}>
-                    <Text style={styles.noteText} numberOfLines={2}>
-                      {note.text}
-                    </Text>
-                    <View style={styles.noteFooter}>
-                      <Text style={styles.noteTime}>
-                        {note.timestamp.toLocaleDateString()}
+              <View style={styles.workoutOfTheDayExercises}>
+                <Text style={styles.workoutOfTheDayExercisesTitle}>
+                  Exercises ({workoutOfTheDay.exercises.length})
+                </Text>
+                {workoutOfTheDay.exercises
+                  .slice(0, 3)
+                  .map((exercise, index) => (
+                    <View key={index} style={styles.workoutOfTheDayExercise}>
+                      <Text style={styles.workoutOfTheDayExerciseName}>
+                        {exercise.name}
                       </Text>
-                      <TouchableOpacity
-                        onPress={() => deleteNote(note.id)}
-                        style={styles.deleteNoteButton}
-                      >
-                        <Text style={styles.deleteNoteText}>🗑️</Text>
-                      </TouchableOpacity>
+                      <Text style={styles.workoutOfTheDayExerciseDetails}>
+                        {exercise.sets} sets × {exercise.reps} reps
+                        {exercise.weight && ` @ ${exercise.weight}lbs`}
+                      </Text>
                     </View>
-                  </View>
-                ))}
-                {notes.length > 3 && (
-                  <TouchableOpacity style={styles.viewAllNotesButton}>
-                    <Text style={styles.viewAllNotesText}>
-                      View all {notes.length} notes
+                  ))}
+                {workoutOfTheDay.exercises.length > 3 && (
+                  <Text style={styles.workoutOfTheDayMoreExercises}>
+                    +{workoutOfTheDay.exercises.length - 3} more exercises
+                  </Text>
+                )}
+              </View>
+
+              <View style={styles.workoutOfTheDayActions}>
+                {!workoutOfTheDay.completed ? (
+                  <TouchableOpacity
+                    style={styles.startWorkoutButton}
+                    onPress={startWorkoutOfTheDay}
+                  >
+                    <Text style={styles.startWorkoutButtonText}>
+                      {STRINGS.HOME.startWorkout}
                     </Text>
                   </TouchableOpacity>
+                ) : (
+                  <View style={styles.workoutCompleted}>
+                    <Text style={styles.workoutCompletedText}>
+                      ✅ Completed Today
+                    </Text>
+                  </View>
                 )}
               </View>
-            )}
+            </View>
           </View>
-        </View>
 
-        {/* Gamification - Achievements */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>🏆 Achievements</Text>
-          <View style={styles.achievementsGrid}>
-            {achievements.map((achievement) => (
-              <View key={achievement.id} style={styles.achievementCard}>
-                <Text style={styles.achievementIcon}>{achievement.icon}</Text>
-                <Text style={styles.achievementTitle}>{achievement.title}</Text>
-                <Text style={styles.achievementDescription}>
-                  {achievement.description}
-                </Text>
-                <View style={styles.progressContainer}>
-                  <View style={styles.progressBar}>
-                    <View
-                      style={[
-                        styles.progressFill,
-                        {
-                          width: `${getProgressPercentage(achievement)}%`,
-                          backgroundColor: achievement.unlocked
-                            ? COLORS.success
-                            : COLORS.primary,
-                        },
-                      ]}
-                    />
+          {/* Social Feed */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>🔥 Community Highlights</Text>
+              <TouchableOpacity onPress={() => navigation.navigate("Messages")}>
+                <Text style={styles.viewAllButton}>{STRINGS.HOME.viewAll}</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.socialFeed}>
+              <View style={styles.socialPost}>
+                <View style={styles.socialPostHeader}>
+                  <View style={styles.socialPostAvatar}>
+                    <Text style={styles.socialPostAvatarText}>MJ</Text>
                   </View>
-                  <Text style={styles.progressText}>
-                    {achievement.progress}/{achievement.maxProgress}
+                  <View style={styles.socialPostInfo}>
+                    <Text style={styles.socialPostName}>Mike Johnson</Text>
+                    <Text style={styles.socialPostTime}>2h ago</Text>
+                  </View>
+                  <TouchableOpacity style={styles.socialPostMenu}>
+                    <Text style={styles.socialPostMenuText}>⋯</Text>
+                  </TouchableOpacity>
+                </View>
+                <Text style={styles.socialPostContent}>
+                  Just crushed my PR on deadlifts! 💪 315lbs for 3 reps. The
+                  grind never stops! Who's hitting the gym today?
+                </Text>
+                <View style={styles.socialPostStats}>
+                  <View style={styles.socialPostStat}>
+                    <Text style={styles.socialPostStatIcon}>❤️</Text>
+                    <Text style={styles.socialPostStatText}>24</Text>
+                  </View>
+                  <View style={styles.socialPostStat}>
+                    <Text style={styles.socialPostStatIcon}>💬</Text>
+                    <Text style={styles.socialPostStatText}>8</Text>
+                  </View>
+                  <View style={styles.socialPostStat}>
+                    <Text style={styles.socialPostStatIcon}>🤝</Text>
+                    <Text style={styles.socialPostStatText}>3</Text>
+                  </View>
+                </View>
+              </View>
+
+              <View style={styles.socialPost}>
+                <View style={styles.socialPostHeader}>
+                  <View style={styles.socialPostAvatar}>
+                    <Text style={styles.socialPostAvatarText}>SL</Text>
+                  </View>
+                  <View style={styles.socialPostInfo}>
+                    <Text style={styles.socialPostName}>Sarah Lee</Text>
+                    <Text style={styles.socialPostTime}>4h ago</Text>
+                  </View>
+                  <TouchableOpacity style={styles.socialPostMenu}>
+                    <Text style={styles.socialPostMenuText}>⋯</Text>
+                  </TouchableOpacity>
+                </View>
+                <Text style={styles.socialPostContent}>
+                  Morning cardio session complete! 🏃‍♀️ 5 miles in 42 minutes.
+                  Looking for a running buddy for tomorrow's long run!
+                </Text>
+                <View style={styles.socialPostStats}>
+                  <View style={styles.socialPostStat}>
+                    <Text style={styles.socialPostStatIcon}>❤️</Text>
+                    <Text style={styles.socialPostStatText}>18</Text>
+                  </View>
+                  <View style={styles.socialPostStat}>
+                    <Text style={styles.socialPostStatIcon}>💬</Text>
+                    <Text style={styles.socialPostStatText}>5</Text>
+                  </View>
+                  <View style={styles.socialPostStat}>
+                    <Text style={styles.socialPostStatIcon}>🤝</Text>
+                    <Text style={styles.socialPostStatText}>2</Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+          </View>
+
+          {/* Friend Suggestions */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>👥 Suggested Partners</Text>
+              <TouchableOpacity onPress={() => navigation.navigate("Find")}>
+                <Text style={styles.viewAllButton}>Find More</Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.friendSuggestions}
+            >
+              <View style={styles.friendSuggestionCard}>
+                <View style={styles.friendSuggestionAvatar}>
+                  <Text style={styles.friendSuggestionAvatarText}>DJ</Text>
+                </View>
+                <Text style={styles.friendSuggestionName}>David Kim</Text>
+                <Text style={styles.friendSuggestionDetails}>
+                  Strength Training • 2.3 miles away
+                </Text>
+                <TouchableOpacity style={styles.friendSuggestionButton}>
+                  <Text style={styles.friendSuggestionButtonText}>Connect</Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.friendSuggestionCard}>
+                <View style={styles.friendSuggestionAvatar}>
+                  <Text style={styles.friendSuggestionAvatarText}>EM</Text>
+                </View>
+                <Text style={styles.friendSuggestionName}>Emma Martinez</Text>
+                <Text style={styles.friendSuggestionDetails}>
+                  Cardio • 1.8 miles away
+                </Text>
+                <TouchableOpacity style={styles.friendSuggestionButton}>
+                  <Text style={styles.friendSuggestionButtonText}>Connect</Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.friendSuggestionCard}>
+                <View style={styles.friendSuggestionAvatar}>
+                  <Text style={styles.friendSuggestionAvatarText}>CW</Text>
+                </View>
+                <Text style={styles.friendSuggestionName}>Chris Wilson</Text>
+                <Text style={styles.friendSuggestionDetails}>
+                  CrossFit • 3.1 miles away
+                </Text>
+                <TouchableOpacity style={styles.friendSuggestionButton}>
+                  <Text style={styles.friendSuggestionButtonText}>Connect</Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </View>
+
+          {/* Quick Actions */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Quick Actions</Text>
+            <View style={styles.quickActionsGrid}>
+              <TouchableOpacity
+                style={styles.quickActionCard}
+                onPress={() => navigation.navigate("Groups")}
+              >
+                <Text style={styles.quickActionIcon}>👥</Text>
+                <Text style={styles.quickActionTitle}>Find Groups</Text>
+                <Text style={styles.quickActionSubtitle}>
+                  Join training communities
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.quickActionCard}
+                onPress={() => navigation.navigate("Find")}
+              >
+                <Text style={styles.quickActionIcon}>🤝</Text>
+                <Text style={styles.quickActionTitle}>Find Partners</Text>
+                <Text style={styles.quickActionSubtitle}>
+                  Connect with fitness buddies
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.quickActionCard}
+                onPress={() => navigation.navigate("CreatePost")}
+              >
+                <Text style={styles.quickActionIcon}>📝</Text>
+                <Text style={styles.quickActionTitle}>Share Progress</Text>
+                <Text style={styles.quickActionSubtitle}>
+                  Post your achievements
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.quickActionCard}
+                onPress={() => navigation.navigate("Profile")}
+              >
+                <Text style={styles.quickActionIcon}>📊</Text>
+                <Text style={styles.quickActionTitle}>View Stats</Text>
+                <Text style={styles.quickActionSubtitle}>
+                  Check your progress
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Notes Section */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{STRINGS.HOME.quickNotes}</Text>
+            <View style={styles.notesCard}>
+              <View style={styles.notesInputContainer}>
+                <TextInput
+                  style={styles.notesInput}
+                  placeholder={STRINGS.HOME.addNote}
+                  placeholderTextColor={COLORS.placeholder}
+                  value={newNote}
+                  onChangeText={setNewNote}
+                  multiline
+                  maxLength={200}
+                />
+                <TouchableOpacity
+                  style={styles.addNoteButton}
+                  onPress={saveNote}
+                >
+                  <Text style={styles.addNoteButtonText}>
+                    {STRINGS.COMMON.add}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {notes.length > 0 && (
+                <View style={styles.notesList}>
+                  {notes.slice(0, 3).map((note) => (
+                    <View key={note.id} style={styles.noteItem}>
+                      <Text style={styles.noteText} numberOfLines={2}>
+                        {note.text}
+                      </Text>
+                      <View style={styles.noteFooter}>
+                        <Text style={styles.noteTime}>
+                          {note.timestamp.toLocaleDateString()}
+                        </Text>
+                        <TouchableOpacity
+                          onPress={() => deleteNote(note.id)}
+                          style={styles.deleteNoteButton}
+                        >
+                          <Text style={styles.deleteNoteText}>🗑️</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  ))}
+                  {notes.length > 3 && (
+                    <TouchableOpacity style={styles.viewAllNotesButton}>
+                      <Text style={styles.viewAllNotesText}>
+                        View all {notes.length} notes
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
+            </View>
+          </View>
+
+          {/* Gamification - Achievements */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>🏆 Achievements</Text>
+            <View style={styles.achievementsGrid}>
+              {achievements.map((achievement) => (
+                <View key={achievement.id} style={styles.achievementCard}>
+                  <Text style={styles.achievementIcon}>{achievement.icon}</Text>
+                  <Text style={styles.achievementTitle}>
+                    {achievement.title}
+                  </Text>
+                  <Text style={styles.achievementDescription}>
+                    {achievement.description}
+                  </Text>
+                  <View style={styles.progressContainer}>
+                    <View style={styles.progressBar}>
+                      <View
+                        style={[
+                          styles.progressFill,
+                          {
+                            width: `${getProgressPercentage(achievement)}%`,
+                            backgroundColor: achievement.unlocked
+                              ? COLORS.success
+                              : COLORS.primary,
+                          },
+                        ]}
+                      />
+                    </View>
+                    <Text style={styles.progressText}>
+                      {achievement.progress}/{achievement.maxProgress}
+                    </Text>
+                  </View>
+                  {achievement.unlocked && (
+                    <View style={styles.unlockedBadge}>
+                      <Text style={styles.unlockedText}>✓ Unlocked</Text>
+                    </View>
+                  )}
+                </View>
+              ))}
+            </View>
+          </View>
+
+          {/* Recent Activity */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Recent Activity</Text>
+            <View style={styles.activityList}>
+              <View style={styles.activityItem}>
+                <Text style={styles.activityIcon}>🏋️</Text>
+                <View style={styles.activityContent}>
+                  <Text style={styles.activityTitle}>Leg Day</Text>
+                  <Text style={styles.activityDetails}>
+                    1h 15m • 6 exercises • 14,320 lbs
                   </Text>
                 </View>
-                {achievement.unlocked && (
-                  <View style={styles.unlockedBadge}>
-                    <Text style={styles.unlockedText}>✓ Unlocked</Text>
-                  </View>
-                )}
+                <Text style={styles.activityTime}>Today</Text>
               </View>
-            ))}
-          </View>
-        </View>
 
-        {/* Recent Activity */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Recent Activity</Text>
-          <View style={styles.activityList}>
-            <View style={styles.activityItem}>
-              <Text style={styles.activityIcon}>🏋️</Text>
-              <View style={styles.activityContent}>
-                <Text style={styles.activityTitle}>Leg Day</Text>
-                <Text style={styles.activityDetails}>
-                  1h 15m • 6 exercises • 14,320 lbs
-                </Text>
+              <View style={styles.activityItem}>
+                <Text style={styles.activityIcon}>🤝</Text>
+                <View style={styles.activityContent}>
+                  <Text style={styles.activityTitle}>New Match!</Text>
+                  <Text style={styles.activityDetails}>
+                    You matched with Alex Johnson
+                  </Text>
+                </View>
+                <Text style={styles.activityTime}>2h ago</Text>
               </View>
-              <Text style={styles.activityTime}>Today</Text>
-            </View>
 
-            <View style={styles.activityItem}>
-              <Text style={styles.activityIcon}>🤝</Text>
-              <View style={styles.activityContent}>
-                <Text style={styles.activityTitle}>New Match!</Text>
-                <Text style={styles.activityDetails}>
-                  You matched with Alex Johnson
-                </Text>
+              <View style={styles.activityItem}>
+                <Text style={styles.activityIcon}>🏆</Text>
+                <View style={styles.activityContent}>
+                  <Text style={styles.activityTitle}>Achievement Unlocked</Text>
+                  <Text style={styles.activityDetails}>
+                    Week Warrior - 7 day streak!
+                  </Text>
+                </View>
+                <Text style={styles.activityTime}>Yesterday</Text>
               </View>
-              <Text style={styles.activityTime}>2h ago</Text>
-            </View>
-
-            <View style={styles.activityItem}>
-              <Text style={styles.activityIcon}>🏆</Text>
-              <View style={styles.activityContent}>
-                <Text style={styles.activityTitle}>Achievement Unlocked</Text>
-                <Text style={styles.activityDetails}>
-                  Week Warrior - 7 day streak!
-                </Text>
-              </View>
-              <Text style={styles.activityTime}>Yesterday</Text>
             </View>
           </View>
-        </View>
 
-        {/* Create Post */}
-        <View style={styles.section}>
-          <TouchableOpacity
-            style={styles.createPostButton}
-            // onPress={() => navigation.navigate("CreatePost")}
+          {/* Create Post */}
+          <View style={styles.section}>
+            <TouchableOpacity
+              style={styles.createPostButton}
+              // onPress={() => navigation.navigate("CreatePost")}
               onPress={() => navigation.navigate("ShareWorkout")}
-          >
-            <Text style={styles.createPostIcon}>✏️</Text>
-            <Text style={styles.createPostText}>Share your workout</Text>
-          </TouchableOpacity>
+            >
+              <Text style={styles.createPostIcon}>✏️</Text>
+              <Text style={styles.createPostText}>Share your workout</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -711,7 +724,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.gradient3,
   },
   scrollView: {
     flex: 1,
@@ -720,17 +733,19 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    backgroundColor: COLORS.gradient3,
     paddingHorizontal: DIMENSIONS.spacing.lg,
     paddingVertical: DIMENSIONS.spacing.lg,
   },
   greeting: {
     fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 2,
+    fontFamily:FontWeight.Medium,
+    color: COLORS.white,
+    marginBottom: 5,
   },
   subtitle: {
     fontSize: 14,
-    color: COLORS.textSecondary,
+    color: COLORS.white,
   },
   userName: {
     fontSize: 24,
@@ -753,6 +768,10 @@ const styles = StyleSheet.create({
   section: {
     paddingHorizontal: DIMENSIONS.spacing.lg,
     marginBottom: DIMENSIONS.spacing.lg,
+  },
+  mainContent:{
+    backgroundColor: COLORS.background,
+    paddingTop:20,
   },
   sectionTitle: {
     fontSize: 20,
@@ -798,7 +817,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     padding: DIMENSIONS.spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor:COLORS.border,
+    borderBottomColor: COLORS.border,
   },
   noteInput: {
     flex: 1,
@@ -1372,8 +1391,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
     marginRight: DIMENSIONS.spacing.sm,
   },
-  
-  
 });
 
 export default HomeScreen;
