@@ -1,5 +1,5 @@
 import React from "react";
-import {  Text } from "react-native";
+import {  Text,View } from "react-native";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
@@ -33,7 +33,7 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 // Main Tab Navigator
 const MainTabNavigator: React.FC = () => {
   return (
-    <SafeAreaView style={{ flex: 1 }} edges={["bottom"]}>
+    <SafeAreaView  style={{ flex: 1 }} edges={["bottom"]}>
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
@@ -42,7 +42,7 @@ const MainTabNavigator: React.FC = () => {
           borderTopWidth: 1,
           borderTopColor: "#E5E5E5",
           paddingTop: 5,
-          height: 75,
+          height: 95,
         },
         tabBarActiveTintColor: "#007AFF",
         tabBarInactiveTintColor: "#8E8E93",
@@ -113,9 +113,11 @@ const AppNavigator: React.FC = () => {
 
   return (
     <NavigationContainer>
+      
       <Stack.Navigator
         screenOptions={{
           headerShown: false,
+          
         }}
       >
         {isAuthenticated ? (

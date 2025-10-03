@@ -1,7 +1,15 @@
-import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView } from 'react-native';
-import { COLORS, DIMENSIONS } from '../config/constants';
-import STRINGS from '../config/strings';
+import React from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+} from "react-native";
+import { COLORS, DIMENSIONS } from "../config/constants";
+import STRINGS from "../config/strings";
+import { SafeAreaView } from "react-native-safe-area-context";
+import FontWeight from "../hooks/useInterFonts";
 
 interface MessagesScreenProps {
   navigation: any;
@@ -9,14 +17,38 @@ interface MessagesScreenProps {
 
 const MessagesScreen: React.FC<MessagesScreenProps> = ({ navigation }) => {
   const mockConversations = [
-    { id: 1, name: 'Alex', lastMessage: 'Ready for tomorrow\'s workout?', time: '2m ago', unread: 1 },
-    { id: 2, name: 'Sarah', lastMessage: 'Great session today!', time: '1h ago', unread: 0 },
-    { id: 3, name: 'Mike', lastMessage: 'Can we reschedule?', time: '3h ago', unread: 2 },
-    { id: 4, name: 'Emma', lastMessage: 'New PR today!', time: '1d ago', unread: 0 },
+    {
+      id: 1,
+      name: "Alex",
+      lastMessage: "Ready for tomorrow's workout?",
+      time: "2m ago",
+      unread: 1,
+    },
+    {
+      id: 2,
+      name: "Sarah",
+      lastMessage: "Great session today!",
+      time: "1h ago",
+      unread: 0,
+    },
+    {
+      id: 3,
+      name: "Mike",
+      lastMessage: "Can we reschedule?",
+      time: "3h ago",
+      unread: 2,
+    },
+    {
+      id: 4,
+      name: "Emma",
+      lastMessage: "New PR today!",
+      time: "1d ago",
+      unread: 0,
+    },
   ];
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView edges={["top"]} style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>{STRINGS.MESSAGES.title}</Text>
         <Text style={styles.subtitle}>{STRINGS.MESSAGES.subtitle}</Text>
@@ -24,13 +56,15 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ navigation }) => {
 
       <ScrollView style={styles.conversationsContainer}>
         {mockConversations.map((conversation) => (
-          <TouchableOpacity 
-            key={conversation.id} 
+          <TouchableOpacity
+            key={conversation.id}
             style={styles.conversationCard}
-            onPress={() => navigation.navigate('Chat', { 
-              partnerId: conversation.id.toString(), 
-              partnerName: conversation.name 
-            })}
+            onPress={() =>
+              navigation.navigate("Chat", {
+                partnerId: conversation.id.toString(),
+                partnerName: conversation.name,
+              })
+            }
           >
             <View style={styles.conversationHeader}>
               <Text style={styles.conversationName}>{conversation.name}</Text>
@@ -60,7 +94,7 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.gradient3,
   },
   header: {
     paddingHorizontal: DIMENSIONS.spacing.lg,
@@ -69,17 +103,20 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: COLORS.text,
+    fontFamily: FontWeight.SemiBold,
+    color: COLORS.white,
     marginBottom: DIMENSIONS.spacing.sm,
   },
   subtitle: {
     fontSize: 16,
-    color: COLORS.textSecondary,
+    fontFamily: FontWeight.Regular,
+    color: COLORS.white,
   },
   conversationsContainer: {
     flex: 1,
     paddingHorizontal: DIMENSIONS.spacing.lg,
+    backgroundColor: COLORS.background,
+    paddingTop: 20,
   },
   conversationCard: {
     backgroundColor: COLORS.surface,
@@ -90,14 +127,14 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
   },
   conversationHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: DIMENSIONS.spacing.sm,
   },
   conversationName: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     color: COLORS.text,
   },
   conversationTime: {
@@ -105,9 +142,9 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
   },
   conversationContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   lastMessage: {
     fontSize: 14,
@@ -119,26 +156,26 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     minWidth: 20,
     height: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginLeft: DIMENSIONS.spacing.sm,
   },
   unreadText: {
     fontSize: 12,
     color: COLORS.surface,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   footer: {
     paddingHorizontal: DIMENSIONS.spacing.lg,
     paddingBottom: DIMENSIONS.spacing.lg,
-    alignItems: 'center',
+    alignItems: "center",
+    backgroundColor: COLORS.background,
   },
   footerText: {
     fontSize: 14,
     color: COLORS.textSecondary,
-    fontStyle: 'italic',
+    fontStyle: "italic",
   },
 });
 
 export default MessagesScreen;
-

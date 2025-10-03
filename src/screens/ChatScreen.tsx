@@ -9,6 +9,7 @@ import {
   Platform,
   FlatList,
   Keyboard,
+  StatusBar,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { COLORS, DIMENSIONS } from "../config/constants";
@@ -79,31 +80,30 @@ const mockMessages: Message[] = [
     isMe: true,
     timestamp: new Date("2025-09-30T08:05:00"),
   },
-    {
+  {
     id: "7",
     text: "Absolutely! Let's do this 🔥",
     isMe: true,
     timestamp: new Date("2025-09-30T08:05:00"),
   },
-    {
+  {
     id: "8",
     text: "Absolutely! Let's do this 🔥",
     isMe: true,
     timestamp: new Date("2025-09-30T08:05:00"),
   },
-    {
+  {
     id: "9",
     text: "Absolutely! Let's do this 🔥",
     isMe: true,
     timestamp: new Date("2025-09-30T08:05:00"),
   },
-    {
+  {
     id: "10",
     text: "Absolutely! Let's do this 🔥",
     isMe: true,
     timestamp: new Date("2025-09-30T08:05:00"),
   },
-
 ];
 
 const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
@@ -125,13 +125,13 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
   // Handle keyboard events
   useEffect(() => {
     const keyboardWillShow = Keyboard.addListener(
-      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
       (e) => {
         setKeyboardHeight(e.endCoordinates.height);
       }
     );
     const keyboardWillHide = Keyboard.addListener(
-      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide",
       () => {
         setKeyboardHeight(0);
       }
@@ -144,129 +144,114 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
   }, []);
 
   return (
-    <SafeAreaView edges={["top","bottom"]} style={styles.container}>
-      <View style={[styles.mainContent, { paddingBottom: keyboardHeight }]}>
-            <View style={styles.header}>
-              <View style={styles.headerLeft}>
-                <View style={styles.avatarContainer}>
-                  <View style={[styles.avatar]}>
-                    <Text style={styles.avatarText}>{initial}</Text>
-                  </View>
+    <SafeAreaView edges={["top", "left", "right"]} style={styles.container}>
+        <View style={styles.mainContent}>
+          <View style={styles.header}>
+            <View style={styles.headerLeft}>
+              <View style={styles.avatarContainer}>
+                <View style={[styles.avatar]}>
+                  <Text style={styles.avatarText}>{initial}</Text>
                 </View>
-                <Text style={styles.title}>
-                  {partnerName ? partnerName : STRINGS.CHAT.defaultTitle}
-                </Text>
               </View>
-              <TouchableOpacity onPress={() => navigation.goBack()}>
-                <Image
-                  source={Close}
-                  style={styles.headerIcon}
-                />
-              </TouchableOpacity>
+              <Text style={styles.title}>
+                {partnerName ? partnerName : STRINGS.CHAT.defaultTitle}
+              </Text>
             </View>
-            <View style={styles.messagesWrapper}>
-              <FlatList
-                ref={flatListRef}
-                data={mockMessages}
-                keyExtractor={(item) => item.id}
-                style={styles.flatList}
-                contentContainerStyle={styles.flatListContent}
-                showsVerticalScrollIndicator={true}
-                scrollEnabled={true}
-                directionalLockEnabled={true}
-                scrollEventThrottle={16}
-                removeClippedSubviews={false}
-                maxToRenderPerBatch={20}
-                updateCellsBatchingPeriod={30}
-                initialNumToRender={20}
-                windowSize={10}
-                decelerationRate={0.98}
-                bounces={true}
-                alwaysBounceVertical={true}
-                overScrollMode="always"
-                disableScrollViewPanResponder={false}
-                keyboardShouldPersistTaps="handled"
-                onContentSizeChange={() => {
-                  flatListRef.current?.scrollToEnd({ animated: true });
-                }}
-                ListFooterComponent={<View style={{ height: 20 }} />}
-                renderItem={({ item }) => (
-                  <View>
-                    {item.showDateSeparator && (
-                      <View style={styles.dateSeparator}>
-                        <View style={styles.dateSeparatorLine} />
-                        <Text style={styles.dateSeparatorText}>
-                          {item.dateSeparator}
-                        </Text>
-                        <View style={styles.dateSeparatorLine} />
-                      </View>
-                    )}
-                    <View style={[
-                      styles.messageRow,
-                     
-                    ]}>
-                      <View
-                        style={[
-                          styles.messageContainer,
-                          item.isMe ? styles.myMessage : styles.theirMessage,
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.messageText,
-                            item.isMe
-                              ? styles.myMessageText
-                              : styles.theirMessageText,
-                          ]}
-                        >
-                          {item.text}
-                        </Text>
-                      </View>
-                      {!item.isMe && item.isLiked && (
-                        <Image
-                          source={Like}
-                          style={styles.likeIcon}
-                        />
-                      )}
-                    </View>
+            <TouchableOpacity onPress={() => navigation.goBack()}>
+              <Image source={Close} style={styles.headerIcon} />
+            </TouchableOpacity>
+          </View>
+          <View style={[styles.messagesWrapper, { paddingBottom: 120 + keyboardHeight }]}>
+          <FlatList
+            ref={flatListRef}
+            data={mockMessages}
+            keyExtractor={(item) => item.id}
+            style={styles.flatList}
+            contentContainerStyle={styles.flatListContent}
+            showsVerticalScrollIndicator={true}
+            scrollEnabled={true}
+            directionalLockEnabled={true}
+            scrollEventThrottle={16}
+            removeClippedSubviews={false}
+            maxToRenderPerBatch={20}
+            updateCellsBatchingPeriod={30}
+            initialNumToRender={20}
+            windowSize={10}
+            decelerationRate={0.98}
+            bounces={true}
+            alwaysBounceVertical={true}
+            overScrollMode="always"
+            disableScrollViewPanResponder={false}
+            keyboardShouldPersistTaps="handled"
+            onContentSizeChange={() => {
+              flatListRef.current?.scrollToEnd({ animated: true });
+            }}
+            ListFooterComponent={<View style={{ height: 20 }} />}
+            renderItem={({ item }) => (
+              <View>
+                {item.showDateSeparator && (
+                  <View style={styles.dateSeparator}>
+                    <View style={styles.dateSeparatorLine} />
+                    <Text style={styles.dateSeparatorText}>
+                      {item.dateSeparator}
+                    </Text>
+                    <View style={styles.dateSeparatorLine} />
                   </View>
                 )}
-              />
-            </View>
-            <View style={styles.inputContainer}>
-              <View style={styles.inputRow}>
-                <View style={styles.inputWrapper}>
-                  <TextInput
-                    placeholder={STRINGS.CHAT.placeholder}
-                    placeholderTextColor={COLORS.gradient1}
-                    style={styles.textInput}
-                  />
-                  <TouchableOpacity
-                    onPress={() => {
-                      // handle image upload
-                    }}
-                    style={styles.imageButton}
+                <View style={[styles.messageRow]}>
+                  <View
+                    style={[
+                      styles.messageContainer,
+                      item.isMe ? styles.myMessage : styles.theirMessage,
+                    ]}
                   >
-                    <Image
-                      source={ImageFile}
-                      style={styles.imageIcon}
-                    />
-                  </TouchableOpacity>
+                    <Text
+                      style={[
+                        styles.messageText,
+                        item.isMe
+                          ? styles.myMessageText
+                          : styles.theirMessageText,
+                      ]}
+                    >
+                      {item.text}
+                    </Text>
+                  </View>
+                  {!item.isMe && item.isLiked && (
+                    <Image source={Like} style={styles.likeIcon} />
+                  )}
                 </View>
-                <TouchableOpacity
-                  onPress={() => {
-                    // handle send message
-                  }}
-                  style={styles.sendButton}
-                >
-                  <Image
-                    source={Send}
-                    style={styles.sendIcon}
-                  />
-                </TouchableOpacity>
               </View>
+            )}
+          />
+        </View>
+        <View style={[styles.inputContainer, { bottom: keyboardHeight }]}>
+          <View style={styles.inputRow}>
+            <View style={styles.inputWrapper}>
+              <TextInput
+                placeholder={STRINGS.CHAT.placeholder}
+                placeholderTextColor={COLORS.gradient1}
+                style={styles.textInput}
+              />
+              <TouchableOpacity
+                onPress={() => {
+                  // handle image upload
+                }}
+                style={styles.imageButton}
+              >
+                <Image source={ImageFile} style={styles.imageIcon} />
+              </TouchableOpacity>
             </View>
+            <TouchableOpacity
+              onPress={() => {
+                // handle send message
+              }}
+              style={styles.sendButton}
+            >
+              <Image source={Send} style={styles.sendIcon} />
+            </TouchableOpacity>
           </View>
+        </View>
+        </View>
     </SafeAreaView>
   );
 };
@@ -274,6 +259,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    // backgroundColor:"red"
     backgroundColor: COLORS.gradient3,
   },
   keyboardAvoidingView: {
@@ -345,7 +331,7 @@ const styles = StyleSheet.create({
   headerIcon: {
     width: 24,
     height: 24,
-    marginTop:-10,
+    marginTop: -10,
     tintColor: COLORS.white,
   },
   backButton: {
@@ -362,14 +348,15 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: DIMENSIONS.spacing.lg,
     backgroundColor: COLORS.white,
-    paddingVertical: DIMENSIONS.spacing.lg,
+    paddingTop: DIMENSIONS.spacing.lg,
+    // paddingBottom is set dynamically based on keyboard height
   },
   flatList: {
     flex: 1,
     backgroundColor: COLORS.chatMessageListBg,
     borderRadius: 20,
     paddingBottom: DIMENSIONS.spacing.md,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   flatListContent: {
     padding: DIMENSIONS.spacing.md,
@@ -445,7 +432,14 @@ const styles = StyleSheet.create({
   inputContainer: {
     backgroundColor: COLORS.gradient3,
     paddingHorizontal: DIMENSIONS.spacing.md,
-    paddingVertical: 20,
+    paddingTop: 20,
+    paddingBottom: 45,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
   },
   inputRow: {
     flexDirection: "row",

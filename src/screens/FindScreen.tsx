@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { Menu, Button, Chip } from 'react-native-paper';
 import { COLORS, DIMENSIONS } from '../config/constants';
 import STRINGS from '../config/strings';
 import SwipeableCard, { TrainingPartner, Trainer, SwipeableItem } from '../components/SwipeableCard';
 import RatingModal from '../components/RatingModal';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface FindScreenProps {
   navigation: any;
@@ -275,7 +276,7 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation }) => {
   const hasMoreCards = currentIndex < currentData.length - 1;
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView edges={["top"]} style={styles.container}>
       {/* Header Section */}
       <View style={styles.headerSection}>
         <View style={styles.header}>
