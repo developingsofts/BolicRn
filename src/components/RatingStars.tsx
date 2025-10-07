@@ -78,11 +78,11 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: DIMENSIONS.spacing.xs,
   },
   starsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginRight: DIMENSIONS.spacing.xs,
   },
   starButton: {
     alignItems: 'center',

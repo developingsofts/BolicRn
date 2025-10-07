@@ -351,6 +351,7 @@ export const STRINGS = {
   // Group Screens
   GROUPS: {
     title: "Groups",
+    subtitle: "Join gym and training groups",
     create: "Create Group",
     join: "Join",
     leave: "Leave",

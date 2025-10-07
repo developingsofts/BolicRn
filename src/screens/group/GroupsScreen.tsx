@@ -19,6 +19,8 @@ import FontWeight from "../../hooks/useInterFonts";
 import { Group } from "../../types";
 import { r } from "../../designing/responsiveDesigns";
 import GroupDetails from "./GroupDetails";
+import STRINGS from "../../config/strings";
+import BasicTopBar from "../../components/BasicTopBar";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -104,62 +106,70 @@ const GroupsScreen: React.FC<GroupsScreenProps> = ({ navigation }) => {
 
   const handleCategorySelect = (category: string) => {
     setSelectedCategory(category);
-    closeMenu();
+    setMenuVisible(false);
   };
 
   return (
     <SafeAreaView edges={["left", "right"]} style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Groups</Text>
-        <Text style={styles.subtitle}>Join gym and training groups</Text>
-
-        {/* Category Dropdown */}
-        <View style={styles.dropdownContainer}>
-          <Menu
-            visible={menuVisible}
-            onDismiss={closeMenu}
-            anchorPosition="bottom"
-            contentStyle={styles.menuContentStyle}
-            anchor={
-              <Button
-                mode="outlined"
-                onPress={openMenu}
-                icon={() => (
-                  <Image
-                    source={ArrowDown}
-                    style={{ width: 24, height: 24, right: -15 }}
-                  />
-                )}
-                contentStyle={styles.buttonContentStyle}
-                style={styles.dropdownButton}
-                labelStyle={[
-                  styles.dropdownButtonLabel,
-                  {
-                    color: selectedCategory ? COLORS.app_black : COLORS._5E5E5E,
-                  },
-                ]}
-              >
-                {selectedCategory ? selectedCategory : "Filters Dropdown"}
-              </Button>
-            }
-          >
-            {categories.map((category, index) => (
-              <React.Fragment key={category}>
-                <Menu.Item
-                  onPress={() => handleCategorySelect(category)}
-                  title={category}
-                  style={styles.menuItemStyle}
-                  titleStyle={[
-                    styles.menuItemText,
-                    selectedCategory === category && styles.menuItemTextActive,
+      <BasicTopBar
+        containerStyle={styles.header}
+        showBackButton={true}
+        onBackPress={() => navigation.goBack()}
+        title={STRINGS.GROUPS.title}
+        subtitle={STRINGS.GROUPS.subtitle}
+        titleStyle={styles.title}
+        subtitleStyle={styles.subtitle}
+        bottomView={
+          <View style={styles.dropdownContainer}>
+            <Menu
+              visible={menuVisible}
+              onDismiss={closeMenu}
+              anchorPosition="bottom"
+              contentStyle={styles.menuContentStyle}
+              anchor={
+                <Button
+                  mode="outlined"
+                  onPress={openMenu}
+                  icon={() => (
+                    <Image
+                      source={ArrowDown}
+                      style={{ width: 24, height: 24, right: -15 }}
+                    />
+                  )}
+                  contentStyle={styles.buttonContentStyle}
+                  style={styles.dropdownButton}
+                  labelStyle={[
+                    styles.dropdownButtonLabel,
+                    {
+                      color: selectedCategory
+                        ? COLORS.app_black
+                        : COLORS._5E5E5E,
+                    },
                   ]}
-                />
-                {index < categories.length - 1 && <Divider />}
-              </React.Fragment>
-            ))}
-          </Menu>
-        </View>
-      </View>
+                >
+                  {selectedCategory ? selectedCategory : "Filters Dropdown"}
+                </Button>
+              }
+            >
+              {categories.map((category, index) => (
+                <React.Fragment key={category}>
+                  <Menu.Item
+                    onPress={() => handleCategorySelect(category)}
+                    title={category}
+                    style={styles.menuItemStyle}
+                    titleStyle={[
+                      styles.menuItemText,
+                      selectedCategory === category &&
+                        styles.menuItemTextActive,
+                    ]}
+                  />
+                  {index < categories.length - 1 && <Divider />}
+                </React.Fragment>
+              ))}
+            </Menu>
+          </View>
+        }
+      />
 
       {/* Groups */}
       <FlatList

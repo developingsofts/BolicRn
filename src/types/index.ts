@@ -307,3 +307,16 @@ export type MainTabParamList = {
   Messages: undefined;
   Profile: undefined;
 };
+
+export type FindStackParams = {
+  FindMain: undefined;
+  Profile: { userId: string; isGuest: boolean };
+
+};
+
+export type HomeStackParams = {
+  Home: undefined;
+  CreatePost: undefined;
+  ShareWorkout: undefined;
+
+};

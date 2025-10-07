@@ -10,6 +10,8 @@ import {
   StyleSheet,
   Dimensions,
 } from "react-native";
+import MaskedView from "@react-native-masked-view/masked-view";
+import { LinearGradient } from "expo-linear-gradient";
 import { useAuth } from "../contexts/AuthContext";
 import { storageService } from "../services/storage";
 import { User } from "../types";
@@ -591,7 +593,19 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
       >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.brandName}>BolicBuddy</Text>
+          <MaskedView
+            maskElement={
+              <Text style={styles.brandName}>BolicBuddy</Text>
+            }
+          >
+            <LinearGradient
+              colors={[COLORS.gradient1, COLORS.gradient2, COLORS.gradient3]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 0, y: 0 }}
+            >
+              <Text style={[styles.brandName, { opacity: 0 }]}>BolicBuddy</Text>
+            </LinearGradient>
+          </MaskedView>
           <Text style={styles.brandTagline}>
             Find your perfect training partner
           </Text>

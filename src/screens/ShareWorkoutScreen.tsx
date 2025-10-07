@@ -17,6 +17,7 @@ import STRINGS from "../config/strings";
 import { Achievement, ImageFile, LeftArrow, Media, Close } from "../../assets";
 import FontWeight from "../hooks/useInterFonts";
 import { Divider } from "react-native-paper";
+import BasicTopBar from "../components/BasicTopBar";
 
 type Workout = {
   id: string;
@@ -63,7 +64,8 @@ const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
   const [selectedWorkout, setSelectedWorkout] = useState<Workout | null>(null);
   const [postText, setPostText] = useState("");
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
-  const [selectedAchievement, setSelectedAchievement] = useState<Achievement | null>(null);
+  const [selectedAchievement, setSelectedAchievement] =
+    useState<Achievement | null>(null);
   const [showAchievementModal, setShowAchievementModal] = useState(false);
 
   // Mock achievements data
@@ -90,7 +92,8 @@ const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
 
   const handleSelectPhoto = () => {
     // Mock image selection - in real app, use ImagePicker
-    const mockImage = "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400";
+    const mockImage =
+      "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400";
     setSelectedImages([mockImage]);
   };
 
@@ -118,13 +121,15 @@ const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
       return;
     }
 
-    Alert.alert(STRINGS.COMMON.success, STRINGS.CREATE_POST.success.postCreated, [
-      { text: STRINGS.COMMON.ok, onPress: () => navigation.goBack() },
-    ]);
+    Alert.alert(
+      STRINGS.COMMON.success,
+      STRINGS.CREATE_POST.success.postCreated,
+      [{ text: STRINGS.COMMON.ok, onPress: () => navigation.goBack() }]
+    );
   };
 
   return (
-    <SafeAreaView edges={["top"]} style={styles.container}>
+    <SafeAreaView edges={[]} style={styles.container}>
       {/* Top Bar */}
       <View
         style={{
@@ -132,37 +137,14 @@ const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
           backgroundColor: COLORS.background,
         }}
       >
-        <View style={styles.topBar}>
-          <View
-            style={{
-              flexDirection: "row",
-              justifyContent: "flex-start",
-              alignItems: "flex-start",
-              width: "100%",
-              gap: 12,
-            }}
-          >
-            <TouchableOpacity
-              onPress={() => navigation.goBack()}
-              style={styles.backBtn}
-            >
-              <Image source={LeftArrow} style={{ width: 35, height: 35, alignSelf:"flex-start" }} />
-            </TouchableOpacity>
-            <View>
-              <Text style={styles.heading}>{STRINGS.SHARE_WORKOUT.title}</Text>
-              <Text
-                style={{
-                  fontSize: 14,
-                  color: COLORS.white,
-                  marginTop: 8,
-                  fontFamily: FontWeight.Medium,
-                }}
-              >
-                {STRINGS.SHARE_WORKOUT.subtitle}
-              </Text>
-            </View>
-          </View>
-        </View>
+        <BasicTopBar
+          containerStyle={styles.topBar}
+          showBackButton={true}
+          onBackPress={() => navigation.goBack()}
+          title={STRINGS.SHARE_WORKOUT.title}
+          subtitle={STRINGS.SHARE_WORKOUT.subtitle}
+          titleStyle={styles.heading}
+        />
 
         <ScrollView contentContainerStyle={styles.scrollContent}>
           {mockWorkouts.map((workout) => (
@@ -206,121 +188,127 @@ const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
 
           {/* Post Area */}
           <View style={styles.content}>
-          <ScrollView
-            style={styles.scrollView}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ borderRadius: 10 }}
-          >
-            {/* Text Input */}
-            <View style={styles.textInputContainer}>
-              <TextInput
-                style={styles.textInput}
-                placeholder={STRINGS.CREATE_POST.captionPlaceholder}
-                placeholderTextColor={COLORS._5E5E5E}
-                value={postText}
-                onChangeText={setPostText}
-                multiline
-                textAlignVertical="top"
-              />
-            </View>
-
-            {/* Action Buttons */}
-            <View style={styles.actionButtons}>
-              <TouchableOpacity
-                style={styles.actionButton}
-                onPress={handleSelectPhoto}
-              >
-                <Image source={Media} style={styles.actionButtonImage} />
-                <Text style={[styles.actionButtonText, { marginLeft: 5 }]}>
-                  {STRINGS.CREATE_POST.photoVideo}
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.actionButton}
-                onPress={handleSelectAchievement}
-              >
-                <Image source={Achievement} style={styles.actionButtonImage} />
-                <Text style={[styles.actionButtonText, { marginLeft: 2 }]}>
-                  {STRINGS.CREATE_POST.achievement}
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Selected Achievement */}
-            {selectedAchievement && (
-              <View style={styles.achievementContainer}>
-                <View style={styles.achievementHeader}>
-                  <Text style={styles.achievementTitle}>
-                    {STRINGS.CREATE_POST.achievementUnlocked}
-                  </Text>
-                  <TouchableOpacity onPress={removeAchievement}>
-                    <Image
-                      source={Close}
-                      style={styles.closeIcon}
-                      resizeMode="contain"
-                    />
-                  </TouchableOpacity>
-                </View>
-                <View style={styles.achievementCard}>
-                  <View style={[styles.achievementIcon]}>
-                    <Text style={styles.achievementEmoji}>
-                      {selectedAchievement.icon}
-                    </Text>
-                  </View>
-                  <View style={styles.achievementDetails}>
-                    <Text style={styles.achievementName}>
-                      {selectedAchievement.title}
-                    </Text>
-                    <Text style={styles.achievementDescription}>
-                      {selectedAchievement.description}
-                    </Text>
-                  </View>
-                </View>
+            <ScrollView
+              style={styles.scrollView}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ borderRadius: 10 }}
+            >
+              {/* Text Input */}
+              <View style={styles.textInputContainer}>
+                <TextInput
+                  style={styles.textInput}
+                  placeholder={STRINGS.CREATE_POST.captionPlaceholder}
+                  placeholderTextColor={COLORS._5E5E5E}
+                  value={postText}
+                  onChangeText={setPostText}
+                  multiline
+                  textAlignVertical="top"
+                />
               </View>
-            )}
 
-            <Divider style={{ height: 1.5, backgroundColor: COLORS._C9C9C9 }} />
-
-            {/* Selected Images */}
-            {selectedImages.length > 0 && (
-              <View style={styles.imagesContainer}>
-                <View
-                  style={{
-                    flexDirection: "row",
-                    justifyContent: "space-between",
-                  }}
+              {/* Action Buttons */}
+              <View style={styles.actionButtons}>
+                <TouchableOpacity
+                  style={styles.actionButton}
+                  onPress={handleSelectPhoto}
                 >
-                  <Text style={styles.imagesTitle}>{STRINGS.CREATE_POST.uploadedImage}</Text>
-                  <Pressable onPress={() => removeImage(0)}>
-                    <Text
-                      style={[styles.imagesTitle, { color: COLORS._FF1616 }]}
-                    >
-                      {STRINGS.COMMON.remove}
-                    </Text>
-                  </Pressable>
-                </View>
+                  <Image source={Media} style={styles.actionButtonImage} />
+                  <Text style={[styles.actionButtonText, { marginLeft: 5 }]}>
+                    {STRINGS.CREATE_POST.photoVideo}
+                  </Text>
+                </TouchableOpacity>
 
-                <View style={styles.imageWrapper}>
+                <TouchableOpacity
+                  style={styles.actionButton}
+                  onPress={handleSelectAchievement}
+                >
                   <Image
-                    source={{ uri: selectedImages[0] }}
-                    resizeMode="cover"
-                    style={styles.selectedImage}
+                    source={Achievement}
+                    style={styles.actionButtonImage}
                   />
-                </View>
+                  <Text style={[styles.actionButtonText, { marginLeft: 2 }]}>
+                    {STRINGS.CREATE_POST.achievement}
+                  </Text>
+                </TouchableOpacity>
               </View>
-            )}
-          </ScrollView>
 
-          {/* Achievement Selection Modal */}
-        
+              {/* Selected Achievement */}
+              {selectedAchievement && (
+                <View style={styles.achievementContainer}>
+                  <View style={styles.achievementHeader}>
+                    <Text style={styles.achievementTitle}>
+                      {STRINGS.CREATE_POST.achievementUnlocked}
+                    </Text>
+                    <TouchableOpacity onPress={removeAchievement}>
+                      <Image
+                        source={Close}
+                        style={styles.closeIcon}
+                        resizeMode="contain"
+                      />
+                    </TouchableOpacity>
+                  </View>
+                  <View style={styles.achievementCard}>
+                    <View style={[styles.achievementIcon]}>
+                      <Text style={styles.achievementEmoji}>
+                        {selectedAchievement.icon}
+                      </Text>
+                    </View>
+                    <View style={styles.achievementDetails}>
+                      <Text style={styles.achievementName}>
+                        {selectedAchievement.title}
+                      </Text>
+                      <Text style={styles.achievementDescription}>
+                        {selectedAchievement.description}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              )}
 
-          <TouchableOpacity style={styles.postButton} onPress={handlePost}>
-            <Text style={styles.postButtonText}>{STRINGS.CREATE_POST.post}</Text>
-          </TouchableOpacity>
-        </View>
+              <Divider
+                style={{ height: 1.5, backgroundColor: COLORS._C9C9C9 }}
+              />
 
-        
+              {/* Selected Images */}
+              {selectedImages.length > 0 && (
+                <View style={styles.imagesContainer}>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <Text style={styles.imagesTitle}>
+                      {STRINGS.CREATE_POST.uploadedImage}
+                    </Text>
+                    <Pressable onPress={() => removeImage(0)}>
+                      <Text
+                        style={[styles.imagesTitle, { color: COLORS._FF1616 }]}
+                      >
+                        {STRINGS.COMMON.remove}
+                      </Text>
+                    </Pressable>
+                  </View>
+
+                  <View style={styles.imageWrapper}>
+                    <Image
+                      source={{ uri: selectedImages[0] }}
+                      resizeMode="cover"
+                      style={styles.selectedImage}
+                    />
+                  </View>
+                </View>
+              )}
+            </ScrollView>
+
+            {/* Achievement Selection Modal */}
+
+            <TouchableOpacity style={styles.postButton} onPress={handlePost}>
+              <Text style={styles.postButtonText}>
+                {STRINGS.CREATE_POST.post}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </ScrollView>
 
         {/* Achievement Selection Modal */}
@@ -332,16 +320,18 @@ const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
           animationType="slide"
           onRequestClose={() => setShowAchievementModal(false)}
         >
-          <Pressable 
+          <Pressable
             style={styles.modalOverlay}
             onPress={() => setShowAchievementModal(false)}
           >
-            <Pressable 
+            <Pressable
               style={styles.modalContent}
               onPress={(e) => e.stopPropagation()}
             >
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>{STRINGS.CREATE_POST.selectAchievement}</Text>
+                <Text style={styles.modalTitle}>
+                  {STRINGS.CREATE_POST.selectAchievement}
+                </Text>
                 <TouchableOpacity
                   onPress={() => setShowAchievementModal(false)}
                 >
@@ -397,7 +387,7 @@ const styles = StyleSheet.create({
     flexDirection: "column",
     alignItems: "flex-start",
     paddingHorizontal: 10,
-    paddingTop: DIMENSIONS.spacing.md,
+    paddingTop: DIMENSIONS.spacing.xxl,
     paddingBottom: DIMENSIONS.spacing.md,
     backgroundColor: COLORS.gradient3,
   },

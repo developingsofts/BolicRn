@@ -1,11 +1,11 @@
 import React from "react";
-import {  Text,View } from "react-native";
+import {  Share, Text,View } from "react-native";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { useAuth } from "../contexts/AuthContext";
-import { RootStackParamList, MainTabParamList } from "../types";
+import { RootStackParamList, MainTabParamList, FindStackParams, HomeStackParams } from "../types";
 
 // Import screens
 import AuthScreen from "../screens/AuthScreen";
@@ -29,11 +29,48 @@ import ManageGroup from "../screens/group/ManageGroup";
 // Create navigators
 const Stack = createStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
+const FindStack = createStackNavigator<FindStackParams>();
+const HomeStack = createStackNavigator<HomeStackParams>();
+
+
+// Find Stack Navigator
+const FindStackNavigator: React.FC = () => {
+  return (
+    <FindStack.Navigator
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
+      <FindStack.Screen name="FindMain" component={FindScreen} />
+      <FindStack.Screen name="Profile" component={ProfileScreen} />
+
+      {/* Add more Find-related screens here */}
+      {/* Example: <FindStack.Screen name="WorkoutDetails" component={WorkoutDetailsScreen} /> */}
+    </FindStack.Navigator>
+  );
+};
+
+const HomeStackNavigator: React.FC = () => {
+  return (
+    <HomeStack.Navigator
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
+      <HomeStack.Screen name="Home" component={HomeScreen} />
+      <HomeStack.Screen name="CreatePost" component={CreatePostScreen} />
+      <HomeStack.Screen name="ShareWorkout" component={ShareWorkoutScreen} />
+
+      {/* Add more Find-related screens here */}
+      {/* Example: <FindStack.Screen name="WorkoutDetails" component={WorkoutDetailsScreen} /> */}
+    </HomeStack.Navigator>
+  );
+};
 
 // Main Tab Navigator
 const MainTabNavigator: React.FC = () => {
   return (
-    <SafeAreaView  style={{ flex: 1 }} edges={["bottom"]}>
+    <SafeAreaView  style={{ flex: 1 }} edges={[]}>
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
@@ -41,8 +78,8 @@ const MainTabNavigator: React.FC = () => {
           backgroundColor: "#FFFFFF",
           borderTopWidth: 1,
           borderTopColor: "#E5E5E5",
-          paddingTop: 5,
-          height: 95,
+          paddingBottom:40,
+          height: 100,
         },
         tabBarActiveTintColor: "#007AFF",
         tabBarInactiveTintColor: "#8E8E93",
@@ -54,7 +91,7 @@ const MainTabNavigator: React.FC = () => {
     >
       <Tab.Screen
         name="Home"
-        component={HomeScreen}
+        component={HomeStackNavigator}
         options={{
           tabBarIcon: ({ color, size }) => (
             <Text style={{ color, fontSize: size }}>🏠</Text>
@@ -63,7 +100,7 @@ const MainTabNavigator: React.FC = () => {
       />
       <Tab.Screen
         name="Find"
-        component={FindScreen}
+        component={FindStackNavigator}
         options={{
           tabBarIcon: ({ color, size }) => (
             <Text style={{ color, fontSize: size }}>⚡</Text>

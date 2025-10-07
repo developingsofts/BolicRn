@@ -10,6 +10,7 @@ import { COLORS, DIMENSIONS } from "../config/constants";
 import STRINGS from "../config/strings";
 import { SafeAreaView } from "react-native-safe-area-context";
 import FontWeight from "../hooks/useInterFonts";
+import BasicTopBar from "../components/BasicTopBar";
 
 interface MessagesScreenProps {
   navigation: any;
@@ -48,11 +49,17 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ navigation }) => {
   ];
 
   return (
-    <SafeAreaView edges={["top"]} style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>{STRINGS.MESSAGES.title}</Text>
-        <Text style={styles.subtitle}>{STRINGS.MESSAGES.subtitle}</Text>
-      </View>
+    <SafeAreaView edges={[]} style={styles.container}>
+
+       <BasicTopBar
+          showBackButton={false}
+          containerStyle={styles.header}
+          title={STRINGS.MESSAGES.title}
+          subtitle={STRINGS.MESSAGES.subtitle}
+          titleStyle={styles.title}
+          subtitleStyle={styles.subtitle}
+        />
+
 
       <ScrollView style={styles.conversationsContainer}>
         {mockConversations.map((conversation) => (
@@ -98,14 +105,13 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: DIMENSIONS.spacing.lg,
-    paddingTop: DIMENSIONS.spacing.lg,
     paddingBottom: DIMENSIONS.spacing.md,
+    paddingTop: DIMENSIONS.spacing.xxl,
   },
   title: {
     fontSize: 24,
     fontFamily: FontWeight.SemiBold,
     color: COLORS.white,
-    marginBottom: DIMENSIONS.spacing.sm,
   },
   subtitle: {
     fontSize: 16,

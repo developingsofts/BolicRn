@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   ScrollView,
   Image,
 } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import { useAuth } from "../contexts/AuthContext";
 import { COLORS, DIMENSIONS } from "../config/constants";
 import STRINGS from "../config/strings";
@@ -14,16 +15,20 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import {
   Awards,
+  CircleComment,
   CircleEdit,
   Comment,
+  DeleteUser,
   Exit,
   Fire,
+  Following,
   Like,
   Settings,
   Thunder,
   Users,
 } from "../../assets";
 import FontWeight from "../hooks/useInterFonts";
+import { LinearGradient } from "expo-linear-gradient";
 
 interface ProfileScreenProps {
   navigation: any;
@@ -229,7 +234,9 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
           </Text>
         </View>
         <TouchableOpacity style={styles.postItButton}>
-          <Text style={styles.postItButtonText}>{STRINGS.PROFILE.buttons.postIt}</Text>
+          <Text style={styles.postItButtonText}>
+            {STRINGS.PROFILE.buttons.postIt}
+          </Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -248,7 +255,9 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
         style={styles.postItButton}
         onPress={() => handleMessageUser(connection.id)}
       >
-        <Text style={styles.postItButtonText}>{STRINGS.PROFILE.buttons.message}</Text>
+        <Text style={styles.postItButtonText}>
+          {STRINGS.PROFILE.buttons.message}
+        </Text>
       </TouchableOpacity>
     </View>
   );
@@ -258,37 +267,52 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
       <View style={styles.followingRow}>
         <View style={styles.followingMainBtn}>
           <View style={styles.followingMainBtnContent}>
-            <Image source={Fire} style={styles.smallIconSize} />
-            <Text style={styles.followingText}>{STRINGS.PROFILE.following}</Text>
+            <Image source={Following} style={styles.smallIconSize} />
+            <Text style={styles.followingText}>
+              {STRINGS.PROFILE.following}
+            </Text>
           </View>
         </View>
         <View style={styles.followingIconBtn}>
-          <Image source={Fire} style={styles.smallIconSize} />
+          <Image source={DeleteUser} style={styles.smallIconSize} />
         </View>
       </View>
     );
   };
   const renderProfileAvatar = () => {
     const initial = user?.displayName?.charAt(0) || (isGuest ? "G" : "D");
-    const displayName =
-      user?.displayName || (isGuest ? STRINGS.PROFILE.guestUser : STRINGS.PROFILE.developmentUser);
+    const displayName = isGuest ? STRINGS.PROFILE.guestUser : user?.displayName;
+    isGuest ? STRINGS.PROFILE.guestUser : STRINGS.PROFILE.developmentUser;
     const location = user?.location || STRINGS.PROFILE.defaultLocation;
 
     return (
-      <View style={styles.profileHeader}>
-        {!isGuest && isOwnProfile && (
-          <View style={styles.headerActions}>
-            <TouchableOpacity
-              onPress={() => navigation.goBack()}
-              style={styles.headerIconBtn}
-            >
-              <Ionicons
-                name="chevron-down"
-                size={24}
-                color={COLORS.white}
-                style={{ transform: [{ rotate: "90deg" }] }}
+      <LinearGradient
+        colors={[COLORS.gradient1, COLORS.gradient2, COLORS.gradient3]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={styles.profileHeader}
+      >
+        <View style={styles.headerActions}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.headerIconBtn}
+          >
+            <Ionicons
+              name="chevron-down"
+              size={24}
+              color={COLORS.white}
+              style={{ transform: [{ rotate: "90deg" }] }}
+            />
+          </TouchableOpacity>
+          {isGuest ? (
+            <TouchableOpacity onPress={() => {}} style={styles.commentIcon}>
+              <Image
+                source={CircleComment}
+                resizeMode="contain"
+                style={styles.iconSize}
               />
             </TouchableOpacity>
+          ) : (
             <View style={styles.headerIconsContainer}>
               <TouchableOpacity
                 style={styles.headerIconBtn}
@@ -301,7 +325,6 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
                 />
               </TouchableOpacity>
               <TouchableOpacity
-            
                 onPress={() => navigation.navigate("Settings")}
                 style={styles.headerIconBtn}
               >
@@ -312,8 +335,8 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
                 />
               </TouchableOpacity>
             </View>
-          </View>
-        )}
+          )}
+        </View>
 
         <View style={styles.avatarContainer}>
           <View style={[styles.avatar, isGuest && styles.guestAvatar]}>
@@ -323,12 +346,9 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
           <Text style={styles.locationText}>{location}</Text>
         </View>
 
-        <Text style={styles.bioText}>
-          {STRINGS.PROFILE.bio}
-        </Text>
-        {isGuest &&  renderFollowingView()}
-        {renderStatsRow()}
-      </View>
+        <Text style={styles.bioText}>{STRINGS.PROFILE.bio}</Text>
+        {isGuest && renderFollowingView()}
+      </LinearGradient>
     );
   };
 
@@ -337,65 +357,79 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
       <View style={styles.statItem}>
         <Image source={Thunder} style={styles.smallIconSize} />
         <Text style={styles.statNumber}>157</Text>
-        <Text style={styles.statLabel}>{STRINGS.PROFILE.statsLabels.workouts}</Text>
+        <Text style={styles.statLabel}>
+          {STRINGS.PROFILE.statsLabels.workouts}
+        </Text>
       </View>
       <View style={styles.statDivider} />
       <View style={styles.statItem}>
         <Image source={Fire} style={styles.smallIconSize} />
         <Text style={styles.statNumber}>157</Text>
-        <Text style={styles.statLabel}>{STRINGS.PROFILE.statsLabels.streak}</Text>
+        <Text style={styles.statLabel}>
+          {STRINGS.PROFILE.statsLabels.streak}
+        </Text>
       </View>
       <View style={styles.statDivider} />
       <View style={styles.statItem}>
         <Image source={Users} style={[styles.smallIconSize, { top: 2 }]} />
         <Text style={styles.statNumber}>12</Text>
-        <Text style={styles.statLabel}>{STRINGS.PROFILE.statsLabels.partners}</Text>
+        <Text style={styles.statLabel}>
+          {STRINGS.PROFILE.statsLabels.partners}
+        </Text>
       </View>
       <View style={styles.statDivider} />
       <View style={styles.statItem}>
         <Image source={Awards} style={[styles.smallIconSize, { top: 2 }]} />
         <Text style={styles.statNumber}>8</Text>
-        <Text style={styles.statLabel}>{STRINGS.PROFILE.statsLabels.awards}</Text>
+        <Text style={styles.statLabel}>
+          {STRINGS.PROFILE.statsLabels.awards}
+        </Text>
       </View>
     </View>
   );
 
   const renderActionButtons = () => {
-    if (isGuest) {
-      return (
-        <View style={styles.actionButtons}>
-          <TouchableOpacity
-            style={[styles.actionButton, styles.followButton]}
-            onPress={handleFollowToggle}
-          >
-            <Text style={styles.followButtonText}>
-              {isFollowing ? STRINGS.PROFILE.buttons.following : STRINGS.PROFILE.buttons.following}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      );
-    }
+    // if (isGuest) {
+    //   return (
+    //     <View style={styles.actionButtons}>
+    //       <TouchableOpacity
+    //         style={[styles.actionButton, styles.followButton]}
+    //         onPress={handleFollowToggle}
+    //       >
+    //         <Text style={styles.followButtonText}>
+    //           {isFollowing
+    //             ? STRINGS.PROFILE.buttons.following
+    //             : STRINGS.PROFILE.buttons.following}
+    //         </Text>
+    //       </TouchableOpacity>
+    //     </View>
+    //   );
+    // }
 
-    if (!isOwnProfile) {
-      return (
-        <View style={styles.actionButtons}>
-          <TouchableOpacity
-            style={[styles.actionButton, styles.followButton]}
-            onPress={handleFollowToggle}
-          >
-            <Text style={styles.followButtonText}>
-              {isFollowing ? STRINGS.PROFILE.following : STRINGS.PROFILE.buttons.follow}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.actionButton, styles.messageButton]}
-            onPress={() => handleMessageUser(route?.params?.userId || "")}
-          >
-            <Text style={styles.messageButtonText}>{STRINGS.PROFILE.buttons.message}</Text>
-          </TouchableOpacity>
-        </View>
-      );
-    }
+    // if (!isOwnProfile) {
+    //   return (
+    //     <View style={styles.actionButtons}>
+    //       <TouchableOpacity
+    //         style={[styles.actionButton, styles.followButton]}
+    //         onPress={handleFollowToggle}
+    //       >
+    //         <Text style={styles.followButtonText}>
+    //           {isFollowing
+    //             ? STRINGS.PROFILE.following
+    //             : STRINGS.PROFILE.buttons.follow}
+    //         </Text>
+    //       </TouchableOpacity>
+    //       <TouchableOpacity
+    //         style={[styles.actionButton, styles.messageButton]}
+    //         onPress={() => handleMessageUser(route?.params?.userId || "")}
+    //       >
+    //         <Text style={styles.messageButtonText}>
+    //           {STRINGS.PROFILE.buttons.message}
+    //         </Text>
+    //       </TouchableOpacity>
+    //     </View>
+    //   );
+    // }
 
     return null;
   };
@@ -513,28 +547,30 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
       <View style={styles.achievementsGrid}>
         {achievements.map((achievement, idx) => (
           <View key={achievement.id} style={styles.achievementCardGrid}>
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                width: "100%",
-              }}
-            >
-              <View style={styles.achievementIcon}>
-                <Image source={Awards} style={styles.achievementIconText} />
-              </View>
-              {achievement.completed && (
+            <View style={{ width: "100%" }}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  width: "100%",
+                }}
+              >
                 <View style={styles.achievementIcon}>
                   <Image source={Awards} style={styles.achievementIconText} />
                 </View>
+                {achievement.completed && (
+                  <View style={styles.achievementIcon}>
+                    <Image source={Awards} style={styles.achievementIconText} />
+                  </View>
+                )}
+              </View>
+              <Text style={styles.achievementTitle}>{achievement.title}</Text>
+              {achievement.description && (
+                <Text style={styles.achievementDescription}>
+                  {achievement.description}
+                </Text>
               )}
             </View>
-            <Text style={styles.achievementTitle}>{achievement.title}</Text>
-            {achievement.description && (
-              <Text style={styles.achievementDescription}>
-                {achievement.description}
-              </Text>
-            )}
             <View style={styles.achievementProgress}>
               <View style={styles.achievementProgressBar}>
                 <View
@@ -575,7 +611,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
 
   return (
     <SafeAreaView
-      edges={[ "top", "left", "right"]}
+      edges={["left", "right"]}
       style={[styles.container, isGuest && styles.guestContainer]}
     >
       {/* <View style={styles.profileHeader} /> */}
@@ -585,20 +621,25 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-              {renderProfileAvatar()}
+        <View>
+          {renderProfileAvatar()}
+          {renderStatsRow()}
+        </View>
         {renderActionButtons()}
         {renderTabBar()}
         {renderTabContent()}
       </ScrollView>
-     
+
       {isOwnProfile && !isGuest && (
         <View style={styles.logoutSection}>
           <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
             <Image source={Exit} style={styles.smallIconSize} />
-            <Text style={styles.logoutButtonText}>{STRINGS.PROFILE.logout}</Text>
+            <Text style={styles.logoutButtonText}>
+              {STRINGS.PROFILE.logout}
+            </Text>
           </TouchableOpacity>
         </View>
-      )} 
+      )}
     </SafeAreaView>
   );
 };
@@ -631,7 +672,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.gradient1,
     fontFamily: FontWeight.Medium,
-    fontWeight: "500",
   },
   followingIconBtn: {
     backgroundColor: "white",
@@ -663,6 +703,7 @@ const styles = StyleSheet.create({
   smallIconSize: {
     width: 20,
     height: 20,
+    marginRight: 5,
   },
 
   postIconSize: {
@@ -673,10 +714,11 @@ const styles = StyleSheet.create({
   profileHeader: {
     backgroundColor: COLORS.gradient3,
     // height: r(260),
-    paddingBottom: 60,
+    paddingBottom: 40,
+    paddingTop: DIMENSIONS.spacing.xl,
     alignItems: "center",
     position: "relative",
-   zIndex: 1
+    zIndex: 1,
   },
   backButton: {
     position: "absolute",
@@ -706,13 +748,13 @@ const styles = StyleSheet.create({
   headerIconBtn: {
     // padding: 6,
   },
+  commentIcon: { marginRight: 10 },
   headerIconText: {
     fontSize: 20,
     color: "white",
   },
   avatarContainer: {
     alignItems: "center",
-
   },
   avatar: {
     width: 80,
@@ -726,7 +768,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   guestAvatar: {
-    backgroundColor: "#6c757d",
+    // backgroundColor: "#6c757d",
   },
   avatarText: {
     fontSize: 48,
@@ -748,6 +790,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.white,
     textAlign: "center",
+    marginBottom:20,
     fontFamily: FontWeight.Regular,
     marginHorizontal: 20,
   },
@@ -759,17 +802,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     borderRadius: 10,
     width: "90%",
-    bottom: 0,
     position: "absolute",
     alignSelf: "center",
-    // Vertically center half out of the header dynamically
-    // bottom: -40, // removed, now handled by transform
-    transform: [{ translateY: "50%" }],
+    bottom: -40,
     elevation: 3,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
+    zIndex: 10,
   },
   statItem: {
     alignItems: "center",
@@ -818,7 +859,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   messageButton: {
-    backgroundColor: "#f0f0f0",
+    backgroundColor: "red",
     borderWidth: 1,
     borderColor: "#ddd",
   },
@@ -832,7 +873,7 @@ const styles = StyleSheet.create({
   tabBar: {
     flexDirection: "row",
     marginHorizontal: 20,
-    marginTop: 40,
+    marginTop: 50,
     overflow: "hidden",
   },
   tab: {
@@ -1061,8 +1102,10 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     padding: 10,
     width: "48%",
+    height: 140,
     marginBottom: 15,
     alignItems: "flex-start",
+    justifyContent: "space-between",
     elevation: 2,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
@@ -1094,7 +1137,7 @@ const styles = StyleSheet.create({
   },
   achievementProgress: {
     width: "100%",
-    marginTop: 10,
+    marginTop: "auto",
   },
   achievementProgressBar: {
     height: 3,

@@ -22,6 +22,11 @@ export const Users = require('../assets/users.png');
 export const Awards = require('../assets/awards.png');
 export const Deactivate = require('../assets/deactivate.png');
 export const LeftArrow = require('../assets/left_arrow.png');
+export const CircleComment = require('../assets/circled_comment.png');
+export const DeleteUser = require('../assets/delete_user.png');
+export const Following = require('../assets/following.png');
+
+
 
 
 

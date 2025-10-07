@@ -30,6 +30,7 @@ import {
 } from "../../../assets";
 import { Group } from "../../types";
 import ManageGroup from "./ManageGroup";
+import BasicTopBar from "../../components/BasicTopBar";
 
 interface GroupDetailsProps {
   // Make navigation optional for modal usage
@@ -164,45 +165,52 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
   return (
     <SafeAreaView edges={["left", "right"]} style={styles.container}>
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Hero Section */}
-        <View style={styles.heroSection}>
-          <View style={styles.heroHeader}>
-            <Text style={styles.heroTitle}>{group.name}</Text>
+        <BasicTopBar
+          showBackButton={false}
+          containerStyle={styles.heroSection}
+          title={group.name}
+          titleStyle={styles.heroTitle}
+          endView={
             <TouchableOpacity style={styles.dropdownButton} onPress={onClose}>
               <Ionicons name="chevron-down" size={24} color={COLORS.white} />
             </TouchableOpacity>
-          </View>
+          }
+          bottomView={
+            <View style={styles.heroContent}>
+              <View style={styles.heroTags}>
+                <View style={styles.locationTag}>
+                  <Image source={Location} style={{ width: 20, height: 20 }} />
+                  <Text style={styles.tagText}>{group.location}</Text>
+                </View>
+                <View style={styles.categoryTag}>
+                  <Image source={Gym} style={{ width: 20, height: 20 }} />
+                  <Text style={styles.tagText}>
+                    {group.trainingTypes.join(", ")}
+                  </Text>
+                </View>
+              </View>
 
-          <View style={styles.heroContent}>
-            <View style={styles.heroTags}>
-              <View style={styles.locationTag}>
-                <Image source={Location} style={{ width: 20, height: 20 }} />
-                <Text style={styles.tagText}>{group.location}</Text>
-              </View>
-              <View style={styles.categoryTag}>
-                <Image source={Gym} style={{ width: 20, height: 20 }} />
-                <Text style={styles.tagText}>
-                  {group.trainingTypes.join(", ")}
-                </Text>
-              </View>
+              <Text style={styles.heroDescription}>{group.description}</Text>
+
+              <Text style={styles.heroSubtitle}>
+                Lorem ipsum dolor sit amet consectetur. Hac at adipiscing odio
+                pretium a posuere pharetra vitae nisi.
+              </Text>
             </View>
-
-            <Text style={styles.heroDescription}>{group.description}</Text>
-
-            <Text style={styles.heroSubtitle}>
-              Lorem ipsum dolor sit amet consectetur. Hac at adipiscing odio
-              pretium a posuere pharetra vitae nisi.
-            </Text>
-
-            <Pressable
-              style={styles.manageButton}
-              onPress={() => navigation?.navigate("ManageGroup", { group })}
-            >
-              <Image source={Edit} style={{ width: 16, height: 16 }} />
-              <Text style={styles.manageButtonText}>Manage Group</Text>
-            </Pressable>
-          </View>
-        </View>
+          }
+        />
+        
+        {/* Manage Group Button - Overlapping */}
+        <Pressable
+          style={styles.manageButton}
+          onPress={() => {
+            onClose?.();
+            navigation?.navigate("ManageGroup", { group });
+          }}
+        >
+          <Image source={Edit} style={{ width: 16, height: 16 }} />
+          <Text style={styles.manageButtonText}>Manage Group</Text>
+        </Pressable>
 
         {/* Members Section */}
         <View style={styles.membersCard}>
@@ -283,8 +291,8 @@ const baseStyles = StyleSheet.create({
   heroSection: {
     backgroundColor: COLORS.gradient3,
     paddingTop: DIMENSIONS.spacing.xxl,
-
     paddingHorizontal: r(16),
+    paddingBottom: r(16),
   },
   heroHeader: {
     flexDirection: "row",
@@ -337,6 +345,7 @@ const baseStyles = StyleSheet.create({
     fontSize: 14,
     fontFamily: FontWeight.Regular,
     color: COLORS.white,
+    marginBottom: r(25),
   },
   heroDescription: {
     fontSize: 14,
@@ -348,9 +357,8 @@ const baseStyles = StyleSheet.create({
   manageButton: {
     flexDirection: "row",
     alignItems: "center",
-    bottom: "-13%",
-    width: "100%",
-    alignContent: "center",
+    width: "90%",
+    alignSelf: "center",
     justifyContent: "center",
     borderWidth: 1,
     borderColor: COLORS.primary,
@@ -358,10 +366,14 @@ const baseStyles = StyleSheet.create({
     paddingHorizontal: r(20),
     paddingVertical: r(12),
     borderRadius: r(8),
+    marginTop: -25,
+    marginBottom: 20,
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    zIndex: 10,
   },
   manageButtonText: {
     color: COLORS.gradient1,
@@ -375,7 +387,7 @@ const baseStyles = StyleSheet.create({
     marginHorizontal: 18,
     paddingHorizontal: r(16),
     borderRadius: r(12),
-    marginTop: 40,
+    marginTop: 0,
     marginBottom: 16,
     padding: r(16),
     shadowColor: "#000",
@@ -565,7 +577,7 @@ const baseStyles = StyleSheet.create({
   },
   fab: {
     position: "absolute",
-    bottom: r(24),
+    bottom: r(45),
     right: r(24),
     width: 50,
     height: 50,

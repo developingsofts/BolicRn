@@ -14,6 +14,8 @@ import STRINGS from "../config/strings";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SafeAreaView } from "react-native-safe-area-context";
 import FontWeight from "../hooks/useInterFonts";
+import { HomeScreenTopBar } from "../components/BasicTopBarExamples";
+import BasicTopBar from "../components/BasicTopBar";
 
 interface HomeScreenProps {
   navigation: any;
@@ -244,30 +246,30 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView edges={["top", "left", "right"]} style={styles.container}>
+    <SafeAreaView edges={["left", "right"]} style={styles.container}>
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.greeting}>
-              Good morning, {user?.displayName || "Fitness Buddy"}! 👋
-            </Text>
-            <Text style={styles.subtitle}>
-              Ready to crush your goals today?
-            </Text>
-          </View>
-          <TouchableOpacity
-            style={styles.profileButton}
-            onPress={() => navigation.navigate("Profile")}
-          >
-            <Text style={styles.profileButtonText}>
-              {user?.displayName?.charAt(0) || "U"}
-            </Text>
-          </TouchableOpacity>
-        </View>
+        <BasicTopBar
+          showBackButton={false}
+          containerStyle={styles.header}
+          title={`Good morning, ${user?.displayName}! 👋`}
+          subtitle="Ready to crush your goals today?"
+          titleStyle={styles.greeting}
+          subtitleStyle={styles.subtitle}
+          endView={
+            <TouchableOpacity
+              style={styles.profileButton}
+              onPress={() => navigation.navigate("Profile")}
+            >
+              <Text style={styles.profileButtonText}>
+                {user?.displayName?.charAt(0) || "U"}
+              </Text>
+            </TouchableOpacity>
+          }
+        />
 
         <View style={styles.mainContent}>
           {/* Weekly Goal Section */}
@@ -735,11 +737,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: COLORS.gradient3,
     paddingHorizontal: DIMENSIONS.spacing.lg,
-    paddingVertical: DIMENSIONS.spacing.lg,
+    paddingVertical: DIMENSIONS.spacing.xxl,
+    paddingBottom: DIMENSIONS.spacing.md,
   },
   greeting: {
     fontSize: 16,
-    fontFamily:FontWeight.Medium,
+    fontFamily: FontWeight.Medium,
     color: COLORS.white,
     marginBottom: 5,
   },
@@ -769,9 +772,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: DIMENSIONS.spacing.lg,
     marginBottom: DIMENSIONS.spacing.lg,
   },
-  mainContent:{
+  mainContent: {
     backgroundColor: COLORS.background,
-    paddingTop:20,
+    paddingTop: 20,
   },
   sectionTitle: {
     fontSize: 20,

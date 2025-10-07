@@ -17,7 +17,7 @@ export default function App() {
       StatusBar.setTranslucent(true);
       StatusBar.setBarStyle("light-content");
       StatusBar.setBackgroundColor("transparent");
-      // changeNavigationBarColor("transparent", false);
+    
     }
   }, []);
 

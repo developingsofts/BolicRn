@@ -18,6 +18,7 @@ import { r } from "../../designing/responsiveDesigns";
 import FontWeight from "../../hooks/useInterFonts";
 import { Group } from "../../types";
 import { Location, Gym, Close, Trash, Exit, Add } from "../../../assets";
+import BasicTopBar from "../../components/BasicTopBar";
 
 interface ManageGroupProps {
   navigation: any;
@@ -99,8 +100,6 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
       avatar: "G",
     },
   ];
-
-
 
   const handleSave = () => {
     if (!groupName.trim()) {
@@ -189,237 +188,250 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
 
   return (
     <SafeAreaView edges={["left", "right"]} style={styles.container}>
-      {/* Hero Header */}
-      <View style={styles.heroSection} />
-
       <ScrollView
         style={styles.content}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: r(100) }}
       >
-        <View style={styles.heroHeader}>
-          <Text style={styles.heroTitle}>
-            {isEditing ? "Manage Group" : "Add Group"}
-          </Text>
-          <TouchableOpacity onPress={navigation.goBack} style={styles.closeButton}>
-            <Image
-              source={Close}
-              style={{ width: 24, height: 24 }}
-              tintColor={COLORS.white}
-            />
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.heroTags}>
-          <View style={styles.locationTag}>
-            <Image source={Location} style={{ width: 16, height: 16 }} />
-            <Text style={styles.tagText}>{location}</Text>
-          </View>
-          <View style={styles.categoryTag}>
-            <Image source={Gym} style={{ width: 16, height: 16 }} />
-            <Text style={styles.tagText}>{groupType}</Text>
-          </View>
-        </View>
-        {/* Group Info Card */}
-        <View style={styles.groupInfoCard}>
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Name</Text>
-            <TextInput
-              style={styles.textInput}
-              value={groupName}
-              onChangeText={setGroupName}
-              placeholder="Development User"
-              placeholderTextColor={COLORS._5E5E5E}
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Description</Text>
-            <TextInput
-              style={[styles.textInput, styles.textArea]}
-              value={groupDescription}
-              onChangeText={setGroupDescription}
-              placeholder="24/7 gym with all equipment"
-              placeholderTextColor={COLORS._5E5E5E}
-              multiline
-              numberOfLines={4}
-              textAlignVertical="top"
-            />
-          </View>
-
-          <View style={styles.dropdownRow}>
-            <View style={styles.dropdownItem}>
-              <Text style={styles.inputLabel}>Change Location</Text>
-              <Menu
-                visible={locationMenuVisible}
-                contentStyle={{ backgroundColor: COLORS.white, width: "100%" }}
-                style={{ width: "40%" }}
-                onDismiss={() => setLocationMenuVisible(false)}
-                anchorPosition="bottom"
-                anchor={
-                  <TouchableOpacity
-                    style={styles.dropdown}
-                    onPress={() => setLocationMenuVisible(true)}
-                  >
-                    <Text style={styles.dropdownText}>
-                      {location ? location : "Select Location"}
-                    </Text>
-                    <Ionicons
-                      name="chevron-down"
-                      size={16}
-                      color={COLORS.primary}
-                    />
-                  </TouchableOpacity>
-                }
-              >
-                {locationOptions.map((option) => (
-                  <Menu.Item
-                    key={option}
-                    style={{ width: "100%" }}
-                    titleStyle={{ color: COLORS.gradient1 }}
-                    onPress={() => {
-                      setLocation(option);
-                      setLocationMenuVisible(false);
-                    }}
-                    title={option}
-                  />
-                ))}
-              </Menu>
-            </View>
-
-            <View style={styles.dropdownItem}>
-              <Text style={styles.inputLabel}>Group Type</Text>
-              <Menu
-                visible={groupTypeMenuVisible}
-                contentStyle={{ backgroundColor: COLORS.white, width: "100%" }}
-                style={{ width: "40%" }}
-                onDismiss={() => setGroupTypeMenuVisible(false)}
-                anchorPosition="bottom"
-                anchor={
-                  <TouchableOpacity
-                    style={styles.dropdown}
-                    onPress={() => setGroupTypeMenuVisible(true)}
-                  >
-                    <Text style={styles.dropdownText}>
-                      {groupType ? groupType : "Select Group Type"}
-                    </Text>
-                    <Ionicons
-                      name="chevron-down"
-                      size={16}
-                      color={COLORS.primary}
-                    />
-                  </TouchableOpacity>
-                }
-              >
-                {groupTypeOptions.map((option) => (
-                  <Menu.Item
-                    key={option}
-                    titleStyle={{ color: COLORS.gradient1 }}
-                    onPress={() => {
-                      setGroupType(option);
-                      setGroupTypeMenuVisible(false);
-                    }}
-                    title={option}
-                  />
-                ))}
-              </Menu>
-            </View>
-          </View>
-        </View>
-
-        <View
-          style={[
-            styles.inputGroup,
-            {
-              backgroundColor: COLORS.white,
-              marginTop: r(15),
-              padding: r(16),
-              borderRadius: r(8),
-            },
-          ]}
-        >
-          <Text style={styles.inputLabel}>Group Privacy</Text>
-          <Menu
-            visible={privacyMenuVisible}
-            anchorPosition="bottom"
-            contentStyle={{ backgroundColor: COLORS.white, width: "100%" }}
-            style={{ width: "82.5%" }}
-            onDismiss={() => setPrivacyMenuVisible(false)}
-            anchor={
-              <TouchableOpacity
-                style={styles.dropdown}
-                onPress={() => setPrivacyMenuVisible(true)}
-              >
-                <Text style={styles.dropdownText}>
-                  {privacy ? privacy : "Select Privacy"}
-                </Text>
-                <Ionicons
-                  name="chevron-down"
-                  size={16}
-                  color={COLORS.primary}
-                />
-              </TouchableOpacity>
-            }
-          >
-            {privacyOptions.map((option) => (
-              <Menu.Item
-                key={option}
-                titleStyle={{ color: COLORS.gradient1 }}
-                onPress={() => {
-                  setPrivacy(option);
-                  setPrivacyMenuVisible(false);
-                }}
-                title={option}
+        <BasicTopBar
+          showBackButton={false}
+          containerStyle={styles.heroSection}
+          title={isEditing ? "Manage Group" : "Add Group"}
+          titleStyle={styles.heroTitle}
+          endView={
+            <TouchableOpacity
+              onPress={navigation.goBack}
+              style={styles.closeButton}
+            >
+              <Image
+                source={Close}
+                style={{ width: 24, height: 24 }}
+                tintColor={COLORS.white}
               />
-            ))}
-          </Menu>
-        </View>
-        {/* Members Section - Only show when editing */}
-        {isEditing && (
+            </TouchableOpacity>
+          }
+          bottomView={
+            <View style={styles.heroTags}>
+              <View style={styles.locationTag}>
+                <Image source={Location} style={{ width: 16, height: 16 }} />
+                <Text style={styles.tagText}>{location}</Text>
+              </View>
+              <View style={styles.categoryTag}>
+                <Image source={Gym} style={{ width: 16, height: 16 }} />
+                <Text style={styles.tagText}>{groupType}</Text>
+              </View>
+            </View>
+          }
+        />
+
+        <View style={styles.heroHeader}>
+          {/* Group Info Card */}
           <View style={styles.groupInfoCard}>
-            <View style={styles.membersHeader}>
-              <Text style={styles.membersTitle}>Members</Text>
-              <Text style={styles.membersCount}>
-                {group.memberCount} Members
-              </Text>
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Name</Text>
+              <TextInput
+                style={styles.textInput}
+                value={groupName}
+                onChangeText={setGroupName}
+                placeholder="Development User"
+                placeholderTextColor={COLORS._5E5E5E}
+              />
             </View>
 
-            <FlatList
-              data={mockMembers}
-              renderItem={renderMember}
-              keyExtractor={(item) => item.id}
-              scrollEnabled={false}
-              ItemSeparatorComponent={() => (
-                <View style={styles.memberSeparator} />
-              )}
-            />
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Description</Text>
+              <TextInput
+                style={[styles.textInput, styles.textArea]}
+                value={groupDescription}
+                onChangeText={setGroupDescription}
+                placeholder="24/7 gym with all equipment"
+                placeholderTextColor={COLORS._5E5E5E}
+                multiline
+                numberOfLines={4}
+                textAlignVertical="top"
+              />
+            </View>
+
+            <View style={styles.dropdownRow}>
+              <View style={styles.dropdownItem}>
+                <Text style={styles.inputLabel}>Change Location</Text>
+                <Menu
+                  visible={locationMenuVisible}
+                  contentStyle={{
+                    backgroundColor: COLORS.white,
+                    width: "100%",
+                  }}
+                  style={{ width: "40%" }}
+                  onDismiss={() => setLocationMenuVisible(false)}
+                  anchorPosition="bottom"
+                  anchor={
+                    <TouchableOpacity
+                      style={styles.dropdown}
+                      onPress={() => setLocationMenuVisible(true)}
+                    >
+                      <Text style={styles.dropdownText}>
+                        {location ? location : "Select Location"}
+                      </Text>
+                      <Ionicons
+                        name="chevron-down"
+                        size={16}
+                        color={COLORS.primary}
+                      />
+                    </TouchableOpacity>
+                  }
+                >
+                  {locationOptions.map((option) => (
+                    <Menu.Item
+                      key={option}
+                      style={{ width: "100%" }}
+                      titleStyle={{ color: COLORS.gradient1 }}
+                      onPress={() => {
+                        setLocation(option);
+                        setLocationMenuVisible(false);
+                      }}
+                      title={option}
+                    />
+                  ))}
+                </Menu>
+              </View>
+
+              <View style={styles.dropdownItem}>
+                <Text style={styles.inputLabel}>Group Type</Text>
+                <Menu
+                  visible={groupTypeMenuVisible}
+                  contentStyle={{
+                    backgroundColor: COLORS.white,
+                    width: "100%",
+                  }}
+                  style={{ width: "40%" }}
+                  onDismiss={() => setGroupTypeMenuVisible(false)}
+                  anchorPosition="bottom"
+                  anchor={
+                    <TouchableOpacity
+                      style={styles.dropdown}
+                      onPress={() => setGroupTypeMenuVisible(true)}
+                    >
+                      <Text style={styles.dropdownText}>
+                        {groupType ? groupType : "Select Group Type"}
+                      </Text>
+                      <Ionicons
+                        name="chevron-down"
+                        size={16}
+                        color={COLORS.primary}
+                      />
+                    </TouchableOpacity>
+                  }
+                >
+                  {groupTypeOptions.map((option) => (
+                    <Menu.Item
+                      key={option}
+                      titleStyle={{ color: COLORS.gradient1 }}
+                      onPress={() => {
+                        setGroupType(option);
+                        setGroupTypeMenuVisible(false);
+                      }}
+                      title={option}
+                    />
+                  ))}
+                </Menu>
+              </View>
+            </View>
           </View>
-        )}
 
-        {/* Action Buttons */}
-        {isEditing ? (
-          <>
-            <TouchableOpacity
-              style={styles.deleteButton}
-              onPress={handleDeleteGroup}
+          <View
+            style={[
+              styles.inputGroup,
+              {
+                backgroundColor: COLORS.white,
+                marginTop: r(15),
+                padding: r(16),
+                borderRadius: r(8),
+              },
+            ]}
+          >
+            <Text style={styles.inputLabel}>Group Privacy</Text>
+            <Menu
+              visible={privacyMenuVisible}
+              anchorPosition="bottom"
+              contentStyle={{ backgroundColor: COLORS.white, width: "100%" }}
+              style={{ width: "82.5%" }}
+              onDismiss={() => setPrivacyMenuVisible(false)}
+              anchor={
+                <TouchableOpacity
+                  style={styles.dropdown}
+                  onPress={() => setPrivacyMenuVisible(true)}
+                >
+                  <Text style={styles.dropdownText}>
+                    {privacy ? privacy : "Select Privacy"}
+                  </Text>
+                  <Ionicons
+                    name="chevron-down"
+                    size={16}
+                    color={COLORS.primary}
+                  />
+                </TouchableOpacity>
+              }
             >
-              <Image source={Trash} style={{ width: 20, height: 20 }} />
-              <Text style={styles.deleteButtonText}>Delete Group</Text>
-            </TouchableOpacity>
+              {privacyOptions.map((option) => (
+                <Menu.Item
+                  key={option}
+                  titleStyle={{ color: COLORS.gradient1 }}
+                  onPress={() => {
+                    setPrivacy(option);
+                    setPrivacyMenuVisible(false);
+                  }}
+                  title={option}
+                />
+              ))}
+            </Menu>
+          </View>
+          {/* Members Section - Only show when editing */}
+          {isEditing && (
+            <View style={styles.groupInfoCard}>
+              <View style={styles.membersHeader}>
+                <Text style={styles.membersTitle}>Members</Text>
+                <Text style={styles.membersCount}>
+                  {group.memberCount} Members
+                </Text>
+              </View>
 
-            <TouchableOpacity
-              style={styles.deleteButton}
-              onPress={handleExitGroup}
-            >
-              <Image source={Exit} style={{ width: 20, height: 20 }} />
-              <Text style={styles.deleteButtonText}>Exit Group</Text>
+              <FlatList
+                data={mockMembers}
+                renderItem={renderMember}
+                keyExtractor={(item) => item.id}
+                scrollEnabled={false}
+                ItemSeparatorComponent={() => (
+                  <View style={styles.memberSeparator} />
+                )}
+              />
+            </View>
+          )}
+
+          {/* Action Buttons */}
+          {isEditing ? (
+            <>
+              <TouchableOpacity
+                style={styles.deleteButton}
+                onPress={handleDeleteGroup}
+              >
+                <Image source={Trash} style={{ width: 20, height: 20 }} />
+                <Text style={styles.deleteButtonText}>Delete Group</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.deleteButton}
+                onPress={handleExitGroup}
+              >
+                <Image source={Exit} style={{ width: 20, height: 20 }} />
+                <Text style={styles.deleteButtonText}>Exit Group</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <TouchableOpacity style={styles.createButton} onPress={handleSave}>
+              <Text style={styles.createButtonText}>Create Group</Text>
             </TouchableOpacity>
-          </>
-        ) : (
-          <TouchableOpacity style={styles.createButton} onPress={handleSave}>
-            <Text style={styles.createButtonText}>Create Group</Text>
-          </TouchableOpacity>
-        )}
+          )}
+        </View>
       </ScrollView>
       <TouchableOpacity style={styles.fab}>
         <Image source={Add} style={{ width: 16, height: 16 }} />
@@ -434,18 +446,14 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   heroSection: {
-    backgroundColor: COLORS.gradient3,
     paddingTop: DIMENSIONS.spacing.xxl,
     paddingBottom: r(74),
-    height: r(180),
-    paddingHorizontal: r(16),
+    minHeight: r(180),
   },
   heroHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: r(16),
-    marginTop: r(16),
+    marginTop: r(-90),
+    paddingHorizontal: r(16),
+    paddingTop: r(16),
   },
   heroTitle: {
     fontSize: 24,
@@ -483,13 +491,6 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    marginTop: 20,
-    position: "absolute",
-    left: 0,
-    top: 0,
-    right: 0,
-    bottom: 0,
-    paddingHorizontal: r(16),
   },
   groupInfoCard: {
     backgroundColor: "white",

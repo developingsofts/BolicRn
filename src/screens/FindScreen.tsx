@@ -277,150 +277,151 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation }) => {
 
   return (
     <SafeAreaView edges={["top"]} style={styles.container}>
-      {/* Header Section */}
-      <View style={styles.headerSection}>
-        <View style={styles.header}>
-          <Text style={styles.title}>{STRINGS.FIND.title}</Text>
-          <Text style={styles.subtitle}>{STRINGS.FIND.subtitle}</Text>
-        </View>
-
-        {/* Tab Toggle */}
-        <View style={styles.tabContainer}>
-          <TouchableOpacity
-            style={[
-              styles.tabButton,
-              activeTab === 'partners' && styles.tabButtonActive
-            ]}
-            onPress={() => {
-              setActiveTab('partners');
-              setCurrentIndex(0);
-              setSelectedFilters(['All']);
-            }}
-          >
-            <Text style={[
-              styles.tabText,
-              activeTab === 'partners' && styles.tabTextActive
-            ]}>
-              {STRINGS.FIND.partners}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.tabButton,
-              activeTab === 'trainers' && styles.tabButtonActive
-            ]}
-            onPress={() => {
-              setActiveTab('trainers');
-              setCurrentIndex(0);
-              setSelectedFilters(['All']);
-            }}
-          >
-            <Text style={[
-              styles.tabText,
-              activeTab === 'trainers' && styles.tabTextActive
-            ]}>
-              {STRINGS.FIND.trainers}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Training Categories Dropdown */}
-        <View style={styles.filtersSection}>
-          <View style={styles.dropdownContainer}>
-            <Menu
-              visible={menuVisible}
-              onDismiss={() => setMenuVisible(false)}
-              anchor={
-                <Button
-                  mode="outlined"
-                  onPress={() => setMenuVisible(true)}
-                  style={styles.dropdownButton}
-                  contentStyle={styles.dropdownButtonContent}
-                  labelStyle={styles.dropdownButtonLabel}
-                >
-                  {selectedFilters.includes('All') || selectedFilters.length === 0 
-                    ? STRINGS.FIND.allCategories 
-                    : `${selectedFilters.length} ${STRINGS.FIND.selected}`}
-                </Button>
-              }
-            >
-              {trainingCategories.map((category) => (
-                <Menu.Item
-                  key={category}
-                  onPress={() => {
-                    handleCategorySelect(category);
-                    setMenuVisible(false);
-                  }}
-                  title={category}
-                  titleStyle={[
-                    styles.menuItemText,
-                    selectedFilters.includes(category) && styles.menuItemTextActive
-                  ]}
-                />
-              ))}
-            </Menu>
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Header Section */}
+        <View style={styles.headerSection}>
+          <View style={styles.header}>
+            <Text style={styles.title}>{STRINGS.FIND.title}</Text>
+            <Text style={styles.subtitle}>{STRINGS.FIND.subtitle}</Text>
           </View>
-          
-          {/* Selected Categories Chips */}
-          {selectedFilters.length > 0 && !selectedFilters.includes('All') && (
-            <View style={styles.chipsWrapper}>
-              <ScrollView 
-                horizontal 
-                showsHorizontalScrollIndicator={false}
-                style={styles.selectedChipsContainer}
-              >
-                {selectedFilters.map((filter) => (
-                  <Chip
-                    key={filter}
+
+          {/* Tab Toggle */}
+          <View style={styles.tabContainer}>
+            <TouchableOpacity
+              style={[
+                styles.tabButton,
+                activeTab === 'partners' && styles.tabButtonActive
+              ]}
+              onPress={() => {
+                setActiveTab('partners');
+                setCurrentIndex(0);
+                setSelectedFilters(['All']);
+              }}
+            >
+              <Text style={[
+                styles.tabText,
+                activeTab === 'partners' && styles.tabTextActive
+              ]}>
+                {STRINGS.FIND.partners}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.tabButton,
+                activeTab === 'trainers' && styles.tabButtonActive
+              ]}
+              onPress={() => {
+                setActiveTab('trainers');
+                setCurrentIndex(0);
+                setSelectedFilters(['All']);
+              }}
+            >
+              <Text style={[
+                styles.tabText,
+                activeTab === 'trainers' && styles.tabTextActive
+              ]}>
+                {STRINGS.FIND.trainers}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Training Categories Dropdown */}
+          <View style={styles.filtersSection}>
+            <View style={styles.dropdownContainer}>
+              <Menu
+                visible={menuVisible}
+                onDismiss={() => setMenuVisible(false)}
+                anchor={
+                  <Button
                     mode="outlined"
-                    onClose={() => handleCategorySelect(filter)}
-                    style={styles.selectedChip}
-                    textStyle={styles.selectedChipText}
+                    onPress={() => setMenuVisible(true)}
+                    style={styles.dropdownButton}
+                    contentStyle={styles.dropdownButtonContent}
+                    labelStyle={styles.dropdownButtonLabel}
                   >
-                    {filter}
-                  </Chip>
+                    {selectedFilters.includes('All') || selectedFilters.length === 0 
+                      ? STRINGS.FIND.allCategories 
+                      : `${selectedFilters.length} ${STRINGS.FIND.selected}`}
+                  </Button>
+                }
+              >
+                {trainingCategories.map((category) => (
+                  <Menu.Item
+                    key={category}
+                    onPress={() => {
+                      handleCategorySelect(category);
+                      setMenuVisible(false);
+                    }}
+                    title={category}
+                    titleStyle={[
+                      styles.menuItemText,
+                      selectedFilters.includes(category) && styles.menuItemTextActive
+                    ]}
+                  />
                 ))}
-              </ScrollView>
+              </Menu>
+            </View>
+            
+            {/* Selected Categories Chips */}
+            {selectedFilters.length > 0 && !selectedFilters.includes('All') && (
+              <View style={styles.chipsWrapper}>
+                <ScrollView 
+                  horizontal 
+                  showsHorizontalScrollIndicator={false}
+                  style={styles.selectedChipsContainer}
+                >
+                  {selectedFilters.map((filter) => (
+                    <Chip
+                      key={filter}
+                      mode="outlined"
+                      onClose={() => handleCategorySelect(filter)}
+                      style={styles.selectedChip}
+                      textStyle={styles.selectedChipText}
+                    >
+                      {filter}
+                    </Chip>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
+          </View>
+        </View>
+
+        {/* Cards Section */}
+        <View style={styles.cardsSection}>
+          {currentItem ? (
+            <SwipeableCard
+              partner={currentItem}
+              onPress={() => navigation.navigate('Profile', { userId: currentItem.id.toString(), isGuest: true })}
+              onSwipeLeft={handleSwipeLeft}
+              
+              onSwipeRight={handleSwipeRight}
+              onSkip={handleSwipeLeft}
+              isFirst={true}
+            />
+          ) : (
+            <View style={styles.noMoreCards}>
+              <Text style={styles.noMoreCardsTitle}>{STRINGS.FIND.noMoreCardsTitle}</Text>
+              <Text style={styles.noMoreCardsText}>
+                {STRINGS.FIND.noMoreCardsText} {activeTab} {STRINGS.FIND.forThisFilter}
+              </Text>
+              <TouchableOpacity style={styles.resetButton} onPress={resetCards}>
+                <Text style={styles.resetButtonText}>{STRINGS.FIND.reset}</Text>
+              </TouchableOpacity>
             </View>
           )}
         </View>
-      </View>
-
-      {/* Cards Section */}
-      <View style={styles.cardsSection}>
-        {currentItem ? (
-          <SwipeableCard
-            partner={currentItem}
-            onSwipeLeft={handleSwipeLeft}
-            onSwipeRight={handleSwipeRight}
-            isFirst={true}
-          />
-        ) : (
-          <View style={styles.noMoreCards}>
-            <Text style={styles.noMoreCardsTitle}>{STRINGS.FIND.noMoreCardsTitle}</Text>
-            <Text style={styles.noMoreCardsText}>
-              {STRINGS.FIND.noMoreCardsText} {activeTab} {STRINGS.FIND.forThisFilter}
-            </Text>
-            <TouchableOpacity style={styles.resetButton} onPress={resetCards}>
-              <Text style={styles.resetButtonText}>{STRINGS.FIND.reset}</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      </View>
+      </ScrollView>
 
       {/* Progress Indicator */}
       <View style={styles.progressContainer}>
         <Text style={styles.progressText}>
           {currentIndex + 1} {STRINGS.FIND.progressOf} {currentData.length}
         </Text>
-        {hasMoreCards && (
-          <TouchableOpacity 
-            style={styles.skipButton} 
-            onPress={() => handleSwipeLeft(currentItem)}
-          >
-            <Text style={styles.skipButtonText}>{STRINGS.FIND.skip}</Text>
-          </TouchableOpacity>
-        )}
       </View>
 
       {/* Rating Modal */}
@@ -438,9 +439,16 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: COLORS.background,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: DIMENSIONS.spacing.xl,
   },
   headerSection: {
-    flex: 0,
     backgroundColor: COLORS.background,
   },
   header: {
@@ -532,11 +540,11 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
   },
   cardsSection: {
-    flex: 1,
+    minHeight: 500,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: DIMENSIONS.spacing.lg,
-    paddingVertical: DIMENSIONS.spacing.lg,
+    paddingVertical: DIMENSIONS.spacing.xl,
   },
   noMoreCards: {
     alignItems: 'center',
@@ -563,24 +571,17 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   progressContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: DIMENSIONS.spacing.lg,
-    paddingBottom: DIMENSIONS.spacing.lg,
+    paddingVertical: DIMENSIONS.spacing.md,
+    backgroundColor: COLORS.background,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
   },
   progressText: {
     fontSize: 14,
-  },
-  skipButton: {
-    borderRadius: DIMENSIONS.borderRadius,
-    paddingHorizontal: DIMENSIONS.spacing.md,
-    paddingVertical: DIMENSIONS.spacing.sm,
-    borderWidth: 1,
-  },
-  skipButtonText: {
-    fontSize: 14,
-    fontWeight: '500',
+    color: COLORS.text,
+    fontWeight: '600',
   },
 });
 
