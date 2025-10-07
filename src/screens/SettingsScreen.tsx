@@ -22,93 +22,122 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
   const { logout } = useAuth();
   const [showDebugger, setShowDebugger] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const [profileVisibilityEnabled, setProfileVisibilityEnabled] = useState(true);
+  const [profileVisibilityEnabled, setProfileVisibilityEnabled] =
+    useState(true);
   const [preferencesEnabled, setPreferencesEnabled] = useState(true);
-const preferenceOptions = [
-  { label: 'Strength' },
-  { label: 'Cardio' },
-  { label: 'Flexibility' },
-];
+  const preferenceOptions = [
+    { label: "Strength" },
+    { label: "Cardio" },
+    { label: "Flexibility" },
+  ];
   const handleLogout = async () => {
     await logout();
   };
 
   return (
-    <SafeAreaView edges={["top","bottom"]} style={styles.container}>
-     <View>
-       <View style={styles.headerActions}>
-        <Text style={styles.editProfileTitle}>{STRINGS.SETTINGS.title}</Text>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Image source={Close} style={styles.iconSize} />
+    <SafeAreaView edges={["top", "bottom"]} style={styles.container}>
+      <View>
+        <View style={styles.headerActions}>
+          <Text style={styles.editProfileTitle}>{STRINGS.SETTINGS.title}</Text>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Image source={Close} style={styles.iconSize} />
+          </TouchableOpacity>
+        </View>
+        {/* Notification Settings */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>
+            {STRINGS.SETTINGS.notifications}
+          </Text>
+          <View style={styles.settingRow}>
+            <Text style={styles.settingLabel}>
+              {STRINGS.SETTINGS.enableNotifications}
+            </Text>
+            <Switch
+              value={notificationsEnabled}
+              onValueChange={setNotificationsEnabled}
+              trackColor={{ false: COLORS.border, true: COLORS.primary }}
+              thumbColor={
+                notificationsEnabled ? COLORS.white : COLORS.textSecondary
+              }
+            />
+          </View>
+        </View>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>
+            {STRINGS.SETTINGS.profileVisibility}
+          </Text>
+          <View style={styles.settingRow}>
+            <Text style={styles.settingLabel}>
+              {STRINGS.SETTINGS.enablePublicProfile}
+            </Text>
+            <Switch
+              value={profileVisibilityEnabled}
+              onValueChange={setProfileVisibilityEnabled}
+              trackColor={{ false: COLORS.border, true: COLORS.primary }}
+              thumbColor={
+                profileVisibilityEnabled ? COLORS.white : COLORS.textSecondary
+              }
+            />
+          </View>
+        </View>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>
+            {STRINGS.SETTINGS.matchingPreferences}
+          </Text>
+          <View style={styles.settingRow}>
+            <Text style={styles.settingLabel}>
+              {STRINGS.SETTINGS.enablePreferences}
+            </Text>
+            <Switch
+              value={preferencesEnabled}
+              onValueChange={setPreferencesEnabled}
+              trackColor={{ false: COLORS.border, true: COLORS.primary }}
+              thumbColor={
+                preferencesEnabled ? COLORS.white : COLORS.textSecondary
+              }
+            />
+          </View>
+          <View style={styles.preferenceRow}>
+            {preferenceOptions?.map((item) => {
+              const isPrimary = item.label === "Strength";
+              return (
+                <TouchableOpacity
+                  key={item.label}
+                  style={[
+                    styles.preferenceBtn,
+                    isPrimary
+                      ? styles.preferenceBtnPrimary
+                      : styles.preferenceBtnGray,
+                  ]}
+                  onPress={() =>
+                    navigation.navigate("EditProfile", { isGuest: false })
+                  }
+                >
+                  <Text
+                    style={
+                      isPrimary
+                        ? styles.preferenceBtnTextPrimary
+                        : styles.preferenceBtnTextGray
+                    }
+                  >
+                    {item.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+      </View>
+      <View>
+        <View style={styles.lineSeparator} />
+
+        <TouchableOpacity onPress={handleLogout} style={styles.deactivateBtn}>
+          <Image source={Deactivate} style={styles.deactivateIcon} />
+          <Text style={styles.logoutText}>
+            {STRINGS.SETTINGS.deactivateAccount}
+          </Text>
         </TouchableOpacity>
       </View>
-      {/* Notification Settings */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{STRINGS.SETTINGS.notifications}</Text>
-        <View style={styles.settingRow}>
-          <Text style={styles.settingLabel}>{STRINGS.SETTINGS.enableNotifications}</Text>
-          <Switch
-            value={notificationsEnabled}
-            onValueChange={setNotificationsEnabled}
-            trackColor={{ false: COLORS.border, true: COLORS.primary }}
-            thumbColor={
-              notificationsEnabled ? COLORS.white : COLORS.textSecondary
-            }
-          />
-        </View>
-      </View>
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{STRINGS.SETTINGS.profileVisibility}</Text>
-        <View style={styles.settingRow}>
-          <Text style={styles.settingLabel}>{STRINGS.SETTINGS.enablePublicProfile}</Text>
-          <Switch
-            value={profileVisibilityEnabled}
-            onValueChange={setProfileVisibilityEnabled}
-            trackColor={{ false: COLORS.border, true: COLORS.primary }}
-            thumbColor={
-              profileVisibilityEnabled ? COLORS.white : COLORS.textSecondary
-            }
-          />
-        </View>
-      </View>
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{STRINGS.SETTINGS.matchingPreferences}</Text>
-        <View style={styles.settingRow}>
-          <Text style={styles.settingLabel}>{STRINGS.SETTINGS.enablePreferences}</Text>
-          <Switch
-            value={preferencesEnabled}
-            onValueChange={setPreferencesEnabled}
-            trackColor={{ false: COLORS.border, true: COLORS.primary }}
-            thumbColor={
-              preferencesEnabled ? COLORS.white : COLORS.textSecondary
-            }
-          />
-        </View>
-        <View style={styles.preferenceRow}>
-          {preferenceOptions?.map((item) => {
-            const isPrimary = item.label === 'Strength';
-            return (
-              <TouchableOpacity
-                key={item.label}
-                style={[styles.preferenceBtn, isPrimary ? styles.preferenceBtnPrimary : styles.preferenceBtnGray]}
-                onPress={() => navigation.navigate('EditProfile', { isGuest: false })}
-              >
-                <Text style={isPrimary ? styles.preferenceBtnTextPrimary : styles.preferenceBtnTextGray}>{item.label}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-      </View>
-     </View>
-     <View>
-      <View style={styles.lineSeparator} />
-   
-      <TouchableOpacity onPress={handleLogout} style={styles.deactivateBtn}>  
-        <Image source={Deactivate} style={styles.deactivateIcon} />
-        <Text style={styles.logoutText}>{STRINGS.SETTINGS.deactivateAccount}</Text>
-      </TouchableOpacity>
-    </View>
-    
     </SafeAreaView>
   );
 };
@@ -119,7 +148,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
     paddingHorizontal: DIMENSIONS.spacing.lg,
     paddingVertical: DIMENSIONS.spacing.lg,
-    justifyContent: 'space-between',
+    justifyContent: "space-between",
   },
   iconSize: {
     width: 24,
@@ -136,41 +165,39 @@ const styles = StyleSheet.create({
   editProfileTitle: {
     fontFamily: FontWeight.SemiBold,
     fontSize: 24,
-    fontWeight: "600",
-    color: COLORS.black,
+    color: COLORS.app_black,
   },
   section: {
     marginBottom: DIMENSIONS.spacing.xl,
     backgroundColor: COLORS.white,
     padding: DIMENSIONS.spacing.md,
     borderRadius: DIMENSIONS.borderRadius,
-    boxShadow: "0px 0px 8px 0px rgba(107, 107, 107, 0.15)",
+    elevation: 5,
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: "600",
-    color: COLORS.text,
+    color: COLORS.app_black,
     fontFamily: FontWeight.SemiBold,
-    marginBottom: DIMENSIONS.spacing.md,
+    marginBottom: DIMENSIONS.spacing.sm,
   },
   settingRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    
   },
   settingLabel: {
-    fontSize: 16,
-    color: COLORS.text,
+    fontSize: 14,
+    fontFamily: FontWeight.Medium,
+    color: COLORS._5E5E5E,
   },
   logoutText: {
-    fontSize: 16,
-    color: COLORS.error,
-    fontWeight: "600",
+    fontSize: 14,
+    color: COLORS._EB3434,
+    fontFamily: FontWeight.Medium,
   },
   preferenceRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
+    flexDirection: "row",
+    justifyContent: "flex-start",
     marginTop: DIMENSIONS.spacing.md,
     gap: DIMENSIONS.spacing.sm,
   },
@@ -199,17 +226,18 @@ const styles = StyleSheet.create({
   deactivateBtn: {
     marginTop: DIMENSIONS.spacing.lg,
     backgroundColor: COLORS.white,
-    padding: DIMENSIONS.spacing.md,
-    justifyContent: 'center',
-    flexDirection: 'row',
+    padding: 14,
+    justifyContent: "center",
+    flexDirection: "row",
     gap: DIMENSIONS.spacing.sm,
-    alignItems: 'center',
+    alignItems: "center",
     borderRadius: 8,
+    elevation: 5,
   },
   deactivateIcon: {
     width: 18,
     height: 18,
-    tintColor: COLORS.error,
+    tintColor: COLORS._EB3434,
   },
 });
 
