@@ -109,8 +109,8 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
                       ? styles.preferenceBtnPrimary
                       : styles.preferenceBtnGray,
                   ]}
-                  onPress={() =>
-                    navigation.navigate("EditProfile", { isGuest: false })
+                  onPress={() =>{}
+                    // navigation.navigate("EditProfile", { isGuest: false })
                   }
                 >
                   <Text

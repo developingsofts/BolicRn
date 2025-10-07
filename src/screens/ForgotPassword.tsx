@@ -19,6 +19,8 @@ import STRINGS from "../config/strings";
 import { useResponsive } from "../hooks/responsiveDesignHook";
 import { EyeHide } from "../../assets";
 import PasswordInput from "../components/PasswordInput";
+import MaskedView from "@react-native-masked-view/masked-view";
+import { LinearGradient } from "expo-linear-gradient";
 
 type ForgotPasswordStep = "email" | "waiting" | "setPassword" | "success";
 
@@ -37,12 +39,18 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ navigation }) => {
 
   const handleSendLink = async () => {
     if (!email.trim()) {
-      Alert.alert(STRINGS.COMMON.error, STRINGS.FORGOT_PASSWORD.errors.enterEmail);
+      Alert.alert(
+        STRINGS.COMMON.error,
+        STRINGS.FORGOT_PASSWORD.errors.enterEmail
+      );
       return;
     }
 
     if (!email.includes("@")) {
-      Alert.alert(STRINGS.COMMON.error, STRINGS.FORGOT_PASSWORD.errors.validEmail);
+      Alert.alert(
+        STRINGS.COMMON.error,
+        STRINGS.FORGOT_PASSWORD.errors.validEmail
+      );
       return;
     }
 
@@ -52,7 +60,10 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ navigation }) => {
       await new Promise((resolve) => setTimeout(resolve, 2000));
       setCurrentStep("waiting");
     } catch (error) {
-      Alert.alert(STRINGS.COMMON.error, STRINGS.FORGOT_PASSWORD.errors.failedToSend);
+      Alert.alert(
+        STRINGS.COMMON.error,
+        STRINGS.FORGOT_PASSWORD.errors.failedToSend
+      );
     } finally {
       setLoading(false);
     }
@@ -65,7 +76,10 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ navigation }) => {
       await new Promise((resolve) => setTimeout(resolve, 1000));
       Alert.alert(STRINGS.COMMON.success, STRINGS.FORGOT_PASSWORD.success);
     } catch (error) {
-      Alert.alert(STRINGS.COMMON.error, STRINGS.FORGOT_PASSWORD.errors.failedToResend);
+      Alert.alert(
+        STRINGS.COMMON.error,
+        STRINGS.FORGOT_PASSWORD.errors.failedToResend
+      );
     } finally {
       setLoading(false);
     }
@@ -73,17 +87,26 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ navigation }) => {
 
   const handleUpdatePassword = async () => {
     if (!newPassword.trim()) {
-      Alert.alert(STRINGS.COMMON.error, STRINGS.FORGOT_PASSWORD.errors.enterNewPassword);
+      Alert.alert(
+        STRINGS.COMMON.error,
+        STRINGS.FORGOT_PASSWORD.errors.enterNewPassword
+      );
       return;
     }
 
     if (newPassword.length < 6) {
-      Alert.alert(STRINGS.COMMON.error, STRINGS.FORGOT_PASSWORD.errors.passwordLength);
+      Alert.alert(
+        STRINGS.COMMON.error,
+        STRINGS.FORGOT_PASSWORD.errors.passwordLength
+      );
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      Alert.alert(STRINGS.COMMON.error, STRINGS.FORGOT_PASSWORD.errors.passwordMismatch);
+      Alert.alert(
+        STRINGS.COMMON.error,
+        STRINGS.FORGOT_PASSWORD.errors.passwordMismatch
+      );
       return;
     }
 
@@ -93,7 +116,10 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ navigation }) => {
       await new Promise((resolve) => setTimeout(resolve, 2000));
       setCurrentStep("success");
     } catch (error) {
-      Alert.alert(STRINGS.COMMON.error, STRINGS.FORGOT_PASSWORD.errors.failedToUpdate);
+      Alert.alert(
+        STRINGS.COMMON.error,
+        STRINGS.FORGOT_PASSWORD.errors.failedToUpdate
+      );
     } finally {
       setLoading(false);
     }
@@ -248,7 +274,17 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ navigation }) => {
         </View>
 
         <View style={styles.content}>
-          <Text style={styles.logo}>BolicBuddy</Text>
+          <MaskedView
+            maskElement={<Text style={styles.logo}>BolicBuddy</Text>}
+          >
+            <LinearGradient
+              colors={[COLORS.gradient1, COLORS.gradient2, COLORS.gradient3]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 0, y: 0 }}
+            >
+              <Text style={[styles.logo, { opacity: 0 }]}>BolicBuddy</Text>
+            </LinearGradient>
+          </MaskedView>
           <Text style={styles.logoSubtitle}>Reset your password</Text>
           <View style={styles.mainContent}>{renderCurrentStep()}</View>
         </View>

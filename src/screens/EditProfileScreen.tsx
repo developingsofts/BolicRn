@@ -17,6 +17,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
 import { Trash, ArrowDown, Close } from "../../assets";
 import { LinearGradient } from "expo-linear-gradient";
+import { r } from "../designing/responsiveDesigns";
 
 interface EditProfileScreenProps {
   navigation: any;
@@ -45,13 +46,16 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
   };
   const renderProfileAvatar = () => {
     const initial = user?.displayName?.charAt(0) || (isGuest ? "G" : "D");
-    const displayName =
-      user?.displayName || (isGuest ? "Guest User" : "Development User");
+    const displayName = user?.displayName || "";
     const location = user?.location || "San Francisco, CA";
 
     return (
-      <View style={styles.profileHeader}>
-
+      <LinearGradient
+        colors={[COLORS.gradient1, COLORS.gradient2, COLORS.gradient3]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={styles.profileHeader}
+      >
         <View style={styles.headerActions}>
           <Text style={styles.editProfileTitle}>
             {STRINGS.EDIT_PROFILE.title}
@@ -81,7 +85,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
             </View>
           </View>
         </View>
-      </View>
+      </LinearGradient>
     );
   };
 
@@ -97,7 +101,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
           value={name}
           onChangeText={setName}
           placeholder={STRINGS.EDIT_PROFILE.namePlaceholder}
-          placeholderTextColor={COLORS._D9D9D9}
+          placeholderTextColor={COLORS._5E5E5E}
         />
       </View>
       <View style={styles.inputGroup}>
@@ -125,7 +129,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
     </View>
   );
   return (
-    <SafeAreaView edges={["top"]} style={styles.container}>
+    <SafeAreaView edges={[]} style={styles.container}>
       <KeyboardAvoidingView behavior={"height"}>
         <ScrollView
           contentContainerStyle={{ flexGrow: 1 }}
@@ -152,16 +156,13 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: DIMENSIONS.spacing.lg,
-    backgroundColor: COLORS.gradient3,
-    zIndex: -1,
-    position: "relative",
   },
   profileHeader: {
     backgroundColor: COLORS.gradient3,
     paddingBottom: 60,
+    paddingTop: DIMENSIONS.spacing.xl,
     paddingHorizontal: 10,
-    alignItems: "center",
+
     position: "relative",
     zIndex: 0,
   },
@@ -182,13 +183,15 @@ const styles = StyleSheet.create({
   },
   avatarRow: {
     flexDirection: "row",
-    alignItems: "center",
+    // alignItems: "center",
+    marginTop: 10,
+    marginStart: 10,
     justifyContent: "flex-start",
     gap: 20,
   },
   avatar: {
-    width: 120,
-    height: 120,
+    width: r(140),
+    height: r(140),
     borderWidth: 2,
     borderColor: COLORS.white,
     borderRadius: 100,
@@ -240,7 +243,7 @@ const styles = StyleSheet.create({
   deleteBtn: {
     backgroundColor: COLORS.white,
     paddingHorizontal: 10,
-    paddingVertical: 12,
+    paddingVertical: 10,
     borderRadius: 4,
   },
   deleteIcon: {
@@ -269,27 +272,28 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   profileFormTitle: {
-    fontSize: 22,
-    fontWeight: "700",
+    fontSize: 16,
+    fontFamily: FontWeight.SemiBold,
     marginBottom: 24,
-    color: COLORS.black,
+    color: COLORS.app_black,
   },
   inputGroup: {
     // marginBottom: 18,
   },
   inputLabel: {
     fontSize: 12,
-    color: COLORS.black,
+    color: COLORS.app_black,
     fontFamily: FontWeight.Medium,
-    fontWeight: "500",
     marginBottom: 6,
   },
   inputField: {
-    height: 41,
+    height: 45,
     borderRadius: 4,
-    paddingTop: 12,
     paddingRight: 10,
     paddingLeft: 10,
+    textAlign: "left",
+    justifyContent: "center",
+    fontFamily: FontWeight.Medium,
     backgroundColor: COLORS.background,
     opacity: 1,
     fontSize: 16,
@@ -303,6 +307,7 @@ const styles = StyleSheet.create({
     paddingRight: 10,
     paddingBottom: 12,
     paddingLeft: 10,
+    fontFamily: FontWeight.Medium,
     backgroundColor: COLORS.background,
     opacity: 1,
     fontSize: 16,
@@ -319,8 +324,9 @@ const styles = StyleSheet.create({
   },
   saveBtnText: {
     color: COLORS.white,
-    fontSize: 16,
-    fontWeight: "700",
+    fontFamily: FontWeight.Medium,
+    fontSize: 14,
+
   },
 });
 

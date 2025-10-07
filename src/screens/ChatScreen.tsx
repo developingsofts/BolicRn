@@ -18,6 +18,8 @@ import { useAuth } from "../contexts/AuthContext";
 import FontWeight from "../hooks/useInterFonts";
 import { ArrowDown, ImageFile, Send, Like, Close } from "../../assets";
 import { TextInput } from "react-native-gesture-handler";
+import { LinearGradient } from "expo-linear-gradient";
+import BasicTopBar from "../components/BasicTopBar";
 
 interface ChatScreenProps {
   navigation: any;
@@ -109,7 +111,7 @@ const mockMessages: Message[] = [
 const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
   const { partnerId, partnerName } = route.params || {};
   const { user } = useAuth();
-  const initial = user?.displayName?.charAt(0);
+  const initial = partnerName?.charAt(0);
   const flatListRef = useRef<FlatList>(null);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
 
@@ -144,115 +146,132 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
   }, []);
 
   return (
-    <SafeAreaView edges={["top", "left", "right"]} style={styles.container}>
+    <LinearGradient
+      colors={[COLORS.gradient1, COLORS.gradient2, COLORS.gradient3]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 0, y: 1 }}
+      style={styles.container}
+    >
+      <SafeAreaView edges={["left", "right"]} style={styles.container}>
         <View style={styles.mainContent}>
-          <View style={styles.header}>
-            <View style={styles.headerLeft}>
+          <BasicTopBar
+          contentStyle={{alignItems:"center"}}
+            showBackButton={false}
+            containerStyle={styles.header}
+            title={partnerName ? partnerName : STRINGS.CHAT.defaultTitle}
+            titleStyle={styles.title}
+            startView={
               <View style={styles.avatarContainer}>
                 <View style={[styles.avatar]}>
                   <Text style={styles.avatarText}>{initial}</Text>
                 </View>
               </View>
-              <Text style={styles.title}>
-                {partnerName ? partnerName : STRINGS.CHAT.defaultTitle}
-              </Text>
-            </View>
-            <TouchableOpacity onPress={() => navigation.goBack()}>
-              <Image source={Close} style={styles.headerIcon} />
-            </TouchableOpacity>
-          </View>
-          <View style={[styles.messagesWrapper, { paddingBottom: 120 + keyboardHeight }]}>
-          <FlatList
-            ref={flatListRef}
-            data={mockMessages}
-            keyExtractor={(item) => item.id}
-            style={styles.flatList}
-            contentContainerStyle={styles.flatListContent}
-            showsVerticalScrollIndicator={true}
-            scrollEnabled={true}
-            directionalLockEnabled={true}
-            scrollEventThrottle={16}
-            removeClippedSubviews={false}
-            maxToRenderPerBatch={20}
-            updateCellsBatchingPeriod={30}
-            initialNumToRender={20}
-            windowSize={10}
-            decelerationRate={0.98}
-            bounces={true}
-            alwaysBounceVertical={true}
-            overScrollMode="always"
-            disableScrollViewPanResponder={false}
-            keyboardShouldPersistTaps="handled"
-            onContentSizeChange={() => {
-              flatListRef.current?.scrollToEnd({ animated: true });
-            }}
-            ListFooterComponent={<View style={{ height: 20 }} />}
-            renderItem={({ item }) => (
-              <View>
-                {item.showDateSeparator && (
-                  <View style={styles.dateSeparator}>
-                    <View style={styles.dateSeparatorLine} />
-                    <Text style={styles.dateSeparatorText}>
-                      {item.dateSeparator}
-                    </Text>
-                    <View style={styles.dateSeparatorLine} />
-                  </View>
-                )}
-                <View style={[styles.messageRow]}>
-                  <View
-                    style={[
-                      styles.messageContainer,
-                      item.isMe ? styles.myMessage : styles.theirMessage,
-                    ]}
-                  >
-                    <Text
+            }
+            endView={
+              <TouchableOpacity onPress={() => navigation.goBack()}>
+                <Image source={Close} style={styles.headerIcon} />
+              </TouchableOpacity>
+            }
+          />
+
+          <View
+            style={[
+              styles.messagesWrapper,
+              { paddingBottom: 120 + keyboardHeight },
+            ]}
+          >
+            <FlatList
+              ref={flatListRef}
+              data={mockMessages}
+              keyExtractor={(item) => item.id}
+              style={styles.flatList}
+              contentContainerStyle={styles.flatListContent}
+              showsVerticalScrollIndicator={false}
+              scrollEnabled={true}
+              directionalLockEnabled={true}
+              scrollEventThrottle={16}
+              removeClippedSubviews={false}
+              maxToRenderPerBatch={20}
+              updateCellsBatchingPeriod={30}
+              initialNumToRender={20}
+              windowSize={10}
+              decelerationRate={0.98}
+              bounces={true}
+              alwaysBounceVertical={true}
+              overScrollMode="always"
+              disableScrollViewPanResponder={false}
+              keyboardShouldPersistTaps="handled"
+              onContentSizeChange={() => {
+                flatListRef.current?.scrollToEnd({ animated: true });
+              }}
+              ListFooterComponent={<View style={{ height: 20 }} />}
+              renderItem={({ item }) => (
+                <View>
+                  {item.showDateSeparator && (
+                    <View style={styles.dateSeparator}>
+                      <View style={styles.dateSeparatorLine} />
+                      <Text style={styles.dateSeparatorText}>
+                        {item.dateSeparator}
+                      </Text>
+                      <View style={styles.dateSeparatorLine} />
+                    </View>
+                  )}
+                  <View style={[styles.messageRow]}>
+                    <View
                       style={[
-                        styles.messageText,
-                        item.isMe
-                          ? styles.myMessageText
-                          : styles.theirMessageText,
+                        styles.messageContainer,
+                        item.isMe ? styles.myMessage : styles.theirMessage,
                       ]}
                     >
-                      {item.text}
-                    </Text>
+                      <Text
+                        style={[
+                          styles.messageText,
+                          item.isMe
+                            ? styles.myMessageText
+                            : styles.theirMessageText,
+                        ]}
+                      >
+                        {item.text}
+                      </Text>
+                    </View>
+                    {!item.isMe && item.isLiked && (
+                      <Image source={Like} style={styles.likeIcon} />
+                    )}
                   </View>
-                  {!item.isMe && item.isLiked && (
-                    <Image source={Like} style={styles.likeIcon} />
-                  )}
                 </View>
+              )}
+            />
+          </View>
+          <View style={[styles.inputContainer, { bottom: keyboardHeight }]}>
+            <View style={styles.inputRow}>
+              <View style={styles.inputWrapper}>
+                <TextInput
+                  placeholder={STRINGS.CHAT.placeholder}
+                  placeholderTextColor={COLORS.gradient1}
+                  style={styles.textInput}
+                />
+                <TouchableOpacity
+                  onPress={() => {
+                    // handle image upload
+                  }}
+                  style={styles.imageButton}
+                >
+                  <Image source={ImageFile} style={styles.imageIcon} />
+                </TouchableOpacity>
               </View>
-            )}
-          />
-        </View>
-        <View style={[styles.inputContainer, { bottom: keyboardHeight }]}>
-          <View style={styles.inputRow}>
-            <View style={styles.inputWrapper}>
-              <TextInput
-                placeholder={STRINGS.CHAT.placeholder}
-                placeholderTextColor={COLORS.gradient1}
-                style={styles.textInput}
-              />
               <TouchableOpacity
                 onPress={() => {
-                  // handle image upload
+                  // handle send message
                 }}
-                style={styles.imageButton}
+                style={styles.sendButton}
               >
-                <Image source={ImageFile} style={styles.imageIcon} />
+                <Image source={Send} style={styles.sendIcon} />
               </TouchableOpacity>
             </View>
-            <TouchableOpacity
-              onPress={() => {
-                // handle send message
-              }}
-              style={styles.sendButton}
-            >
-              <Image source={Send} style={styles.sendIcon} />
-            </TouchableOpacity>
           </View>
         </View>
-        </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </LinearGradient>
   );
 };
 
@@ -260,7 +279,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     // backgroundColor:"red"
-    backgroundColor: COLORS.gradient3,
+    // backgroundColor: COLORS.gradient3,
   },
   keyboardAvoidingView: {
     flex: 1,
@@ -295,7 +314,10 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: COLORS.white,
     marginBottom: DIMENSIONS.spacing.sm,
-    textAlign: "center",
+    textAlign: "left",
+    justifyContent: "center",
+    alignContent: "center",
+      
   },
   subtitle: {
     fontSize: 16,
@@ -314,7 +336,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: DIMENSIONS.spacing.lg,
-    paddingVertical: DIMENSIONS.spacing.md,
+    paddingTop: DIMENSIONS.spacing.xxl,
+    paddingBottom: DIMENSIONS.spacing.sm,
     backgroundColor: COLORS.gradient3,
   },
   headerLeft: {
@@ -332,6 +355,8 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     marginTop: -10,
+    alignContent: "center",
+    justifyContent: "center",
     tintColor: COLORS.white,
   },
   backButton: {
@@ -355,6 +380,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.chatMessageListBg,
     borderRadius: 20,
+    marginBottom: 20,
     paddingBottom: DIMENSIONS.spacing.md,
     overflow: "hidden",
   },

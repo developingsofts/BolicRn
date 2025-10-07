@@ -20,6 +20,7 @@ import { useResponsive } from "../hooks/responsiveDesignHook";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Achievement, Close, Media } from "../../assets";
 import { Divider } from "react-native-paper";
+import BasicTopBar from "../components/BasicTopBar";
 
 interface CreatePostScreenProps {
   navigation: any;
@@ -114,19 +115,18 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({ navigation }) => {
 
   return (
     <SafeAreaView edges={["left", "right", "bottom"]} style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerTop}>
-          <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-            <Ionicons name="chevron-back" size={24} color={COLORS.white} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>{STRINGS.CREATE_POST.title}</Text>
-        </View>
-        <Text style={styles.subtitle}>{STRINGS.CREATE_POST.subtitle}</Text>
-      </View>
+       <BasicTopBar
+        containerStyle={styles.header}
+        showBackButton={true}
+        onBackPress={() => navigation.goBack()}
+        title={STRINGS.CREATE_POST.title}
+        subtitle={STRINGS.CREATE_POST.subtitle}
+        titleStyle={styles.headerTitle}
+        subtitleStyle={styles.subtitle}
+      />
 
       <View style={{ paddingHorizontal: 20 }}>
-        <Pressable style={styles.shareWorkoutCard} onPress={() => {}}>
+        <Pressable style={styles.shareWorkoutCard} onPress={() => {navigation.navigate('ShareWorkout')}}>
           <Text style={styles.shareWorkoutText}>{STRINGS.CREATE_POST.shareWorkout}</Text>
           <Ionicons name="chevron-forward" size={24} color={COLORS.app_black} />
         </Pressable>
@@ -351,7 +351,6 @@ const baseStyles = StyleSheet.create({
     fontSize: 14,
     fontFamily: FontWeight.Medium,
     color: COLORS.white,
-    marginLeft: 32, // Align with the title (back button width + margin)
   },
   textInputContainer: {
     backgroundColor: COLORS.background,

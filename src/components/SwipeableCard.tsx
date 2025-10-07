@@ -51,6 +51,7 @@ interface SwipeableCardProps {
   onSwipeLeft: (partner: SwipeableItem) => void;
   onSwipeRight: (partner: SwipeableItem) => void;
   onPress?: (partner: SwipeableItem) => void;
+  onSkip?: (partner: SwipeableItem) => void;
   isFirst?: boolean;
 }
 
@@ -59,6 +60,7 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
   onSwipeLeft,
   onSwipeRight,
   onPress,
+  onSkip,
   isFirst = false,
 }) => {
   const translateX = useRef(new Animated.Value(0)).current;
@@ -198,59 +200,80 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
 
           {/* Card Info */}
           <View style={styles.cardInfo}>
-            <View style={styles.nameAgeContainer}>
-              <Text style={styles.name}>{partner.name}</Text>
-              <Text style={styles.age}>{partner.age}</Text>
-            </View>
-            
-            <Text style={styles.location}>{partner.location || 'Location not set'}</Text>
-            
-            <Text style={styles.bio} numberOfLines={3}>
-              {partner.bio || 'No bio available'}
-            </Text>
-
-            {/* Training Type/Specialty */}
-            <View style={styles.fitnessLevelContainer}>
-              <Text style={styles.fitnessLevelLabel}>
-                {'specialty' in partner ? 'Specialty:' : 'Training Type:'}
-              </Text>
-              <Text style={styles.fitnessLevel}>
-                {'specialty' in partner ? partner.specialty : partner.type}
-              </Text>
-            </View>
-
-            {/* Distance and Compatibility/Rating */}
-            <View style={styles.interestsContainer}>
-              <View style={styles.interestTag}>
-                <Text style={styles.interestText}>{partner.distance}</Text>
+            <View style={styles.cardInfoContent}>
+              <View style={styles.nameAgeContainer}>
+                <Text style={styles.name}>{partner.name}</Text>
+                <Text style={styles.age}>{partner.age}</Text>
               </View>
-              <View style={styles.interestTag}>
-                <Text style={styles.interestText}>
-                  {'compatibility' in partner 
-                    ? `${partner.compatibility}% Match` 
-                    : `${partner.hourlyRate}`
-                  }
+              
+              <Text style={styles.location}>{partner.location || 'Location not set'}</Text>
+              
+              <Text style={styles.bio} numberOfLines={2}>
+                {partner.bio || 'No bio available'}
+              </Text>
+
+              {/* Training Type/Specialty */}
+              <View style={styles.fitnessLevelContainer}>
+                <Text style={styles.fitnessLevelLabel}>
+                  {'specialty' in partner ? 'Specialty:' : 'Training Type:'}
+                </Text>
+                <Text style={styles.fitnessLevel}>
+                  {'specialty' in partner ? partner.specialty : partner.type}
                 </Text>
               </View>
-              {partner.experience && (
+
+              {/* Distance and Compatibility/Rating */}
+              <View style={styles.interestsContainer}>
                 <View style={styles.interestTag}>
-                  <Text style={styles.interestText}>{partner.experience}</Text>
+                  <Text style={styles.interestText}>{partner.distance}</Text>
                 </View>
-              )}
+                <View style={styles.interestTag}>
+                  <Text style={styles.interestText}>
+                    {'compatibility' in partner 
+                      ? `${partner.compatibility}% Match` 
+                      : `${partner.hourlyRate}`
+                    }
+                  </Text>
+                </View>
+                {partner.experience && (
+                  <View style={styles.interestTag}>
+                    <Text style={styles.interestText}>{partner.experience}</Text>
+                  </View>
+                )}
+              </View>
+
             </View>
 
-            {/* Rating Display */}
-            <View style={styles.ratingContainer}>
-              <RatingStars 
-                rating={partner.rating || 0} 
-                size="small" 
-                readonly={true}
-                showRating={true}
-              />
-              {partner.totalRatings && (
-                <Text style={styles.totalRatingsText}>
-                  ({partner.totalRatings} reviews)
+            {/* Rating and Skip Button Row */}
+            <View style={styles.bottomRow}>
+              {/* Rating Display */}
+              <View style={styles.ratingSection}>
+                <View style={styles.ratingStarsRow}>
+                  <RatingStars 
+                    rating={partner.rating || 0} 
+                    size="small" 
+                    readonly={true}
+                    showRating={false}
+                  />
+                </View>
+                <Text style={styles.ratingNumber}>
+                  {partner.rating?.toFixed(1) || '0.0'}
+                  {partner.totalRatings && ` (${partner.totalRatings})`}
                 </Text>
+              </View>
+
+              {/* Skip Button */}
+              {onSkip && (
+                <TouchableOpacity 
+                  style={styles.skipButton}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    onSkip(partner);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.skipButtonText}>Skip</Text>
+                </TouchableOpacity>
               )}
             </View>
           </View>
@@ -311,7 +334,11 @@ const styles = StyleSheet.create({
   cardInfo: {
     flex: 1,
     padding: 16,
+    paddingBottom: 16,
     backgroundColor: '#FFFFFF',
+    justifyContent: 'space-between',
+  },
+  cardInfoContent: {
   },
   nameAgeContainer: {
     flexDirection: 'row',
@@ -331,18 +358,18 @@ const styles = StyleSheet.create({
   location: {
     fontSize: 14,
     color: '#6B7280',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   bio: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#374151',
-    lineHeight: 20,
-    marginBottom: 12,
+    lineHeight: 18,
+    marginBottom: 6,
   },
   fitnessLevelContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   fitnessLevelLabel: {
     fontSize: 12,
@@ -358,7 +385,7 @@ const styles = StyleSheet.create({
   interestsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   interestTag: {
     backgroundColor: '#F3F4F6',
@@ -373,15 +400,25 @@ const styles = StyleSheet.create({
     color: '#374151',
     fontWeight: '500',
   },
-  ratingContainer: {
+  bottomRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  ratingSection: {
+    flex: 1,
+    alignItems: 'flex-start',
+  },
+  ratingStarsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 4,
   },
-  totalRatingsText: {
-    fontSize: 12,
+  ratingNumber: {
+    fontSize: 11,
     color: '#6B7280',
-    marginLeft: 8,
+    fontWeight: '600',
   },
   safetyContainer: {
     flexDirection: 'row',
@@ -433,6 +470,19 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: 'bold',
     color: '#EF4444',
+  },
+  skipButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+  },
+  skipButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#374151',
   },
 });
 
