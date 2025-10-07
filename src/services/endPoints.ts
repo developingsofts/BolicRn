@@ -1,7 +1,7 @@
 export const API_END_POINTS = {
   auth: {
-    login: "/auth/login",
-    register: "/auth/register",
+    login: "/user/login",
+    register: "/user/register",
     logout: "/auth/logout",
     refresh: "/auth/refresh",
     forgotPassword: "/auth/forgot-password",

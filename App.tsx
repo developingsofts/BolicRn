@@ -1,13 +1,14 @@
 import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Provider as PaperProvider } from "react-native-paper";
+import { Provider as ReduxProvider } from "react-redux";
 import { AuthProvider } from "./src/contexts/AuthContext";
 import AppNavigator from "./src/navigation/AppNavigator";
-import { useFonts } from "@expo-google-fonts/inter";
 import { useInterFonts } from "./src/hooks/useInterFonts";
 import LoadingScreen from "./src/components/LoadingScreen";
-import { NavigationContainer } from "@react-navigation/native";
 import { Platform, StatusBar } from "react-native";
+import { store } from "./src/store/store";
+import ToastWrapper from "./src/components/ToastWrapper";
 
 export default function App() {
   const fontsLoaded = useInterFonts();
@@ -27,16 +28,19 @@ export default function App() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <PaperProvider>
-        <AuthProvider>
-          <AppNavigator />
-          {/* <StatusBar
-              translucent
-              backgroundColor="transparent"
-              style="light"
-            /> */}
-        </AuthProvider>
-      </PaperProvider>
+      <ReduxProvider store={store}>
+        <PaperProvider>
+          <AuthProvider>
+            <AppNavigator />
+            <ToastWrapper />
+            {/* <StatusBar
+                translucent
+                backgroundColor="transparent"
+                style="light"
+              /> */}
+          </AuthProvider>
+        </PaperProvider>
+      </ReduxProvider>
     </GestureHandlerRootView>
   );
 }

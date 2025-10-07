@@ -14,7 +14,6 @@ import STRINGS from "../config/strings";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SafeAreaView } from "react-native-safe-area-context";
 import FontWeight from "../hooks/useInterFonts";
-import { HomeScreenTopBar } from "../components/BasicTopBarExamples";
 import BasicTopBar from "../components/BasicTopBar";
 
 interface HomeScreenProps {

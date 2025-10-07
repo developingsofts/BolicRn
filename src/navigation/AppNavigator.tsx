@@ -141,10 +141,10 @@ const MainTabNavigator: React.FC = () => {
 
 // App Navigator
 const AppNavigator: React.FC = () => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isBootstrapping } = useAuth();
 
   // Show loading screen while checking authentication
-  if (isLoading) {
+  if (isBootstrapping) {
     return <LoadingScreen />;
   }
 

@@ -1,89 +1,21 @@
-import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, ReactNode, useState, useMemo } from 'react';
+import { Toast } from '../components/ToastManager';
 import { User } from '../types';
+import { useAppDispatch, useUser, useToken, useIsAuthenticated } from '../store/hooks';
+import { setUser, clearUser, updateUser } from '../store/userSlice';
+import { useLoginMutation, useRegisterMutation } from '../services/api/authApi';
+import { useLazyGetMyProfileQuery } from '../services/api/userApi';
 import { storageService } from '../services/storage';
-import { AuthService } from '../services/api';
 import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '../config/constants';
 
-// Auth State Interface
-interface AuthState {
+// Auth Context Interface
+interface AuthContextType {
   user: User | null;
   token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isBootstrapping: boolean;
   error: string | null;
-}
-
-// Auth Action Types
-type AuthAction =
-  | { type: 'AUTH_START' }
-  | { type: 'AUTH_SUCCESS'; payload: { user: User; token: string } }
-  | { type: 'AUTH_FAILURE'; payload: string }
-  | { type: 'AUTH_LOGOUT' }
-  | { type: 'CLEAR_ERROR' }
-  | { type: 'UPDATE_USER'; payload: User };
-
-// Initial State
-const initialState: AuthState = {
-  user: null,
-  token: null,
-  isAuthenticated: false,
-  isLoading: true,
-  error: null,
-};
-
-// Auth Reducer
-const authReducer = (state: AuthState, action: AuthAction): AuthState => {
-  switch (action.type) {
-    case 'AUTH_START':
-      return {
-        ...state,
-        isLoading: true,
-        error: null,
-      };
-    case 'AUTH_SUCCESS':
-      return {
-        ...state,
-        user: action.payload.user,
-        token: action.payload.token,
-        isAuthenticated: true,
-        isLoading: false,
-        error: null,
-      };
-    case 'AUTH_FAILURE':
-      return {
-        ...state,
-        user: null,
-        token: null,
-        isAuthenticated: false,
-        isLoading: false,
-        error: action.payload,
-      };
-    case 'AUTH_LOGOUT':
-      return {
-        ...state,
-        user: null,
-        token: null,
-        isAuthenticated: false,
-        isLoading: false,
-        error: null,
-      };
-    case 'CLEAR_ERROR':
-      return {
-        ...state,
-        error: null,
-      };
-    case 'UPDATE_USER':
-      return {
-        ...state,
-        user: action.payload,
-      };
-    default:
-      return state;
-  }
-};
-
-// Auth Context Interface
-interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<boolean>;
   register: (userData: {
     email: string;
@@ -99,7 +31,7 @@ interface AuthContextType extends AuthState {
   logout: () => Promise<void>;
   clearError: () => void;
   updateUser: (user: User) => void;
-  dispatch: React.Dispatch<AuthAction>;
+  dispatch: React.Dispatch<any>; // Keep for compatibility
 }
 
 // Create Context
@@ -112,115 +44,87 @@ interface AuthProviderProps {
 
 // Auth Provider Component
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [state, dispatch] = useReducer(authReducer, initialState);
+  const dispatch = useAppDispatch();
+  const user = useUser();
+  const token = useToken();
+  const isAuthenticated = useIsAuthenticated();
+  const [triggerLogin, { isLoading: isLoginLoading }] = useLoginMutation();
+  const [triggerRegister, { isLoading: isRegisterLoading }] = useRegisterMutation();
+  const [fetchProfile, { isLoading: isProfileLoading }] = useLazyGetMyProfileQuery();
+  const [error, setError] = useState<string | null>(null);
+  const [isBootstrapping, setIsBootstrapping] = useState(true);
 
-  // Check for existing token on app start
+  const isLoading = useMemo(() => isLoginLoading || isRegisterLoading || isProfileLoading, [isLoginLoading, isRegisterLoading, isProfileLoading]);
+
+  // Check for existing token on app start and fetch fresh profile
   useEffect(() => {
-    const checkAuthStatus = async () => {
+    const initializeAuth = async () => {
       try {
-        // First, validate and clean any corrupted storage data
-        await storageService.validateStorageData();
-        
-        const token = await storageService.getAuthToken();
-        if (token) {
-          // Validate token with backend (optional)
-          // For now, we'll assume the token is valid
-          const user = await storageService.getUserProfile();
-          if (user) {
-            dispatch({
-              type: 'AUTH_SUCCESS',
-              payload: { user, token },
-            });
+        const storedToken = await storageService.getAuthToken();
+
+        if (storedToken) {
+          console.log('🔑 Token found, fetching fresh profile...');
+          
+          // Fetch fresh profile from API
+          const profileResponse = await fetchProfile().unwrap();
+          
+          if (profileResponse.status && profileResponse.data) {
+            console.log('✅ Profile fetched successfully');
+            dispatch(setUser({ user: profileResponse.data, token: storedToken }));
           } else {
-            // Token exists but no user profile - clear token
-            await storageService.removeAuthToken();
-            dispatch({ type: 'AUTH_LOGOUT' });
+            console.log('❌ Profile fetch failed, clearing auth');
+            await storageService.clearUserData();
+            dispatch(clearUser());
           }
         } else {
-          // DEVELOPMENT MODE: Auto-login for easier testing
-          // Remove this in production
-          const devUser: User = {
-            id: 'dev-user-1',
-            email: 'dev@example.com',
-            displayName: 'Development User',
-            phoneNumber: '+1234567890',
-            phoneVerified: true,
-            age: 25,
-            trainingTypes: ['Strength Training', 'Cardio'],
-            genderPreference: 'Any',
-            userGender: 'Male',
-            currentPRs: 'Bench: 225lbs, Squat: 315lbs',
-            profilePicture: undefined,
-            bio: 'Development user for testing',
-            location: 'San Francisco, CA',
-            experienceLevel: 'Intermediate',
-            availability: 'Weekends',
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          };
-          
-          const devToken = 'dev-token-123';
-          
-          // Store dev user data
-          await storageService.setAuthToken(devToken);
-          await storageService.setUserProfile(devUser);
-          
-          dispatch({
-            type: 'AUTH_SUCCESS',
-            payload: { user: devUser, token: devToken },
-          });
-          
-          console.log('Development mode: Auto-logged in as dev user');
+          console.log('ℹ️ No token found, user not authenticated');
+          dispatch(clearUser());
         }
-      } catch (error) {
-        console.error('Error checking auth status:', error);
-        
-        // If there's a storage error, clear all data and start fresh
-        try {
-          await storageService.clearCorruptedData();
-        } catch (clearError) {
-          console.error('Error clearing corrupted data:', clearError);
-        }
-        
-        dispatch({ type: 'AUTH_LOGOUT' });
+      } catch (bootstrapError) {
+        console.error('❌ Error during auth initialization:', bootstrapError);
+        await storageService.clearUserData();
+        dispatch(clearUser());
+      } finally {
+        setIsBootstrapping(false);
       }
     };
 
-    checkAuthStatus();
-  }, []);
+    initializeAuth();
+  }, [dispatch, fetchProfile]);
 
-  // Login function
+  // Login function - Only save token, user profile comes from the response
   const login = async (email: string, password: string): Promise<boolean> => {
-    dispatch({ type: 'AUTH_START' });
+    setError(null);
 
     try {
-      const response = await AuthService.login(email, password);
-      
-      if (response.success && response.data) {
-        const { user, token } = response.data;
-        
-        // Store token and user data
-        await storageService.setAuthToken(token);
-        await storageService.setUserProfile(user);
-        
-        dispatch({
-          type: 'AUTH_SUCCESS',
-          payload: { user, token },
-        });
-        
-        return true;
-      } else {
-        dispatch({
-          type: 'AUTH_FAILURE',
-          payload: response.error || ERROR_MESSAGES.authenticationError,
-        });
-        return false;
+      const response = await triggerLogin({ email, password }).unwrap();
+
+      if (!response.status || !response.data) {
+        throw new Error(response.message || ERROR_MESSAGES.authenticationError);
       }
-    } catch (error) {
-      dispatch({
-        type: 'AUTH_FAILURE',
-        payload: error instanceof Error ? error.message : ERROR_MESSAGES.authenticationError,
-      });
+
+      const { token: rawToken, password: _password, ...rest } = response.data as Record<string, unknown> & {
+        token?: string;
+        password?: string;
+      };
+
+      if (!rawToken || typeof rawToken !== 'string') {
+        throw new Error(ERROR_MESSAGES.authenticationError);
+      }
+
+      const sanitizedUser = rest as unknown as User;
+
+      // Only save token to storage, not user profile
+      await storageService.setAuthToken(rawToken);
+      dispatch(setUser({ user: sanitizedUser, token: rawToken }));
+
+      console.log('✅ Login successful, token saved');
+      Toast.success(response.message || SUCCESS_MESSAGES.loginSuccess);
+      return true;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : ERROR_MESSAGES.authenticationError;
+      setError(message);
+      Toast.error(message);
       return false;
     }
   };
@@ -237,78 +141,58 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     userGender: string;
     currentPRs: string;
   }): Promise<boolean> => {
-    dispatch({ type: 'AUTH_START' });
+    setError(null);
 
     try {
-      const response = await AuthService.register(userData);
-      
-      if (response.success && response.data) {
-        const { user, token } = response.data;
-        
-        // Store token and user data
-        await storageService.setAuthToken(token);
-        await storageService.setUserProfile(user);
-        
-        dispatch({
-          type: 'AUTH_SUCCESS',
-          payload: { user, token },
-        });
-        
-        return true;
-      } else {
-        dispatch({
-          type: 'AUTH_FAILURE',
-          payload: response.error || ERROR_MESSAGES.authenticationError,
-        });
-        return false;
+      const registerResponse = await triggerRegister(userData).unwrap();
+
+      if (!registerResponse.status) {
+        throw new Error(registerResponse.message || ERROR_MESSAGES.authenticationError);
       }
-    } catch (error) {
-      dispatch({
-        type: 'AUTH_FAILURE',
-        payload: error instanceof Error ? error.message : ERROR_MESSAGES.authenticationError,
-      });
+
+      Toast.success(registerResponse.message || SUCCESS_MESSAGES.registrationSuccess);
+
+      return await login(userData.email, userData.password);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : ERROR_MESSAGES.authenticationError;
+      setError(message);
+      Toast.error(message);
       return false;
     }
   };
 
   // Logout function
   const logout = async (): Promise<void> => {
-    try {
-      if (state.token) {
-        // Call logout API
-        await AuthService.logout(state.token);
-      }
-    } catch (error) {
-      console.error('Error calling logout API:', error);
-    } finally {
-      // Clear local storage
-      await storageService.clearUserData();
-      
-      dispatch({ type: 'AUTH_LOGOUT' });
-    }
+    await storageService.clearUserData();
+    dispatch(clearUser());
+    Toast.success(SUCCESS_MESSAGES.logoutSuccess);
   };
 
   // Clear error function
-  const clearError = (): void => {
-    dispatch({ type: 'CLEAR_ERROR' });
+  const clearErrorHandler = (): void => {
+    setError(null);
   };
 
   // Update user function
-  const updateUser = (user: User): void => {
-    dispatch({ type: 'UPDATE_USER', payload: user });
-    // Also update in storage
+  const updateUserHandler = (user: User): void => {
+    dispatch(updateUser(user));
     storageService.setUserProfile(user);
   };
 
   // Context value
   const value: AuthContextType = {
-    ...state,
+    user,
+    token,
+    isAuthenticated,
+    isLoading,
+  isBootstrapping,
+    error,
     login,
     register,
     logout,
-    clearError,
-    updateUser,
-    dispatch,
+    clearError: clearErrorHandler,
+    updateUser: updateUserHandler,
+    dispatch, // Keep for compatibility
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

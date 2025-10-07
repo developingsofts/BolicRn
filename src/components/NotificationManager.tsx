@@ -9,6 +9,8 @@ Notifications.setNotificationHandler({
     shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
   }),
 });
 
@@ -102,6 +104,7 @@ export class NotificationManager {
           badge: 1,
         },
         trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.DATE,
           date: notification.scheduledDate,
         },
       });
