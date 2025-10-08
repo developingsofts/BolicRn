@@ -31,6 +31,51 @@ interface DeleteProgressGoalPayload {
 
 export const workoutApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
+    // Get user's completed workouts with pagination
+    getUserWorkouts: builder.query<
+      ApiResponse<{ workouts: any[]; pagination: any }>, 
+      { page?: number; limit?: number } | void
+    >({
+      query: (params) => {
+        const page = params?.page || 1;
+        const limit = params?.limit || 3;
+        return {
+          url: `/user-workout/all?page=${page}&limit=${limit}`,
+          method: 'GET',
+        };
+      },
+      providesTags: ['Workout'],
+      // Support for infinite scroll - merge results
+      serializeQueryArgs: ({ endpointName }) => {
+        // Use same cache key for all pages to enable merging
+        return endpointName;
+      },
+      merge: (currentCache, newItems, { arg }) => {
+        // If page 1 or no arg, return fresh data
+        if (!arg || arg.page === 1) {
+          return newItems;
+        }
+        
+        // Merge results for page > 1
+        if ('data' in currentCache && 'data' in newItems && currentCache.status && newItems.status) {
+          return {
+            ...newItems,
+            data: {
+              workouts: [
+                ...(currentCache.data?.workouts || []),
+                ...(newItems.data?.workouts || [])
+              ],
+              pagination: newItems.data?.pagination
+            }
+          };
+        }
+        
+        return newItems;
+      },
+      forceRefetch({ currentArg, previousArg }) {
+        return currentArg?.page !== previousArg?.page;
+      },
+    }),
     getWorkoutSessions: builder.query<ApiResponse<WorkoutSession[]>, string>({
       query: (userId) => ({
         url: API_END_POINTS.workouts.sessions(userId),
@@ -114,6 +159,7 @@ export const workoutApi = baseApi.injectEndpoints({
 });
 
 export const {
+  useGetUserWorkoutsQuery,
   useGetWorkoutSessionsQuery,
   useCreateWorkoutSessionMutation,
   useUpdateWorkoutSessionMutation,

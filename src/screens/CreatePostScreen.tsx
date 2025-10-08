@@ -11,7 +11,9 @@ import {
   Alert,
   Linking,
   Pressable,
+  ActivityIndicator,
 } from "react-native";
+import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS, DIMENSIONS } from "../config/constants";
 import STRINGS from "../config/strings";
@@ -21,6 +23,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Achievement, Close, Media } from "../../assets";
 import { Divider } from "react-native-paper";
 import BasicTopBar from "../components/BasicTopBar";
+import { useCreatePostMutation } from "../services/api/postsApi";
+import { Toast } from "../components/ToastManager";
 
 interface CreatePostScreenProps {
   navigation: any;
@@ -35,8 +39,11 @@ interface Achievement {
 
 const CreatePostScreen: React.FC<CreatePostScreenProps> = ({ navigation }) => {
   const styles = useResponsive(baseStyles);
+  const [createPost, { isLoading }] = useCreatePostMutation();
+  
   const [postText, setPostText] = useState("");
-  const [selectedImages, setSelectedImages] = useState<string[]>([]);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<any>(null);
   const [selectedAchievement, setSelectedAchievement] =
     useState<Achievement | null>(null);
   const [showAchievementModal, setShowAchievementModal] = useState(false);
@@ -65,7 +72,12 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({ navigation }) => {
   ];
 
   const handleBack = () => {
-    navigation.goBack();
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+    } else {
+      // Fallback to navigate to home
+      navigation.navigate('HomeFeed');
+    }
   };
 
   const openDeviceSettings = () => {
@@ -74,11 +86,54 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({ navigation }) => {
     });
   };
 
-  const handleSelectPhoto = () => {
-    // Mock image selection - in real app, use ImagePicker
-    const mockImage =
-      "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400";
-    setSelectedImages([mockImage]);
+  const handleSelectPhoto = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      
+      if (status !== 'granted') {
+        Alert.alert(
+          'Permission Required',
+          'Please grant permission to access your photos to upload media.'
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        const asset = result.assets[0];
+        setSelectedImage(asset.uri);
+        
+        // Determine the correct MIME type
+        const uriParts = asset.uri.split('.');
+        const fileExtension = uriParts[uriParts.length - 1].toLowerCase();
+        let mimeType = 'image/jpeg';
+        
+        if (fileExtension === 'png') {
+          mimeType = 'image/png';
+        } else if (fileExtension === 'jpg' || fileExtension === 'jpeg') {
+          mimeType = 'image/jpeg';
+        } else if (fileExtension === 'gif') {
+          mimeType = 'image/gif';
+        } else if (fileExtension === 'webp') {
+          mimeType = 'image/webp';
+        }
+        
+        setImageFile({
+          uri: asset.uri,
+          type: mimeType,
+          name: asset.fileName || `post_${Date.now()}.${fileExtension}`,
+        });
+      }
+    } catch (error) {
+      console.error('Error picking image:', error);
+      Toast.error('Failed to pick image');
+    }
   };
 
   const [image, setImage] = useState<string | null>(null);
@@ -93,20 +148,44 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({ navigation }) => {
     setShowUnlockedModal(true);
   };
 
-  const handlePost = () => {
-    if (!postText.trim() && selectedImages.length === 0) {
-      Alert.alert(STRINGS.COMMON.error, STRINGS.CREATE_POST.errors.addContent);
+  const handlePost = async () => {
+    if (!postText.trim() && !selectedImage) {
+      Toast.error(STRINGS.CREATE_POST.errors.addContent || 'Please add some content to your post');
       return;
     }
 
-    Alert.alert(STRINGS.COMMON.success, STRINGS.CREATE_POST.success.postCreated, [
-      { text: STRINGS.COMMON.ok, onPress: () => navigation.goBack() },
-    ]);
+    try {
+      const payload: any = {
+        title: postText.trim(),
+      };
+
+      // Add achievement ID if selected
+      if (selectedAchievement) {
+        payload.achievementId = parseInt(selectedAchievement.id);
+      }
+
+      // Add media file if selected
+      if (imageFile) {
+        payload.mediaFile = imageFile;
+      }
+
+      const response = await createPost(payload).unwrap();
+
+      if (response.status) {
+        Toast.success(STRINGS.CREATE_POST.success.postCreated || 'Post created successfully!');
+        handleBack();
+      } else {
+        Toast.error(response.message || 'Failed to create post');
+      }
+    } catch (error: any) {
+      console.error('Create post error:', error);
+      Toast.error(error?.data?.message || 'Failed to create post');
+    }
   };
 
-  const removeImage = (index: number) => {
-    const newImages = selectedImages.filter((_, i) => i !== index);
-    setSelectedImages(newImages);
+  const removeImage = () => {
+    setSelectedImage(null);
+    setImageFile(null);
   };
 
   const removeAchievement = () => {
@@ -118,7 +197,7 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({ navigation }) => {
        <BasicTopBar
         containerStyle={styles.header}
         showBackButton={true}
-        onBackPress={() => navigation.goBack()}
+        onBackPress={handleBack}
         title={STRINGS.CREATE_POST.title}
         subtitle={STRINGS.CREATE_POST.subtitle}
         titleStyle={styles.headerTitle}
@@ -147,6 +226,7 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({ navigation }) => {
                 onChangeText={setPostText}
                 multiline
                 textAlignVertical="top"
+                editable={!isLoading}
               />
             </View>
 
@@ -155,6 +235,7 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({ navigation }) => {
               <TouchableOpacity
                 style={styles.actionButton}
                 onPress={handleSelectPhoto}
+                disabled={isLoading}
               >
                 <Image source={Media} style={styles.actionButtonImage} />
                 <Text style={[styles.actionButtonText, { marginLeft: 5 }]}>
@@ -165,6 +246,7 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({ navigation }) => {
               <TouchableOpacity
                 style={styles.actionButton}
                 onPress={handleSelectAchievement}
+                disabled={isLoading}
               >
                 <Image source={Achievement} style={styles.actionButtonImage} />
                 <Text style={[styles.actionButtonText, { marginLeft: 2 }]}>
@@ -209,7 +291,7 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({ navigation }) => {
             <Divider style={{ height: 1.5, backgroundColor: COLORS._C9C9C9 }} />
 
             {/* Selected Images */}
-            {selectedImages.length > 0 && (
+            {selectedImage && (
               <View style={styles.imagesContainer}>
                 <View
                   style={{
@@ -218,7 +300,7 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({ navigation }) => {
                   }}
                 >
                   <Text style={styles.imagesTitle}>{STRINGS.CREATE_POST.uploadedImage}</Text>
-                  <Pressable onPress={() => removeImage(0)}>
+                  <Pressable onPress={removeImage}>
                     <Text
                       style={[styles.imagesTitle, { color: COLORS._FF1616 }]}
                     >
@@ -229,7 +311,7 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({ navigation }) => {
 
                 <View style={styles.imageWrapper}>
                   <Image
-                    source={{ uri: selectedImages[0] }}
+                    source={{ uri: selectedImage }}
                     resizeMode="cover"
                     style={styles.selectedImage}
                   />
@@ -293,8 +375,16 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({ navigation }) => {
             </View>
           </Modal>
 
-          <TouchableOpacity style={styles.postButton} onPress={handlePost}>
-            <Text style={styles.postButtonText}>{STRINGS.CREATE_POST.post}</Text>
+          <TouchableOpacity 
+            style={[styles.postButton, isLoading && styles.postButtonDisabled]} 
+            onPress={handlePost}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator size="small" color={COLORS.white} />
+            ) : (
+              <Text style={styles.postButtonText}>{STRINGS.CREATE_POST.post}</Text>
+            )}
           </TouchableOpacity>
         </View>
       </View>
@@ -552,6 +642,9 @@ const baseStyles = StyleSheet.create({
     fontSize: 16,
     fontFamily: FontWeight.SemiBold,
     color: COLORS.app_black,
+  },
+  postButtonDisabled: {
+    opacity: 0.6,
   },
 });
 

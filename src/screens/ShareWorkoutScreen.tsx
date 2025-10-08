@@ -10,6 +10,8 @@ import {
   Pressable,
   Alert,
   Modal,
+  ActivityIndicator,
+  FlatList,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { COLORS, DIMENSIONS } from "../config/constants";
@@ -18,34 +20,28 @@ import { Achievement, ImageFile, LeftArrow, Media, Close } from "../../assets";
 import FontWeight from "../hooks/useInterFonts";
 import { Divider } from "react-native-paper";
 import BasicTopBar from "../components/BasicTopBar";
+import * as ImagePicker from 'expo-image-picker';
+import { Toast } from '../components/ToastManager';
+import { useGetUserWorkoutsQuery } from '../services/api/workoutApi';
+import { useCreatePostMutation } from '../services/api/postsApi';
+import { useAuth } from '../contexts/AuthContext';
 
 type Workout = {
   id: string;
-  name: string;
-  type: string;
-  difficulty: string;
-  completedDate: string;
-  time: string;
+  userId: number;
+  workoutId: number;
+  isCompleted: boolean;
+  duration: number;
+  level: string;
+  createdAt: string;
+  updatedAt: string;
+  workout?: {
+    id: number;
+    name: string;
+    description: string;
+    difficulty: string;
+  };
 };
-
-const mockWorkouts: Workout[] = [
-  {
-    id: "1",
-    name: "Upper Body Power",
-    type: "Strength",
-    difficulty: "Medium",
-    completedDate: "Yesterday",
-    time: "45 mins",
-  },
-  {
-    id: "2",
-    name: "Morning Cardio",
-    type: "Cardio",
-    difficulty: "Easy",
-    completedDate: "2 days ago",
-    time: "30 mins",
-  },
-];
 
 interface ShareWorkoutScreenProps {
   navigation: any;
@@ -63,10 +59,42 @@ const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
 }) => {
   const [selectedWorkout, setSelectedWorkout] = useState<Workout | null>(null);
   const [postText, setPostText] = useState("");
-  const [selectedImages, setSelectedImages] = useState<string[]>([]);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<any>(null);
   const [selectedAchievement, setSelectedAchievement] =
     useState<Achievement | null>(null);
   const [showAchievementModal, setShowAchievementModal] = useState(false);
+
+  // Get current user
+  const { user } = useAuth();
+
+  // Pagination state
+  const [page, setPage] = useState(1);
+
+  // Fetch user workouts with pagination
+  const { data: workoutsData, isLoading: workoutsLoading, isFetching } = useGetUserWorkoutsQuery({ page, limit: 3 });
+  const [createPost, { isLoading: isCreating }] = useCreatePostMutation();
+
+  // Use API data
+  const userWorkouts = (workoutsData?.status && workoutsData?.data?.workouts) ? workoutsData.data.workouts : [];
+  const pagination = (workoutsData?.status && workoutsData?.data?.pagination) ? workoutsData.data.pagination : null;
+
+  // Handle load more
+  const handleLoadMore = () => {
+    if (!isFetching && pagination?.hasMore) {
+      setPage(prevPage => prevPage + 1);
+    }
+  };
+
+  // Render footer with loading indicator
+  const renderFooter = () => {
+    if (!isFetching) return null;
+    return (
+      <View style={{ padding: 10, alignItems: 'center' }}>
+        <ActivityIndicator size="small" color={COLORS.primary} />
+      </View>
+    );
+  };
 
   // Mock achievements data
   const achievements: Achievement[] = [
@@ -90,11 +118,37 @@ const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
     },
   ];
 
-  const handleSelectPhoto = () => {
-    // Mock image selection - in real app, use ImagePicker
-    const mockImage =
-      "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400";
-    setSelectedImages([mockImage]);
+  const handleSelectPhoto = async () => {
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    
+    if (!permissionResult.granted) {
+      Toast.error('Please grant camera roll permissions to select images');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      const asset = result.assets[0];
+      setSelectedImage(asset.uri);
+      
+      // Determine MIME type
+      let mimeType = 'image/jpeg';
+      if (asset.uri.endsWith('.png')) mimeType = 'image/png';
+      else if (asset.uri.endsWith('.jpg') || asset.uri.endsWith('.jpeg')) mimeType = 'image/jpeg';
+      else if (asset.uri.endsWith('.gif')) mimeType = 'image/gif';
+      else if (asset.uri.endsWith('.webp')) mimeType = 'image/webp';
+      
+      setImageFile({
+        uri: asset.uri,
+        type: mimeType,
+        name: `workout_${Date.now()}.${mimeType.split('/')[1]}`,
+      });
+    }
   };
 
   const handleSelectAchievement = () => {
@@ -106,26 +160,57 @@ const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
     setShowAchievementModal(false);
   };
 
-  const removeImage = (index: number) => {
-    const newImages = selectedImages.filter((_, i) => i !== index);
-    setSelectedImages(newImages);
+  const removeImage = () => {
+    setSelectedImage(null);
+    setImageFile(null);
   };
 
   const removeAchievement = () => {
     setSelectedAchievement(null);
   };
 
-  const handlePost = () => {
-    if (!postText.trim() && selectedImages.length === 0 && !selectedWorkout) {
-      Alert.alert(STRINGS.COMMON.error, STRINGS.CREATE_POST.errors.addContent);
+  const handleBack = () => {
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+    } else {
+      navigation.navigate('HomeFeed');
+    }
+  };
+
+  const handlePost = async () => {
+    if (!selectedWorkout) {
+      Toast.error('Please select a workout to share');
       return;
     }
 
-    Alert.alert(
-      STRINGS.COMMON.success,
-      STRINGS.CREATE_POST.success.postCreated,
-      [{ text: STRINGS.COMMON.ok, onPress: () => navigation.goBack() }]
-    );
+    if (!postText.trim() && !selectedImage) {
+      Toast.error('Please add a caption or photo');
+      return;
+    }
+
+    try {
+      const payload: any = {
+        title: postText.trim() || `Completed ${selectedWorkout.workout?.name || 'workout'}!`,
+        type: 'workout_share',
+        workoutId: selectedWorkout.id,
+      };
+
+      if (selectedAchievement) {
+        payload.achievementId = parseInt(selectedAchievement.id);
+      }
+
+      if (imageFile) {
+        payload.mediaFile = imageFile;
+      }
+
+      await createPost(payload).unwrap();
+
+      Toast.success('Workout shared successfully!');
+
+      handleBack();
+    } catch (error: any) {
+      Toast.error(error?.data?.message || 'Failed to share workout');
+    }
   };
 
   return (
@@ -140,77 +225,123 @@ const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
         <BasicTopBar
           containerStyle={styles.topBar}
           showBackButton={true}
-          onBackPress={() => navigation.goBack()}
+          onBackPress={handleBack}
           title={STRINGS.SHARE_WORKOUT.title}
           subtitle={STRINGS.SHARE_WORKOUT.subtitle}
           titleStyle={styles.heading}
         />
 
-        <ScrollView contentContainerStyle={styles.scrollContent}>
-          {mockWorkouts.map((workout) => (
-            <TouchableOpacity
-              key={workout.id}
-              style={[
-                styles.workoutCard,
-                selectedWorkout?.id === workout.id &&
-                  styles.selectedWorkoutCard,
-              ]}
-              onPress={() => setSelectedWorkout(workout)}
-            >
-              <Text style={styles.workoutName}>{workout.name}</Text>
-              <View style={styles.workoutDetailsRow}>
-                <View
-                  style={{
-                    backgroundColor: "rgba(11, 128, 255, 0.1)",
-                    paddingHorizontal: 8,
-                    paddingVertical: 4,
-                    borderRadius: 12,
-                    alignSelf: "flex-start",
-                  }}
-                >
-                  <Text style={styles.workoutType}>{workout.type}</Text>
-                </View>
-                <Text style={styles.workoutDetail}>{workout.time}</Text>
-                <Text style={styles.workoutDetail}>{workout.difficulty}</Text>
-              </View>
-              <Text
-                style={{
-                  fontSize: 14,
-                  fontWeight: "400",
-                  color: COLORS._5E5E5E,
-                  fontFamily: FontWeight.Regular,
-                }}
-              >
-                {STRINGS.SHARE_WORKOUT.completed} {workout.completedDate}
+        <ScrollView 
+          style={styles.mainScrollView}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Loading State */}
+          {workoutsLoading && page === 1 && (
+            <View style={{ padding: 20, alignItems: 'center' }}>
+              <ActivityIndicator size="large" color={COLORS.primary} />
+              <Text style={{ marginTop: 10, color: COLORS._5E5E5E }}>
+                Loading workouts...
               </Text>
-            </TouchableOpacity>
-          ))}
+            </View>
+          )}
+
+          {/* Empty State */}
+          {!workoutsLoading && userWorkouts.length === 0 && (
+            <View style={{ padding: 20, alignItems: 'center', marginHorizontal: DIMENSIONS.spacing.lg }}>
+              <Text style={{ fontSize: 16, color: COLORS._5E5E5E }}>
+                No completed workouts found
+              </Text>
+            </View>
+          )}
+
+          {/* Workout List */}
+          {!workoutsLoading && userWorkouts.length > 0 && (
+            <View style={styles.workoutListContainer}>
+              {userWorkouts.map((workout: Workout) => (
+                <TouchableOpacity
+                  key={workout.id}
+                  style={[
+                    styles.workoutCard,
+                    selectedWorkout?.id === workout.id &&
+                      styles.selectedWorkoutCard,
+                  ]}
+                  onPress={() => setSelectedWorkout(workout)}
+                  disabled={isCreating}
+                >
+                  <Text style={styles.workoutName}>
+                    {workout.workout?.name || 'Workout'}
+                  </Text>
+                  <View style={styles.workoutDetailsRow}>
+                    <View
+                      style={{
+                        backgroundColor: "rgba(11, 128, 255, 0.1)",
+                        paddingHorizontal: 8,
+                        paddingVertical: 4,
+                        borderRadius: 12,
+                        alignSelf: "flex-start",
+                      }}
+                    >
+                      <Text style={styles.workoutType}>{workout.level || 'Medium'}</Text>
+                    </View>
+                    <Text style={styles.workoutDetail}>{workout.duration} mins</Text>
+                    <Text style={styles.workoutDetail}>
+                      {workout.workout?.difficulty || 'Medium'}
+                    </Text>
+                  </View>
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      fontWeight: "400",
+                      color: COLORS._5E5E5E,
+                      fontFamily: FontWeight.Regular,
+                    }}
+                  >
+                    {STRINGS.SHARE_WORKOUT.completed} {new Date(workout.createdAt).toLocaleDateString()}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+
+              {/* Load More Button */}
+              {pagination?.hasMore && !isFetching && (
+                <TouchableOpacity 
+                  style={styles.loadMoreButton}
+                  onPress={handleLoadMore}
+                >
+                  <Text style={styles.loadMoreText}>Load More</Text>
+                </TouchableOpacity>
+              )}
+
+              {/* Loading More Indicator */}
+              {isFetching && page > 1 && (
+                <View style={{ padding: 10, alignItems: 'center' }}>
+                  <ActivityIndicator size="small" color={COLORS.primary} />
+                </View>
+              )}
+            </View>
+          )}
 
           {/* Post Area */}
           <View style={styles.content}>
-            <ScrollView
-              style={styles.scrollView}
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ borderRadius: 10 }}
-            >
-              {/* Text Input */}
-              <View style={styles.textInputContainer}>
-                <TextInput
-                  style={styles.textInput}
-                  placeholder={STRINGS.CREATE_POST.captionPlaceholder}
-                  placeholderTextColor={COLORS._5E5E5E}
-                  value={postText}
-                  onChangeText={setPostText}
-                  multiline
-                  textAlignVertical="top"
-                />
-              </View>
+            {/* Text Input */}
+            <View style={styles.textInputContainer}>
+              <TextInput
+                style={styles.textInput}
+                placeholder={STRINGS.CREATE_POST.captionPlaceholder}
+                placeholderTextColor={COLORS._5E5E5E}
+                value={postText}
+                onChangeText={setPostText}
+                multiline
+                textAlignVertical="top"
+                editable={!isCreating}
+              />
+            </View>
 
-              {/* Action Buttons */}
-              <View style={styles.actionButtons}>
+            {/* Action Buttons */}
+            <View style={styles.actionButtons}>
                 <TouchableOpacity
                   style={styles.actionButton}
                   onPress={handleSelectPhoto}
+                  disabled={isCreating}
                 >
                   <Image source={Media} style={styles.actionButtonImage} />
                   <Text style={[styles.actionButtonText, { marginLeft: 5 }]}>
@@ -221,6 +352,7 @@ const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
                 <TouchableOpacity
                   style={styles.actionButton}
                   onPress={handleSelectAchievement}
+                  disabled={isCreating}
                 >
                   <Image
                     source={Achievement}
@@ -270,7 +402,7 @@ const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
               />
 
               {/* Selected Images */}
-              {selectedImages.length > 0 && (
+              {selectedImage && (
                 <View style={styles.imagesContainer}>
                   <View
                     style={{
@@ -281,7 +413,7 @@ const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
                     <Text style={styles.imagesTitle}>
                       {STRINGS.CREATE_POST.uploadedImage}
                     </Text>
-                    <Pressable onPress={() => removeImage(0)}>
+                    <Pressable onPress={removeImage} disabled={isCreating}>
                       <Text
                         style={[styles.imagesTitle, { color: COLORS._FF1616 }]}
                       >
@@ -292,25 +424,30 @@ const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
 
                   <View style={styles.imageWrapper}>
                     <Image
-                      source={{ uri: selectedImages[0] }}
+                      source={{ uri: selectedImage }}
                       resizeMode="cover"
                       style={styles.selectedImage}
                     />
                   </View>
                 </View>
               )}
-            </ScrollView>
 
-            {/* Achievement Selection Modal */}
-
-            <TouchableOpacity style={styles.postButton} onPress={handlePost}>
-              <Text style={styles.postButtonText}>
-                {STRINGS.CREATE_POST.post}
-              </Text>
+            <TouchableOpacity 
+              style={[styles.postButton, isCreating && { opacity: 0.6 }]} 
+              onPress={handlePost}
+              disabled={isCreating}
+            >
+              {isCreating ? (
+                <ActivityIndicator color={COLORS.white} />
+              ) : (
+                <Text style={styles.postButtonText}>
+                  {STRINGS.CREATE_POST.post}
+                </Text>
+              )}
             </TouchableOpacity>
           </View>
         </ScrollView>
-
+        
         {/* Achievement Selection Modal */}
         <Modal
           visible={showAchievementModal}
@@ -381,7 +518,36 @@ const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.gradient3,
+    backgroundColor: COLORS.background,
+  },
+  mainScrollView: {
+    flex: 1,
+  },
+  workoutListContainer: {
+    paddingHorizontal: DIMENSIONS.spacing.lg,
+    paddingTop: DIMENSIONS.spacing.lg,
+  },
+  workoutList: {
+    maxHeight: 400,
+  },
+  workoutListContent: {
+    padding: DIMENSIONS.spacing.lg,
+    paddingBottom: DIMENSIONS.spacing.md,
+  },
+  loadMoreButton: {
+    backgroundColor: COLORS.primary,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 10,
+    marginBottom: 10,
+  },
+  loadMoreText: {
+    color: COLORS.white,
+    fontSize: 14,
+    fontWeight: '600',
+    fontFamily: FontWeight.SemiBold,
   },
   topBar: {
     flexDirection: "column",
@@ -505,6 +671,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginTop: 10,
     marginBottom: 10,
+    marginHorizontal: DIMENSIONS.spacing.lg,
     backgroundColor: COLORS.white,
     shadowOffset: {
       width: 0,

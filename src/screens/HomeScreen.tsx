@@ -8,6 +8,7 @@ import {
   TextInput,
   Alert,
   Image,
+  ActivityIndicator,
 } from "react-native";
 import { useAuth } from "../contexts/AuthContext";
 import { COLORS, DIMENSIONS } from "../config/constants";
@@ -16,6 +17,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SafeAreaView } from "react-native-safe-area-context";
 import FontWeight from "../hooks/useInterFonts";
 import BasicTopBar from "../components/BasicTopBar";
+import { useGetPostsQuery } from '../services/api/postsApi';
 
 interface HomeScreenProps {
   navigation: any;
@@ -68,6 +70,11 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const { user } = useAuth();
   const [notes, setNotes] = useState<Note[]>([]);
   const [newNote, setNewNote] = useState("");
+  
+  // Fetch posts for Community Highlights
+  const { data: postsData, isLoading: postsLoading } = useGetPostsQuery({ page: 1, limit: 5 });
+  const communityPosts = (postsData?.status && postsData?.data?.posts) ? postsData.data.posts : [];
+  
   const [weeklyGoal, setWeeklyGoal] = useState<WeeklyGoal>({
     id: "1",
     title: "Complete 4 Workouts This Week",
@@ -245,6 +252,27 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     });
   };
 
+  const getTimeAgo = (date: Date) => {
+    const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
+    
+    let interval = seconds / 31536000;
+    if (interval > 1) return Math.floor(interval) + "y ago";
+    
+    interval = seconds / 2592000;
+    if (interval > 1) return Math.floor(interval) + "mo ago";
+    
+    interval = seconds / 86400;
+    if (interval > 1) return Math.floor(interval) + "d ago";
+    
+    interval = seconds / 3600;
+    if (interval > 1) return Math.floor(interval) + "h ago";
+    
+    interval = seconds / 60;
+    if (interval > 1) return Math.floor(interval) + "m ago";
+    
+    return "Just now";
+  };
+
   return (
     <SafeAreaView edges={["left", "right"]} style={styles.container}>
       <ScrollView
@@ -396,81 +424,85 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             </View>
           </View>
 
-          {/* Social Feed */}
+          {/* Community Highlights */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>🔥 Community Highlights</Text>
-              <TouchableOpacity onPress={() => navigation.navigate("Messages")}>
+              <TouchableOpacity onPress={() => navigation.navigate("HomeFeed")}>
                 <Text style={styles.viewAllButton}>{STRINGS.HOME.viewAll}</Text>
               </TouchableOpacity>
             </View>
-            <View style={styles.socialFeed}>
-              <View style={styles.socialPost}>
-                <View style={styles.socialPostHeader}>
-                  <View style={styles.socialPostAvatar}>
-                    <Text style={styles.socialPostAvatarText}>MJ</Text>
-                  </View>
-                  <View style={styles.socialPostInfo}>
-                    <Text style={styles.socialPostName}>Mike Johnson</Text>
-                    <Text style={styles.socialPostTime}>2h ago</Text>
-                  </View>
-                  <TouchableOpacity style={styles.socialPostMenu}>
-                    <Text style={styles.socialPostMenuText}>⋯</Text>
-                  </TouchableOpacity>
-                </View>
-                <Text style={styles.socialPostContent}>
-                  Just crushed my PR on deadlifts! 💪 315lbs for 3 reps. The
-                  grind never stops! Who's hitting the gym today?
-                </Text>
-                <View style={styles.socialPostStats}>
-                  <View style={styles.socialPostStat}>
-                    <Text style={styles.socialPostStatIcon}>❤️</Text>
-                    <Text style={styles.socialPostStatText}>24</Text>
-                  </View>
-                  <View style={styles.socialPostStat}>
-                    <Text style={styles.socialPostStatIcon}>💬</Text>
-                    <Text style={styles.socialPostStatText}>8</Text>
-                  </View>
-                  <View style={styles.socialPostStat}>
-                    <Text style={styles.socialPostStatIcon}>🤝</Text>
-                    <Text style={styles.socialPostStatText}>3</Text>
-                  </View>
-                </View>
+            
+            {postsLoading ? (
+              <View style={{ padding: 20, alignItems: 'center' }}>
+                <ActivityIndicator size="small" color={COLORS.primary} />
               </View>
-
-              <View style={styles.socialPost}>
-                <View style={styles.socialPostHeader}>
-                  <View style={styles.socialPostAvatar}>
-                    <Text style={styles.socialPostAvatarText}>SL</Text>
-                  </View>
-                  <View style={styles.socialPostInfo}>
-                    <Text style={styles.socialPostName}>Sarah Lee</Text>
-                    <Text style={styles.socialPostTime}>4h ago</Text>
-                  </View>
-                  <TouchableOpacity style={styles.socialPostMenu}>
-                    <Text style={styles.socialPostMenuText}>⋯</Text>
-                  </TouchableOpacity>
-                </View>
-                <Text style={styles.socialPostContent}>
-                  Morning cardio session complete! 🏃‍♀️ 5 miles in 42 minutes.
-                  Looking for a running buddy for tomorrow's long run!
-                </Text>
-                <View style={styles.socialPostStats}>
-                  <View style={styles.socialPostStat}>
-                    <Text style={styles.socialPostStatIcon}>❤️</Text>
-                    <Text style={styles.socialPostStatText}>18</Text>
-                  </View>
-                  <View style={styles.socialPostStat}>
-                    <Text style={styles.socialPostStatIcon}>💬</Text>
-                    <Text style={styles.socialPostStatText}>5</Text>
-                  </View>
-                  <View style={styles.socialPostStat}>
-                    <Text style={styles.socialPostStatIcon}>🤝</Text>
-                    <Text style={styles.socialPostStatText}>2</Text>
-                  </View>
-                </View>
+            ) : communityPosts.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyStateText}>No posts yet. Be the first to share!</Text>
+                <TouchableOpacity 
+                  style={styles.emptyStateButton}
+                  onPress={() => navigation.navigate('CreatePost')}
+                >
+                  <Text style={styles.emptyStateButtonText}>Create Post</Text>
+                </TouchableOpacity>
               </View>
-            </View>
+            ) : (
+              <View style={styles.socialFeed}>
+                {communityPosts.slice(0, 3).map((post: any) => {
+                  const postUser = post.user || {};
+                  // Use displayName, userName, or email as fallback
+                  const userName = postUser.displayName || postUser.userName || postUser.email || 'Anonymous User';
+                  const initials = userName !== 'Anonymous User'
+                    ? userName.split(' ').map((n: string) => n[0]).join('').toUpperCase().substring(0, 2)
+                    : 'AU';
+                  const timeAgo = getTimeAgo(new Date(post.createdAt));
+                  
+                  return (
+                    <View key={post.id} style={styles.socialPost}>
+                      <View style={styles.socialPostHeader}>
+                        <View style={styles.socialPostAvatar}>
+                          {postUser.imageUrl ? (
+                            <Image 
+                              source={{ uri: postUser.imageUrl }} 
+                              style={styles.socialPostAvatarImage}
+                            />
+                          ) : (
+                            <Text style={styles.socialPostAvatarText}>{initials}</Text>
+                          )}
+                        </View>
+                        <View style={styles.socialPostInfo}>
+                          <Text style={styles.socialPostName}>
+                            {userName}
+                          </Text>
+                          <Text style={styles.socialPostTime}>{timeAgo}</Text>
+                        </View>
+                        <TouchableOpacity style={styles.socialPostMenu}>
+                          <Text style={styles.socialPostMenuText}>⋯</Text>
+                        </TouchableOpacity>
+                      </View>
+                      <Text style={styles.socialPostContent}>
+                        {post.title}
+                      </Text>
+                      <View style={styles.socialPostStats}>
+                        <View style={styles.socialPostStat}>
+                          <Text style={styles.socialPostStatIcon}>❤️</Text>
+                          <Text style={styles.socialPostStatText}>0</Text>
+                        </View>
+                        <View style={styles.socialPostStat}>
+                          <Text style={styles.socialPostStatIcon}>💬</Text>
+                          <Text style={styles.socialPostStatText}>0</Text>
+                        </View>
+                        <View style={styles.socialPostStat}>
+                          <Text style={styles.socialPostStatIcon}>🤝</Text>
+                          <Text style={styles.socialPostStatText}>0</Text>
+                        </View>
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            )}
           </View>
 
           {/* Friend Suggestions */}
@@ -1248,11 +1280,61 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginRight: DIMENSIONS.spacing.md,
+    overflow: 'hidden',
+  },
+  socialPostAvatarImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
   },
   socialPostAvatarText: {
     color: COLORS.surface,
     fontSize: 16,
     fontWeight: "600",
+  },
+  workoutBadge: {
+    backgroundColor: COLORS.primary + '20',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginLeft: 8,
+  },
+  workoutBadgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: COLORS.primary,
+  },
+  socialPostImage: {
+    width: '100%',
+    height: 200,
+    borderRadius: DIMENSIONS.borderRadius,
+    marginTop: DIMENSIONS.spacing.sm,
+    backgroundColor: COLORS.border,
+  },
+  emptyState: {
+    backgroundColor: COLORS.surface,
+    borderRadius: DIMENSIONS.borderRadius,
+    padding: DIMENSIONS.spacing.xl,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  emptyStateText: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    marginBottom: DIMENSIONS.spacing.md,
+    textAlign: 'center',
+  },
+  emptyStateButton: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: DIMENSIONS.borderRadius,
+  },
+  emptyStateButtonText: {
+    color: COLORS.white,
+    fontSize: 14,
+    fontWeight: '600',
   },
   socialPostInfo: {
     flex: 1,

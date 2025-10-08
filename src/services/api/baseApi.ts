@@ -11,9 +11,9 @@ const baseQuery = fetchBaseQuery({
       headers.set('Authorization', `Bearer ${token}`);
     }
     
-    // Don't set Content-Type for FormData - let the browser handle it
-    // We'll detect this by checking if the endpoint is updateMyProfileWithImage
-    if (endpoint !== 'updateMyProfileWithImage') {
+    // Don't set Content-Type for FormData endpoints - let the browser handle it
+    const formDataEndpoints = ['updateMyProfileWithImage', 'createPost', 'updatePost'];
+    if (!formDataEndpoints.includes(endpoint as string)) {
       if (!headers.has('Content-Type')) {
         headers.set('Content-Type', 'application/json');
       }
