@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,120 +8,161 @@ import {
   SafeAreaView,
   KeyboardAvoidingView,
   Platform,
-  Alert,
-  Image,
+  ActivityIndicator,
+  Linking,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import FontWeight from "../hooks/useInterFonts";
 import { COLORS } from "../config/constants";
 import STRINGS from "../config/strings";
 import { useResponsive } from "../hooks/responsiveDesignHook";
-import { EyeHide } from "../../assets";
 import PasswordInput from "../components/PasswordInput";
 import MaskedView from "@react-native-masked-view/masked-view";
 import { LinearGradient } from "expo-linear-gradient";
+import { useForgotPasswordMutation, useResetPasswordMutation } from "../services/api/authApi";
+import { Toast } from "../components/ToastManager";
 
-type ForgotPasswordStep = "email" | "waiting" | "setPassword" | "success";
+type ForgotPasswordStep = "email" | "waiting" | "resetPassword" | "success";
 
 interface ForgotPasswordProps {
   navigation?: any;
 }
+
 const ForgotPassword: React.FC<ForgotPasswordProps> = ({ navigation }) => {
   const styles = useResponsive(baseStyles);
+  const route = useRoute();
   const [currentStep, setCurrentStep] = useState<ForgotPasswordStep>("email");
   const [email, setEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [resetToken, setResetToken] = useState<string>("");
+  
+  const [forgotPassword, { isLoading: isSendingEmail }] = useForgotPasswordMutation();
+  const [resetPassword, { isLoading: isResettingPassword }] = useResetPasswordMutation();
 
-  const handleSendLink = async () => {
+  // Check if there's a token in the route params (from deep link)
+  useEffect(() => {
+    const params = route.params as any;
+    console.log('📱 Route params:', params);
+    
+    if (params?.token) {
+      console.log('✅ Token found in params:', params.token);
+      setResetToken(params.token);
+      setCurrentStep("resetPassword");
+      Toast.success("Please enter your new password");
+    }
+  }, [route.params]);
+
+  // Also handle deep links via Linking API
+  useEffect(() => {
+    const handleDeepLink = (event: { url: string }) => {
+      console.log('🔗 Deep link received:', event.url);
+      
+      // Parse URL to extract token
+      const url = event.url;
+      const tokenMatch = url.match(/[?&]token=([^&]+)/);
+      
+      if (tokenMatch && tokenMatch[1]) {
+        const token = tokenMatch[1];
+        console.log('✅ Token extracted from deep link:', token);
+        setResetToken(token);
+        setCurrentStep("resetPassword");
+        Toast.success("Please enter your new password");
+      }
+    };
+
+    // Handle initial URL (if app was opened from a link)
+    Linking.getInitialURL().then((url) => {
+      if (url) {
+        console.log('🔗 Initial URL:', url);
+        handleDeepLink({ url });
+      }
+    });
+
+    // Handle URL while app is running
+    const subscription = Linking.addEventListener('url', handleDeepLink);
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
+
+  const handleSendResetLink = async () => {
     if (!email.trim()) {
-      Alert.alert(
-        STRINGS.COMMON.error,
-        STRINGS.FORGOT_PASSWORD.errors.enterEmail
-      );
+      Toast.error(STRINGS.FORGOT_PASSWORD.errors.enterEmail);
       return;
     }
 
     if (!email.includes("@")) {
-      Alert.alert(
-        STRINGS.COMMON.error,
-        STRINGS.FORGOT_PASSWORD.errors.validEmail
-      );
+      Toast.error(STRINGS.FORGOT_PASSWORD.errors.validEmail);
       return;
     }
 
-    setLoading(true);
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      setCurrentStep("waiting");
-    } catch (error) {
-      Alert.alert(
-        STRINGS.COMMON.error,
-        STRINGS.FORGOT_PASSWORD.errors.failedToSend
-      );
-    } finally {
-      setLoading(false);
+      const result = await forgotPassword(email).unwrap();
+      
+      if (result.status) {
+        Toast.success("Password reset link sent! Check your email.");
+        setCurrentStep("waiting");
+      } else {
+        Toast.error(result.message || STRINGS.FORGOT_PASSWORD.errors.failedToSend);
+      }
+    } catch (error: any) {
+      console.error("Forgot password error:", error);
+      Toast.error(error?.data?.message || STRINGS.FORGOT_PASSWORD.errors.failedToSend);
     }
   };
 
   const handleResendEmail = async () => {
-    setLoading(true);
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      Alert.alert(STRINGS.COMMON.success, STRINGS.FORGOT_PASSWORD.success);
-    } catch (error) {
-      Alert.alert(
-        STRINGS.COMMON.error,
-        STRINGS.FORGOT_PASSWORD.errors.failedToResend
-      );
-    } finally {
-      setLoading(false);
+      const result = await forgotPassword(email).unwrap();
+      
+      if (result.status) {
+        Toast.success("Password reset link resent!");
+      } else {
+        Toast.error(result.message || STRINGS.FORGOT_PASSWORD.errors.failedToResend);
+      }
+    } catch (error: any) {
+      Toast.error(error?.data?.message || STRINGS.FORGOT_PASSWORD.errors.failedToResend);
     }
   };
 
-  const handleUpdatePassword = async () => {
+  const handleResetPassword = async () => {
     if (!newPassword.trim()) {
-      Alert.alert(
-        STRINGS.COMMON.error,
-        STRINGS.FORGOT_PASSWORD.errors.enterNewPassword
-      );
+      Toast.error(STRINGS.FORGOT_PASSWORD.errors.enterNewPassword);
       return;
     }
 
     if (newPassword.length < 6) {
-      Alert.alert(
-        STRINGS.COMMON.error,
-        STRINGS.FORGOT_PASSWORD.errors.passwordLength
-      );
+      Toast.error(STRINGS.FORGOT_PASSWORD.errors.passwordLength);
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      Alert.alert(
-        STRINGS.COMMON.error,
-        STRINGS.FORGOT_PASSWORD.errors.passwordMismatch
-      );
+      Toast.error(STRINGS.FORGOT_PASSWORD.errors.passwordMismatch);
       return;
     }
 
-    setLoading(true);
+    if (!resetToken) {
+      Toast.error("Invalid reset link. Please request a new one.");
+      return;
+    }
+
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      setCurrentStep("success");
-    } catch (error) {
-      Alert.alert(
-        STRINGS.COMMON.error,
-        STRINGS.FORGOT_PASSWORD.errors.failedToUpdate
-      );
-    } finally {
-      setLoading(false);
+      const result = await resetPassword({ token: resetToken, newPassword }).unwrap();
+      
+      if (result.status) {
+        Toast.success("Password reset successfully!");
+        setCurrentStep("success");
+      } else {
+        Toast.error(result.message || STRINGS.FORGOT_PASSWORD.errors.failedToUpdate);
+      }
+    } catch (error: any) {
+      console.error("Reset password error:", error);
+      Toast.error(error?.data?.message || STRINGS.FORGOT_PASSWORD.errors.failedToUpdate);
     }
   };
 
@@ -146,16 +187,19 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ navigation }) => {
         keyboardType="email-address"
         autoCapitalize="none"
         autoCorrect={false}
+        editable={!isSendingEmail}
       />
 
       <TouchableOpacity
-        style={[styles.button, loading && styles.buttonDisabled]}
-        onPress={handleSendLink}
-        disabled={loading}
+        style={[styles.button, isSendingEmail && styles.buttonDisabled]}
+        onPress={handleSendResetLink}
+        disabled={isSendingEmail}
       >
-        <Text style={styles.buttonText}>
-          {loading ? "Sending..." : "Send Reset Link"}
-        </Text>
+        {isSendingEmail ? (
+          <ActivityIndicator color="#FFFFFF" />
+        ) : (
+          <Text style={styles.buttonText}>Send Reset Link</Text>
+        )}
       </TouchableOpacity>
     </>
   );
@@ -172,28 +216,34 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ navigation }) => {
         placeholder="Enter your email"
         placeholderTextColor={COLORS._5E5E5E}
         value={email}
-        onChangeText={setEmail}
         keyboardType="email-address"
         autoCapitalize="none"
         autoCorrect={false}
         editable={false}
       />
 
-      <TouchableOpacity
-        style={[styles.button, loading && styles.buttonDisabled]}
-        onPress={() => setCurrentStep("setPassword")}
-        disabled={loading}
+      {/* <TouchableOpacity
+        style={styles.secondaryButton}
+        onPress={handleResendEmail}
       >
-        <Text style={styles.buttonText}>Wrong Email?</Text>
+        <Text style={styles.secondaryButtonText}>Resend Email</Text>
+      </TouchableOpacity> */}
+
+      <TouchableOpacity
+        style={[styles.button, { marginTop: 10 }]}
+        onPress={() => setCurrentStep("email")}
+      >
+        <Text style={styles.buttonText}>Wrong email?</Text>
       </TouchableOpacity>
     </>
   );
 
-  const renderSetPasswordStep = () => (
+  const renderResetPasswordStep = () => (
     <>
       <Text style={[styles.title, { marginBottom: 10 }]}>Set New Password</Text>
-      <Text style={styles.description}>New Password</Text>
+      <Text style={styles.subtitle}>Please enter your new password below.</Text>
 
+      <Text style={styles.description}>New Password</Text>
       <PasswordInput
         value={newPassword}
         onChangeText={setNewPassword}
@@ -203,7 +253,6 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ navigation }) => {
       />
 
       <Text style={styles.description}>Confirm New Password</Text>
-
       <PasswordInput
         value={confirmPassword}
         onChangeText={setConfirmPassword}
@@ -213,13 +262,15 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ navigation }) => {
       />
 
       <TouchableOpacity
-        style={[styles.button, loading && styles.buttonDisabled]}
-        onPress={handleUpdatePassword}
-        disabled={loading}
+        style={[styles.button, isResettingPassword && styles.buttonDisabled]}
+        onPress={handleResetPassword}
+        disabled={isResettingPassword}
       >
-        <Text style={styles.buttonText}>
-          {loading ? "Updating..." : "Update"}
-        </Text>
+        {isResettingPassword ? (
+          <ActivityIndicator color="#FFFFFF" />
+        ) : (
+          <Text style={styles.buttonText}>Reset Password</Text>
+        )}
       </TouchableOpacity>
 
       <TouchableOpacity onPress={handleBackToLogin}>
@@ -247,8 +298,8 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ navigation }) => {
         return renderEmailStep();
       case "waiting":
         return renderWaitingStep();
-      case "setPassword":
-        return renderSetPasswordStep();
+      case "resetPassword":
+        return renderResetPasswordStep();
       case "success":
         return renderSuccessStep();
       default:

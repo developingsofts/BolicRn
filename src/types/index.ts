@@ -298,6 +298,9 @@ export type RootStackParamList = {
   ManageGroup: { group: Group };
   ShareWorkout: undefined;
   EditProfile: { userId?: string; isGuest?: boolean } | undefined;
+  BookTrainer: { trainerId?: string; trainerName?: string } | undefined;
+  SelectDateTime: { trainerId?: string; trainerName?: string; packageTitle?: string; price?: number } | undefined;
+  BookingConfirmation: { trainerId?: string; trainerName?: string; packageTitle?: string; price?: number; date?: string; time?: string } | undefined;
 };
 
 export type MainTabParamList = {
@@ -310,12 +313,12 @@ export type MainTabParamList = {
 
 export type FindStackParams = {
   FindMain: undefined;
-  Profile: { userId: string; isGuest: boolean };
+  UserProfile: { userId: string; isGuest: boolean };
 
 };
 
 export type HomeStackParams = {
-  Home: undefined;
+  HomeFeed: undefined;
   CreatePost: undefined;
   ShareWorkout: undefined;
 

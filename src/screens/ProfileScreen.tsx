@@ -262,20 +262,36 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
     </View>
   );
 
+  const handleBookTrainer = () => {
+    navigation.navigate('BookTrainer', {
+      trainerId: route?.params?.userId || user?.id,
+      trainerName: user?.displayName || 'Trainer',
+    });
+  };
+
   const renderFollowingView = () => {
     return (
       <View style={styles.followingRow}>
-        <View style={styles.followingMainBtn}>
+        <TouchableOpacity 
+          style={styles.followingMainBtn}
+          onPress={handleBookTrainer}
+        >
+          <View style={styles.followingMainBtnContent}>
+            <Ionicons name="calendar" size={20} color={COLORS.gradient1} />
+            <Text style={styles.followingText}>Book Session</Text>
+          </View>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.followingMainBtn}>
           <View style={styles.followingMainBtnContent}>
             <Image source={Following} style={styles.smallIconSize} />
             <Text style={styles.followingText}>
               {STRINGS.PROFILE.following}
             </Text>
           </View>
-        </View>
-        <View style={styles.followingIconBtn}>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.followingIconBtn}>
           <Image source={DeleteUser} style={styles.smallIconSize} />
-        </View>
+        </TouchableOpacity>
       </View>
     );
   };
@@ -651,7 +667,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 16,
-    marginTop: 15,
+    marginVertical: 15,
   },
   followingMainBtn: {
     backgroundColor: "white",

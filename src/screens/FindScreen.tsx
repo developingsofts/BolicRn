@@ -396,7 +396,7 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation }) => {
           {currentItem ? (
             <SwipeableCard
               partner={currentItem}
-              onPress={() => navigation.navigate('Profile', { userId: currentItem.id.toString(), isGuest: true })}
+              onPress={() => navigation.navigate('UserProfile', { userId: currentItem.id.toString(), isGuest: true })}
               onSwipeLeft={handleSwipeLeft}
               
               onSwipeRight={handleSwipeRight}

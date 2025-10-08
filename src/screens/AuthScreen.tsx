@@ -292,6 +292,24 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
     setFieldValue: any,
     validateForm: any
   ) => {
+    // Helper function to convert gender preference UI value to backend value
+    const convertGenderPreference = (preference: string, userGender: string): string => {
+      if (preference === 'All') return 'all';
+      if (preference === 'Same Gender Only') {
+        // Convert user's gender to lowercase
+        return userGender.toLowerCase();
+      }
+      if (preference === 'Opposite Gender Only') {
+        // Return opposite gender(s)
+        const gender = userGender.toLowerCase();
+        if (gender === 'male') return 'female';
+        if (gender === 'female') return 'male';
+        if (gender === 'non-binary' || gender === 'prefer not to say') return 'all'; // Non-binary and prefer not to say sees all
+        return 'all';
+      }
+      return preference.toLowerCase();
+    };
+
     const handleNextWithValidation = async () => {
       const validationErrors = await validateForm();
       
@@ -370,8 +388,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
             updateData.trainingTypes = values.trainingTypes;
             break;
           case 6: // Gender & Preferences
-            updateData.userGender = values.userGender;
-            updateData.genderPreference = values.genderPreference;
+            updateData.userGender = values.userGender.toLowerCase();
+            updateData.genderPreference = convertGenderPreference(values.genderPreference, values.userGender);
             if (values.currentPRs) updateData.currentPRs = values.currentPRs;
             break;
         }

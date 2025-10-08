@@ -88,7 +88,7 @@ export const TRAINING_TYPES = [
 // Gender Options
 export const GENDER_OPTIONS = ['Male', 'Female', 'Non-binary', 'Prefer not to say'];
 
-// Gender Preference Options
+// Gender Preference Options (UI Display)
 export const GENDER_PREFERENCE_OPTIONS = ['All', 'Same Gender Only', 'Opposite Gender Only'];
 
 // Training Schedule Options

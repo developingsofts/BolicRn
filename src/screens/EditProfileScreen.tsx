@@ -231,8 +231,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     justifyContent: "center",
     alignItems: "center",
-    flexDirection: "row",
-    flex: 1,
     borderRadius: 4,
   },
   uploadBtnText: {

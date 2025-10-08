@@ -19,6 +19,9 @@ import CreatePostScreen from "../screens/CreatePostScreen";
 import SettingsScreen from "../screens/SettingsScreen";
 import EditProfileScreen from "../screens/EditProfileScreen";
 import ShareWorkoutScreen from "../screens/ShareWorkoutScreen";
+import BookTrainerScreen from "../screens/BookTrainerScreen";
+import SelectDateTimeScreen from "../screens/SelectDateTimeScreen";
+import BookingConfirmationScreen from "../screens/BookingConfirmationScreen";
 
 // Import components
 import LoadingScreen from "../components/LoadingScreen";
@@ -42,7 +45,7 @@ const FindStackNavigator: React.FC = () => {
       }}
     >
       <FindStack.Screen name="FindMain" component={FindScreen} />
-      <FindStack.Screen name="Profile" component={ProfileScreen} />
+      <FindStack.Screen name="UserProfile" component={ProfileScreen} />
 
       {/* Add more Find-related screens here */}
       {/* Example: <FindStack.Screen name="WorkoutDetails" component={WorkoutDetailsScreen} /> */}
@@ -57,12 +60,12 @@ const HomeStackNavigator: React.FC = () => {
         headerShown: false,
       }}
     >
-      <HomeStack.Screen name="Home" component={HomeScreen} />
+      <HomeStack.Screen name="HomeFeed" component={HomeScreen} />
       <HomeStack.Screen name="CreatePost" component={CreatePostScreen} />
       <HomeStack.Screen name="ShareWorkout" component={ShareWorkoutScreen} />
 
-      {/* Add more Find-related screens here */}
-      {/* Example: <FindStack.Screen name="WorkoutDetails" component={WorkoutDetailsScreen} /> */}
+      {/* Add more Home-related screens here */}
+      {/* Example: <HomeStack.Screen name="PostDetails" component={PostDetailsScreen} /> */}
     </HomeStack.Navigator>
   );
 };
@@ -143,13 +146,25 @@ const MainTabNavigator: React.FC = () => {
 const AppNavigator: React.FC = () => {
   const { isAuthenticated, isBootstrapping } = useAuth();
 
+  // Deep linking configuration
+  const linking = {
+    prefixes: ['bolic://', 'https://bolic.app'],
+    config: {
+      screens: {
+        Auth: 'auth',
+        ForgotPassword: 'reset-password',
+        Main: 'main',
+      },
+    },
+  };
+
   // Show loading screen while checking authentication
   if (isBootstrapping) {
     return <LoadingScreen />;
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer linking={linking}>
       
       <Stack.Navigator
         screenOptions={{
@@ -172,6 +187,9 @@ const AppNavigator: React.FC = () => {
             <Stack.Screen name="ManageGroup" component={ManageGroup} />
             <Stack.Screen name="EditProfile" component={EditProfileScreen} />
             <Stack.Screen name="ShareWorkout" component={ShareWorkoutScreen} />
+            <Stack.Screen name="BookTrainer" component={BookTrainerScreen} />
+            <Stack.Screen name="SelectDateTime" component={SelectDateTimeScreen} />
+            <Stack.Screen name="BookingConfirmation" component={BookingConfirmationScreen} />
 
           </>
         ) : (
