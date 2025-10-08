@@ -1,11 +1,12 @@
 import React from "react";
-import {  Share, Text,View } from "react-native";
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Text } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { useAuth } from "../contexts/AuthContext";
 import { RootStackParamList, MainTabParamList, FindStackParams, HomeStackParams } from "../types";
+import { COLORS, DIMENSIONS } from "../config/constants";
 
 // Import screens
 import AuthScreen from "../screens/AuthScreen";
@@ -78,16 +79,17 @@ const MainTabNavigator: React.FC = () => {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: "#FFFFFF",
+          backgroundColor: COLORS.white,
           borderTopWidth: 1,
-          borderTopColor: "#E5E5E5",
-          paddingBottom:40,
-          height: 100,
+          borderTopColor: COLORS.border,
+          height: 70,
+          paddingTop: DIMENSIONS.spacing.xs,
+          paddingBottom: DIMENSIONS.spacing.sm,
         },
-        tabBarActiveTintColor: "#007AFF",
-        tabBarInactiveTintColor: "#8E8E93",
+        tabBarActiveTintColor: COLORS.primary,
+        tabBarInactiveTintColor: COLORS.textSecondary,
         tabBarLabelStyle: {
-          fontSize: 12,
+          fontSize: 11,
           fontWeight: "600",
         },
       }}
