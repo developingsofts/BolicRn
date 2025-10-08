@@ -32,6 +32,13 @@ export const userApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['User'],
     }),
+    deleteMyAccount: builder.mutation<ApiResponse<null>, void>({
+      query: () => ({
+        url: '/user/delete',
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['User', 'Auth'],
+    }),
     getUserProfile: builder.query<ApiResponse<UserProfile>, string>({
       query: (userId) => ({
         url: API_END_POINTS.users.profile(userId),
@@ -70,6 +77,7 @@ export const {
   useGetMyProfileQuery,
   useLazyGetMyProfileQuery,
   useUpdateMyProfileMutation,
+  useDeleteMyAccountMutation,
   useGetUserProfileQuery,
   useUpdateUserProfileMutation,
   useGetUserStatsQuery,

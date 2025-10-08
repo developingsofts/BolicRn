@@ -82,14 +82,13 @@ const MainTabNavigator: React.FC = () => {
           backgroundColor: COLORS.white,
           borderTopWidth: 1,
           borderTopColor: COLORS.border,
-          height: 70,
-          paddingTop: DIMENSIONS.spacing.xs,
-          paddingBottom: DIMENSIONS.spacing.sm,
+          paddingBottom: 40,
+          height: 100,
         },
         tabBarActiveTintColor: COLORS.primary,
         tabBarInactiveTintColor: COLORS.textSecondary,
         tabBarLabelStyle: {
-          fontSize: 11,
+          fontSize: 12,
           fontWeight: "600",
         },
       }}
