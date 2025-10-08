@@ -31,30 +31,33 @@ interface GroupsScreenProps {
 }
 
 const GroupsScreen: React.FC<GroupsScreenProps> = ({ navigation }) => {
-  const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
   const [menuVisible, setMenuVisible] = useState(false);
   const [showGroupDetails, setShowGroupDetails] = useState(false);
   const [page, setPage] = useState(1);
   
-  const categories = ["All", "Gym", "Running", "CrossFit", "Yoga", "Sports"];
+  const categories = ["All", "Gym", "Running", "Cycling", "Yoga", "Swimming"];
   
-  // Fetch user groups with pagination
-  const { data: groupsData, isLoading, isFetching } = useGetUserGroupsQuery({ page, limit: 10 });
+  // Fetch user groups with pagination and filter
+  const { data: groupsData, isLoading, isFetching } = useGetUserGroupsQuery({ 
+    page, 
+    limit: 10,
+    type: selectedCategory 
+  });
   const userGroups = (groupsData?.status && groupsData?.data?.groups) ? groupsData.data.groups : [];
   const pagination = (groupsData?.status && groupsData?.data?.pagination) ? groupsData.data.pagination : null;
-
-  // Filter groups by selected category
-  const filteredGroups = selectedCategory && selectedCategory !== 'All'
-    ? userGroups.filter(group => 
-        group.type?.toLowerCase() === selectedCategory.toLowerCase()
-      )
-    : userGroups;
 
   const handleLoadMore = () => {
     if (!isFetching && pagination?.hasNextPage) {
       setPage(prevPage => prevPage + 1);
     }
+  };
+
+  const handleCategorySelect = (category: string) => {
+    setSelectedCategory(category);
+    setPage(1); // Reset to page 1 when filter changes
+    setMenuVisible(false);
   };
 
   const renderGroupItem = ({ item: group }: { item: Group }) => (
@@ -82,11 +85,6 @@ const GroupsScreen: React.FC<GroupsScreenProps> = ({ navigation }) => {
 
   const openMenu = () => setMenuVisible(true);
   const closeMenu = () => setMenuVisible(false);
-
-  const handleCategorySelect = (category: string) => {
-    setSelectedCategory(category);
-    setMenuVisible(false);
-  };
 
   return (
     <SafeAreaView edges={["left", "right"]} style={styles.container}>
@@ -156,7 +154,7 @@ const GroupsScreen: React.FC<GroupsScreenProps> = ({ navigation }) => {
           <ActivityIndicator size="large" color={COLORS.primary} />
           <Text style={styles.loadingText}>Loading groups...</Text>
         </View>
-      ) : filteredGroups.length === 0 ? (
+      ) : userGroups.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyTitle}>No Groups Yet</Text>
           <Text style={styles.emptyText}>
@@ -171,7 +169,7 @@ const GroupsScreen: React.FC<GroupsScreenProps> = ({ navigation }) => {
         </View>
       ) : (
         <FlatList
-          data={filteredGroups}
+          data={userGroups}
           renderItem={renderGroupItem}
           keyExtractor={(item) => item.id.toString()}
           style={styles.groupsContainer}

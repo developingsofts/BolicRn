@@ -46,20 +46,28 @@ export const groupsApi = baseApi.injectEndpoints({
     // Get all groups for current user with pagination
     getUserGroups: builder.query<
       ApiResponse<{ groups: Group[]; pagination: any }>,
-      { page?: number; limit?: number } | void
+      { page?: number; limit?: number; type?: string } | void
     >({
       query: (params) => {
         const page = params?.page || 1;
         const limit = params?.limit || 10;
+        const type = params?.type;
+        
+        let url = `/group/all?page=${page}&limit=${limit}`;
+        if (type && type !== 'All') {
+          url += `&type=${type}`;
+        }
+        
         return {
-          url: `/group/all?page=${page}&limit=${limit}`,
+          url,
           method: 'GET',
         };
       },
       providesTags: ['Groups'],
       // Support for pagination - merge results
-      serializeQueryArgs: ({ endpointName }) => {
-        return endpointName;
+      serializeQueryArgs: ({ endpointName, queryArgs }) => {
+        // Include type in cache key so different filters have separate caches
+        return `${endpointName}-${queryArgs?.type || 'All'}`;
       },
       merge: (currentCache, newItems, { arg }) => {
         // If page 1 or no arg, return fresh data
@@ -84,7 +92,7 @@ export const groupsApi = baseApi.injectEndpoints({
         return newItems;
       },
       forceRefetch({ currentArg, previousArg }) {
-        return currentArg?.page !== previousArg?.page;
+        return currentArg?.page !== previousArg?.page || currentArg?.type !== previousArg?.type;
       },
     }),
     

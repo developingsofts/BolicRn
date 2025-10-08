@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   Image,
   TextInput,
   Modal,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -31,6 +32,7 @@ import {
 import { Group } from "../../types";
 import ManageGroup from "./ManageGroup";
 import BasicTopBar from "../../components/BasicTopBar";
+import { useGetGroupByIdQuery, useGetGroupMembersQuery, useGetGroupPostsQuery } from "../../services/api/groupsApi";
 
 interface GroupDetailsProps {
   // Make navigation optional for modal usage
@@ -55,112 +57,132 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
   onClose,
 }) => {
   const styles = useResponsive(baseStyles);
-  const [showManageGroup, setManageGroup] = React.useState(false);
-  const [selectedGroup, setSelectedGroup] = React.useState<Group | null>(null);
+  const [showManageGroup, setManageGroup] = useState(false);
+  const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
+  const [membersPage, setMembersPage] = useState(1);
+  const [postsPage, setPostsPage] = useState(1);
 
-  const group = propGroup ||
-    route?.params?.group || {
-      id: "1",
-      name: "Downtown Fitness Club",
-      trainingTypes: ["Gym"],
-      memberCount: 156,
-      location: "Downtown",
-      description: "24/7 gym with all equipment",
-      isMember: true,
-      createdAt: new Date("2023-01-15"),
-    };
+  // Get group from props or route
+  const passedGroup = propGroup || route?.params?.group;
+  const groupId = passedGroup?.id?.toString();
 
-  const mockPosts = [
-    {
-      id: 1,
-      author: "Mike",
-      timeAgo: "2h ago",
-      content:
-        "Great morning run! Feeling energized for the day. Who else got their workout in?",
-      likes: 21,
-      comments: 4,
-    },
-    {
-      id: 2,
-      author: "Mike",
-      timeAgo: "2h ago",
-      content:
-        "Great morning run! Feeling energized for the day. Who else got their workout in?",
-      likes: 21,
-      comments: 4,
-    },
-    {
-      id: 2,
-      author: "Mike",
-      timeAgo: "2h ago",
-      content:
-        "Great morning run! Feeling energized for the day. Who else got their workout in?",
-      likes: 21,
-      comments: 4,
-    },
-  ];
-
-  const memberAvatars = [
-    { initial: "S", color: COLORS.primary },
-    { initial: "T", color: COLORS.primary },
-    { initial: "B", color: COLORS.primary },
-  ];
-
-  const renderMemberAvatar = (member: any, index: number) => (
-    <View
-      key={index}
-      style={[styles.memberAvatar, { backgroundColor: member.color }]}
-    >
-      <Text style={styles.memberAvatarText}>{member.initial}</Text>
-    </View>
+  // Fetch group details
+  const { data: groupData, isLoading: isLoadingGroup } = useGetGroupByIdQuery(
+    { groupId: groupId! },
+    { skip: !groupId }
+  );
+  
+  // Fetch group members
+  const { data: membersData, isLoading: isLoadingMembers } = useGetGroupMembersQuery(
+    { groupId: groupId!, page: membersPage, limit: 20 },
+    { skip: !groupId }
+  );
+  
+  // Fetch group posts
+  const { data: postsData, isLoading: isLoadingPosts } = useGetGroupPostsQuery(
+    { groupId: groupId!, page: postsPage, limit: 10 },
+    { skip: !groupId }
   );
 
-  const renderPost = ({ item: post, index }: { item: any; index: number }) => (
-    <View>
-      <View style={styles.postCard}>
-        <View style={styles.postHeader}>
-          <View style={styles.authorAvatar}>
-            <Text style={styles.authorAvatarText}>M</Text>
+  // Use real data or fallback
+  const group = (groupData?.status && groupData?.data) ? groupData.data : passedGroup;
+  const members = (membersData?.status && membersData?.data?.members) ? membersData.data.members : [];
+  const posts = (postsData?.status && postsData?.data?.posts) ? postsData.data.posts : [];
+  const postsPagination = (postsData?.status && postsData?.data?.pagination) ? postsData.data.pagination : null;
+
+  if (!group) {
+    return (
+      <SafeAreaView edges={["left", "right"]} style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.emptyText}>Group not found</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const handleLoadMorePosts = () => {
+    if (postsPagination && postsPagination.currentPage < postsPagination.totalPages) {
+      setPostsPage(postsPagination.currentPage + 1);
+    }
+  };
+
+  const renderMemberAvatar = (member: any, index: number) => {
+    const initial = member.displayName?.charAt(0) || member.userName?.charAt(0) || 'U';
+    return (
+      <View
+        key={member.id || index}
+        style={[styles.memberAvatar, { backgroundColor: COLORS.primary }]}
+      >
+        <Text style={styles.memberAvatarText}>{initial.toUpperCase()}</Text>
+      </View>
+    );
+  };
+
+  const renderPost = ({ item: post, index }: { item: any; index: number }) => {
+    const authorInitial = post.userDisplayName?.charAt(0) || post.User?.displayName?.charAt(0) || 'U';
+    
+    return (
+      <View key={post.id || index}>
+        <View style={styles.postCard}>
+          <View style={styles.postHeader}>
+            <View style={styles.authorAvatar}>
+              <Text style={styles.authorAvatarText}>{authorInitial.toUpperCase()}</Text>
+            </View>
+            <View style={styles.postInfo}>
+              <Text style={styles.authorName}>
+                {post.userDisplayName || post.User?.displayName || post.User?.userName || 'Anonymous'}
+              </Text>
+              <Text style={styles.timeAgo}>
+                {post.createdAt ? new Date(post.createdAt).toLocaleDateString() : 'Recently'}
+              </Text>
+            </View>
           </View>
-          <View style={styles.postInfo}>
-            <Text style={styles.authorName}>{post.author}</Text>
-            <Text style={styles.timeAgo}>{post.timeAgo}</Text>
+
+          <Text style={styles.postContent}>{post.content || ''}</Text>
+
+          <View style={styles.postActions}>
+            <View style={styles.actionItem}>
+              <Image source={Like} style={{ width: 20, height: 20 }} />
+              <Text style={styles.actionText}>{post.likes || 0}</Text>
+            </View>
+            <View style={styles.actionItem}>
+              <Image source={Comment} style={{ width: 20, height: 20 }} />
+              <Text style={styles.actionText}>{post.comments || 0}</Text>
+            </View>
           </View>
         </View>
 
-        <Text style={styles.postContent}>{post.content}</Text>
-
-        <View style={styles.postActions}>
-          <View style={styles.actionItem}>
-            <Image source={Like} style={{ width: 20, height: 20 }} />
-            <Text style={styles.actionText}>{post.likes}</Text>
+        <View style={styles.messageRowContainer}>
+          <View style={styles.messageInputContainer}>
+            <TextInput
+              style={styles.messageInput}
+              placeholder="Type a message..."
+              placeholderTextColor={COLORS._5E5E5E}
+            />
+            <TouchableOpacity style={styles.attachButton}>
+              <Image source={ImageFile} style={{ width: 20, height: 20 }} />
+            </TouchableOpacity>
           </View>
-          <View style={styles.actionItem}>
-            <Image source={Comment} style={{ width: 20, height: 20 }} />
-            <Text style={styles.actionText}>{post.comments}</Text>
+          <View style={styles.sendButtonContainer}>
+            <TouchableOpacity style={styles.sendButton}>
+              <Image source={Send} style={{ width: 20, height: 20 }} />
+            </TouchableOpacity>
           </View>
         </View>
       </View>
+    );
+  };
 
-      <View style={styles.messageRowContainer}>
-        <View style={styles.messageInputContainer}>
-          <TextInput
-            style={styles.messageInput}
-            placeholder="Type a message..."
-            placeholderTextColor={COLORS._5E5E5E}
-          />
-          <TouchableOpacity style={styles.attachButton}>
-            <Image source={ImageFile} style={{ width: 20, height: 20 }} />
-          </TouchableOpacity>
+  if (isLoadingGroup) {
+    return (
+      <SafeAreaView edges={["left", "right"]} style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={[styles.emptyText, { marginTop: r(10) }]}>Loading group details...</Text>
         </View>
-        <View style={styles.sendButtonContainer}>
-          <TouchableOpacity style={styles.sendButton}>
-            <Image source={Send} style={{ width: 20, height: 20 }} />
-          </TouchableOpacity>
-        </View>
-      </View>
-    </View>
-  );
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView edges={["left", "right"]} style={styles.container}>
@@ -216,21 +238,23 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
         <View style={styles.membersCard}>
           <View style={styles.membersHeader}>
             <Text style={styles.membersTitle}>Members</Text>
-            <Text style={styles.membersCount}>{group.memberCount} Members</Text>
+            <Text style={styles.membersCount}>{group.memberCount || 0} Members</Text>
           </View>
 
           <View style={styles.membersContent}>
             <View style={styles.avatarsContainer}>
-              {memberAvatars.map((member, index) => (
+              {members.slice(0, 3).map((member, index) => (
                 <View
-                  key={index}
+                  key={member.id || index}
                   style={[
                     styles.memberAvatar,
                     { backgroundColor: COLORS.primary },
                     index > 0 && { marginLeft: -12 },
                   ]}
                 >
-                  <Text style={styles.memberAvatarText}>{member.initial}</Text>
+                  <Text style={styles.memberAvatarText}>
+                    {(member.displayName?.charAt(0) || member.userName?.charAt(0) || 'U').toUpperCase()}
+                  </Text>
                 </View>
               ))}
               {group.memberCount && group.memberCount > 3 && (
@@ -264,14 +288,41 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
             }}
           />
           <Text style={styles.postsTitle}>Recent Posts</Text>
-          <FlatList
-            data={mockPosts}
-            renderItem={renderPost}
-            keyExtractor={(item, index) => `${item.id}-${index}`}
-            showsVerticalScrollIndicator={false}
-            scrollEnabled={false}
-            ItemSeparatorComponent={() => <View style={{ height: 0 }} />}
-          />
+          
+          {isLoadingPosts && postsPage === 1 ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={COLORS.primary} />
+            </View>
+          ) : posts.length === 0 ? (
+            <View style={styles.emptyPostsContainer}>
+              <Text style={styles.emptyText}>No posts yet. Be the first to post!</Text>
+            </View>
+          ) : (
+            <>
+              <FlatList
+                data={posts}
+                renderItem={renderPost}
+                keyExtractor={(item, index) => `${item.id}-${index}`}
+                showsVerticalScrollIndicator={false}
+                scrollEnabled={false}
+                ItemSeparatorComponent={() => <View style={{ height: 0 }} />}
+              />
+              
+              {postsPagination && postsPagination.currentPage < postsPagination.totalPages && (
+                <TouchableOpacity 
+                  style={styles.loadMoreButton}
+                  onPress={handleLoadMorePosts}
+                  disabled={isLoadingPosts}
+                >
+                  {isLoadingPosts ? (
+                    <ActivityIndicator size="small" color={COLORS.primary} />
+                  ) : (
+                    <Text style={styles.loadMoreText}>Load More Posts</Text>
+                  )}
+                </TouchableOpacity>
+              )}
+            </>
+          )}
         </View>
       </ScrollView>
 
@@ -283,6 +334,31 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
 };
 
 const baseStyles = StyleSheet.create({
+  loadingContainer: {
+    padding: r(40),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyText: {
+    fontSize: r(14),
+    color: COLORS._5E5E5E,
+    textAlign: 'center',
+  },
+  emptyPostsContainer: {
+    padding: r(30),
+    alignItems: 'center',
+  },
+  loadMoreButton: {
+    padding: r(15),
+    alignItems: 'center',
+    marginTop: r(10),
+    marginBottom: r(20),
+  },
+  loadMoreText: {
+    fontSize: r(14),
+    color: COLORS.primary,
+    fontWeight: '600',
+  },
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
