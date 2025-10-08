@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,16 +8,20 @@ import {
   Image,
   ScrollView,
   KeyboardAvoidingView,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import * as ImagePicker from "expo-image-picker";
 import { COLORS, DIMENSIONS } from "../config/constants";
 import STRINGS from "../config/strings";
 import FontWeight from "../hooks/useInterFonts";
 import { useAuth } from "../contexts/AuthContext";
-import { Ionicons } from "@expo/vector-icons";
 import { Trash, ArrowDown, Close } from "../../assets";
 import { LinearGradient } from "expo-linear-gradient";
 import { r } from "../designing/responsiveDesigns";
+import { useUpdateMyProfileWithImageMutation, useUpdateMyProfileMutation } from "../services/api/userApi";
+import { Toast } from "../components/ToastManager";
 
 interface EditProfileScreenProps {
   navigation: any;
@@ -33,21 +37,147 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
   navigation,
   route,
 }) => {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
+  const [updateProfileWithImage, { isLoading: isLoadingWithImage }] = useUpdateMyProfileWithImageMutation();
+  const [updateProfile, { isLoading: isLoadingProfile }] = useUpdateMyProfileMutation();
+  
+  const isLoading = isLoadingWithImage || isLoadingProfile;
+  
   const isGuest = route?.params?.isGuest || !user;
   const isOwnProfile =
     !route?.params?.userId || route.params.userId === user?.id;
+  
   const [name, setName] = useState(user?.displayName || "");
   const [location, setLocation] = useState(user?.location || "");
-  const [bio, setBio] = useState(user?.bio || "");
+  const [bio, setBio] = useState(user?.bio || user?.currentPRs || "");
+  const [selectedImage, setSelectedImage] = useState<string | null>(user?.imageUrl || null);
+  const [imageFile, setImageFile] = useState<any>(null);
+  const [deleteImage, setDeleteImage] = useState(false);
 
-  const handleSave = () => {
-    // Save profile changes logic here
+  // Sync local state with user context when user data changes
+  useEffect(() => {
+    if (user) {
+      setName(user.displayName || "");
+      setLocation(user.location || "");
+      setBio(user.bio || user.currentPRs || "");
+      setSelectedImage(user.imageUrl || null);
+      setImageFile(null);
+      setDeleteImage(false);
+    }
+  }, [user?.imageUrl, user?.displayName, user?.location, user?.bio, user?.currentPRs]);
+
+  const handleImagePick = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      
+      if (status !== 'granted') {
+        Alert.alert(
+          'Permission Required',
+          'Please grant permission to access your photos to upload a profile picture.'
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        const asset = result.assets[0];
+        setSelectedImage(asset.uri);
+        
+        // Determine the correct MIME type
+        const uriParts = asset.uri.split('.');
+        const fileExtension = uriParts[uriParts.length - 1].toLowerCase();
+        let mimeType = 'image/jpeg'; // default
+        
+        if (fileExtension === 'png') {
+          mimeType = 'image/png';
+        } else if (fileExtension === 'jpg' || fileExtension === 'jpeg') {
+          mimeType = 'image/jpeg';
+        } else if (fileExtension === 'gif') {
+          mimeType = 'image/gif';
+        } else if (fileExtension === 'webp') {
+          mimeType = 'image/webp';
+        }
+        
+        setImageFile({
+          uri: asset.uri,
+          type: mimeType,
+          name: asset.fileName || `profile_${Date.now()}.${fileExtension}`,
+        });
+        setDeleteImage(false); // Reset delete flag when new image is selected
+      }
+    } catch (error) {
+      console.error('Error picking image:', error);
+      Toast.error('Failed to pick image');
+    }
+  };
+
+  const handleDeleteImage = () => {
+    setSelectedImage(null);
+    setImageFile(null);
+    setDeleteImage(true); // Mark that user wants to delete the image
+  };
+
+  const handleSave = async () => {
+    if (!name.trim()) {
+      Toast.error('Please enter your name');
+      return;
+    }
+
+    try {
+      let response;
+      
+      // If there's an image file, use FormData mutation
+      if (imageFile) {
+        const payload: any = {
+          displayName: name.trim(),
+          bio: bio.trim(),
+          location: location.trim(),
+          imageFile: imageFile,
+        };
+
+        response = await updateProfileWithImage(payload).unwrap();
+      } else if (deleteImage) {
+        // If user wants to delete image, send null/empty imageUrl
+        const payload: any = {
+          displayName: name.trim(),
+          bio: bio.trim(),
+          location: location.trim(),
+          imageUrl: '', // Send empty string to delete image
+        };
+
+        response = await updateProfile(payload).unwrap();
+      } else {
+        // Otherwise use regular JSON mutation
+        const payload: any = {
+          displayName: name.trim(),
+          bio: bio.trim(),
+          location: location.trim(),
+        };
+
+        response = await updateProfile(payload).unwrap();
+      }
+
+      if (response.status && response.data) {
+        // Redux store is automatically updated via onQueryStarted in userApi
+        Toast.success('Profile updated successfully');
+        navigation.goBack();
+      } else {
+        Toast.error(response.message || 'Failed to update profile');
+      }
+    } catch (error: any) {
+      console.error('Profile update error:', error);
+      Toast.error(error?.data?.message || 'Failed to update profile');
+    }
   };
   const renderProfileAvatar = () => {
     const initial = user?.displayName?.charAt(0) || (isGuest ? "G" : "D");
     const displayName = user?.displayName || "";
-    const location = user?.location || "San Francisco, CA";
 
     return (
       <LinearGradient
@@ -60,26 +190,38 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
           <Text style={styles.editProfileTitle}>
             {STRINGS.EDIT_PROFILE.title}
           </Text>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
+          <TouchableOpacity onPress={() => navigation.goBack()} disabled={isLoading}>
             <Image source={Close} style={styles.iconSize} />
           </TouchableOpacity>
         </View>
 
         <View style={styles.avatarRow}>
           <View style={[styles.avatar, isGuest && styles.guestAvatar]}>
-            <Text style={styles.avatarText}>{initial}</Text>
+            {selectedImage ? (
+              <Image source={{ uri: selectedImage }} style={styles.avatarImage} />
+            ) : (
+              <Text style={styles.avatarText}>{initial}</Text>
+            )}
           </View>
           <View style={styles.avatarInfoCol}>
             <View>
               <Text style={styles.displayName}>{displayName}</Text>
             </View>
             <View style={styles.avatarActionsRow}>
-              <TouchableOpacity style={styles.uploadBtn}>
+              <TouchableOpacity 
+                style={styles.uploadBtn} 
+                onPress={handleImagePick}
+                disabled={isLoading}
+              >
                 <Text style={styles.uploadBtnText}>
                   {STRINGS.EDIT_PROFILE.uploadNew}
                 </Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.deleteBtn}>
+              <TouchableOpacity 
+                style={styles.deleteBtn} 
+                onPress={handleDeleteImage}
+                disabled={isLoading}
+              >
                 <Image source={Trash} style={styles.deleteIcon} />
               </TouchableOpacity>
             </View>
@@ -102,6 +244,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
           onChangeText={setName}
           placeholder={STRINGS.EDIT_PROFILE.namePlaceholder}
           placeholderTextColor={COLORS._5E5E5E}
+          editable={!isLoading}
         />
       </View>
       <View style={styles.inputGroup}>
@@ -112,6 +255,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
           onChangeText={setLocation}
           placeholder={STRINGS.EDIT_PROFILE.locationPlaceholder}
           placeholderTextColor={COLORS._D9D9D9}
+          editable={!isLoading}
         />
       </View>
       <View style={styles.inputGroup}>
@@ -124,6 +268,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
           placeholderTextColor={COLORS._D9D9D9}
           multiline
           numberOfLines={4}
+          editable={!isLoading}
         />
       </View>
     </View>
@@ -139,10 +284,18 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
           <View style={styles.formWrapper}>
             {renderProfileForm()}
 
-            <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
-              <Text style={styles.saveBtnText}>
-                {STRINGS.EDIT_PROFILE.saveChanges}
-              </Text>
+            <TouchableOpacity 
+              style={[styles.saveBtn, isLoading && styles.saveBtnDisabled]} 
+              onPress={handleSave}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator size="small" color={COLORS.white} />
+              ) : (
+                <Text style={styles.saveBtnText}>
+                  {STRINGS.EDIT_PROFILE.saveChanges}
+                </Text>
+              )}
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -198,7 +351,13 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     justifyContent: "center",
     alignItems: "center",
+    overflow: "hidden",
     marginBottom: 10,
+  },
+  avatarImage: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
   },
   guestAvatar: {
     backgroundColor: COLORS.app_black,
@@ -320,11 +479,13 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     alignItems: "center",
   },
+  saveBtnDisabled: {
+    opacity: 0.6,
+  },
   saveBtnText: {
     color: COLORS.white,
     fontFamily: FontWeight.Medium,
     fontSize: 14,
-
   },
 });
 

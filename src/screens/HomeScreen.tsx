@@ -7,6 +7,7 @@ import {
   StyleSheet,
   TextInput,
   Alert,
+  Image,
 } from "react-native";
 import { useAuth } from "../contexts/AuthContext";
 import { COLORS, DIMENSIONS } from "../config/constants";
@@ -263,9 +264,16 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
               style={styles.profileButton}
               onPress={() => navigation.navigate("Profile")}
             >
-              <Text style={styles.profileButtonText}>
-                {user?.displayName?.charAt(0) || "U"}
-              </Text>
+              {user?.imageUrl ? (
+                <Image 
+                  source={{ uri: user.imageUrl }} 
+                  style={styles.profileButtonImage}
+                />
+              ) : (
+                <Text style={styles.profileButtonText}>
+                  {user?.displayName?.charAt(0) || "U"}
+                </Text>
+              )}
             </TouchableOpacity>
           }
         />
@@ -763,6 +771,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderWidth: 1,
     borderColor: COLORS.border,
+    overflow: 'hidden',
+  },
+  profileButtonImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
   },
   profileButtonText: {
     fontSize: 20,

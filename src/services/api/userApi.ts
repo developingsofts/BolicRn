@@ -2,6 +2,7 @@ import { API_END_POINTS } from '../endPoints';
 import type { UserProfile, UserStats, User } from '../../types';
 import { baseApi } from './baseApi';
 import type { ApiResponse } from './types';
+import { updateUser } from '../../store/userSlice';
 
 interface UpdateProfilePayload {
   userId: string;
@@ -11,6 +12,18 @@ interface UpdateProfilePayload {
 interface UpdateStatsPayload {
   userId: string;
   stats: Partial<UserStats>;
+}
+
+interface UpdateProfileWithImagePayload {
+  displayName?: string;
+  bio?: string;
+  location?: string;
+  imageFile?: File | { uri: string; type: string; name: string };
+  age?: number;
+  trainingTypes?: string[];
+  userGender?: string;
+  genderPreference?: string;
+  currentPRs?: string;
 }
 
 export const userApi = baseApi.injectEndpoints({
@@ -31,6 +44,73 @@ export const userApi = baseApi.injectEndpoints({
         body: userData,
       }),
       invalidatesTags: ['User'],
+      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          if (data.status && data.data) {
+            // Update the Redux store with new user data
+            dispatch(updateUser(data.data));
+          }
+        } catch (error) {
+          // Error already handled by the mutation
+        }
+      },
+    }),
+    // Update profile with image upload
+    updateMyProfileWithImage: builder.mutation<ApiResponse<User>, UpdateProfileWithImagePayload>({
+      query: (payload) => {
+        const formData = new FormData();
+        
+        // Add text fields
+        if (payload.displayName) formData.append('displayName', payload.displayName);
+        if (payload.bio) formData.append('bio', payload.bio);
+        if (payload.location) formData.append('location', payload.location);
+        if (payload.age) formData.append('age', payload.age.toString());
+        if (payload.userGender) formData.append('userGender', payload.userGender);
+        if (payload.genderPreference) formData.append('genderPreference', payload.genderPreference);
+        if (payload.currentPRs) formData.append('currentPRs', payload.currentPRs);
+        
+        // Add training types array
+        if (payload.trainingTypes && payload.trainingTypes.length > 0) {
+          payload.trainingTypes.forEach((type) => {
+            formData.append('trainingTypes[]', type);
+          });
+        }
+        
+        // Add image file
+        if (payload.imageFile) {
+          const imageFile = payload.imageFile as any;
+          if (imageFile.uri) {
+            // React Native format
+            formData.append('image', {
+              uri: imageFile.uri,
+              type: imageFile.type || 'image/jpeg',
+              name: imageFile.name || 'profile.jpg',
+            } as any);
+          } else {
+            // Web format
+            formData.append('image', imageFile);
+          }
+        }
+        
+        return {
+          url: '/user/update',
+          method: 'PUT',
+          body: formData,
+        };
+      },
+      invalidatesTags: ['User'],
+      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          if (data.status && data.data) {
+            // Update the Redux store with new user data (including new imageUrl)
+            dispatch(updateUser(data.data));
+          }
+        } catch (error) {
+          // Error already handled by the mutation
+        }
+      },
     }),
     deleteMyAccount: builder.mutation<ApiResponse<null>, void>({
       query: () => ({
@@ -77,6 +157,7 @@ export const {
   useGetMyProfileQuery,
   useLazyGetMyProfileQuery,
   useUpdateMyProfileMutation,
+  useUpdateMyProfileWithImageMutation,
   useDeleteMyAccountMutation,
   useGetUserProfileQuery,
   useUpdateUserProfileMutation,

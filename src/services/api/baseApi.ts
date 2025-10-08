@@ -5,12 +5,20 @@ import { storageService } from '../storage';
 
 const baseQuery = fetchBaseQuery({
   baseUrl: API_CONFIG.baseUrl,
-  prepareHeaders: async (headers) => {
+  prepareHeaders: async (headers, { endpoint }) => {
     const token = await storageService.getAuthToken();
     if (token) {
       headers.set('Authorization', `Bearer ${token}`);
     }
-    headers.set('Content-Type', 'application/json');
+    
+    // Don't set Content-Type for FormData - let the browser handle it
+    // We'll detect this by checking if the endpoint is updateMyProfileWithImage
+    if (endpoint !== 'updateMyProfileWithImage') {
+      if (!headers.has('Content-Type')) {
+        headers.set('Content-Type', 'application/json');
+      }
+    }
+    
     return headers;
   },
 });
@@ -29,7 +37,11 @@ const baseQueryWithErrorHandling: BaseQueryFn<
   console.log('🌐 API Request:', {
     url: `${API_CONFIG.baseUrl}${url}`,
     method,
-    body: body ? (typeof body === 'string' ? body : JSON.stringify(body, null, 2)) : undefined,
+    body: body instanceof FormData 
+      ? '[FormData]' 
+      : body 
+        ? (typeof body === 'string' ? body : JSON.stringify(body, null, 2)) 
+        : undefined,
     timestamp: new Date().toISOString(),
   });
 

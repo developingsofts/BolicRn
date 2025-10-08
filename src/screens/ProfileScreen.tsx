@@ -356,7 +356,11 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
 
         <View style={styles.avatarContainer}>
           <View style={[styles.avatar, isGuest && styles.guestAvatar]}>
-            <Text style={styles.avatarText}>{initial}</Text>
+            {user?.imageUrl ? (
+              <Image source={{ uri: user.imageUrl }} style={styles.avatarImage} />
+            ) : (
+              <Text style={styles.avatarText}>{initial}</Text>
+            )}
           </View>
           <Text style={styles.displayName}>{displayName}</Text>
           <Text style={styles.locationText}>{location}</Text>
@@ -782,6 +786,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 10,
+    overflow: 'hidden',
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
   },
   guestAvatar: {
     // backgroundColor: "#6c757d",

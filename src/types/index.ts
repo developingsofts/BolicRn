@@ -17,6 +17,7 @@ export interface User {
   isDeleted?: boolean;
   deletedAt?: string | null;
   profilePicture?: string;
+  imageUrl?: string;
   bio?: string;
   location?: string;
   experienceLevel?: string;
