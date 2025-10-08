@@ -185,7 +185,7 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
                 <View style={styles.categoryTag}>
                   <Image source={Gym} style={{ width: 20, height: 20 }} />
                   <Text style={styles.tagText}>
-                    {group.trainingTypes.join(", ")}
+                    {group.trainingTypes?.join(", ") || group.type || "General"}
                   </Text>
                 </View>
               </View>
@@ -233,17 +233,19 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
                   <Text style={styles.memberAvatarText}>{member.initial}</Text>
                 </View>
               ))}
-              <View
-                style={[
-                  styles.memberAvatar,
-                  styles.memberCountAvatar,
-                  { marginLeft: -12 },
-                ]}
-              >
-                <Text style={styles.memberCountText}>
-                  +{group.memberCount - 3}
-                </Text>
-              </View>
+              {group.memberCount && group.memberCount > 3 && (
+                <View
+                  style={[
+                    styles.memberAvatar,
+                    styles.memberCountAvatar,
+                    { marginLeft: -12 },
+                  ]}
+                >
+                  <Text style={styles.memberCountText}>
+                    +{group.memberCount - 3}
+                  </Text>
+                </View>
+              )}
             </View>
             <TouchableOpacity>
               <Text style={styles.viewListText}>View list</Text>

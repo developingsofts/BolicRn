@@ -3,10 +3,7 @@ import type { Group } from '../../types';
 import { baseApi } from './baseApi';
 import type { ApiResponse } from './types';
 
-interface GroupDetailsResponse extends Group {
-  members?: number;
-  upcomingEvents?: number;
-}
+type GroupDetailsResponse = Group;
 
 interface GroupActionPayload {
   groupId: string;
@@ -15,57 +12,152 @@ interface GroupActionPayload {
 interface CreateGroupPayload {
   name: string;
   description: string;
-  trainingTypes: string[];
+  type: string;
+  location: string;
+  privacy: string;
+  memberIds: number[];
+}
+
+interface UpdateGroupPayload {
+  groupId: string;
+  name?: string;
+  description?: string;
+  type?: string;
   location?: string;
-  photo?: string;
+  privacy?: string;
+  addIds?: number[];
+  removeIds?: number[];
+}
+
+interface GetGroupMembersPayload {
+  groupId: string;
+  page?: number;
+  limit?: number;
+}
+
+interface GetGroupPostsPayload {
+  groupId: string;
+  page?: number;
+  limit?: number;
 }
 
 export const groupsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    getGroups: builder.query<ApiResponse<Group[]>, void>({
-      query: () => ({
-        url: API_END_POINTS.groups.list,
-        method: 'GET',
-      }),
+    // Get all groups for current user with pagination
+    getUserGroups: builder.query<
+      ApiResponse<{ groups: Group[]; pagination: any }>,
+      { page?: number; limit?: number } | void
+    >({
+      query: (params) => {
+        const page = params?.page || 1;
+        const limit = params?.limit || 10;
+        return {
+          url: `/group/all?page=${page}&limit=${limit}`,
+          method: 'GET',
+        };
+      },
       providesTags: ['Groups'],
+      // Support for pagination - merge results
+      serializeQueryArgs: ({ endpointName }) => {
+        return endpointName;
+      },
+      merge: (currentCache, newItems, { arg }) => {
+        // If page 1 or no arg, return fresh data
+        if (!arg || arg.page === 1) {
+          return newItems;
+        }
+        
+        // Merge results for page > 1
+        if ('data' in currentCache && 'data' in newItems && currentCache.status && newItems.status) {
+          return {
+            ...newItems,
+            data: {
+              groups: [
+                ...(currentCache.data?.groups || []),
+                ...(newItems.data?.groups || [])
+              ],
+              pagination: newItems.data?.pagination
+            }
+          };
+        }
+        
+        return newItems;
+      },
+      forceRefetch({ currentArg, previousArg }) {
+        return currentArg?.page !== previousArg?.page;
+      },
     }),
-    getGroupDetails: builder.query<
+    
+    // Get group by ID
+    getGroupById: builder.query<
       ApiResponse<GroupDetailsResponse>,
-      GroupActionPayload
+      { groupId: string }
     >({
       query: ({ groupId }) => ({
-        url: API_END_POINTS.groups.details(groupId),
+        url: `/group/${groupId}`,
         method: 'GET',
       }),
       providesTags: ['Groups'],
     }),
-    joinGroup: builder.mutation<ApiResponse<{ success: boolean }>, GroupActionPayload>({
-      query: ({ groupId }) => ({
-        url: API_END_POINTS.groups.join(groupId),
-        method: 'POST',
-        body: {},
-      }),
-      invalidatesTags: ['Groups'],
-    }),
-    leaveGroup: builder.mutation<
-      ApiResponse<{ success: boolean }>,
-      GroupActionPayload
+    
+    // Get group members with pagination
+    getGroupMembers: builder.query<
+      ApiResponse<{ members: any[]; pagination: any }>,
+      GetGroupMembersPayload
     >({
-      query: ({ groupId }) => ({
-        url: API_END_POINTS.groups.leave(groupId),
-        method: 'POST',
-        body: {},
+      query: ({ groupId, page = 1, limit = 20 }) => ({
+        url: `/group/members/${groupId}?page=${page}&limit=${limit}`,
+        method: 'GET',
       }),
-      invalidatesTags: ['Groups'],
+      providesTags: ['Groups'],
     }),
+    
+    // Get group posts with pagination
+    getGroupPosts: builder.query<
+      ApiResponse<{ posts: any[]; pagination: any }>,
+      GetGroupPostsPayload
+    >({
+      query: ({ groupId, page = 1, limit = 10 }) => ({
+        url: `/group/posts/${groupId}?page=${page}&limit=${limit}`,
+        method: 'GET',
+      }),
+      providesTags: ['Groups', 'Posts'],
+    }),
+    
+    // Create group
     createGroup: builder.mutation<
       ApiResponse<Group>,
       CreateGroupPayload
     >({
       query: (body) => ({
-        url: API_END_POINTS.groups.list,
+        url: '/group/create',
         method: 'POST',
         body,
+      }),
+      invalidatesTags: ['Groups'],
+    }),
+    
+    // Update group
+    updateGroup: builder.mutation<
+      ApiResponse<Group>,
+      UpdateGroupPayload
+    >({
+      query: ({ groupId, ...body }) => ({
+        url: `/group/update/${groupId}`,
+        method: 'PUT',
+        body,
+      }),
+      invalidatesTags: ['Groups'],
+    }),
+    
+    // Delete group
+    deleteGroup: builder.mutation<
+      ApiResponse<{ success: boolean }>,
+      { groupId: string }
+    >({
+      query: ({ groupId }) => ({
+        url: `/group/delete/${groupId}`,
+        method: 'DELETE',
       }),
       invalidatesTags: ['Groups'],
     }),
@@ -74,9 +166,11 @@ export const groupsApi = baseApi.injectEndpoints({
 });
 
 export const {
-  useGetGroupsQuery,
-  useGetGroupDetailsQuery,
-  useJoinGroupMutation,
-  useLeaveGroupMutation,
+  useGetUserGroupsQuery,
+  useGetGroupByIdQuery,
+  useGetGroupMembersQuery,
+  useGetGroupPostsQuery,
   useCreateGroupMutation,
+  useUpdateGroupMutation,
+  useDeleteGroupMutation,
 } = groupsApi;

@@ -9,6 +9,7 @@ import {
   FlatList,
   Alert,
   Image,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -19,6 +20,8 @@ import FontWeight from "../../hooks/useInterFonts";
 import { Group } from "../../types";
 import { Location, Gym, Close, Trash, Exit, Add } from "../../../assets";
 import BasicTopBar from "../../components/BasicTopBar";
+import { useCreateGroupMutation, useUpdateGroupMutation, useDeleteGroupMutation } from '../../services/api/groupsApi';
+import { Toast } from '../../components/ToastManager';
 
 interface ManageGroupProps {
   navigation: any;
@@ -45,39 +48,36 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
   group: propGroup,
   onClose,
 }) => {
-  const isEditing = route?.params?.isEditing ?? true;
-  const group = route?.params?.group || {
-    id: "1",
-    name: "Downtown Fitness Club",
-    description: "24/7 gym with all equipment",
-    memberCount: 156,
-    trainingTypes: ["Gym"],
-    location: "Downtown",
-    isMember: true,
-    createdAt: new Date("2023-01-15"),
-  };
+  const isEditing = route?.params?.isEditing ?? (propGroup ? true : false);
+  const group = route?.params?.group || propGroup;
 
-  const [groupName, setGroupName] = useState(isEditing ? group.name : "");
+  const [groupName, setGroupName] = useState(isEditing && group ? group.name : "");
   const [groupDescription, setGroupDescription] = useState(
-    isEditing ? group.description : ""
+    isEditing && group ? group.description : ""
   );
   const [location, setLocation] = useState(
-    isEditing ? group.location : "Downtown"
+    isEditing && group ? group.location : "Downtown"
   );
   const [groupType, setGroupType] = useState(
-    isEditing ? group.trainingTypes[0] : "GYM"
+    isEditing && group ? (group.type || "Gym") : "Gym"
   );
-  const [privacy, setPrivacy] = useState("Public");
+  const [privacy, setPrivacy] = useState(
+    isEditing && group ? (group.privacy || "Public") : "Public"
+  );
+  const [selectedMemberIds, setSelectedMemberIds] = useState<number[]>([]);
 
   const [locationMenuVisible, setLocationMenuVisible] = useState(false);
   const [groupTypeMenuVisible, setGroupTypeMenuVisible] = useState(false);
   const [privacyMenuVisible, setPrivacyMenuVisible] = useState(false);
-  const [memberMenuVisible, setMemberMenuVisible] = useState<string | null>(
-    null
-  );
+  const [memberMenuVisible, setMemberMenuVisible] = useState<string | null>(null);
+
+  // API mutations
+  const [createGroup, { isLoading: isCreating }] = useCreateGroupMutation();
+  const [updateGroup, { isLoading: isUpdating }] = useUpdateGroupMutation();
+  const [deleteGroup, { isLoading: isDeleting }] = useDeleteGroupMutation();
 
   const locationOptions = ["Downtown", "Uptown", "Midtown", "Suburbs"];
-  const groupTypeOptions = ["GYM", "Running", "Cycling", "Swimming", "Yoga"];
+  const groupTypeOptions = ["Gym", "Running", "Cycling", "Swimming", "Yoga"];
   const privacyOptions = ["Public", "Private", "Invite Only"];
 
   const mockMembers: Member[] = [
@@ -101,16 +101,56 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
     },
   ];
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!groupName.trim()) {
       Alert.alert("Error", "Please enter a group name");
       return;
     }
-    // Save logic here
-    navigation.goBack();
+
+    if (!groupDescription.trim()) {
+      Alert.alert("Error", "Please enter a group description");
+      return;
+    }
+
+    try {
+      if (isEditing && group) {
+        // Update existing group
+        await updateGroup({
+          groupId: group.id.toString(),
+          name: groupName.trim(),
+          description: groupDescription.trim(),
+          type: groupType,
+          location: location,
+          privacy: privacy,
+        }).unwrap();
+
+        Toast.success('Group updated successfully!');
+      } else {
+        // Create new group
+        await createGroup({
+          name: groupName.trim(),
+          description: groupDescription.trim(),
+          type: groupType,
+          location: location,
+          privacy: privacy,
+          memberIds: selectedMemberIds,
+        }).unwrap();
+
+        Toast.success('Group created successfully!');
+      }
+
+      // Navigate back or close modal
+      if (onClose) {
+        onClose();
+      } else {
+        navigation.goBack();
+      }
+    } catch (error: any) {
+      Toast.error(error?.data?.message || 'Failed to save group');
+    }
   };
 
-  const handleDeleteGroup = () => {
+  const handleDeleteGroup = async () => {
     Alert.alert(
       "Delete Group",
       "Are you sure you want to delete this group? This action cannot be undone.",
@@ -119,7 +159,22 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
         {
           text: "Delete",
           style: "destructive",
-          onPress: () => navigation.goBack(),
+          onPress: async () => {
+            if (!group) return;
+            
+            try {
+              await deleteGroup({ groupId: group.id.toString() }).unwrap();
+              Toast.success('Group deleted successfully');
+              
+              if (onClose) {
+                onClose();
+              } else {
+                navigation.goBack();
+              }
+            } catch (error: any) {
+              Toast.error(error?.data?.message || 'Failed to delete group');
+            }
+          },
         },
       ]
     );
@@ -186,6 +241,14 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
     </View>
   );
 
+  const handleClose = () => {
+    if (onClose) {
+      onClose();
+    } else {
+      navigation.goBack();
+    }
+  };
+
   return (
     <SafeAreaView edges={["left", "right"]} style={styles.container}>
       <ScrollView
@@ -200,7 +263,7 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
           titleStyle={styles.heroTitle}
           endView={
             <TouchableOpacity
-              onPress={navigation.goBack}
+              onPress={handleClose}
               style={styles.closeButton}
             >
               <Image
@@ -391,7 +454,7 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
               <View style={styles.membersHeader}>
                 <Text style={styles.membersTitle}>Members</Text>
                 <Text style={styles.membersCount}>
-                  {group.memberCount} Members
+                  {group?.memberCount || 0} Members
                 </Text>
               </View>
 
@@ -411,31 +474,56 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
           {isEditing ? (
             <>
               <TouchableOpacity
-                style={styles.deleteButton}
+                style={[styles.deleteButton, isDeleting && styles.buttonDisabled]}
                 onPress={handleDeleteGroup}
+                disabled={isDeleting || isUpdating}
               >
-                <Image source={Trash} style={{ width: 20, height: 20 }} />
-                <Text style={styles.deleteButtonText}>Delete Group</Text>
+                {isDeleting ? (
+                  <ActivityIndicator size="small" color={COLORS.error} />
+                ) : (
+                  <>
+                    <Image source={Trash} style={{ width: 20, height: 20 }} />
+                    <Text style={styles.deleteButtonText}>Delete Group</Text>
+                  </>
+                )}
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={styles.deleteButton}
+                style={[styles.deleteButton, isUpdating && styles.buttonDisabled]}
                 onPress={handleExitGroup}
+                disabled={isDeleting || isUpdating}
               >
                 <Image source={Exit} style={{ width: 20, height: 20 }} />
                 <Text style={styles.deleteButtonText}>Exit Group</Text>
               </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={[styles.createButton, isUpdating && styles.buttonDisabled]} 
+                onPress={handleSave}
+                disabled={isDeleting || isUpdating}
+              >
+                {isUpdating ? (
+                  <ActivityIndicator size="small" color={COLORS.white} />
+                ) : (
+                  <Text style={styles.createButtonText}>Save Changes</Text>
+                )}
+              </TouchableOpacity>
             </>
           ) : (
-            <TouchableOpacity style={styles.createButton} onPress={handleSave}>
-              <Text style={styles.createButtonText}>Create Group</Text>
+            <TouchableOpacity 
+              style={[styles.createButton, isCreating && styles.buttonDisabled]} 
+              onPress={handleSave}
+              disabled={isCreating}
+            >
+              {isCreating ? (
+                <ActivityIndicator size="small" color={COLORS.white} />
+              ) : (
+                <Text style={styles.createButtonText}>Create Group</Text>
+              )}
             </TouchableOpacity>
           )}
         </View>
       </ScrollView>
-      <TouchableOpacity style={styles.fab}>
-        <Image source={Add} style={{ width: 16, height: 16 }} />
-      </TouchableOpacity>
     </SafeAreaView>
   );
 };
@@ -649,6 +737,9 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 16,
     fontFamily: FontWeight.SemiBold,
+  },
+  buttonDisabled: {
+    opacity: 0.6,
   },
   fab: {
     position: "absolute",

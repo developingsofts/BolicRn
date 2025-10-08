@@ -10,6 +10,7 @@ import {
   Image,
   FlatList,
   Modal,
+  ActivityIndicator,
 } from "react-native";
 import { Menu, Button, Divider, FAB } from "react-native-paper";
 import { COLORS, DIMENSIONS } from "../../config/constants";
@@ -21,6 +22,7 @@ import { r } from "../../designing/responsiveDesigns";
 import GroupDetails from "./GroupDetails";
 import STRINGS from "../../config/strings";
 import BasicTopBar from "../../components/BasicTopBar";
+import { useGetUserGroupsQuery } from '../../services/api/groupsApi';
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -31,69 +33,46 @@ interface GroupsScreenProps {
 const GroupsScreen: React.FC<GroupsScreenProps> = ({ navigation }) => {
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
-
   const [menuVisible, setMenuVisible] = useState(false);
+  const [showGroupDetails, setShowGroupDetails] = useState(false);
+  const [page, setPage] = useState(1);
+  
   const categories = ["All", "Gym", "Running", "CrossFit", "Yoga", "Sports"];
-  const [showGorupDetails, setShowGorupDetails] = useState(false);
+  
+  // Fetch user groups with pagination
+  const { data: groupsData, isLoading, isFetching } = useGetUserGroupsQuery({ page, limit: 10 });
+  const userGroups = (groupsData?.status && groupsData?.data?.groups) ? groupsData.data.groups : [];
+  const pagination = (groupsData?.status && groupsData?.data?.pagination) ? groupsData.data.pagination : null;
 
-  const mockGroups: Group[] = [
-    {
-      id: "1",
-      name: "Downtown Fitness Club",
-      description: "24/7 gym with all equipment",
-      memberCount: 156,
-      trainingTypes: ["Gym", "Weightlifting"],
-      location: "Downtown",
-      isMember: true,
-      createdAt: new Date("2023-01-15"),
-    },
-    {
-      id: "2",
-      name: "Morning Runners",
-      description: "Daily morning running group",
-      memberCount: 89,
-      trainingTypes: ["Running", "Cardio"],
-      location: "Central Park",
-      isMember: false,
-      createdAt: new Date("2023-02-10"),
-    },
-    {
-      id: "3",
-      name: "CrossFit Warriors",
-      description: "High-intensity functional fitness",
-      memberCount: 234,
-      trainingTypes: ["CrossFit", "HIIT"],
-      location: "West Side",
-      isMember: true,
-      createdAt: new Date("2023-01-20"),
-    },
-    {
-      id: "4",
-      name: "Yoga Flow Studio",
-      description: "Mindful yoga and meditation",
-      memberCount: 67,
-      trainingTypes: ["Yoga", "Meditation"],
-      location: "East Village",
-      isMember: false,
-      createdAt: new Date("2023-03-05"),
-    },
-  ];
+  // Filter groups by selected category
+  const filteredGroups = selectedCategory && selectedCategory !== 'All'
+    ? userGroups.filter(group => 
+        group.type?.toLowerCase() === selectedCategory.toLowerCase()
+      )
+    : userGroups;
+
+  const handleLoadMore = () => {
+    if (!isFetching && pagination?.hasNextPage) {
+      setPage(prevPage => prevPage + 1);
+    }
+  };
 
   const renderGroupItem = ({ item: group }: { item: Group }) => (
     <Pressable
       style={styles.groupCard}
       onPress={() => {
-        //  navigation.navigate("GroupDetails", { group })
         setSelectedGroup(group);
-        setShowGorupDetails(true);
+        setShowGroupDetails(true);
       }}
     >
       <View style={styles.groupHeader}>
         <Text style={styles.groupName}>{group.name}</Text>
-        <Text style={styles.memberCount}>{group.memberCount} members</Text>
+        <Text style={styles.memberCount}>
+          {(group as any).memberCount || 0} members
+        </Text>
       </View>
       <Text style={styles.groupCategory}>
-        {group.trainingTypes.join(", ")}
+        {group.type || 'General'}
         {"  "}•{"  "}
         {group.location}
       </Text>
@@ -171,28 +150,69 @@ const GroupsScreen: React.FC<GroupsScreenProps> = ({ navigation }) => {
         }
       />
 
-      {/* Groups */}
-      <FlatList
-        data={mockGroups}
-        renderItem={renderGroupItem}
-        keyExtractor={(item) => item.id.toString()}
-        style={styles.groupsContainer}
-        contentContainerStyle={styles.flatListContent}
-        showsVerticalScrollIndicator={false}
-      />
+      {/* Groups List */}
+      {isLoading && page === 1 ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={styles.loadingText}>Loading groups...</Text>
+        </View>
+      ) : filteredGroups.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyTitle}>No Groups Yet</Text>
+          <Text style={styles.emptyText}>
+            Create your first group to start building your fitness community!
+          </Text>
+          <TouchableOpacity 
+            style={styles.createButton}
+            onPress={() => navigation.navigate('ManageGroup')}
+          >
+            <Text style={styles.createButtonText}>Create Group</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <FlatList
+          data={filteredGroups}
+          renderItem={renderGroupItem}
+          keyExtractor={(item) => item.id.toString()}
+          style={styles.groupsContainer}
+          contentContainerStyle={styles.flatListContent}
+          showsVerticalScrollIndicator={false}
+          ListFooterComponent={() => (
+            <>
+              {isFetching && page > 1 && (
+                <View style={{ padding: 10, alignItems: 'center' }}>
+                  <ActivityIndicator size="small" color={COLORS.primary} />
+                </View>
+              )}
+              {pagination?.hasNextPage && !isFetching && (
+                <TouchableOpacity 
+                  style={styles.loadMoreButton}
+                  onPress={handleLoadMore}
+                >
+                  <Text style={styles.loadMoreText}>Load More</Text>
+                </TouchableOpacity>
+              )}
+            </>
+          )}
+        />
+      )}
 
-      <TouchableOpacity style={styles.fab}>
+      <TouchableOpacity 
+        style={styles.fab}
+        onPress={() => navigation.navigate('ManageGroup')}
+      >
         <Image source={Add} style={{ width: 16, height: 16 }} />
       </TouchableOpacity>
 
+      {/* Group Details Modal */}
       <Modal
-        visible={showGorupDetails}
+        visible={showGroupDetails}
         transparent
         navigationBarTranslucent
         statusBarTranslucent
         animationType="slide"
         onRequestClose={() => {
-          setShowGorupDetails(false);
+          setShowGroupDetails(false);
           setSelectedGroup(null);
         }}
       >
@@ -200,7 +220,7 @@ const GroupsScreen: React.FC<GroupsScreenProps> = ({ navigation }) => {
           navigation={navigation}
           group={selectedGroup}
           onClose={() => {
-            setShowGorupDetails(false);
+            setShowGroupDetails(false);
             setSelectedGroup(null);
           }}
         />
@@ -339,6 +359,65 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: DIMENSIONS.spacing.xl,
+  },
+  loadingText: {
+    marginTop: DIMENSIONS.spacing.md,
+    fontSize: 14,
+    color: COLORS._5E5E5E,
+    fontFamily: FontWeight.Medium,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: DIMENSIONS.spacing.xl,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontFamily: FontWeight.SemiBold,
+    color: COLORS.text,
+    marginBottom: DIMENSIONS.spacing.sm,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: COLORS._5E5E5E,
+    textAlign: 'center',
+    marginBottom: DIMENSIONS.spacing.lg,
+    fontFamily: FontWeight.Regular,
+  },
+  createButton: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  createButtonText: {
+    color: COLORS.white,
+    fontSize: 14,
+    fontWeight: '600',
+    fontFamily: FontWeight.SemiBold,
+  },
+  loadMoreButton: {
+    backgroundColor: COLORS.primary,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 10,
+    marginBottom: 10,
+    marginHorizontal: DIMENSIONS.spacing.lg,
+  },
+  loadMoreText: {
+    color: COLORS.white,
+    fontSize: 14,
+    fontWeight: '600',
+    fontFamily: FontWeight.SemiBold,
   },
 });
 

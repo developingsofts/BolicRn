@@ -151,10 +151,12 @@ export interface Group {
   name: string;
   description: string;
   photo?: string;
-  memberCount: number;
-  trainingTypes: string[];
+  memberCount?: number;
+  trainingTypes?: string[];
+  type?: string;
   location: string;
-  isMember: boolean;
+  privacy?: string;
+  isMember?: boolean;
   createdAt: Date;
 }
 
