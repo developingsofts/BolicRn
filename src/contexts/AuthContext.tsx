@@ -30,7 +30,7 @@ interface AuthContextType {
   }) => Promise<boolean>;
   logout: () => Promise<void>;
   clearError: () => void;
-  updateUser: (user: User) => void;
+  updateUser: (user: Partial<User>) => void;
   dispatch: React.Dispatch<any>; // Keep for compatibility
 }
 
@@ -174,9 +174,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   // Update user function
-  const updateUserHandler = (user: User): void => {
-    dispatch(updateUser(user));
-    storageService.setUserProfile(user);
+  const updateUserHandler = (userUpdate: Partial<User>): void => {
+    dispatch(updateUser(userUpdate));
+    const mergedUser = user ? { ...user, ...userUpdate } : userUpdate;
+    if (mergedUser) {
+      storageService.setUserProfile(mergedUser);
+    }
   };
 
   // Context value

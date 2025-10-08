@@ -10,6 +10,12 @@ export interface User {
   genderPreference: string;
   userGender: string;
   currentPRs: string;
+  notificationEnabled?: boolean;
+  profileVisibility?: boolean;
+  matchingEnabled?: boolean;
+  matchingPreference?: 'Strength' | 'Cardio' | 'CrossFit' | null;
+  isDeleted?: boolean;
+  deletedAt?: string | null;
   profilePicture?: string;
   bio?: string;
   location?: string;

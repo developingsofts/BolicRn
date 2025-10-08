@@ -33,7 +33,7 @@ const userSlice = createSlice({
       state.error = null;
     },
 
-    updateUser: (state, action: PayloadAction<User>) => {
+    updateUser: (state, action: PayloadAction<Partial<User>>) => {
       if (state.user) {
         state.user = { ...state.user, ...action.payload };
       }
