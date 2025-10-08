@@ -11,6 +11,7 @@ import {
   TextInput,
   Modal,
   ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -61,25 +62,26 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
   const [membersPage, setMembersPage] = useState(1);
   const [postsPage, setPostsPage] = useState(1);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Get group from props or route
   const passedGroup = propGroup || route?.params?.group;
   const groupId = passedGroup?.id?.toString();
 
   // Fetch group details
-  const { data: groupData, isLoading: isLoadingGroup } = useGetGroupByIdQuery(
+  const { data: groupData, isLoading: isLoadingGroup, refetch: refetchGroup } = useGetGroupByIdQuery(
     { groupId: groupId! },
     { skip: !groupId }
   );
   
   // Fetch group members
-  const { data: membersData, isLoading: isLoadingMembers } = useGetGroupMembersQuery(
+  const { data: membersData, isLoading: isLoadingMembers, refetch: refetchMembers } = useGetGroupMembersQuery(
     { groupId: groupId!, page: membersPage, limit: 20 },
     { skip: !groupId }
   );
   
   // Fetch group posts
-  const { data: postsData, isLoading: isLoadingPosts } = useGetGroupPostsQuery(
+  const { data: postsData, isLoading: isLoadingPosts, refetch: refetchPosts } = useGetGroupPostsQuery(
     { groupId: groupId!, page: postsPage, limit: 10 },
     { skip: !groupId }
   );
@@ -99,6 +101,18 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
       </SafeAreaView>
     );
   }
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    setMembersPage(1);
+    setPostsPage(1);
+    await Promise.all([
+      refetchGroup(),
+      refetchMembers(),
+      refetchPosts()
+    ]);
+    setRefreshing(false);
+  };
 
   const handleLoadMorePosts = () => {
     if (postsPagination && postsPagination.currentPage < postsPagination.totalPages) {
@@ -186,7 +200,19 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
 
   return (
     <SafeAreaView edges={["left", "right"]} style={styles.container}>
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.content}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={[COLORS.primary]}
+            tintColor={COLORS.primary}
+          />
+        }
+      >
         <BasicTopBar
           showBackButton={false}
           containerStyle={styles.heroSection}
@@ -213,11 +239,6 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
               </View>
 
               <Text style={styles.heroDescription}>{group.description}</Text>
-
-              <Text style={styles.heroSubtitle}>
-                Lorem ipsum dolor sit amet consectetur. Hac at adipiscing odio
-                pretium a posuere pharetra vitae nisi.
-              </Text>
             </View>
           }
         />
@@ -227,7 +248,7 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
           style={styles.manageButton}
           onPress={() => {
             onClose?.();
-            navigation?.navigate("ManageGroup", { group });
+            navigation?.navigate("ManageGroup", { group, isEditing: true });
           }}
         >
           <Image source={Edit} style={{ width: 16, height: 16 }} />
@@ -327,7 +348,7 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
       </ScrollView>
 
       <TouchableOpacity style={styles.fab}>
-        <Image source={Add} style={{ width: 16, height: 16 }} />
+        <Image source={Add} style={{ width: 20, height: 20 }} />
       </TouchableOpacity>
     </SafeAreaView>
   );
@@ -365,6 +386,9 @@ const baseStyles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: r(120), // Extra padding to ensure FAB doesn't overlap content
   },
   heroSection: {
     backgroundColor: COLORS.gradient3,
@@ -430,7 +454,8 @@ const baseStyles = StyleSheet.create({
     fontFamily: FontWeight.Regular,
     color: COLORS.white,
     lineHeight: 20,
-    marginBottom: r(10),
+    marginBottom: r(20),
+    paddingBottom: r(10),
   },
   manageButton: {
     flexDirection: "row",
@@ -528,7 +553,7 @@ const baseStyles = StyleSheet.create({
     fontFamily: FontWeight.Medium,
   },
   postsSection: {
-    paddingBottom: r(100),
+    paddingBottom: r(20),
   },
   postsTitle: {
     fontSize: 20,
@@ -655,10 +680,10 @@ const baseStyles = StyleSheet.create({
   },
   fab: {
     position: "absolute",
-    bottom: r(45),
+    bottom: r(80),
     right: r(24),
-    width: 50,
-    height: 50,
+    width: 56,
+    height: 56,
     borderRadius: r(28),
     backgroundColor: COLORS.primary,
     justifyContent: "center",

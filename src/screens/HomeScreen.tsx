@@ -9,6 +9,7 @@ import {
   Alert,
   Image,
   ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import { useAuth } from "../contexts/AuthContext";
 import { COLORS, DIMENSIONS } from "../config/constants";
@@ -70,10 +71,17 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const { user } = useAuth();
   const [notes, setNotes] = useState<Note[]>([]);
   const [newNote, setNewNote] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
   
   // Fetch posts for Community Highlights
-  const { data: postsData, isLoading: postsLoading } = useGetPostsQuery({ page: 1, limit: 5 });
+  const { data: postsData, isLoading: postsLoading, refetch: refetchPosts } = useGetPostsQuery({ page: 1, limit: 5 });
   const communityPosts = (postsData?.status && postsData?.data?.posts) ? postsData.data.posts : [];
+  
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await refetchPosts();
+    setRefreshing(false);
+  };
   
   const [weeklyGoal, setWeeklyGoal] = useState<WeeklyGoal>({
     id: "1",
@@ -278,6 +286,14 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={[COLORS.primary]}
+            tintColor={COLORS.primary}
+          />
+        }
       >
         {/* Header */}
         <BasicTopBar

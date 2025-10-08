@@ -1,10 +1,11 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  RefreshControl,
 } from "react-native";
 import { COLORS, DIMENSIONS } from "../config/constants";
 import STRINGS from "../config/strings";
@@ -17,6 +18,14 @@ interface MessagesScreenProps {
 }
 
 const MessagesScreen: React.FC<MessagesScreenProps> = ({ navigation }) => {
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    // Add API refetch here if needed
+    setTimeout(() => setRefreshing(false), 1000);
+  };
+
   const mockConversations = [
     {
       id: 1,
@@ -61,7 +70,17 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ navigation }) => {
         />
 
 
-      <ScrollView style={styles.conversationsContainer}>
+      <ScrollView 
+        style={styles.conversationsContainer}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={[COLORS.primary]}
+            tintColor={COLORS.primary}
+          />
+        }
+      >
         {mockConversations.map((conversation) => (
           <TouchableOpacity
             key={conversation.id}

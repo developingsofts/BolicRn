@@ -20,7 +20,7 @@ import FontWeight from "../../hooks/useInterFonts";
 import { Group } from "../../types";
 import { Location, Gym, Close, Trash, Exit, Add } from "../../../assets";
 import BasicTopBar from "../../components/BasicTopBar";
-import { useCreateGroupMutation, useUpdateGroupMutation, useDeleteGroupMutation } from '../../services/api/groupsApi';
+import { useCreateGroupMutation, useUpdateGroupMutation, useDeleteGroupMutation, useGetGroupMembersQuery } from '../../services/api/groupsApi';
 import { Toast } from '../../components/ToastManager';
 
 interface ManageGroupProps {
@@ -75,31 +75,18 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
   const [createGroup, { isLoading: isCreating }] = useCreateGroupMutation();
   const [updateGroup, { isLoading: isUpdating }] = useUpdateGroupMutation();
   const [deleteGroup, { isLoading: isDeleting }] = useDeleteGroupMutation();
+  
+  // Fetch group members when editing
+  const { data: membersData, isLoading: isLoadingMembers } = useGetGroupMembersQuery(
+    { groupId: group?.id?.toString() || '', page: 1, limit: 50 },
+    { skip: !isEditing || !group?.id }
+  );
+
+  const members = (membersData?.status && membersData?.data?.members) ? membersData.data.members : [];
 
   const locationOptions = ["Downtown", "Uptown", "Midtown", "Suburbs"];
   const groupTypeOptions = ["Gym", "Running", "Cycling", "Swimming", "Yoga"];
   const privacyOptions = ["Public", "Private", "Invite Only"];
-
-  const mockMembers: Member[] = [
-    {
-      id: "1",
-      name: "Guest user 1",
-      location: "San Francisco, CA",
-      avatar: "G",
-    },
-    {
-      id: "2",
-      name: "Guest user 2",
-      location: "San Francisco, CA",
-      avatar: "G",
-    },
-    {
-      id: "3",
-      name: "Guest user 3",
-      location: "San Francisco, CA",
-      avatar: "G",
-    },
-  ];
 
   const handleSave = async () => {
     if (!groupName.trim()) {
@@ -194,52 +181,74 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
   const handleMemberAction = (memberId: string, action: string) => {
     setMemberMenuVisible(null);
     if (action === "remove") {
-      Alert.alert("Remove User", "Are you sure you want to remove this user?", [
-        { text: "Cancel", style: "cancel" },
-        { text: "Remove", style: "destructive", onPress: () => {} },
-      ]);
+      Alert.alert(
+        "Remove User", 
+        "Are you sure you want to remove this user from the group?", 
+        [
+          { text: "Cancel", style: "cancel" },
+          { 
+            text: "Remove", 
+            style: "destructive", 
+            onPress: () => {
+              // TODO: Implement remove member API call
+              Toast.info('Remove member feature coming soon');
+            } 
+          },
+        ]
+      );
     } else if (action === "profile") {
-      console.log("View profile for member:", memberId);
+      // TODO: Navigate to user profile
+      Toast.info('View profile feature coming soon');
     }
   };
 
-  const renderMember = ({ item: member }: { item: Member }) => (
-    <View style={styles.memberItem}>
-      <View style={styles.memberInfo}>
-        <View style={styles.memberAvatar}>
-          <Text style={styles.memberAvatarText}>{member.avatar}</Text>
+  const renderMember = ({ item: member }: { item: any }) => {
+    const displayName = member.displayName || member.userName || 'Unknown';
+    const location = member.userAddress?.city || member.location || 'Unknown location';
+    const avatar = displayName.charAt(0).toUpperCase();
+    
+    return (
+      <View style={styles.memberItem}>
+        <View style={styles.memberInfo}>
+          <View style={styles.memberAvatar}>
+            {member.imageUrl ? (
+              <Image source={{ uri: member.imageUrl }} style={styles.memberAvatarImage} />
+            ) : (
+              <Text style={styles.memberAvatarText}>{avatar}</Text>
+            )}
+          </View>
+          <View style={styles.memberDetails}>
+            <Text style={styles.memberName}>{displayName}</Text>
+            <Text style={styles.memberLocation}>{location}</Text>
+          </View>
         </View>
-        <View style={styles.memberDetails}>
-          <Text style={styles.memberName}>{member.name}</Text>
-          <Text style={styles.memberLocation}>{member.location}</Text>
-        </View>
+        <Menu
+          visible={memberMenuVisible === member.id.toString()}
+          contentStyle={{ backgroundColor: COLORS.white }}
+          onDismiss={() => setMemberMenuVisible(null)}
+          anchor={
+            <TouchableOpacity
+              style={styles.memberActions}
+              onPress={() => setMemberMenuVisible(member.id.toString())}
+            >
+              <Ionicons name="ellipsis-vertical" size={20} color={COLORS.text} />
+            </TouchableOpacity>
+          }
+        >
+          <Menu.Item
+            onPress={() => handleMemberAction(member.id.toString(), "profile")}
+            titleStyle={{ color: COLORS.app_black }}
+            title="View Profile"
+          />
+          <Menu.Item
+            onPress={() => handleMemberAction(member.id.toString(), "remove")}
+            title="Remove User"
+            titleStyle={{ color: COLORS._EB3434 }}
+          />
+        </Menu>
       </View>
-      <Menu
-        visible={memberMenuVisible === member.id}
-        contentStyle={{ backgroundColor: COLORS.white }}
-        onDismiss={() => setMemberMenuVisible(null)}
-        anchor={
-          <TouchableOpacity
-            style={styles.memberActions}
-            onPress={() => setMemberMenuVisible(member.id)}
-          >
-            <Ionicons name="ellipsis-vertical" size={20} color={COLORS.text} />
-          </TouchableOpacity>
-        }
-      >
-        <Menu.Item
-          onPress={() => handleMemberAction(member.id, "profile")}
-          titleStyle={{ color: COLORS.app_black }}
-          title="View Profile"
-        />
-        <Menu.Item
-          onPress={() => handleMemberAction(member.id, "remove")}
-          title="Remove User"
-          titleStyle={{ color: COLORS._EB3434 }}
-        />
-      </Menu>
-    </View>
-  );
+    );
+  };
 
   const handleClose = () => {
     if (onClose) {
@@ -454,19 +463,30 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
               <View style={styles.membersHeader}>
                 <Text style={styles.membersTitle}>Members</Text>
                 <Text style={styles.membersCount}>
-                  {group?.memberCount || 0} Members
+                  {group?.memberCount || members.length || 0} Members
                 </Text>
               </View>
 
-              <FlatList
-                data={mockMembers}
-                renderItem={renderMember}
-                keyExtractor={(item) => item.id}
-                scrollEnabled={false}
-                ItemSeparatorComponent={() => (
-                  <View style={styles.memberSeparator} />
-                )}
-              />
+              {isLoadingMembers ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="small" color={COLORS.primary} />
+                  <Text style={styles.loadingText}>Loading members...</Text>
+                </View>
+              ) : members.length === 0 ? (
+                <View style={styles.emptyContainer}>
+                  <Text style={styles.emptyText}>No members in this group yet</Text>
+                </View>
+              ) : (
+                <FlatList
+                  data={members}
+                  renderItem={renderMember}
+                  keyExtractor={(item) => item.id.toString()}
+                  scrollEnabled={false}
+                  ItemSeparatorComponent={() => (
+                    <View style={styles.memberSeparator} />
+                  )}
+                />
+              )}
             </View>
           )}
 
@@ -675,6 +695,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginRight: r(12),
+    overflow: 'hidden',
+  },
+  memberAvatarImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
   },
   memberAvatarText: {
     color: "white",
@@ -740,6 +766,27 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: {
     opacity: 0.6,
+  },
+  loadingContainer: {
+    padding: r(20),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    marginTop: r(8),
+    fontSize: 14,
+    color: COLORS._5E5E5E,
+    fontFamily: FontWeight.Regular,
+  },
+  emptyContainer: {
+    padding: r(30),
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 14,
+    color: COLORS._5E5E5E,
+    fontFamily: FontWeight.Regular,
+    textAlign: 'center',
   },
   fab: {
     position: "absolute",

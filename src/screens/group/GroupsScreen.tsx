@@ -11,6 +11,7 @@ import {
   FlatList,
   Modal,
   ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import { Menu, Button, Divider, FAB } from "react-native-paper";
 import { COLORS, DIMENSIONS } from "../../config/constants";
@@ -36,17 +37,25 @@ const GroupsScreen: React.FC<GroupsScreenProps> = ({ navigation }) => {
   const [menuVisible, setMenuVisible] = useState(false);
   const [showGroupDetails, setShowGroupDetails] = useState(false);
   const [page, setPage] = useState(1);
+  const [refreshing, setRefreshing] = useState(false);
   
   const categories = ["All", "Gym", "Running", "Cycling", "Yoga", "Swimming"];
   
   // Fetch user groups with pagination and filter
-  const { data: groupsData, isLoading, isFetching } = useGetUserGroupsQuery({ 
+  const { data: groupsData, isLoading, isFetching, refetch } = useGetUserGroupsQuery({ 
     page, 
     limit: 10,
     type: selectedCategory 
   });
   const userGroups = (groupsData?.status && groupsData?.data?.groups) ? groupsData.data.groups : [];
   const pagination = (groupsData?.status && groupsData?.data?.pagination) ? groupsData.data.pagination : null;
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    setPage(1); // Reset to first page
+    await refetch();
+    setRefreshing(false);
+  };
 
   const handleLoadMore = () => {
     if (!isFetching && pagination?.hasNextPage) {
@@ -175,6 +184,14 @@ const GroupsScreen: React.FC<GroupsScreenProps> = ({ navigation }) => {
           style={styles.groupsContainer}
           contentContainerStyle={styles.flatListContent}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              colors={[COLORS.primary]}
+              tintColor={COLORS.primary}
+            />
+          }
           ListFooterComponent={() => (
             <>
               {isFetching && page > 1 && (

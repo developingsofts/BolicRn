@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, RefreshControl } from 'react-native';
 import { Menu, Button, Chip } from 'react-native-paper';
 import { COLORS, DIMENSIONS } from '../config/constants';
 import STRINGS from '../config/strings';
@@ -18,6 +18,13 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation }) => {
   const [menuVisible, setMenuVisible] = useState(false);
   const [ratingModalVisible, setRatingModalVisible] = useState(false);
   const [selectedUserForRating, setSelectedUserForRating] = useState<{ name: string; type: 'partner' | 'trainer' } | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    setCurrentIndex(0);
+    setTimeout(() => setRefreshing(false), 1000);
+  };
 
   const trainingCategories = [
     'All',
@@ -281,6 +288,14 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation }) => {
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={[COLORS.primary]}
+            tintColor={COLORS.primary}
+          />
+        }
       >
         {/* Header Section */}
         <View style={styles.headerSection}>

@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Image,
+  RefreshControl,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { useAuth } from "../contexts/AuthContext";
@@ -62,6 +63,14 @@ interface Connection {
 
 const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
   const { user, logout } = useAuth();
+  const [refreshing, setRefreshing] = useState(false);
+  
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    // Add any API refetch calls here if needed
+    setTimeout(() => setRefreshing(false), 1000);
+  };
+  
   const activityPosts = [
     {
       id: "1",
@@ -640,6 +649,14 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={[COLORS.primary]}
+            tintColor={COLORS.primary}
+          />
+        }
       >
         <View>
           {renderProfileAvatar()}

@@ -7,6 +7,8 @@ import {
   Switch,
   Image,
   ActivityIndicator,
+  ScrollView,
+  RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { COLORS, DIMENSIONS } from "../config/constants";
@@ -38,6 +40,13 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
   const { logout, user, updateUser: updateAuthUser } = useAuth();
   const [updateProfile, { isLoading: isSaving }] = useUpdateMyProfileMutation();
   const [deleteAccount, { isLoading: isDeleting }] = useDeleteMyAccountMutation();
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    // Settings don't need refetch, just simulate refresh
+    setTimeout(() => setRefreshing(false), 500);
+  };
 
   const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(
     user?.notificationEnabled ?? true
@@ -184,11 +193,10 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
 
   return (
     <SafeAreaView edges={["top", "bottom"]} style={styles.container}>
-      <View>
-        <View style={styles.headerActions}>
-          <Text style={styles.editProfileTitle}>{STRINGS.SETTINGS.title}</Text>
-          <View style={styles.headerRight}>
-            {isBusy && (
+      <View style={styles.headerActions}>
+        <Text style={styles.editProfileTitle}>{STRINGS.SETTINGS.title}</Text>
+        <View style={styles.headerRight}>
+          {isBusy && (
               <View style={styles.savingIndicator}>
                 <ActivityIndicator size="small" color={COLORS.primary} />
                 <Text style={styles.savingText}>
@@ -204,7 +212,18 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
               <Image source={Close} style={styles.iconSize} />
             </TouchableOpacity>
           </View>
-        </View>
+      </View>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+              onRefresh={handleRefresh}
+              colors={[COLORS.primary]}
+              tintColor={COLORS.primary}
+            />
+          }
+        >
         {/* Notification Settings */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>
@@ -293,21 +312,21 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
             })}
           </View>
         </View>
-      </View>
-      <View>
-        <View style={styles.lineSeparator} />
+      
+      <View style={styles.lineSeparator} />
 
-        <TouchableOpacity
-          onPress={handleDeactivatePress}
-          style={styles.deactivateBtn}
-          disabled={isBusy}
-        >
-          <Image source={Deactivate} style={styles.deactivateIcon} />
-          <Text style={styles.logoutText}>
-            {STRINGS.SETTINGS.deactivateAccount}
-          </Text>
-        </TouchableOpacity>
-      </View>
+      <TouchableOpacity
+        onPress={handleDeactivatePress}
+        style={styles.deactivateBtn}
+        disabled={isBusy}
+      >
+        <Image source={Deactivate} style={styles.deactivateIcon} />
+        <Text style={styles.logoutText}>
+          {STRINGS.SETTINGS.deactivateAccount}
+        </Text>
+      </TouchableOpacity>
+      </ScrollView>
+      
       <ConfirmationDialog
         visible={showDeactivateDialog}
         title={STRINGS.SETTINGS.confirmDeactivateTitle}
