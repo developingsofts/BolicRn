@@ -302,7 +302,8 @@ export type RootStackParamList = {
   Messages: undefined;
   Profile: undefined;
   Chat: { partnerId: string; partnerName: string };
-  WorkoutSession: { sessionId?: string };
+  SelectWorkout: undefined;
+  WorkoutSession: { sessionId?: string; workoutType?: string; workoutName?: string };
   CreatePost: undefined;
   Settings: undefined;
   ForgotPassword: undefined;

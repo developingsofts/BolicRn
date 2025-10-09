@@ -27,8 +27,12 @@ export const DeleteUser = require('../assets/delete_user.png');
 export const Following = require('../assets/following.png');
 export const PaymentSuccess = require('../assets/payment_success.png');
 export const CommentIcon = require('../assets/comment_icon.png');
-
-
+export const Gym1 = require('../assets/gym1.png');
+export const BuddhistGym = require('../assets/buddhist_yoga_pose.png');
+export const Cardio = require('../assets/cardio.png');
+export const StrengthTraining = require('../assets/strength.png');
+export const WeightLifting = require('../assets/weightlifting.png');
+export const Man=require('../assets/man.png');
 
 
 

@@ -318,10 +318,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   };
 
   const startWorkoutOfTheDay = () => {
-    navigation.navigate("WorkoutSession", {
-      sessionId: workoutOfTheDay.id,
-      workoutData: workoutOfTheDay,
-    });
+    navigation.navigate("SelectWorkout");
   };
 
   const getTimeAgo = (date: Date) => {

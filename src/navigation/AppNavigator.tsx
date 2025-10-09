@@ -16,6 +16,7 @@ import MessagesScreen from "../screens/MessagesScreen";
 import ProfileScreen from "../screens/ProfileScreen";
 import ChatScreen from "../screens/ChatScreen";
 import WorkoutSessionScreen from "../screens/WorkoutSessionScreen";
+import SelectWorkoutScreen from "../screens/SelectWorkoutScreen";
 import CreatePostScreen from "../screens/CreatePostScreen";
 import SettingsScreen from "../screens/SettingsScreen";
 import EditProfileScreen from "../screens/EditProfileScreen";
@@ -179,6 +180,10 @@ const AppNavigator: React.FC = () => {
           <>
             <Stack.Screen name="Main" component={MainTabNavigator} />
             <Stack.Screen name="Chat" component={ChatScreen} />
+            <Stack.Screen
+              name="SelectWorkout"
+              component={SelectWorkoutScreen}
+            />
             <Stack.Screen
               name="WorkoutSession"
               component={WorkoutSessionScreen}
