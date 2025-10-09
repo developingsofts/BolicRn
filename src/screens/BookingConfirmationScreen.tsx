@@ -14,6 +14,8 @@ import {
 	NavigationProp,
 	ParamListBase,
 	useNavigation,
+	useRoute,
+	RouteProp,
 } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
 
@@ -22,29 +24,51 @@ import InfoCard from "../components/InfoCard";
 import PriceBreakdown, {
 	PriceItem,
 } from "../components/PriceBreakdown";
+import PaymentOptionsDialog from "../components/PaymentOptionsDialog";
 import { Toast } from "../components/ToastManager";
 import { COLORS, DIMENSIONS } from "../config/constants";
 import { r } from "../designing/responsiveDesigns";
 import FontWeight from "../hooks/useInterFonts";
 import { LeftArrow } from "../../assets";
 
+type BookingConfirmationParams = {
+	trainerId?: string;
+	trainerName?: string;
+	packageTitle?: string;
+	price?: number;
+	date?: string;
+	time?: string;
+};
+
 const BookingConfirmationScreen: React.FC = () => {
 	const navigation = useNavigation<NavigationProp<ParamListBase>>();
+	const route = useRoute<RouteProp<{ params: BookingConfirmationParams }, 'params'>>();
 	const [isProcessing, setIsProcessing] = useState(false);
+	const [showPaymentDialog, setShowPaymentDialog] = useState(false);
 	const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+	// Get data from route params or use defaults
+	const {
+		trainerId,
+		trainerName = "Alex",
+		packageTitle = "Single Session",
+		price = 75,
+		date = "Sunday, Oct 14, 2025",
+		time = "9:00 AM",
+	} = route.params || {};
 
 	const sessionData = useMemo(
 		() => ({
-			trainer: "Alex",
-			dateTime: "Sunday, Oct 14, 2025 at 9:00 AM",
+			trainer: trainerName,
+			dateTime: `${date} at ${time}`,
 			location: "Downtown Fitness Club",
 			priceItems: [
-				{ label: "Single Session", amount: 75 },
+				{ label: packageTitle, amount: price },
 				{ label: "First-Time Discount", amount: 15, isDiscount: true },
 			] as PriceItem[],
-			total: 60,
+			total: price - 15,
 		}),
-		[]
+		[trainerName, packageTitle, price, date, time]
 	);
 
 	const handleBack = useCallback(() => {
@@ -59,17 +83,30 @@ const BookingConfirmationScreen: React.FC = () => {
 			return;
 		}
 
+		// Show payment options dialog instead of processing directly
+		setShowPaymentDialog(true);
+	}, [isProcessing]);
+
+	const handleConfirmPayment = useCallback((paymentMethod: string) => {
+		setShowPaymentDialog(false);
 		setIsProcessing(true);
-		Toast.info("Processing your payment...", 1500);
+		Toast.info(`Processing payment via ${paymentMethod}...`, 1500);
 
 		timeoutRef.current = setTimeout(() => {
 			Toast.success(
-				"Redirecting to payment",
+				"Payment successful! Your session is booked.",
 				2500
 			);
 			setIsProcessing(false);
+			// Navigate to success screen
+			navigation.navigate('BookingSuccess', {
+				trainerId,
+				trainerName,
+				dateTime: sessionData.dateTime,
+				location: sessionData.location,
+			});
 		}, 1600);
-	}, [isProcessing]);
+	}, [navigation, trainerId, trainerName, sessionData]);
 
 	useEffect(() => {
 		return () => {
@@ -173,6 +210,15 @@ const BookingConfirmationScreen: React.FC = () => {
 					</TouchableOpacity>
 				</View>
 			</ScrollView>
+
+			{/* Payment Options Dialog */}
+			<PaymentOptionsDialog
+				visible={showPaymentDialog}
+				onClose={() => setShowPaymentDialog(false)}
+				onConfirmPayment={handleConfirmPayment}
+				amount={sessionData.total}
+				remainingSessions={2}
+			/>
 		</SafeAreaView>
 	);
 };

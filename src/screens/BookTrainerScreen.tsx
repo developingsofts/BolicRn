@@ -79,62 +79,20 @@ const BookTrainerScreen: React.FC<BookTrainerScreenProps> = ({
     >
       <View style={styles.packageHeader}>
         <Text style={styles.packageTitle}>{pkg.title}</Text>
-        {pkg.savings && (
+        {/* {pkg.savings && (
           <View style={styles.savingsBadge}>
             <Text style={styles.savingsText}>Save {pkg.savings}</Text>
           </View>
-        )}
+        )} */}
       </View>
       <Text style={styles.packageDescription}>{pkg.description}</Text>
       <View style={styles.packagePricing}>
         <Text style={styles.packagePrice}>${pkg.price}</Text>
-        {pkg.sessions && (
+        {/* {pkg.sessions && (
           <Text style={styles.packageSessions}>({pkg.sessions} sessions)</Text>
-        )}
+        )} */}
       </View>
     </TouchableOpacity>
-  );
-
-  const renderIncludedFeatures = () => (
-    <View style={styles.infoSection}>
-      <Text style={styles.infoTitle}>What's included:</Text>
-      <View style={styles.featuresList}>
-        <View style={styles.featureItem}>
-          <Ionicons
-            name="checkmark-circle"
-            size={18}
-            color={COLORS.primary}
-          />
-          <Text style={styles.featureText}>Personalized training program</Text>
-        </View>
-        <View style={styles.featureItem}>
-          <Ionicons
-            name="checkmark-circle"
-            size={18}
-            color={COLORS.primary}
-          />
-          <Text style={styles.featureText}>
-            Progress tracking and assessments
-          </Text>
-        </View>
-        <View style={styles.featureItem}>
-          <Ionicons
-            name="checkmark-circle"
-            size={18}
-            color={COLORS.primary}
-          />
-          <Text style={styles.featureText}>Nutrition guidance</Text>
-        </View>
-        <View style={styles.featureItem}>
-          <Ionicons
-            name="checkmark-circle"
-            size={18}
-            color={COLORS.primary}
-          />
-          <Text style={styles.featureText}>24/7 support via messaging</Text>
-        </View>
-      </View>
-    </View>
   );
 
   return (
@@ -162,7 +120,6 @@ const BookTrainerScreen: React.FC<BookTrainerScreenProps> = ({
         <View style={styles.packagesContainer}>
           {sessionPackages.map((pkg, index) => renderPackageCard(pkg, index))}
         </View>
-        {renderIncludedFeatures()}
       </ScrollView>
     </View>
   );
@@ -206,30 +163,25 @@ const styles = StyleSheet.create({
   },
   packageCard: {
     backgroundColor: COLORS.white,
-    borderRadius: 12,
+    borderRadius: 8,
     padding: DIMENSIONS.spacing.lg,
-    marginBottom: DIMENSIONS.spacing.md,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
+    marginBottom: DIMENSIONS.spacing.sm,
+    boxShadow: "0px 0px 8px 0px #6B6B6B26",
     elevation: 4,
     borderWidth: 1,
+    gap: DIMENSIONS.spacing.sm, 
     borderColor: COLORS.border,
   },
   packageHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: DIMENSIONS.spacing.sm,
   },
   packageTitle: {
     fontFamily: FontWeight.SemiBold,
-    fontSize: 18,
-    color: COLORS.app_black,
+    fontSize: 16,
+    fontWeight: 600,
+    color: COLORS.gradient1,
   },
   savingsBadge: {
     backgroundColor: COLORS.primary + "15",
@@ -238,15 +190,17 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   savingsText: {
-    fontFamily: FontWeight.Medium,
-    fontSize: 12,
-    color: COLORS.primary,
+    fontFamily: FontWeight.Regular,
+    fontSize: 14,
+    fontWeight: 400,
+    color: COLORS._5E5E5E,
   },
   packageDescription: {
     fontFamily: FontWeight.Regular,
     fontSize: 14,
+    fontWeight: 400,
     color: COLORS._5E5E5E,
-    marginBottom: DIMENSIONS.spacing.md,
+    // marginBottom: DIMENSIONS.spacing.md,
     lineHeight: 20,
   },
   packagePricing: {
@@ -255,9 +209,10 @@ const styles = StyleSheet.create({
     gap: DIMENSIONS.spacing.sm,
   },
   packagePrice: {
-    fontFamily: FontWeight.Bold,
-    fontSize: 32,
-    color: COLORS.primary,
+    fontFamily: FontWeight.SemiBold,
+    fontSize: 20,
+    fontWeight: 600,
+    color: COLORS._2E6BDD,
   },
   packageSessions: {
     fontFamily: FontWeight.Regular,

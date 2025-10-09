@@ -185,6 +185,7 @@ export const COLORS = {
   _0B80FF:"#0B80FF",
   _3FE363:"#3FE363",
   _F3A455:"#F3A455",
+  _2E6BDD:"#2E6BDD",
   // Added for SettingsScreen buttons
   buttonGrayBg: 'rgba(223, 223, 223, 1)',
   buttonGrayText: 'rgba(102, 102, 102, 1)',

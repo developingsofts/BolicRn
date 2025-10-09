@@ -313,6 +313,7 @@ export type RootStackParamList = {
   BookTrainer: { trainerId?: string; trainerName?: string } | undefined;
   SelectDateTime: { trainerId?: string; trainerName?: string; packageTitle?: string; price?: number } | undefined;
   BookingConfirmation: { trainerId?: string; trainerName?: string; packageTitle?: string; price?: number; date?: string; time?: string } | undefined;
+  BookingSuccess: { trainerId?: string; trainerName?: string; dateTime?: string; location?: string } | undefined;
 };
 
 export type MainTabParamList = {
