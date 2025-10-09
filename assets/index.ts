@@ -25,12 +25,8 @@ export const LeftArrow = require('../assets/left_arrow.png');
 export const CircleComment = require('../assets/circled_comment.png');
 export const DeleteUser = require('../assets/delete_user.png');
 export const Following = require('../assets/following.png');
-
-
-
-
-
-
+export const PaymentSuccess = require('../assets/payment_success.png');
+export const CommentIcon = require('../assets/comment_icon.png');
 
 
 

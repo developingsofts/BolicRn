@@ -192,6 +192,9 @@ export interface Post {
     timeframe: string;
   };
   likes: number;
+  likeCount?: number; // From backend API
+  commentCount?: number; // From backend API
+  isLikedByUser?: boolean; // From backend API
   comments: Array<{
     id: string;
     userId: string;

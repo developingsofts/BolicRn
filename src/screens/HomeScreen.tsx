@@ -18,7 +18,11 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SafeAreaView } from "react-native-safe-area-context";
 import FontWeight from "../hooks/useInterFonts";
 import BasicTopBar from "../components/BasicTopBar";
-import { useGetPostsQuery } from '../services/api/postsApi';
+import { useGetPostsQuery, useDeletePostMutation } from '../services/api/postsApi';
+import { useToggleLikeMutation } from '../services/api/likesCommentsApi';
+import { Like, CommentIcon } from '../../assets';
+import CommentsModal from '../components/CommentsModal';
+import ConfirmationDialog from '../components/ConfirmationDialog';
 
 interface HomeScreenProps {
   navigation: any;
@@ -72,15 +76,75 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const [notes, setNotes] = useState<Note[]>([]);
   const [newNote, setNewNote] = useState("");
   const [refreshing, setRefreshing] = useState(false);
+  const [commentsModalVisible, setCommentsModalVisible] = useState(false);
+  const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
+  const [openPostMenuId, setOpenPostMenuId] = useState<string | null>(null);
+  const [showDeletePostDialog, setShowDeletePostDialog] = useState(false);
+  const [postToDelete, setPostToDelete] = useState<string | null>(null);
   
   // Fetch posts for Community Highlights
   const { data: postsData, isLoading: postsLoading, refetch: refetchPosts } = useGetPostsQuery({ page: 1, limit: 5 });
   const communityPosts = (postsData?.status && postsData?.data?.posts) ? postsData.data.posts : [];
   
+  // Like mutation
+  const [toggleLike] = useToggleLikeMutation();
+  const [deletePost, { isLoading: isDeleting }] = useDeletePostMutation();
+  
   const handleRefresh = async () => {
     setRefreshing(true);
     await refetchPosts();
     setRefreshing(false);
+  };
+
+  const handleLikePost = async (postId: string) => {
+    try {
+      await toggleLike(postId).unwrap();
+      // Posts will auto-refresh due to cache invalidation
+    } catch (error) {
+      console.error('Failed to toggle like:', error);
+    }
+  };
+
+  const handleOpenComments = (postId: string) => {
+    setSelectedPostId(postId);
+    setCommentsModalVisible(true);
+  };
+
+  const handleCloseComments = () => {
+    setCommentsModalVisible(false);
+    setSelectedPostId(null);
+    refetchPosts(); // Refresh posts to update comment counts
+  };
+
+  const handlePostMenuPress = (postId: string) => {
+    setOpenPostMenuId(openPostMenuId === postId ? null : postId);
+  };
+
+  const handleDeletePostPress = (postId: string) => {
+    setOpenPostMenuId(null);
+    setPostToDelete(postId);
+    setShowDeletePostDialog(true);
+  };
+
+  const confirmDeletePost = async () => {
+    if (!postToDelete) return;
+    
+    try {
+      await deletePost({ postId: postToDelete }).unwrap();
+      refetchPosts();
+      setShowDeletePostDialog(false);
+      setPostToDelete(null);
+    } catch (error) {
+      console.error('Failed to delete post:', error);
+      Alert.alert('Error', 'Failed to delete post.');
+      setShowDeletePostDialog(false);
+      setPostToDelete(null);
+    }
+  };
+
+  const cancelDeletePost = () => {
+    setShowDeletePostDialog(false);
+    setPostToDelete(null);
   };
   
   const [weeklyGoal, setWeeklyGoal] = useState<WeeklyGoal>({
@@ -464,7 +528,11 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                 </TouchableOpacity>
               </View>
             ) : (
-              <View style={styles.socialFeed}>
+              <TouchableOpacity 
+                activeOpacity={1} 
+                onPress={() => setOpenPostMenuId(null)}
+                style={styles.socialFeed}
+              >
                 {communityPosts.slice(0, 3).map((post: any) => {
                   const postUser = post.user || {};
                   // Use displayName, userName, or email as fallback
@@ -493,31 +561,75 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                           </Text>
                           <Text style={styles.socialPostTime}>{timeAgo}</Text>
                         </View>
-                        <TouchableOpacity style={styles.socialPostMenu}>
-                          <Text style={styles.socialPostMenuText}>⋯</Text>
-                        </TouchableOpacity>
+                        {user?.id === post.userId && (
+                          <View>
+                            <TouchableOpacity 
+                              style={styles.socialPostMenu}
+                              onPress={() => handlePostMenuPress(post.id.toString())}
+                            >
+                              <Text style={styles.socialPostMenuText}>⋯</Text>
+                            </TouchableOpacity>
+                            {openPostMenuId === post.id.toString() && (
+                              <View style={styles.postMenuDropdown}>
+                                <TouchableOpacity 
+                                  onPress={() => handleDeletePostPress(post.id.toString())}
+                                  style={styles.postMenuOption}
+                                >
+                                  <Text style={styles.postMenuOptionText}>Delete</Text>
+                                </TouchableOpacity>
+                              </View>
+                            )}
+                          </View>
+                        )}
                       </View>
                       <Text style={styles.socialPostContent}>
                         {post.title}
                       </Text>
-                      <View style={styles.socialPostStats}>
-                        <View style={styles.socialPostStat}>
-                          <Text style={styles.socialPostStatIcon}>❤️</Text>
-                          <Text style={styles.socialPostStatText}>0</Text>
-                        </View>
-                        <View style={styles.socialPostStat}>
-                          <Text style={styles.socialPostStatIcon}>💬</Text>
-                          <Text style={styles.socialPostStatText}>0</Text>
-                        </View>
-                        <View style={styles.socialPostStat}>
-                          <Text style={styles.socialPostStatIcon}>🤝</Text>
-                          <Text style={styles.socialPostStatText}>0</Text>
-                        </View>
+                      {post.mediaUrl && (
+                        <Image 
+                          source={{ uri: post.mediaUrl }} 
+                          style={styles.socialPostImage}
+                          resizeMode="cover"
+                        />
+                      )}
+                      <View style={styles.socialPostActions}>
+                        <TouchableOpacity 
+                          style={styles.socialPostAction}
+                          onPress={() => handleLikePost(post.id.toString())}
+                        >
+                          <Image 
+                            source={Like} 
+                            style={[
+                              styles.socialPostActionIcon,
+                              { tintColor: post.isLikedByUser ? COLORS.gradient1 : '#888888' }
+                            ]}
+                          />
+                          <Text style={styles.socialPostActionText}>
+                            {post.likeCount || 0}
+                          </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity 
+                          style={styles.socialPostAction}
+                          onPress={() => handleOpenComments(post.id.toString())}
+                        >
+                          <Image 
+                            source={CommentIcon} 
+                            style={[styles.socialPostActionIcon,]}
+                          />
+                          <Text style={styles.socialPostActionText}>
+                            {post.commentCount || 0}
+                          </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity 
+                          style={styles.socialPostAction}
+                        >
+                          <Text style={styles.handshakeIcon}>🤝</Text>
+                        </TouchableOpacity>
                       </View>
                     </View>
                   );
                 })}
-              </View>
+              </TouchableOpacity>
             )}
           </View>
 
@@ -774,6 +886,27 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
           </View>
         </View>
       </ScrollView>
+
+      {/* Comments Modal */}
+      {selectedPostId && (
+        <CommentsModal
+          visible={commentsModalVisible}
+          postId={selectedPostId}
+          onClose={handleCloseComments}
+        />
+      )}
+
+      {/* Delete Post Confirmation Dialog */}
+      <ConfirmationDialog
+        visible={showDeletePostDialog}
+        title="Delete Post"
+        message="Are you sure you want to delete this post? This action cannot be undone."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        onConfirm={confirmDeletePost}
+        onCancel={cancelDeletePost}
+        loading={isDeleting}
+      />
     </SafeAreaView>
   );
 };
@@ -1371,12 +1504,62 @@ const styles = StyleSheet.create({
   socialPostMenuText: {
     fontSize: 18,
     color: COLORS.textSecondary,
+    fontWeight: '700',
+  },
+  postMenuDropdown: {
+    position: 'absolute',
+    top: 35,
+    right: 0,
+    backgroundColor: COLORS.surface,
+    borderRadius: 8,
+    paddingVertical: DIMENSIONS.spacing.xs,
+    minWidth: 120,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+    zIndex: 1000,
+  },
+  postMenuOption: {
+    paddingVertical: DIMENSIONS.spacing.sm,
+    paddingHorizontal: DIMENSIONS.spacing.md,
+  },
+  postMenuOptionText: {
+    fontSize: 14,
+    color: '#FF3B30',
+    fontWeight: '500',
   },
   socialPostContent: {
     fontSize: 14,
     color: COLORS.text,
     lineHeight: 20,
     marginBottom: DIMENSIONS.spacing.md,
+  },
+  socialPostActions: {
+    flexDirection: "row",
+    gap: DIMENSIONS.spacing.lg,
+    paddingTop: DIMENSIONS.spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  socialPostAction: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: DIMENSIONS.spacing.xs,
+    paddingVertical: DIMENSIONS.spacing.xs,
+  },
+  socialPostActionIcon: {
+    width: 20,
+    height: 20,
+  },
+  socialPostActionText: {
+    fontSize: 14,
+    color: COLORS.text,
+    fontWeight: "600",
+  },
+  handshakeIcon: {
+    fontSize: 20,
   },
   socialPostStats: {
     flexDirection: "row",

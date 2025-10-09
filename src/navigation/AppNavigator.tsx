@@ -74,7 +74,7 @@ const HomeStackNavigator: React.FC = () => {
 // Main Tab Navigator
 const MainTabNavigator: React.FC = () => {
   return (
-    <SafeAreaView  style={{ flex: 1 }} edges={[]}>
+    <SafeAreaView style={{ flex: 1, }} edges={[]}>
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
