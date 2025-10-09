@@ -6,6 +6,7 @@ import STRINGS from '../config/strings';
 import SwipeableCard, { TrainingPartner, Trainer, SwipeableItem } from '../components/SwipeableCard';
 import RatingModal from '../components/RatingModal';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import BasicTopBar from '../components/BasicTopBar';
 
 interface FindScreenProps {
   navigation: any;
@@ -283,7 +284,7 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation }) => {
   const hasMoreCards = currentIndex < currentData.length - 1;
 
   return (
-    <SafeAreaView edges={["top"]} style={styles.container}>
+    <SafeAreaView edges={[]} style={styles.container}>
       <ScrollView 
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -298,112 +299,55 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation }) => {
         }
       >
         {/* Header Section */}
-        <View style={styles.headerSection}>
-          <View style={styles.header}>
-            <Text style={styles.title}>{STRINGS.FIND.title}</Text>
-            <Text style={styles.subtitle}>{STRINGS.FIND.subtitle}</Text>
-          </View>
-
-          {/* Tab Toggle */}
-          <View style={styles.tabContainer}>
-            <TouchableOpacity
-              style={[
-                styles.tabButton,
-                activeTab === 'partners' && styles.tabButtonActive
-              ]}
-              onPress={() => {
-                setActiveTab('partners');
-                setCurrentIndex(0);
-                setSelectedFilters(['All']);
-              }}
-            >
-              <Text style={[
-                styles.tabText,
-                activeTab === 'partners' && styles.tabTextActive
-              ]}>
-                {STRINGS.FIND.partners}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.tabButton,
-                activeTab === 'trainers' && styles.tabButtonActive
-              ]}
-              onPress={() => {
-                setActiveTab('trainers');
-                setCurrentIndex(0);
-                setSelectedFilters(['All']);
-              }}
-            >
-              <Text style={[
-                styles.tabText,
-                activeTab === 'trainers' && styles.tabTextActive
-              ]}>
-                {STRINGS.FIND.trainers}
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Training Categories Dropdown */}
-          <View style={styles.filtersSection}>
-            <View style={styles.dropdownContainer}>
-              <Menu
-                visible={menuVisible}
-                onDismiss={() => setMenuVisible(false)}
-                anchor={
-                  <Button
-                    mode="outlined"
-                    onPress={() => setMenuVisible(true)}
-                    style={styles.dropdownButton}
-                    contentStyle={styles.dropdownButtonContent}
-                    labelStyle={styles.dropdownButtonLabel}
-                  >
-                    {selectedFilters.includes('All') || selectedFilters.length === 0 
-                      ? STRINGS.FIND.allCategories 
-                      : `${selectedFilters.length} ${STRINGS.FIND.selected}`}
-                  </Button>
-                }
-              >
-                {trainingCategories.map((category) => (
-                  <Menu.Item
-                    key={category}
-                    onPress={() => {
-                      handleCategorySelect(category);
-                      setMenuVisible(false);
-                    }}
-                    title={category}
-                    titleStyle={[
-                      styles.menuItemText,
-                      selectedFilters.includes(category) && styles.menuItemTextActive
+        <View style={styles.headerContainer}>
+          <BasicTopBar
+            showBackButton={false}
+            title="Find Partners & Trainers"
+            subtitle="Swipe to discover"
+            containerStyle={{ paddingVertical: DIMENSIONS.spacing.xxl }}
+            bottomView={
+              <View style={styles.tabContainerWrapper}>
+                <View style={styles.tabContainer}>
+                  <TouchableOpacity
+                    style={[
+                      styles.tabButton,
+                      activeTab === 'partners' && styles.tabButtonActivePartners
                     ]}
-                  />
-                ))}
-              </Menu>
-            </View>
-            
-            {/* Selected Categories Chips */}
-            {selectedFilters.length > 0 && !selectedFilters.includes('All') && (
-              <View style={styles.chipsWrapper}>
-                <ScrollView 
-                  horizontal 
-                  showsHorizontalScrollIndicator={false}
-                  style={styles.selectedChipsContainer}
-                >
-                  {selectedFilters.map((filter) => (
-                    <Chip
-                      key={filter}
-                      mode="outlined"
-                      onClose={() => handleCategorySelect(filter)}
-                      style={styles.selectedChip}
-                      textStyle={styles.selectedChipText}
-                    >
-                      {filter}
-                    </Chip>
-                  ))}
-                </ScrollView>
+                    onPress={() => {
+                      setActiveTab('partners');
+                      setCurrentIndex(0);
+                      setSelectedFilters(['All']);
+                    }}
+                  >
+                    <Text style={[
+                      styles.tabText,
+                      activeTab === 'partners' && styles.tabTextActive
+                    ]}>
+                      {STRINGS.FIND.partners}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.tabButton,
+                      activeTab === 'trainers' && styles.tabButtonActiveTrainers
+                    ]}
+                    onPress={() => {
+                      setActiveTab('trainers');
+                      setCurrentIndex(0);
+                      setSelectedFilters(['All']);
+                    }}
+                  >
+                    <Text style={[
+                      styles.tabText,
+                      activeTab === 'trainers' && styles.tabTextActive
+                    ]}>
+                      {STRINGS.FIND.trainers}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-            )}
-          </View>
+            }
+          />
         </View>
 
         {/* Cards Section */}
@@ -413,10 +357,10 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation }) => {
               partner={currentItem}
               onPress={() => navigation.navigate('UserProfile', { userId: currentItem.id.toString(), isGuest: true })}
               onSwipeLeft={handleSwipeLeft}
-              
               onSwipeRight={handleSwipeRight}
               onSkip={handleSwipeLeft}
               isFirst={true}
+              navigation={navigation}
             />
           ) : (
             <View style={styles.noMoreCards}>
@@ -432,21 +376,7 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation }) => {
         </View>
       </ScrollView>
 
-      {/* Progress Indicator */}
-      <View style={styles.progressContainer}>
-        <Text style={styles.progressText}>
-          {currentIndex + 1} {STRINGS.FIND.progressOf} {currentData.length}
-        </Text>
-      </View>
-
-      {/* Rating Modal */}
-      <RatingModal
-        visible={ratingModalVisible}
-        onClose={() => setRatingModalVisible(false)}
-        onSubmit={handleRatingSubmit}
-        userName={selectedUserForRating?.name || ''}
-        userType={selectedUserForRating?.type || 'partner'}
-      />
+     
     </SafeAreaView>
   );
 };
@@ -454,49 +384,49 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: DIMENSIONS.spacing.xl,
+
   },
-  headerSection: {
-    backgroundColor: COLORS.background,
+  headerContainer: {
+    marginBottom: DIMENSIONS.spacing.md,
+    position: 'relative',
   },
-  header: {
-    paddingHorizontal: DIMENSIONS.spacing.lg,
-    paddingTop: DIMENSIONS.spacing.sm,
-    paddingBottom: DIMENSIONS.spacing.xs,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 2,
-  },
-  subtitle: {
-    fontSize: 12,
+  tabContainerWrapper: {
+    position: 'absolute',
+    top: 25,
+    left: 0,
+    right: 0,
+    zIndex: 10,
   },
   tabContainer: {
     flexDirection: 'row',
-    paddingHorizontal: DIMENSIONS.spacing.lg,
-    marginBottom: DIMENSIONS.spacing.md,
+    backgroundColor: COLORS.surface,
+    borderRadius: 50,
+    padding: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
   tabButton: {
     flex: 1,
-    backgroundColor: COLORS.surface,
-    borderRadius: DIMENSIONS.borderRadius,
+    backgroundColor: 'transparent',
+    borderRadius: 50,
     paddingVertical: DIMENSIONS.spacing.sm,
-    marginHorizontal: DIMENSIONS.spacing.xs,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    marginHorizontal: 2,
     alignItems: 'center',
   },
-  tabButtonActive: {
+  tabButtonActivePartners: {
     backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
+  },
+  tabButtonActiveTrainers: {
+    backgroundColor: COLORS.primary,
   },
   tabText: {
     fontSize: 14,
@@ -504,7 +434,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   tabTextActive: {
-    color: COLORS.surface,
+    color: COLORS.white,
     fontWeight: '600',
   },
   filtersSection: {
@@ -555,11 +485,11 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
   },
   cardsSection: {
-    minHeight: 500,
+    minHeight: 550,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: DIMENSIONS.spacing.lg,
-    paddingVertical: DIMENSIONS.spacing.xl,
+   marginTop: DIMENSIONS.spacing.lg,
   },
   noMoreCards: {
     alignItems: 'center',
