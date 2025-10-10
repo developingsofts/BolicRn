@@ -10,6 +10,9 @@ import {
   Image,
   ActivityIndicator,
   RefreshControl,
+  Modal,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { useAuth } from "../contexts/AuthContext";
 import { COLORS, DIMENSIONS } from "../config/constants";
@@ -18,7 +21,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SafeAreaView } from "react-native-safe-area-context";
 import FontWeight from "../hooks/useInterFonts";
 import BasicTopBar from "../components/BasicTopBar";
-import { useGetPostsQuery, useDeletePostMutation } from '../services/api/postsApi';
+import { useGetPostsQuery, useDeletePostMutation, useUpdatePostMutation } from '../services/api/postsApi';
 import { useToggleLikeMutation } from '../services/api/likesCommentsApi';
 import { Like, CommentIcon } from '../../assets';
 import CommentsModal from '../components/CommentsModal';
@@ -81,6 +84,8 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const [openPostMenuId, setOpenPostMenuId] = useState<string | null>(null);
   const [showDeletePostDialog, setShowDeletePostDialog] = useState(false);
   const [postToDelete, setPostToDelete] = useState<string | null>(null);
+  const [editingPost, setEditingPost] = useState<{ id: string; caption: string } | null>(null);
+  const [editPostText, setEditPostText] = useState("");
   
   // Fetch posts for Community Highlights
   const { data: postsData, isLoading: postsLoading, refetch: refetchPosts } = useGetPostsQuery({ page: 1, limit: 5 });
@@ -89,6 +94,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   // Like mutation
   const [toggleLike] = useToggleLikeMutation();
   const [deletePost, { isLoading: isDeleting }] = useDeletePostMutation();
+  const [updatePost, { isLoading: isUpdating }] = useUpdatePostMutation();
   
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -124,6 +130,36 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     setOpenPostMenuId(null);
     setPostToDelete(postId);
     setShowDeletePostDialog(true);
+  };
+
+  const handleEditPostPress = (postId: string, caption: string) => {
+    setOpenPostMenuId(null);
+    setEditingPost({ id: postId, caption });
+    setEditPostText(caption);
+  };
+
+  const handleSaveEditPost = async () => {
+    if (!editingPost || !editPostText.trim()) return;
+
+    try {
+      await updatePost({
+        postId: editingPost.id,
+        title: editPostText.trim(),
+      }).unwrap();
+      
+      setEditingPost(null);
+      setEditPostText("");
+      refetchPosts();
+      Alert.alert('Success', 'Post updated successfully!');
+    } catch (error) {
+      console.error('Failed to update post:', error);
+      Alert.alert('Error', 'Failed to update post. Please try again.');
+    }
+  };
+
+  const handleCancelEditPost = () => {
+    setEditingPost(null);
+    setEditPostText("");
   };
 
   const confirmDeletePost = async () => {
@@ -569,6 +605,12 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                             {openPostMenuId === post.id.toString() && (
                               <View style={styles.postMenuDropdown}>
                                 <TouchableOpacity 
+                                  onPress={() => handleEditPostPress(post.id.toString(), post.title || '')}
+                                  style={styles.postMenuOption}
+                                >
+                                  <Text style={styles.postMenuOptionText}>Edit</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity 
                                   onPress={() => handleDeletePostPress(post.id.toString())}
                                   style={styles.postMenuOption}
                                 >
@@ -904,6 +946,68 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         onCancel={cancelDeletePost}
         loading={isDeleting}
       />
+
+      {/* Edit Post Modal */}
+      <Modal
+        visible={editingPost !== null}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={handleCancelEditPost}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.editPostModalContainer}
+        >
+          <TouchableOpacity 
+            style={styles.editPostModalOverlay} 
+            activeOpacity={1}
+            onPress={handleCancelEditPost}
+          />
+          <View style={styles.editPostModalContent}>
+            <View style={styles.editPostModalHeader}>
+              <Text style={styles.editPostModalTitle}>Edit Post</Text>
+              <TouchableOpacity onPress={handleCancelEditPost}>
+                <Text style={styles.editPostModalClose}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            
+            <TextInput
+              style={styles.editPostInput}
+              value={editPostText}
+              onChangeText={setEditPostText}
+              placeholder="What's on your mind?"
+              placeholderTextColor={COLORS.textSecondary}
+              multiline
+              autoFocus
+              maxLength={500}
+            />
+            
+            <View style={styles.editPostModalActions}>
+              <TouchableOpacity 
+                style={styles.editPostCancelButton}
+                onPress={handleCancelEditPost}
+              >
+                <Text style={styles.editPostCancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[
+                  styles.editPostSaveButton,
+                  (!editPostText.trim() || isUpdating) && styles.editPostSaveButtonDisabled
+                ]}
+                onPress={handleSaveEditPost}
+                disabled={!editPostText.trim() || isUpdating}
+              >
+                {isUpdating ? (
+                  <ActivityIndicator size="small" color={COLORS.white} />
+                ) : (
+                  <Text style={styles.editPostSaveButtonText}>Save</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -1684,6 +1788,80 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     backgroundColor: COLORS.background,
     marginRight: DIMENSIONS.spacing.sm,
+  },
+  editPostModalContainer: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  editPostModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  editPostModalContent: {
+    backgroundColor: COLORS.white,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: DIMENSIONS.spacing.lg,
+    maxHeight: '80%',
+  },
+  editPostModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: DIMENSIONS.spacing.lg,
+  },
+  editPostModalTitle: {
+    fontSize: 20,
+    fontFamily: FontWeight.SemiBold,
+    color: COLORS.gradient1,
+  },
+  editPostModalClose: {
+    fontSize: 24,
+    color: COLORS._616888,
+    fontWeight: 'bold',
+  },
+  editPostInput: {
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 12,
+    padding: DIMENSIONS.spacing.md,
+    fontSize: 16,
+    color: COLORS.text,
+    minHeight: 120,
+    maxHeight: 300,
+    textAlignVertical: 'top',
+    marginBottom: DIMENSIONS.spacing.lg,
+  },
+  editPostModalActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: DIMENSIONS.spacing.md,
+  },
+  editPostCancelButton: {
+    paddingVertical: DIMENSIONS.spacing.md,
+    paddingHorizontal: DIMENSIONS.spacing.xl,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  editPostCancelButtonText: {
+    fontSize: 16,
+    fontFamily: FontWeight.Medium,
+    color: COLORS.textSecondary,
+  },
+  editPostSaveButton: {
+    paddingVertical: DIMENSIONS.spacing.md,
+    paddingHorizontal: DIMENSIONS.spacing.xl,
+    borderRadius: 8,
+    backgroundColor: COLORS.primary,
+  },
+  editPostSaveButtonDisabled: {
+    opacity: 0.5,
+  },
+  editPostSaveButtonText: {
+    fontSize: 16,
+    fontFamily: FontWeight.SemiBold,
+    color: COLORS.white,
   },
 });
 

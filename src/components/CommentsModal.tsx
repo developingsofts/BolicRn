@@ -24,6 +24,7 @@ import {
   useGetPostCommentsQuery,
   useCreateCommentMutation,
   useDeleteCommentMutation,
+  useUpdateCommentMutation,
 } from '../services/api/likesCommentsApi';
 
 interface CommentsModalProps {
@@ -53,6 +54,7 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ visible, postId, onClose 
   const { user } = useAuth();
   const [commentText, setCommentText] = useState('');
   const [replyingTo, setReplyingTo] = useState<{ id: number; name: string } | null>(null);
+  const [editingComment, setEditingComment] = useState<{ id: number; content: string } | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [commentToDelete, setCommentToDelete] = useState<number | null>(null);
   const [openMenuId, setOpenMenuId] = useState<number | null>(null);
@@ -65,6 +67,7 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ visible, postId, onClose 
 
   const [createComment, { isLoading: isCreating }] = useCreateCommentMutation();
   const [deleteComment, { isLoading: isDeleting }] = useDeleteCommentMutation();
+  const [updateComment, { isLoading: isUpdating }] = useUpdateCommentMutation();
 
   const comments: Comment[] = 
     (commentsData?.status && commentsData?.data?.comments) 
@@ -75,18 +78,28 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ visible, postId, onClose 
     if (!commentText.trim()) return;
 
     try {
-      await createComment({
-        postId,
-        content: commentText.trim(),
-        parentCommentId: replyingTo?.id,
-      }).unwrap();
+      if (editingComment) {
+        // Update existing comment
+        await updateComment({
+          commentId: editingComment.id.toString(),
+          content: commentText.trim(),
+        }).unwrap();
+        setEditingComment(null);
+      } else {
+        // Create new comment
+        await createComment({
+          postId,
+          content: commentText.trim(),
+          parentCommentId: replyingTo?.id,
+        }).unwrap();
+        setReplyingTo(null);
+      }
 
       setCommentText('');
-      setReplyingTo(null);
       refetch();
     } catch (error) {
       console.error('Failed to post comment:', error);
-      Alert.alert('Error', 'Failed to post comment. Please try again.');
+      Alert.alert('Error', `Failed to ${editingComment ? 'update' : 'post'} comment. Please try again.`);
     }
   };
 
@@ -98,6 +111,18 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ visible, postId, onClose 
     setOpenMenuId(null);
     setCommentToDelete(commentId);
     setShowDeleteDialog(true);
+  };
+
+  const handleEditPress = (commentId: number, content: string) => {
+    setOpenMenuId(null);
+    setEditingComment({ id: commentId, content });
+    setCommentText(content);
+    setReplyingTo(null);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingComment(null);
+    setCommentText('');
   };
 
   const confirmDeleteComment = async () => {
@@ -188,6 +213,12 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ visible, postId, onClose 
                 {openMenuId === item.id && (
                   <View style={styles.menuDropdown}>
                     <TouchableOpacity 
+                      onPress={() => handleEditPress(item.id, item.content)}
+                      style={styles.menuOption}
+                    >
+                      <Text style={styles.menuOptionText}>Edit</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity 
                       onPress={() => handleDeletePress(item.id)}
                       style={styles.menuOption}
                     >
@@ -270,7 +301,15 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ visible, postId, onClose 
         )}
 
         <View style={styles.inputContainer}>
-          {replyingTo && (
+          {editingComment && (
+            <View style={styles.replyingToContainer}>
+              <Text style={styles.replyingToText}>Editing comment</Text>
+              <TouchableOpacity onPress={handleCancelEdit}>
+                <Text style={styles.cancelReplyText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+          {replyingTo && !editingComment && (
             <View style={styles.replyingToContainer}>
               <Text style={styles.replyingToText}>Replying to {replyingTo.name}</Text>
               <TouchableOpacity onPress={() => setReplyingTo(null)}>
@@ -281,7 +320,13 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ visible, postId, onClose 
           <View style={styles.inputRow}>
             <TextInput
               style={styles.input}
-              placeholder={replyingTo ? 'Write a reply...' : 'Write a comment...'}
+              placeholder={
+                editingComment 
+                  ? 'Edit your comment...' 
+                  : replyingTo 
+                    ? 'Write a reply...' 
+                    : 'Write a comment...'
+              }
               placeholderTextColor={COLORS.textSecondary}
               value={commentText}
               onChangeText={setCommentText}
@@ -289,11 +334,11 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ visible, postId, onClose 
               maxLength={500}
             />
             <TouchableOpacity
-              style={[styles.sendButton, (!commentText.trim() || isCreating) && styles.sendButtonDisabled]}
+              style={[styles.sendButton, (!commentText.trim() || isCreating || isUpdating) && styles.sendButtonDisabled]}
               onPress={handleSendComment}
-              disabled={!commentText.trim() || isCreating}
+              disabled={!commentText.trim() || isCreating || isUpdating}
             >
-              {isCreating ? (
+              {(isCreating || isUpdating) ? (
                 <ActivityIndicator size="small" color={COLORS.white} />
               ) : (
                 <Image source={Send} style={styles.sendIcon} />

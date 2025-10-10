@@ -662,12 +662,106 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
           {renderProfileAvatar()}
           {renderStatsRow()}
         </View>
-        {renderActionButtons()}
+
+        {/* Weekly Activity Section */}
+        <View style={styles.weeklyActivityCard}>
+          <View style={styles.weeklyActivityHeader}>
+            <Text style={styles.weeklyActivityTitle}>Weekly Activity</Text>
+          </View>
+
+          <View style={styles.weeklyActivityContent}>
+            {/* Weekly Goal Section */}
+            <View style={styles.weeklyGoalSection}>
+              <View style={styles.weeklyGoalHeader}>
+                <Text style={styles.weeklyGoalLabel}>Weekly Goal</Text>
+                <Text style={styles.weeklyGoalValue}>3/5 Workouts</Text>
+              </View>
+              <View style={styles.progressBarContainer}>
+                <View style={[styles.progressBarFill, { width: '60%' }]} />
+              </View>
+            </View>
+
+            {/* Streak Stats */}
+            <View style={styles.streakStatsContainer}>
+              <View style={styles.streakStatItem}>
+                <Text style={styles.streakStatLabel}>CURRENT STREAK</Text>
+                <Text style={styles.streakStatValue}>7 Days</Text>
+              </View>
+              <View style={styles.streakStatItem}>
+                <Text style={styles.streakStatLabel}>LONGEST STREAK</Text>
+                <Text style={styles.streakStatValue}>157 Days</Text>
+              </View>
+            </View>
+
+            {/* Daily Streak */}
+            <View style={styles.dailyStreakSection}>
+              <Text style={styles.dailyStreakLabel}>Daily Streak</Text>
+              <View style={styles.daysContainer}>
+                {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, index) => {
+                  const isCompleted = [true, true, true, true, false, false, false][index];
+                  return (
+                    <View key={index} style={styles.dayColumn}>
+                      <Text style={styles.dayLabel}>{day}</Text>
+                      <View style={[
+                        styles.dayCircle,
+                        isCompleted ? styles.dayCircleCompleted : styles.dayCircleIncomplete
+                      ]}>
+                        {isCompleted && (
+                          <Ionicons name="checkmark" size={16} color={COLORS.white} />
+                        )}
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
+          </View>
+        </View>
+
+        {/* Menu List Section */}
+        <View style={styles.menuListContainer}>
+          {[
+            { id: 'posts', label: 'Posts', icon: 'document-text-outline' },
+            { id: 'connections', label: 'Connections', icon: 'people-outline' },
+            { id: 'achievements', label: 'Achievements', icon: 'trophy-outline' },
+            { id: 'rating', label: 'Rating', icon: 'star-outline' },
+          ].map((item, index) => (
+            <TouchableOpacity
+              key={item.id}
+              style={[
+                styles.menuItem,
+                index === 0 && styles.menuItemActive,
+              ]}
+              onPress={() => {
+                // Handle navigation or action here
+                console.log(`Pressed ${item.label}`);
+              }}
+              activeOpacity={0.7}
+            >
+              <View style={styles.menuItemLeft}>
+                <Ionicons 
+                  name={item.icon as any} 
+                  size={20} 
+                  color={COLORS._616888} 
+                  style={styles.menuItemIcon}
+                />
+                <Text style={styles.menuItemLabel}>{item.label}</Text>
+              </View>
+              <Ionicons 
+                name="chevron-forward" 
+                size={20} 
+                color={COLORS._616888} 
+              />
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* {renderActionButtons()}
         {renderTabBar()}
-        {renderTabContent()}
+        {renderTabContent()} */}
       </ScrollView>
 
-      {isOwnProfile && !isGuest && (
+      {/* {isOwnProfile && !isGuest && (
         <View style={styles.logoutSection}>
           <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
             <Image source={Exit} style={styles.smallIconSize} />
@@ -676,7 +770,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
             </Text>
           </TouchableOpacity>
         </View>
-      )}
+      )} */}
     </SafeAreaView>
   );
 };
@@ -1452,6 +1546,169 @@ const styles = StyleSheet.create({
     color: COLORS.surface,
     fontSize: 16,
     fontWeight: "600",
+  },
+  // Weekly Activity Styles
+  weeklyActivityCard: {
+    width: '90%',
+    maxWidth: 600,
+    alignSelf: 'center',
+    backgroundColor: COLORS.white,
+    borderRadius: 16,
+    marginTop: 60,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  weeklyActivityHeader: {
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 10,
+  },
+  weeklyActivityTitle: {
+    fontSize: 16,
+    fontFamily: FontWeight.SemiBold,
+    color: COLORS.app_black,
+  },
+  weeklyActivityContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 14,
+  },
+  weeklyGoalSection: {
+    marginBottom: 12,
+  },
+  weeklyGoalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  weeklyGoalLabel: {
+    fontSize: 12,
+    fontFamily: FontWeight.Regular,
+    color: COLORS._616888,
+  },
+  weeklyGoalValue: {
+    fontSize: 12,
+    fontFamily: FontWeight.SemiBold,
+    color: COLORS.primary,
+  },
+  progressBarContainer: {
+    height: 6,
+    backgroundColor: COLORS._E6E6E7,
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: COLORS.primary,
+    borderRadius: 3,
+  },
+  streakStatsContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingTop: 6,
+    marginBottom: 12,
+  },
+  streakStatItem: {
+    flex: 1,
+  },
+  streakStatLabel: {
+    fontSize: 9,
+    fontFamily: FontWeight.Medium,
+    color: COLORS._616888,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 3,
+  },
+  streakStatValue: {
+    fontSize: 20,
+    fontFamily: FontWeight.Bold,
+    color: COLORS.app_black,
+  },
+  dailyStreakSection: {
+    paddingTop: 6,
+  },
+  dailyStreakLabel: {
+    fontSize: 12,
+    fontFamily: FontWeight.Regular,
+    color: COLORS._616888,
+    marginBottom: 10,
+  },
+  daysContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  dayColumn: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 6,
+  },
+  dayLabel: {
+    fontSize: 11,
+    fontFamily: FontWeight.Regular,
+    color: COLORS._616888,
+  },
+  dayCircle: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  dayCircleCompleted: {
+    backgroundColor: COLORS.primary,
+  },
+  dayCircleIncomplete: {
+    borderWidth: 2,
+    borderColor: COLORS._E6E6E7,
+    backgroundColor: 'transparent',
+  },
+  // Menu List Styles
+  menuListContainer: {
+    flexDirection: 'column',
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    marginTop: 0,
+    maxWidth: 600,
+    alignSelf: 'center',
+    width: '100%',
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    backgroundColor: COLORS.white,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS._E6E6E7,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  menuItemActive: {
+    borderWidth: 2,
+    borderColor: COLORS.primary,
+  },
+  menuItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  menuItemIcon: {
+    marginRight: 0,
+  },
+  menuItemLabel: {
+    fontSize: 16,
+    fontFamily: FontWeight.Medium,
+    color: COLORS.app_black,
   },
 });
 
