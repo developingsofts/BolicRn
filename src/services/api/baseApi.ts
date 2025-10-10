@@ -51,14 +51,14 @@ const baseQueryWithErrorHandling: BaseQueryFn<
 
   // Log response details
   if (result.error) {
-    console.error('❌ API Error:', {
-      url: `${API_CONFIG.baseUrl}${url}`,
-      method,
-      status: result.error.status,
-      error: result.error.data || result.error,
-      duration: `${duration}ms`,
-      timestamp: new Date().toISOString(),
-    });
+    // console.error('❌ API Error:', {
+    //   url: `${API_CONFIG.baseUrl}${url}`,
+    //   method,
+    //   status: result.error.status,
+    //   error: result.error.data || result.error,
+    //   duration: `${duration}ms`,
+    //   timestamp: new Date().toISOString(),
+    // });
   } else {
     console.log('✅ API Response:', {
       url: `${API_CONFIG.baseUrl}${url}`,

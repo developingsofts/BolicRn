@@ -130,6 +130,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
   const isGuest = route?.params?.isGuest || !user;
   const isOwnProfile =
     !route?.params?.userId || route.params.userId === user?.id;
+  const showOwnProfileFeatures = isOwnProfile && !isGuest;
 
   const achievements: Achievement[] = [
     {
@@ -184,6 +185,35 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
       location: "Central Park",
       initial: "E",
       color: COLORS.secondary,
+    },
+  ];
+
+  const menuItems = [
+    {
+      id: "posts",
+      label: showOwnProfileFeatures ? "My Posts" : STRINGS.PROFILE.posts,
+      icon: "document-text-outline" as const,
+    },
+    { id: "connections", label: "Connections", icon: "people-outline" as const },
+    ...(showOwnProfileFeatures
+      ? [
+          {
+            id: "schedule-session",
+            label: "Schedule Sessions",
+            icon: "calendar-outline" as const,
+          },
+          {
+            id: "workout-history",
+            label: "Workout History",
+            icon: "time-outline" as const,
+          },
+        ]
+      : []),
+    { id: "achievements", label: STRINGS.PROFILE.achievements, icon: "trophy-outline" as const },
+    {
+      id: "rating",
+      label: showOwnProfileFeatures ? "My Ratings" : "Rating",
+      icon: "star-outline" as const,
     },
   ];
 
@@ -663,69 +693,82 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
           {renderStatsRow()}
         </View>
 
-        {/* Weekly Activity Section */}
-        <View style={styles.weeklyActivityCard}>
-          <View style={styles.weeklyActivityHeader}>
-            <Text style={styles.weeklyActivityTitle}>Weekly Activity</Text>
-          </View>
-
-          <View style={styles.weeklyActivityContent}>
-            {/* Weekly Goal Section */}
-            <View style={styles.weeklyGoalSection}>
-              <View style={styles.weeklyGoalHeader}>
-                <Text style={styles.weeklyGoalLabel}>Weekly Goal</Text>
-                <Text style={styles.weeklyGoalValue}>3/5 Workouts</Text>
-              </View>
-              <View style={styles.progressBarContainer}>
-                <View style={[styles.progressBarFill, { width: '60%' }]} />
-              </View>
+        {showOwnProfileFeatures && (
+          <View style={styles.weeklyActivityCard}>
+            <View style={styles.weeklyActivityHeader}>
+              <Text style={styles.weeklyActivityTitle}>Weekly Activity</Text>
             </View>
 
-            {/* Streak Stats */}
-            <View style={styles.streakStatsContainer}>
-              <View style={styles.streakStatItem}>
-                <Text style={styles.streakStatLabel}>CURRENT STREAK</Text>
-                <Text style={styles.streakStatValue}>7 Days</Text>
+            <View style={styles.weeklyActivityContent}>
+              {/* Weekly Goal Section */}
+              <View style={styles.weeklyGoalSection}>
+                <View style={styles.weeklyGoalHeader}>
+                  <Text style={styles.weeklyGoalLabel}>Weekly Goal</Text>
+                  <Text style={styles.weeklyGoalValue}>3/5 Workouts</Text>
+                </View>
+                <View style={styles.progressBarContainer}>
+                  <View style={[styles.progressBarFill, { width: "60%" }]} />
+                </View>
               </View>
-              <View style={styles.streakStatItem}>
-                <Text style={styles.streakStatLabel}>LONGEST STREAK</Text>
-                <Text style={styles.streakStatValue}>157 Days</Text>
-              </View>
-            </View>
 
-            {/* Daily Streak */}
-            <View style={styles.dailyStreakSection}>
-              <Text style={styles.dailyStreakLabel}>Daily Streak</Text>
-              <View style={styles.daysContainer}>
-                {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, index) => {
-                  const isCompleted = [true, true, true, true, false, false, false][index];
-                  return (
-                    <View key={index} style={styles.dayColumn}>
-                      <Text style={styles.dayLabel}>{day}</Text>
-                      <View style={[
-                        styles.dayCircle,
-                        isCompleted ? styles.dayCircleCompleted : styles.dayCircleIncomplete
-                      ]}>
-                        {isCompleted && (
-                          <Ionicons name="checkmark" size={16} color={COLORS.white} />
-                        )}
+              {/* Streak Stats */}
+              <View style={styles.streakStatsContainer}>
+                <View style={styles.streakStatItem}>
+                  <Text style={styles.streakStatLabel}>CURRENT STREAK</Text>
+                  <Text style={styles.streakStatValue}>7 Days</Text>
+                </View>
+                <View style={styles.streakStatItem}>
+                  <Text style={styles.streakStatLabel}>LONGEST STREAK</Text>
+                  <Text style={styles.streakStatValue}>157 Days</Text>
+                </View>
+              </View>
+
+              {/* Daily Streak */}
+              <View style={styles.dailyStreakSection}>
+                <Text style={styles.dailyStreakLabel}>Daily Streak</Text>
+                <View style={styles.daysContainer}>
+                  {["M", "T", "W", "T", "F", "S", "S"].map((day, index) => {
+                    const isCompleted = [
+                      true,
+                      true,
+                      true,
+                      true,
+                      false,
+                      false,
+                      false,
+                    ][index];
+                    return (
+                      <View key={index} style={styles.dayColumn}>
+                        <Text style={styles.dayLabel}>{day}</Text>
+                        <View
+                          style={[
+                            styles.dayCircle,
+                            isCompleted
+                              ? styles.dayCircleCompleted
+                              : styles.dayCircleIncomplete,
+                          ]}
+                        >
+                          {isCompleted && (
+                            <Ionicons name="checkmark" size={16} color={COLORS.white} />
+                          )}
+                        </View>
                       </View>
-                    </View>
-                  );
-                })}
+                    );
+                  })}
+                </View>
               </View>
             </View>
           </View>
-        </View>
+        )}
 
         {/* Menu List Section */}
-        <View style={styles.menuListContainer}>
-          {[
-            { id: 'posts', label: 'Posts', icon: 'document-text-outline' },
-            { id: 'connections', label: 'Connections', icon: 'people-outline' },
-            { id: 'achievements', label: 'Achievements', icon: 'trophy-outline' },
-            { id: 'rating', label: 'Rating', icon: 'star-outline' },
-          ].map((item, index) => (
+        <View
+          style={[
+            styles.menuListContainer,
+            isGuest && styles.menuListGuestSpacing,
+          ]}
+        >
+          {menuItems.map((item, index) => (
             <TouchableOpacity
               key={item.id}
               style={[
@@ -739,18 +782,18 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
               activeOpacity={0.7}
             >
               <View style={styles.menuItemLeft}>
-                <Ionicons 
-                  name={item.icon as any} 
-                  size={20} 
-                  color={COLORS._616888} 
+                <Ionicons
+                  name={item.icon as any}
+                  size={20}
+                  color={COLORS._616888}
                   style={styles.menuItemIcon}
                 />
                 <Text style={styles.menuItemLabel}>{item.label}</Text>
               </View>
-              <Ionicons 
-                name="chevron-forward" 
-                size={20} 
-                color={COLORS._616888} 
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={COLORS._616888}
               />
             </TouchableOpacity>
           ))}
@@ -1677,6 +1720,9 @@ const styles = StyleSheet.create({
     maxWidth: 600,
     alignSelf: 'center',
     width: '100%',
+  },
+  menuListGuestSpacing: {
+    paddingVertical: 70,
   },
   menuItem: {
     flexDirection: 'row',

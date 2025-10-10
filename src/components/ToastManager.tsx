@@ -9,8 +9,6 @@ interface ToastData {
   duration?: number;
 }
 
-// Global toast queue
-let toastQueue: ToastData[] = [];
 let showToastCallback: ((toast: ToastData) => void) | null = null;
 
 // Toast Manager Component
@@ -20,37 +18,23 @@ const ToastManager: React.FC = () => {
   // Register the callback when component mounts
   React.useEffect(() => {
     showToastCallback = (toast: ToastData) => {
-      // If there's already a toast showing, queue this one
-      if (currentToast) {
-        toastQueue.push(toast);
-      } else {
-        setCurrentToast(toast);
-      }
+      setCurrentToast(toast);
     };
 
     return () => {
       showToastCallback = null;
     };
-  }, [currentToast]);
+  }, []);
 
   const handleHideToast = useCallback(() => {
     setCurrentToast(null);
-    
-    // Show next toast in queue after a short delay
-    setTimeout(() => {
-      if (toastQueue.length > 0) {
-        const nextToast = toastQueue.shift();
-        if (nextToast) {
-          setCurrentToast(nextToast);
-        }
-      }
-    }, 200);
   }, []);
 
   return (
     <View style={styles.container} pointerEvents="box-none">
       {currentToast && (
         <CustomToast
+          key={currentToast.id}
           message={currentToast.message}
           type={currentToast.type}
           duration={currentToast.duration}

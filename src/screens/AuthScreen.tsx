@@ -8,6 +8,8 @@ import {
   Animated,
   StyleSheet,
   Dimensions,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import MaskedView from "@react-native-masked-view/masked-view";
 import { LinearGradient } from "expo-linear-gradient";
@@ -89,6 +91,27 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
     currentPRs: "",
   });
 
+  // Function to reset all form states
+  const resetFormStates = () => {
+    setSignUpFormValues({
+      email: "",
+      password: "",
+      displayName: "",
+      phoneNumber: "",
+      verificationCode: "",
+      age: "",
+      trainingTypes: [],
+      genderPreference: "",
+      userGender: "",
+      currentPRs: "",
+    });
+    setIsPhoneVerified(false);
+    setExpectedVerificationCode(null);
+    setVerifiedPhoneNumber(null);
+    setAuthToken(null);
+    setSignUpStep(0);
+  };
+
   // Animation values
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
   const slideAnim = React.useRef(new Animated.Value(50)).current;
@@ -147,17 +170,33 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
       // Handle RTK Query errors
       let message = "Authentication failed";
       
+      console.error('Login error:', error);
+      
+      // RTK Query error structure
       if (error?.data?.message) {
         // Backend error response
         message = error.data.message;
+      } else if (error?.data?.error) {
+        // Alternative backend error format
+        message = error.data.error;
       } else if (error?.message) {
         // Standard Error object
         message = error.message;
+      } else if (error?.status) {
+        // HTTP status code errors
+        if (error.status === 401) {
+          message = "Invalid email or password. Please try again.";
+        } else if (error.status === 404) {
+          message = "Account not found. Please check your email or sign up.";
+        } else if (error.status === 500) {
+          message = "Server error. Please try again later.";
+        }
       } else if (typeof error === 'string') {
         message = error;
       }
       
       Toast.error(message);
+      console.log('Error toast shown:', message);
     }
   };
 
@@ -188,7 +227,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
         await storageService.setAuthToken(token);
 
         console.log('✅ Account created, token saved. Now collecting additional info...');
-        Toast.success("Account created! Please complete your profile.");
+        // Don't show toast here - only show on final step
         
         // Move to next step after successful account creation
         nextStep();
@@ -199,17 +238,31 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
       // Handle RTK Query errors
       let message = "Authentication failed";
       
+      // console.error('Signup error:', error);
+      
+      // RTK Query error structure
       if (error?.data?.message) {
-        // Backend error response
+        // Backend error response (e.g., "Email already exists")
         message = error.data.message;
+      } else if (error?.data?.error) {
+        // Alternative backend error format
+        message = error.data.error;
       } else if (error?.message) {
         // Standard Error object
         message = error.message;
+      } else if (error?.status) {
+        // HTTP status code errors
+        if (error.status === 409 || error.status === 400) {
+          message = "This email is already registered. Please use a different email or sign in.";
+        } else if (error.status === 500) {
+          message = "Server error. Please try again later.";
+        }
       } else if (typeof error === 'string') {
         message = error;
       }
       
       Toast.error(message);
+      // console.log('Error toast shown:', message);
     }
   };
 
@@ -243,7 +296,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
       setVerifiedPhoneNumber(trimmedValue); // Save the phone number that received the code
       setIsPhoneVerified(false);
 
-      Toast.success(`Use verification code ${demoCode} to verify your phone.`);
+      // Don't show toast here - only show on final step
+      console.log(`Verification code sent: ${demoCode}`);
     } catch (error) {
       Toast.error(STRINGS.AUTH.errors.failedToSend);
     } finally {
@@ -266,7 +320,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
 
       if (verificationCode.trim() === expectedVerificationCode) {
         setIsPhoneVerified(true);
-        Toast.success(STRINGS.AUTH.success.phoneVerified);
+        // Don't show toast here - only show on final step
+        console.log('Phone verified successfully');
         nextStep();
       } else {
         Toast.error(STRINGS.AUTH.errors.invalidCode);
@@ -402,12 +457,15 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
           throw new Error(updateResponse.message || ERROR_MESSAGES.authenticationError);
         }
 
-        Toast.success(`Profile updated!`);
+        // Don't show toast for intermediate steps - only on final step
+        if (signUpStep !== FINAL_SIGN_UP_STEP) {
+          console.log(`✅ Step ${signUpStep} completed`);
+        }
 
         // If this is the final step, hydrate user and navigate
         if (signUpStep === FINAL_SIGN_UP_STEP) {
           const sanitizedUser = updateResponse.data as User;
-          await hydrateUser({ user: sanitizedUser, token: authToken! }, "Profile completed successfully!");
+          await hydrateUser({ user: sanitizedUser, token: authToken! }, "Account created successfully!");
         } else {
           // Move to next step
           setSignUpFormValues({ ...signUpFormValues, ...values });
@@ -784,6 +842,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
 
   const renderLoginForm = () => (
     <Formik
+      key="login-form"
       initialValues={{ email: "", password: "" }}
       validationSchema={loginSchema}
       onSubmit={handleLogin}
@@ -840,6 +899,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
 
   const renderSignUpForm = () => (
     <Formik
+      key={`signup-form-${signUpStep}`}
       initialValues={signUpFormValues}
       validationSchema={getStepSchema(signUpStep)}
       onSubmit={handleSignUp}
@@ -854,19 +914,25 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
   );
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.contentContainer}
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
     >
-      <Animated.View
-        style={[
-          styles.animatedContainer,
-          {
-            opacity: fadeAnim,
-            transform: [{ translateY: slideAnim }, { scale: scaleAnim }],
-          },
-        ]}
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.contentContainer}
+        keyboardShouldPersistTaps="handled"
       >
+        <Animated.View
+          style={[
+            styles.animatedContainer,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }, { scale: scaleAnim }],
+            },
+          ]}
+        >
         {/* Header */}
         <View style={styles.header}>
           <MaskedView
@@ -892,8 +958,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
           <TouchableOpacity
             style={[styles.modeButton, !isSignUp && styles.modeButtonActive]}
             onPress={() => {
+              resetFormStates();
               setIsSignUp(false);
-              setSignUpStep(0);
             }}
           >
             <Text style={[styles.modeText, !isSignUp && styles.modeTextActive]}>
@@ -903,8 +969,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
           <TouchableOpacity
             style={[styles.modeButton, isSignUp && styles.modeButtonActive]}
             onPress={() => {
+              resetFormStates();
               setIsSignUp(true);
-              setSignUpStep(0);
             }}
           >
             <Text style={[styles.modeText, isSignUp && styles.modeTextActive]}>
@@ -922,8 +988,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
             {isSignUp ? "Already have an account?" : "Don't have an account?"}
           </Text>
           <TouchableOpacity onPress={() => {
+            resetFormStates();
             setIsSignUp(!isSignUp);
-            setSignUpStep(0);
           }}>
             <Text style={styles.footerLink}>
               {isSignUp ? "Sign In" : "Sign Up"}
@@ -933,6 +999,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
 
       </Animated.View>
     </ScrollView>
+    </KeyboardAvoidingView>
   );
 };
 
