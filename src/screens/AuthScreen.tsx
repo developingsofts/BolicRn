@@ -10,6 +10,7 @@ import {
   Dimensions,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from "react-native";
 import MaskedView from "@react-native-masked-view/masked-view";
 import { LinearGradient } from "expo-linear-gradient";
@@ -155,6 +156,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
         const { token, password: _password, ...rest } = response.data as Record<string, unknown> & {
           token?: string;
           password?: string;
+          onboardingStep?: number;
         };
 
         if (!token || typeof token !== "string") {
@@ -162,6 +164,43 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
         }
 
         const sanitizedUser = rest as unknown as User;
+        
+        // Check if user needs to complete onboarding
+        const onboardingStep = sanitizedUser.onboardingStep || 0;
+        
+        if (onboardingStep > 0 && onboardingStep < 7) {
+          // User has incomplete onboarding - switch to signup mode and resume
+          console.log('🔄 Resuming onboarding from step:', onboardingStep);
+          setIsSignUp(true);
+          setSignUpStep(onboardingStep);
+          setAuthToken(token);
+          await storageService.setAuthToken(token);
+          
+          // Pre-fill form values from user data
+          setSignUpFormValues({
+            email: sanitizedUser.email || '',
+            password: '',
+            displayName: sanitizedUser.displayName || '',
+            phoneNumber: sanitizedUser.phoneNumber || '',
+            verificationCode: '',
+            age: sanitizedUser.age?.toString() || '',
+            trainingTypes: sanitizedUser.trainingTypes || [],
+            genderPreference: sanitizedUser.genderPreference || '',
+            userGender: sanitizedUser.userGender || '',
+            currentPRs: sanitizedUser.currentPRs || '',
+          });
+          
+          // If phone was already verified, set that state
+          if (sanitizedUser.phoneVerified) {
+            setIsPhoneVerified(true);
+            setVerifiedPhoneNumber(sanitizedUser.phoneNumber || null);
+          }
+          
+          Toast.success("Welcome back! Please complete your profile setup.");
+          return;
+        }
+        
+        // User has completed onboarding - proceed with normal login
         await hydrateUser({ user: sanitizedUser, token }, response.message || STRINGS.AUTH.success.loggedIn);
       } else {
         throw new Error(response.message || ERROR_MESSAGES.authenticationError);
@@ -278,6 +317,17 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
 
   const prevStep = () => {
     if (signUpStep > 0) {
+      // Reset auth token when going back to email/password step
+      if (signUpStep === 1) {
+        setAuthToken(null);
+        storageService.removeAuthToken();
+      }
+      // Reset verification states when going back to phone number step
+      if (signUpStep === 2) {
+        setVerifiedPhoneNumber(null);
+        setExpectedVerificationCode(null);
+        setIsPhoneVerified(false);
+      }
       setSignUpStep(signUpStep - 1);
     }
   };
@@ -421,6 +471,9 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
       try {
         const updateData: any = {};
         
+        // Always update onboarding step to track progress
+        updateData.onboardingStep = signUpStep;
+        
         switch (signUpStep) {
           case 1: // Phone Number
             // Check if verification code was sent to this phone number
@@ -446,6 +499,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
             updateData.userGender = values.userGender.toLowerCase();
             updateData.genderPreference = convertGenderPreference(values.genderPreference, values.userGender);
             if (values.currentPRs) updateData.currentPRs = values.currentPRs;
+            // Mark onboarding as complete
+            updateData.onboardingStep = 7;
             break;
         }
 
@@ -559,9 +614,18 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
               onPress={() => sendVerificationCode(values.phoneNumber)}
               disabled={isSendingCode}
             >
-              <Text style={styles.sendCodeButtonText}>
-                {isSendingCode ? STRINGS.AUTH.sending : STRINGS.AUTH.sendCode}
-              </Text>
+              {isSendingCode ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator color={COLORS.primary} size="small" />
+                  <Text style={[styles.sendCodeButtonText, { marginLeft: 8 }]}>
+                    {STRINGS.AUTH.sending}
+                  </Text>
+                </View>
+              ) : (
+                <Text style={styles.sendCodeButtonText}>
+                  {STRINGS.AUTH.sendCode}
+                </Text>
+              )}
             </TouchableOpacity>
 
             <View style={styles.stepButtons}>
@@ -613,16 +677,35 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
               onPress={() => verifyCode(values.verificationCode)}
               disabled={isVerifyingCode}
             >
-              <Text style={styles.verifyButtonText}>
-                {isVerifyingCode ? STRINGS.AUTH.verifying : STRINGS.AUTH.verifyCode}
-              </Text>
+              {isVerifyingCode ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator color={COLORS.white} size="small" />
+                  <Text style={[styles.verifyButtonText, { marginLeft: 8 }]}>
+                    {STRINGS.AUTH.verifying}
+                  </Text>
+                </View>
+              ) : (
+                <Text style={styles.verifyButtonText}>
+                  {STRINGS.AUTH.verifyCode}
+                </Text>
+              )}
             </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.resendButton}
               onPress={() => sendVerificationCode(values.phoneNumber)}
+              disabled={isSendingCode}
             >
-              <Text style={styles.resendButtonText}>{STRINGS.AUTH.resendCode}</Text>
+              {isSendingCode ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator color={COLORS.primary} size="small" />
+                  <Text style={[styles.resendButtonText, { marginLeft: 8 }]}>
+                    Resending...
+                  </Text>
+                </View>
+              ) : (
+                <Text style={styles.resendButtonText}>{STRINGS.AUTH.resendCode}</Text>
+              )}
             </TouchableOpacity>
 
             <View style={styles.stepButtons}>
@@ -827,9 +910,18 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
                 onPress={handleNextWithValidation}
                 disabled={isMutating}
               >
-                <Text style={styles.nextButtonText}>
-                  {isMutating ? STRINGS.AUTH.sending : STRINGS.AUTH.createAccount}
-                </Text>
+                {isMutating ? (
+                  <View style={styles.loadingContainer}>
+                    <ActivityIndicator color={COLORS.white} size="small" />
+                    <Text style={[styles.nextButtonText, { marginLeft: 8 }]}>
+                      {STRINGS.AUTH.sending}
+                    </Text>
+                  </View>
+                ) : (
+                  <Text style={styles.nextButtonText}>
+                    {STRINGS.AUTH.createAccount}
+                  </Text>
+                )}
               </TouchableOpacity>
             </View>
           </View>
@@ -846,7 +938,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
       initialValues={{ email: "", password: "" }}
       validationSchema={loginSchema}
       onSubmit={handleLogin}
-      validateOnChange={false}
+      validateOnChange={true}
       validateOnBlur={true}
     >
       {({ values, errors, touched, handleChange, handleBlur, handleSubmit }) => (
@@ -879,7 +971,10 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
             <Text style={styles.errorText}>{errors.password}</Text>
           )}
 
-          <TouchableOpacity onPress={handleForgotPassword}>
+          <TouchableOpacity 
+            onPress={handleForgotPassword}
+            style={styles.forgotPasswordContainer}
+          >
             <Text style={styles.forgotPassword}>Forgot Password?</Text>
           </TouchableOpacity>
 
@@ -888,9 +983,16 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
             onPress={() => handleSubmit()}
             disabled={isMutating}
           >
-            <Text style={styles.submitButtonText}>
-              {isMutating ? "Signing In..." : "Sign In"}
-            </Text>
+            {isMutating ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator color={COLORS.white} size="small" />
+                <Text style={[styles.submitButtonText, { marginLeft: 8 }]}>
+                  Signing In...
+                </Text>
+              </View>
+            ) : (
+              <Text style={styles.submitButtonText}>Sign In</Text>
+            )}
           </TouchableOpacity>
         </View>
       )}
@@ -903,7 +1005,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
       initialValues={signUpFormValues}
       validationSchema={getStepSchema(signUpStep)}
       onSubmit={handleSignUp}
-      validateOnChange={false}
+      validateOnChange={true}
       validateOnBlur={true}
       enableReinitialize
     >
@@ -1112,13 +1214,14 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     marginBottom: DIMENSIONS.spacing.sm,
   },
+  forgotPasswordContainer: {
+    alignSelf: "flex-end",
+    marginBottom: DIMENSIONS.spacing.sm,
+  },
   forgotPassword: {
     fontSize: 16,
     fontWeight: "600",
     color: COLORS.primary,
-    justifyContent: "flex-end",
-    alignSelf: "flex-end",
-    marginBottom: DIMENSIONS.spacing.sm,
   },
   trainingTypesContainer: {
     maxHeight: 200,
@@ -1258,6 +1361,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     color: COLORS.surface,
+  },
+  loadingContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
   },
   errorText: {
     color: COLORS.error,

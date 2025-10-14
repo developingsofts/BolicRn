@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -7,17 +7,18 @@ import {
   TouchableOpacity,
   Image,
   ScrollView,
-  KeyboardAvoidingView,
   ActivityIndicator,
   Alert,
+  Keyboard,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
-import { COLORS, DIMENSIONS } from "../config/constants";
+import { COLORS, DIMENSIONS, LOCATION_CONFIG } from "../config/constants";
 import STRINGS from "../config/strings";
 import FontWeight from "../hooks/useInterFonts";
 import { useAuth } from "../contexts/AuthContext";
-import { Trash, ArrowDown, Close } from "../../assets";
+import { Trash, Close } from "../../assets";
 import { LinearGradient } from "expo-linear-gradient";
 import { r } from "../designing/responsiveDesigns";
 import { useUpdateMyProfileWithImageMutation, useUpdateMyProfileMutation } from "../services/api/userApi";
@@ -32,6 +33,11 @@ interface EditProfileScreenProps {
     };
   };
 }
+
+type Suggestion = {
+  text?: string;
+  magicKey?: string;
+};
 
 const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
   navigation,
@@ -53,6 +59,15 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
   const [selectedImage, setSelectedImage] = useState<string | null>(user?.imageUrl || null);
   const [imageFile, setImageFile] = useState<any>(null);
   const [deleteImage, setDeleteImage] = useState(false);
+  const [isLocationFocused, setIsLocationFocused] = useState(false);
+  const [isBioFocused, setIsBioFocused] = useState(false);
+  const [isNameFocused, setIsNameFocused] = useState(false);
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const fetchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isSelectingSuggestionRef = useRef(false);
+  const scrollViewRef = useRef<ScrollView | null>(null);
+  const bioInputRef = useRef<any>(null);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
 
   // Sync local state with user context when user data changes
   useEffect(() => {
@@ -65,6 +80,56 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
       setDeleteImage(false);
     }
   }, [user?.imageUrl, user?.displayName, user?.location, user?.bio, user?.currentPRs]);
+
+  useEffect(() => {
+    return () => {
+      if (fetchTimeoutRef.current) {
+        clearTimeout(fetchTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    const keyboardDidShow = Keyboard.addListener('keyboardDidShow', () => {
+      setKeyboardVisible(true);
+    });
+
+    const keyboardDidHide = Keyboard.addListener('keyboardDidHide', () => {
+      setKeyboardVisible(false);
+      // Blur the bio input when keyboard is hidden so it can be focused again
+      bioInputRef.current?.blur();
+    });
+
+    return () => {
+      keyboardDidShow.remove();
+      keyboardDidHide.remove();
+    };
+  }, []);
+
+  const handleBioFocus = () => {
+    setIsBioFocused(true);
+    // Measure the bio input position and scroll to it
+    console.log("Bio field focused");
+    setTimeout(() => {
+      bioInputRef.current?.measureLayout(
+        scrollViewRef.current,
+        (x: number, y: number, width: number, height: number) => {
+          scrollViewRef.current?.scrollTo({
+            y: y - 50, // Scroll to position with some offset
+            animated: true,
+          });
+        },
+        () => {
+          // Fallback to scrollToEnd if measure fails
+          scrollViewRef.current?.scrollToEnd({ animated: true });
+        }
+      );
+    }, 100);
+  };
+
+  const handleBioBlur = () => {
+    setIsBioFocused(false);
+  };
 
   const handleImagePick = async () => {
     try {
@@ -123,9 +188,64 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
     setDeleteImage(true); // Mark that user wants to delete the image
   };
 
+  const fetchSuggestions = useCallback(async (query: string) => {
+    const trimmed = query.trim();
+
+    if (!trimmed || trimmed.length < 3) {
+      setSuggestions([]);
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `${LOCATION_CONFIG.geocodeSuggestUrl}?text=${encodeURIComponent(
+          trimmed
+        )}&f=json`
+      );
+      const data = await response.json();
+
+      if (data?.suggestions) {
+        setSuggestions(data.suggestions);
+      } else {
+        setSuggestions([]);
+      }
+    } catch (error) {
+      console.error("Error fetching suggestions:", error);
+      setSuggestions([]);
+    }
+  }, []);
+
+  const handleSelectSuggestion = (text: string) => {
+    isSelectingSuggestionRef.current = true;
+    setLocation(text);
+    setSuggestions([]);
+    setIsLocationFocused(false);
+    Keyboard.dismiss();
+    setTimeout(() => {
+      isSelectingSuggestionRef.current = false;
+    }, 150);
+  };
+
+  const handleLocationChange = (text: string) => {
+    setLocation(text);
+
+    if (fetchTimeoutRef.current) {
+      clearTimeout(fetchTimeoutRef.current);
+    }
+
+    fetchTimeoutRef.current = setTimeout(() => {
+      fetchSuggestions(text);
+    }, 300);
+  };
+
   const handleSave = async () => {
     if (!name.trim()) {
       Toast.error('Please enter your name');
+      return;
+    }
+
+    if (bio.trim().length > 500) {
+      Toast.error('Bio cannot exceed 500 characters');
       return;
     }
 
@@ -242,9 +362,11 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
           style={styles.inputField}
           value={name}
           onChangeText={setName}
-          placeholder={STRINGS.EDIT_PROFILE.namePlaceholder}
-          placeholderTextColor={COLORS._5E5E5E}
+          placeholder={isNameFocused ? "" : STRINGS.EDIT_PROFILE.namePlaceholder}
+          placeholderTextColor={COLORS._D9D9D9}
           editable={!isLoading}
+          onFocus={() => setIsNameFocused(true)}
+          onBlur={() => setIsNameFocused(false)}
         />
       </View>
       <View style={styles.inputGroup}>
@@ -252,36 +374,75 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
         <TextInput
           style={styles.inputField}
           value={location}
-          onChangeText={setLocation}
-          placeholder={STRINGS.EDIT_PROFILE.locationPlaceholder}
+          onChangeText={handleLocationChange}
+          placeholder={
+            isLocationFocused ? "" : STRINGS.EDIT_PROFILE.locationPlaceholder
+          }
           placeholderTextColor={COLORS._D9D9D9}
           editable={!isLoading}
+          onFocus={() => {
+            setIsLocationFocused(true);
+            if (location.trim().length >= 3) {
+              fetchSuggestions(location);
+            }
+          }}
+          onBlur={() => {
+            setIsLocationFocused(false);
+            if (!isSelectingSuggestionRef.current) {
+              setSuggestions([]);
+            }
+          }}
         />
+        {isLocationFocused && suggestions.length > 0 && (
+          <View style={styles.suggestionsContainer}>
+            <ScrollView
+              nestedScrollEnabled
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              {suggestions.map((item, index) => (
+                <TouchableOpacity
+                  key={item?.magicKey || `${item?.text || "suggestion"}-${index}`}
+                  style={styles.suggestionItem}
+                  onPress={() => handleSelectSuggestion(item?.text || "")}
+                >
+                  <Text style={styles.suggestionText}>{item?.text}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
       </View>
       <View style={styles.inputGroup}>
         <Text style={styles.inputLabel}>{STRINGS.EDIT_PROFILE.bio}</Text>
         <TextInput
+          ref={bioInputRef}
           style={styles.inputFieldBio}
           value={bio}
           onChangeText={setBio}
-          placeholder={STRINGS.EDIT_PROFILE.bioPlaceholder}
+          placeholder={isBioFocused ? "" : STRINGS.EDIT_PROFILE.bioPlaceholder}
           placeholderTextColor={COLORS._D9D9D9}
           multiline
-          numberOfLines={4}
+          maxLength={500}
           editable={!isLoading}
+          onFocus={handleBioFocus}
+          onBlur={handleBioBlur}
         />
+        <Text style={styles.characterCount}>{bio.length}/500</Text>
       </View>
     </View>
   );
   return (
     <SafeAreaView edges={[]} style={styles.container}>
-      <KeyboardAvoidingView behavior={"height"}>
-        <ScrollView
-          contentContainerStyle={{ flexGrow: 1 }}
-          // keyboardShouldPersistTaps="handled"
-        >
-          {renderProfileAvatar()}
-          <View style={styles.formWrapper}>
+      <ScrollView
+        ref={scrollViewRef}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: keyboardVisible ? 180 : 0 }]}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        showsVerticalScrollIndicator={false}
+      >
+        {renderProfileAvatar()}
+        <View style={styles.formWrapper}>
             {renderProfileForm()}
 
             <TouchableOpacity 
@@ -299,9 +460,6 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
             </TouchableOpacity>
           </View>
         </ScrollView>
-      </KeyboardAvoidingView>
-
-      <View style={{ flex: 1, backgroundColor: COLORS.white }} />
     </SafeAreaView>
   );
 };
@@ -309,13 +467,17 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: COLORS.white,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 0,
   },
   profileHeader: {
     backgroundColor: COLORS.gradient3,
     paddingBottom: 60,
     paddingTop: DIMENSIONS.spacing.xl,
     paddingHorizontal: 10,
-
     position: "relative",
     zIndex: 0,
   },
@@ -457,8 +619,35 @@ const styles = StyleSheet.create({
     color: COLORS.app_black,
     marginBottom: 10,
   },
+  suggestionsContainer: {
+    position: "absolute",
+    top: 70,
+    left: 0,
+    right: 0,
+    backgroundColor: COLORS.white,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS._E6E6E7,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
+    zIndex: 20,
+    maxHeight: 200,
+  },
+  suggestionItem: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+  },
+  suggestionText: {
+    fontSize: 14,
+    color: COLORS._616888,
+    fontFamily: FontWeight.Medium,
+  },
   inputFieldBio: {
-    minHeight: 120,
+    height: 120,
     borderRadius: 4,
     paddingTop: 12,
     paddingRight: 10,
@@ -469,8 +658,15 @@ const styles = StyleSheet.create({
     opacity: 1,
     fontSize: 16,
     color: COLORS.app_black,
+    marginBottom: 5,
+    textAlignVertical: 'top',
+  },
+  characterCount: {
+    fontSize: 12,
+    color: COLORS._616888,
+    textAlign: 'right',
     marginBottom: 10,
-    textAlignVertical: "top",
+    fontFamily: FontWeight.Medium,
   },
   savePostContainer: {},
   saveBtn: {
@@ -478,6 +674,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingVertical: 14,
     alignItems: "center",
+    zIndex: 10,
+    marginTop: 16,
+
   },
   saveBtnDisabled: {
     opacity: 0.6,

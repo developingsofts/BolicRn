@@ -28,6 +28,7 @@ export const LOCATION_CONFIG = {
   maxRadius: 50, // km
   updateInterval: 5000, // ms
   distanceInterval: 10, // meters
+  geocodeSuggestUrl: 'https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/suggest',
 };
 
 // Notification Configuration

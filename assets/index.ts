@@ -33,6 +33,7 @@ export const Cardio = require('../assets/cardio.png');
 export const StrengthTraining = require('../assets/strength.png');
 export const WeightLifting = require('../assets/weightlifting.png');
 export const Man=require('../assets/man.png');
+export const CommentRemove=require('../assets/comment_remove.png');
 
 
 

@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated, Dimensions, TouchableOpacity } from 'react-native';
 import { COLORS, DIMENSIONS } from '../config/constants';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
 
@@ -23,16 +23,17 @@ const CustomToast: React.FC<CustomToastProps> = ({
   const opacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Slide in animation
+    // Slide down from top animation
     Animated.parallel([
-      Animated.timing(translateY, {
+      Animated.spring(translateY, {
         toValue: 0,
-        duration: 400,
+        tension: 50,
+        friction: 8,
         useNativeDriver: true,
       }),
       Animated.timing(opacity, {
         toValue: 1,
-        duration: 400,
+        duration: 300,
         useNativeDriver: true,
       }),
     ]).start();
@@ -49,12 +50,12 @@ const CustomToast: React.FC<CustomToastProps> = ({
     Animated.parallel([
       Animated.timing(translateY, {
         toValue: -100,
-        duration: 300,
+        duration: 250,
         useNativeDriver: true,
       }),
       Animated.timing(opacity, {
         toValue: 0,
-        duration: 300,
+        duration: 250,
         useNativeDriver: true,
       }),
     ]).start(() => onHide());
@@ -132,7 +133,7 @@ const CustomToast: React.FC<CustomToastProps> = ({
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    top: 60,
+    top: 60, // Position at top of screen below status bar
     left: DIMENSIONS.spacing.md,
     right: DIMENSIONS.spacing.md,
     borderRadius: 12,

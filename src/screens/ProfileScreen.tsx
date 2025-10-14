@@ -37,6 +37,7 @@ interface ProfileScreenProps {
     params?: {
       isGuest?: boolean;
       userId?: string;
+      bio?: string;
     };
   };
 }
@@ -131,6 +132,29 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
   const isOwnProfile =
     !route?.params?.userId || route.params.userId === user?.id;
   const showOwnProfileFeatures = isOwnProfile && !isGuest;
+  const profileBio = (() => {
+    if (isGuest) {
+      return STRINGS.PROFILE.bio;
+    }
+
+    const routeBio = route?.params?.bio;
+    if (routeBio) {
+      const cleanedRouteBio = routeBio.trim();
+      if (cleanedRouteBio.length > 0) {
+        return cleanedRouteBio;
+      }
+    }
+
+    const rawUserBio = user?.bio;
+    if (rawUserBio) {
+      const cleaned = rawUserBio.trim();
+      if (cleaned.length > 0) {
+        return cleaned;
+      }
+    }
+
+    return STRINGS.PROFILE.bio;
+  })();
 
   const achievements: Achievement[] = [
     {
@@ -405,7 +429,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
           <Text style={styles.locationText}>{location}</Text>
         </View>
 
-        <Text style={styles.bioText}>{STRINGS.PROFILE.bio}</Text>
+  {profileBio ? <Text style={styles.bioText}>{profileBio}</Text> : null}
         {isGuest && renderFollowingView()}
       </LinearGradient>
     );
@@ -804,7 +828,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
         {renderTabContent()} */}
       </ScrollView>
 
-      {/* {isOwnProfile && !isGuest && (
+      {isOwnProfile && !isGuest && (
         <View style={styles.logoutSection}>
           <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
             <Image source={Exit} style={styles.smallIconSize} />
@@ -813,7 +837,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
             </Text>
           </TouchableOpacity>
         </View>
-      )} */}
+      )}
     </SafeAreaView>
   );
 };

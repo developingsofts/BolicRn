@@ -22,6 +22,7 @@ export interface User {
   location?: string;
   experienceLevel?: string;
   availability?: string;
+  onboardingStep?: number;
   createdAt: Date;
   updatedAt: Date;
 }

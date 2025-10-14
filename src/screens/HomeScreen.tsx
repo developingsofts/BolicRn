@@ -23,7 +23,7 @@ import FontWeight from "../hooks/useInterFonts";
 import BasicTopBar from "../components/BasicTopBar";
 import { useGetPostsQuery, useDeletePostMutation, useUpdatePostMutation } from '../services/api/postsApi';
 import { useToggleLikeMutation } from '../services/api/likesCommentsApi';
-import { Like, CommentIcon } from '../../assets';
+import { Like, CommentIcon, CommentRemove } from '../../assets';
 import CommentsModal from '../components/CommentsModal';
 import ConfirmationDialog from '../components/ConfirmationDialog';
 
@@ -652,7 +652,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                           onPress={() => handleOpenComments(post.id.toString())}
                         >
                           <Image 
-                            source={CommentIcon} 
+                            source={CommentRemove} 
                             style={[styles.socialPostActionIcon,]}
                           />
                           <Text style={styles.socialPostActionText}>
