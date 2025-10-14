@@ -14,10 +14,14 @@ import {
   Alert,
   SafeAreaView,
   RefreshControl,
+  Dimensions,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { COLORS, DIMENSIONS } from '../config/constants';
-import { Close, Send } from '../../assets';
-import BasicTopBar from './BasicTopBar';
+
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+const MODAL_HEIGHT = SCREEN_HEIGHT * 0.7;
+import { Send } from '../../assets';
 import ConfirmationDialog from './ConfirmationDialog';
 import { useAuth } from '../contexts/AuthContext';
 import {
@@ -77,28 +81,33 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ visible, postId, onClose 
   const handleSendComment = async () => {
     if (!commentText.trim()) return;
 
+    // Store the comment text and clear immediately to prevent duplicates
+    const textToSend = commentText.trim();
+    setCommentText('');
+
     try {
       if (editingComment) {
         // Update existing comment
         await updateComment({
           commentId: editingComment.id.toString(),
-          content: commentText.trim(),
+          content: textToSend,
         }).unwrap();
         setEditingComment(null);
       } else {
         // Create new comment
         await createComment({
           postId,
-          content: commentText.trim(),
+          content: textToSend,
           parentCommentId: replyingTo?.id,
         }).unwrap();
         setReplyingTo(null);
       }
 
-      setCommentText('');
       refetch();
     } catch (error) {
       console.error('Failed to post comment:', error);
+      // Restore the comment text on error
+      setCommentText(textToSend);
       Alert.alert('Error', `Failed to ${editingComment ? 'update' : 'post'} comment. Please try again.`);
     }
   };
@@ -254,101 +263,107 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ visible, postId, onClose 
       visible={visible} 
       animationType="slide" 
       onRequestClose={onClose}
-      presentationStyle="pageSheet"
+      transparent={true}
     >
-      <View style={styles.modalBackground}>
-        <SafeAreaView style={styles.container}>
-          <KeyboardAvoidingView
-            style={styles.keyboardView}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            keyboardVerticalOffset={0}
-          >
-            <View style={styles.headerContainer}>
-              <BasicTopBar
-                title="Comments"
-                subtitle="Share your thoughts"
-                onBackPress={onClose}
-                showBackButton={true}
-                containerStyle={{ paddingVertical: DIMENSIONS.spacing.md }}
-              />
-        
-            </View>
+      <TouchableWithoutFeedback onPress={onClose}>
+        <View style={styles.modalOverlay}>
+          <TouchableWithoutFeedback>
+            <View style={styles.modalContainer}>
+              {/* Drag Handle */}
+              <View style={styles.dragHandleContainer}>
+                <View style={styles.dragHandle} />
+              </View>
 
-            {isLoading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={COLORS.primary} />
-          </View>
-        ) : comments.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No comments yet. Be the first to comment!</Text>
-          </View>
-        ) : (
-          <FlatList
-            data={comments}
-            keyExtractor={(item) => item.id.toString()}
-            renderItem={({ item }) => renderComment({ item })}
-            contentContainerStyle={styles.commentsList}
-            onScrollBeginDrag={() => setOpenMenuId(null)}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={handleRefresh}
-                tintColor={COLORS.primary}
-                colors={[COLORS.primary]}
-              />
-            }
-          />
-        )}
+              {/* Header */}
+              <View style={styles.headerContainer}>
+                <Text style={styles.headerTitle}>Comments</Text>
+                <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+                  <Text style={styles.closeButtonText}>✕</Text>
+                </TouchableOpacity>
+              </View>
 
-        <View style={styles.inputContainer}>
-          {editingComment && (
-            <View style={styles.replyingToContainer}>
-              <Text style={styles.replyingToText}>Editing comment</Text>
-              <TouchableOpacity onPress={handleCancelEdit}>
-                <Text style={styles.cancelReplyText}>Cancel</Text>
-              </TouchableOpacity>
+              <KeyboardAvoidingView
+                style={styles.keyboardView}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                keyboardVerticalOffset={0}
+              >
+                {isLoading ? (
+                  <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color={COLORS.primary} />
+                  </View>
+                ) : comments.length === 0 ? (
+                  <View style={styles.emptyContainer}>
+                    <Text style={styles.emptyText}>No comments yet. Be the first to comment!</Text>
+                  </View>
+                ) : (
+                  <FlatList
+                    data={comments}
+                    keyExtractor={(item) => item.id.toString()}
+                    renderItem={({ item }) => renderComment({ item })}
+                    contentContainerStyle={styles.commentsList}
+                    onScrollBeginDrag={() => setOpenMenuId(null)}
+                    refreshControl={
+                      <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={handleRefresh}
+                        tintColor={COLORS.primary}
+                        colors={[COLORS.primary]}
+                      />
+                    }
+                  />
+                )}
+
+                <View style={styles.inputContainer}>
+                  {editingComment && (
+                    <View style={styles.replyingToContainer}>
+                      <Text style={styles.replyingToText}>Editing comment</Text>
+                      <TouchableOpacity onPress={handleCancelEdit}>
+                        <Text style={styles.cancelReplyText}>Cancel</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                  {replyingTo && !editingComment && (
+                    <View style={styles.replyingToContainer}>
+                      <Text style={styles.replyingToText}>Replying to {replyingTo.name}</Text>
+                      <TouchableOpacity onPress={() => setReplyingTo(null)}>
+                        <Text style={styles.cancelReplyText}>Cancel</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                  <View style={styles.inputRow}>
+                    <TextInput
+                      style={styles.input}
+                      placeholder={
+                        editingComment 
+                          ? 'Edit your comment...' 
+                          : replyingTo 
+                            ? 'Write a reply...' 
+                            : 'Write a comment...'
+                      }
+                      placeholderTextColor={COLORS.textSecondary}
+                      value={commentText}
+                      onChangeText={setCommentText}
+                      multiline
+                      maxLength={500}
+                    />
+                    <TouchableOpacity
+                      style={[styles.sendButton, (!commentText.trim() || isCreating || isUpdating) && styles.sendButtonDisabled]}
+                      onPress={handleSendComment}
+                      disabled={!commentText.trim() || isCreating || isUpdating}
+                    >
+                      {(isCreating || isUpdating) ? (
+                        <ActivityIndicator size="small" color={COLORS.white} />
+                      ) : (
+                        <Image source={Send} style={styles.sendIcon} />
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </KeyboardAvoidingView>
             </View>
-          )}
-          {replyingTo && !editingComment && (
-            <View style={styles.replyingToContainer}>
-              <Text style={styles.replyingToText}>Replying to {replyingTo.name}</Text>
-              <TouchableOpacity onPress={() => setReplyingTo(null)}>
-                <Text style={styles.cancelReplyText}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-          <View style={styles.inputRow}>
-            <TextInput
-              style={styles.input}
-              placeholder={
-                editingComment 
-                  ? 'Edit your comment...' 
-                  : replyingTo 
-                    ? 'Write a reply...' 
-                    : 'Write a comment...'
-              }
-              placeholderTextColor={COLORS.textSecondary}
-              value={commentText}
-              onChangeText={setCommentText}
-              multiline
-              maxLength={500}
-            />
-            <TouchableOpacity
-              style={[styles.sendButton, (!commentText.trim() || isCreating || isUpdating) && styles.sendButtonDisabled]}
-              onPress={handleSendComment}
-              disabled={!commentText.trim() || isCreating || isUpdating}
-            >
-              {(isCreating || isUpdating) ? (
-                <ActivityIndicator size="small" color={COLORS.white} />
-              ) : (
-                <Image source={Send} style={styles.sendIcon} />
-              )}
-            </TouchableOpacity>
-          </View>
+          </TouchableWithoutFeedback>
         </View>
-          </KeyboardAvoidingView>
-        </SafeAreaView>
-      </View>
+      </TouchableWithoutFeedback>
 
       <ConfirmationDialog
         visible={showDeleteDialog}
@@ -365,6 +380,64 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ visible, postId, onClose 
 };
 
 const styles = StyleSheet.create({
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContainer: {
+    height: MODAL_HEIGHT,
+    backgroundColor: COLORS.background,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: -4,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 10,
+  },
+  dragHandleContainer: {
+    alignItems: 'center',
+    paddingVertical: DIMENSIONS.spacing.sm,
+  },
+  dragHandle: {
+    width: 40,
+    height: 4,
+    backgroundColor: COLORS.border,
+    borderRadius: 2,
+  },
+  headerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: DIMENSIONS.spacing.lg,
+    paddingBottom: DIMENSIONS.spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  closeButton: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 16,
+  },
+  closeButtonText: {
+    fontSize: 24,
+    color: COLORS.textSecondary,
+    lineHeight: 24,
+  },
+  keyboardView: {
+    flex: 1,
+  },
   modalBackground: {
     flex: 1,
     backgroundColor: COLORS.background,
@@ -372,12 +445,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  headerContainer: {
-
   },
   loadingContainer: {
     flex: 1,

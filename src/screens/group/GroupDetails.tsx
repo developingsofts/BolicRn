@@ -33,7 +33,9 @@ import {
 import { Group } from "../../types";
 import ManageGroup from "./ManageGroup";
 import BasicTopBar from "../../components/BasicTopBar";
-import { useGetGroupByIdQuery, useGetGroupMembersQuery, useGetGroupPostsQuery } from "../../services/api/groupsApi";
+import { useGetGroupByIdQuery, useGetGroupMembersQuery, useGetGroupPostsQuery, useJoinGroupMutation } from "../../services/api/groupsApi";
+import { useAuth } from "../../contexts/AuthContext";
+import { Toast } from "../../components/ToastManager";
 
 interface GroupDetailsProps {
   // Make navigation optional for modal usage
@@ -58,6 +60,7 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
   onClose,
 }) => {
   const styles = useResponsive(baseStyles);
+  const { user } = useAuth();
   const [showManageGroup, setManageGroup] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
   const [membersPage, setMembersPage] = useState(1);
@@ -86,11 +89,19 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
     { skip: !groupId }
   );
 
+  // Join group mutation
+  const [joinGroup, { isLoading: isJoining }] = useJoinGroupMutation();
+
   // Use real data or fallback
   const group = (groupData?.status && groupData?.data) ? groupData.data : passedGroup;
   const members = (membersData?.status && membersData?.data?.members) ? membersData.data.members : [];
   const posts = (postsData?.status && postsData?.data?.posts) ? postsData.data.posts : [];
   const postsPagination = (postsData?.status && postsData?.data?.pagination) ? postsData.data.pagination : null;
+
+  // Check if current user is the creator
+  const isCreator = user?.id && group?.creatorId && Number(user.id) === Number(group.creatorId);
+  // Check if current user is a member (you may need to add this logic based on your data structure)
+  const isMember = group?.isMember || isCreator;
 
   if (!group) {
     return (
@@ -101,6 +112,23 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
       </SafeAreaView>
     );
   }
+
+  const handleJoinGroup = async () => {
+    if (!groupId) return;
+    
+    try {
+      const response = await joinGroup({ groupId }).unwrap();
+      if (response.status) {
+        Toast.success('Successfully joined the group!');
+        refetchGroup();
+        refetchMembers();
+      } else {
+        Toast.error(response.message || 'Failed to join group');
+      }
+    } catch (error: any) {
+      Toast.error(error?.data?.message || 'Failed to join group');
+    }
+  };
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -243,17 +271,34 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
           }
         />
         
-        {/* Manage Group Button - Overlapping */}
-        <Pressable
-          style={styles.manageButton}
-          onPress={() => {
-            onClose?.();
-            navigation?.navigate("ManageGroup", { group, isEditing: true });
-          }}
-        >
-          <Image source={Edit} style={{ width: 16, height: 16 }} />
-          <Text style={styles.manageButtonText}>Manage Group</Text>
-        </Pressable>
+        {/* Action Button - Manage Group or Join Group */}
+        {isCreator ? (
+          <Pressable
+            style={styles.manageButton}
+            onPress={() => {
+              onClose?.();
+              navigation?.navigate("ManageGroup", { group, isEditing: true });
+            }}
+          >
+            <Image source={Edit} style={{ width: 16, height: 16 }} />
+            <Text style={styles.manageButtonText}>Manage Group</Text>
+          </Pressable>
+        ) : !isMember ? (
+          <Pressable
+            style={[styles.manageButton, styles.joinButton]}
+            onPress={handleJoinGroup}
+            disabled={isJoining}
+          >
+            {isJoining ? (
+              <ActivityIndicator size="small" color={COLORS.white} />
+            ) : (
+              <>
+                <Image source={Add} style={{ width: 16, height: 16, tintColor: COLORS.white }} />
+                <Text style={[styles.manageButtonText, styles.joinButtonText]}>Join Group</Text>
+              </>
+            )}
+          </Pressable>
+        ) : null}
 
         {/* Members Section */}
         <View style={styles.membersCard}>
@@ -483,6 +528,13 @@ const baseStyles = StyleSheet.create({
     fontSize: 14,
     fontFamily: FontWeight.Medium,
     marginLeft: r(8),
+  },
+  joinButton: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  joinButtonText: {
+    color: COLORS.white,
   },
 
   membersCard: {

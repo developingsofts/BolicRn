@@ -169,6 +169,18 @@ export const groupsApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Groups'],
     }),
+    
+    // Join group (add current user as member)
+    joinGroup: builder.mutation<
+      ApiResponse<Group>,
+      { groupId: string }
+    >({
+      query: ({ groupId }) => ({
+        url: `/group/join/${groupId}`,
+        method: 'POST',
+      }),
+      invalidatesTags: ['Groups'],
+    }),
   }),
   overrideExisting: false,
 });
@@ -181,4 +193,5 @@ export const {
   useCreateGroupMutation,
   useUpdateGroupMutation,
   useDeleteGroupMutation,
+  useJoinGroupMutation,
 } = groupsApi;

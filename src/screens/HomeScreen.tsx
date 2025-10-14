@@ -92,9 +92,10 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const communityPosts = (postsData?.status && postsData?.data?.posts) ? postsData.data.posts : [];
   
   // Like mutation
-  const [toggleLike] = useToggleLikeMutation();
+  const [toggleLike, { isLoading: isLiking }] = useToggleLikeMutation();
   const [deletePost, { isLoading: isDeleting }] = useDeletePostMutation();
   const [updatePost, { isLoading: isUpdating }] = useUpdatePostMutation();
+  const [likingPostId, setLikingPostId] = useState<string | null>(null);
   
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -104,10 +105,13 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
   const handleLikePost = async (postId: string) => {
     try {
+      setLikingPostId(postId);
       await toggleLike(postId).unwrap();
       // Posts will auto-refresh due to cache invalidation
     } catch (error) {
       console.error('Failed to toggle like:', error);
+    } finally {
+      setLikingPostId(null);
     }
   };
 
@@ -635,17 +639,24 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                         <TouchableOpacity 
                           style={styles.socialPostAction}
                           onPress={() => handleLikePost(post.id.toString())}
+                          disabled={likingPostId === post.id.toString()}
                         >
-                          <Image 
-                            source={Like} 
-                            style={[
-                              styles.socialPostActionIcon,
-                              { tintColor: post.isLikedByUser ? COLORS.gradient1 : '#888888' }
-                            ]}
-                          />
-                          <Text style={styles.socialPostActionText}>
-                            {post.likeCount || 0}
-                          </Text>
+                          {likingPostId === post.id.toString() ? (
+                            <ActivityIndicator size="small" color={COLORS.primary} />
+                          ) : (
+                            <>
+                              <Image 
+                                source={Like} 
+                                style={[
+                                  styles.socialPostActionIcon,
+                                  { tintColor: post.isLikedByUser ? COLORS.gradient1 : '#888888' }
+                                ]}
+                              />
+                              <Text style={styles.socialPostActionText}>
+                                {post.likeCount || 0}
+                              </Text>
+                            </>
+                          )}
                         </TouchableOpacity>
                         <TouchableOpacity 
                           style={styles.socialPostAction}

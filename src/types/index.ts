@@ -158,6 +158,7 @@ export interface Group {
   location: string;
   privacy?: string;
   isMember?: boolean;
+  creatorId?: number | string;
   createdAt: Date;
 }
 
