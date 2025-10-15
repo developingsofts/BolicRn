@@ -16,7 +16,10 @@ import STRINGS from "../config/strings";
 import { useAuth } from "../contexts/AuthContext";
 import { Close, Deactivate } from "../../assets";
 import FontWeight from "../hooks/useInterFonts";
-import { useDeleteMyAccountMutation, useUpdateMyProfileMutation } from "../services/api/userApi";
+import {
+  useDeleteMyAccountMutation,
+  useUpdateMyProfileMutation,
+} from "../services/api/userApi";
 import { Toast } from "../components/ToastManager";
 import { User } from "../types";
 import ConfirmationDialog from "../components/ConfirmationDialog";
@@ -39,7 +42,8 @@ interface SettingsScreenProps {
 const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
   const { logout, user, updateUser: updateAuthUser } = useAuth();
   const [updateProfile, { isLoading: isSaving }] = useUpdateMyProfileMutation();
-  const [deleteAccount, { isLoading: isDeleting }] = useDeleteMyAccountMutation();
+  const [deleteAccount, { isLoading: isDeleting }] =
+    useDeleteMyAccountMutation();
   const [refreshing, setRefreshing] = useState(false);
 
   const handleRefresh = async () => {
@@ -56,9 +60,9 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
   const [preferencesEnabled, setPreferencesEnabled] = useState<boolean>(
     user?.matchingEnabled ?? true
   );
-  const [selectedPreference, setSelectedPreference] = useState<PreferenceOption["value"] | null>(
-    (user?.matchingPreference as PreferenceOption["value"]) ?? null
-  );
+  const [selectedPreference, setSelectedPreference] = useState<
+    PreferenceOption["value"] | null
+  >((user?.matchingPreference as PreferenceOption["value"]) ?? null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showDeactivateDialog, setShowDeactivateDialog] = useState(false);
 
@@ -102,7 +106,9 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
         console.error("Settings update failed", error);
         rollback();
         Toast.error(
-          error?.message ?? STRINGS.SETTINGS.updateError ?? "Unable to update settings"
+          error?.message ??
+            STRINGS.SETTINGS.updateError ??
+            "Unable to update settings"
         );
       } finally {
         setIsSubmitting(false);
@@ -111,7 +117,10 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
     [syncLocalState, updateAuthUser, updateProfile]
   );
 
-  const isBusy = useMemo(() => isSaving || isSubmitting || isDeleting, [isSaving, isSubmitting, isDeleting]);
+  const isBusy = useMemo(
+    () => isSaving || isSubmitting || isDeleting,
+    [isSaving, isSubmitting, isDeleting]
+  );
 
   const handleDeactivatePress = () => {
     setShowDeactivateDialog(true);
@@ -185,9 +194,8 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
     const previousPreference = selectedPreference;
     setSelectedPreference(option.value);
 
-    await persistSettings(
-      { matchingPreference: option.value },
-      () => setSelectedPreference(previousPreference ?? null)
+    await persistSettings({ matchingPreference: option.value }, () =>
+      setSelectedPreference(previousPreference ?? null)
     );
   };
 
@@ -197,33 +205,33 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
         <Text style={styles.editProfileTitle}>{STRINGS.SETTINGS.title}</Text>
         <View style={styles.headerRight}>
           {isBusy && (
-              <View style={styles.savingIndicator}>
-                <ActivityIndicator size="small" color={COLORS.primary} />
-                <Text style={styles.savingText}>
-                  {STRINGS.SETTINGS.saving ?? "Saving"}
-                </Text>
-              </View>
-            )}
-            <TouchableOpacity
-              onPress={() => navigation.goBack()}
-              disabled={isBusy}
-              style={styles.closeButton}
-            >
-              <Image source={Close} style={styles.iconSize} />
-            </TouchableOpacity>
-          </View>
+            <View style={styles.savingIndicator}>
+              <ActivityIndicator size="small" color={COLORS.primary} />
+              <Text style={styles.savingText}>
+                {STRINGS.SETTINGS.saving ?? "Saving"}
+              </Text>
+            </View>
+          )}
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            disabled={isBusy}
+            style={styles.closeButton}
+          >
+            <Image source={Close} style={styles.iconSize} />
+          </TouchableOpacity>
+        </View>
       </View>
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
-              onRefresh={handleRefresh}
-              colors={[COLORS.primary]}
-              tintColor={COLORS.primary}
-            />
-          }
-        >
+            onRefresh={handleRefresh}
+            colors={[COLORS.primary]}
+            tintColor={COLORS.primary}
+          />
+        }
+      >
         {/* Notification Settings */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>
@@ -312,21 +320,21 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
             })}
           </View>
         </View>
-      
-      <View style={styles.lineSeparator} />
 
-      <TouchableOpacity
-        onPress={handleDeactivatePress}
-        style={styles.deactivateBtn}
-        disabled={isBusy}
-      >
-        <Image source={Deactivate} style={styles.deactivateIcon} />
-        <Text style={styles.logoutText}>
-          {STRINGS.SETTINGS.deactivateAccount}
-        </Text>
-      </TouchableOpacity>
+        <View style={styles.lineSeparator} />
+
+        <TouchableOpacity
+          onPress={handleDeactivatePress}
+          style={styles.deactivateBtn}
+          disabled={isBusy}
+        >
+          <Image source={Deactivate} style={styles.deactivateIcon} />
+          <Text style={styles.logoutText}>
+            {STRINGS.SETTINGS.deactivateAccount}
+          </Text>
+        </TouchableOpacity>
       </ScrollView>
-      
+
       <ConfirmationDialog
         visible={showDeactivateDialog}
         title={STRINGS.SETTINGS.confirmDeactivateTitle}
@@ -393,7 +401,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     padding: DIMENSIONS.spacing.md,
     borderRadius: DIMENSIONS.borderRadius,
-    elevation: 5,
   },
   sectionTitle: {
     fontSize: 20,
@@ -456,7 +463,6 @@ const styles = StyleSheet.create({
     gap: DIMENSIONS.spacing.sm,
     alignItems: "center",
     borderRadius: 8,
-    elevation: 5,
   },
   deactivateIcon: {
     width: 18,

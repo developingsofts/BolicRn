@@ -43,8 +43,8 @@ interface GetGroupPostsPayload {
 
 export const groupsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    // Get all groups for current user with pagination
-    getUserGroups: builder.query<
+    // Get all groups (visible to everyone) with pagination
+    getAllGroups: builder.query<
       ApiResponse<{ groups: Group[]; pagination: any }>,
       { page?: number; limit?: number; type?: string } | void
     >({
@@ -64,18 +64,63 @@ export const groupsApi = baseApi.injectEndpoints({
         };
       },
       providesTags: ['Groups'],
-      // Support for pagination - merge results
       serializeQueryArgs: ({ endpointName, queryArgs }) => {
-        // Include type in cache key so different filters have separate caches
         return `${endpointName}-${queryArgs?.type || 'All'}`;
       },
       merge: (currentCache, newItems, { arg }) => {
-        // If page 1 or no arg, return fresh data
         if (!arg || arg.page === 1) {
           return newItems;
         }
         
-        // Merge results for page > 1
+        if ('data' in currentCache && 'data' in newItems && currentCache.status && newItems.status) {
+          return {
+            ...newItems,
+            data: {
+              groups: [
+                ...(currentCache.data?.groups || []),
+                ...(newItems.data?.groups || [])
+              ],
+              pagination: newItems.data?.pagination
+            }
+          };
+        }
+        
+        return newItems;
+      },
+      forceRefetch({ currentArg, previousArg }) {
+        return currentArg?.page !== previousArg?.page || currentArg?.type !== previousArg?.type;
+      },
+    }),
+    
+    // Get groups created by current user with pagination
+    getUserGroups: builder.query<
+      ApiResponse<{ groups: Group[]; pagination: any }>,
+      { page?: number; limit?: number; type?: string } | void
+    >({
+      query: (params) => {
+        const page = params?.page || 1;
+        const limit = params?.limit || 10;
+        const type = params?.type;
+        
+        let url = `/group/my-groups?page=${page}&limit=${limit}`;
+        if (type && type !== 'All') {
+          url += `&type=${type}`;
+        }
+        
+        return {
+          url,
+          method: 'GET',
+        };
+      },
+      providesTags: ['Groups'],
+      serializeQueryArgs: ({ endpointName, queryArgs }) => {
+        return `${endpointName}-${queryArgs?.type || 'All'}`;
+      },
+      merge: (currentCache, newItems, { arg }) => {
+        if (!arg || arg.page === 1) {
+          return newItems;
+        }
+        
         if ('data' in currentCache && 'data' in newItems && currentCache.status && newItems.status) {
           return {
             ...newItems,
@@ -186,6 +231,7 @@ export const groupsApi = baseApi.injectEndpoints({
 });
 
 export const {
+  useGetAllGroupsQuery,
   useGetUserGroupsQuery,
   useGetGroupByIdQuery,
   useGetGroupMembersQuery,

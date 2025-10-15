@@ -42,6 +42,28 @@ interface Member {
   avatar: string;
 }
 
+const MemberAvatar = ({ member, styles }: { member: any; styles: any }) => {
+  const [imageError, setImageError] = React.useState(false);
+  const imageUrl = member.imageUrl || member.avatar || member.profilePhoto || null;
+  const initial = (member.displayName?.charAt(0)
+    || member.userName?.charAt(0)
+    || member.name?.charAt(0)
+    || 'U').toUpperCase();
+  return (
+    <View style={styles.memberAvatar}>
+      {imageUrl && !imageError ? (
+        <Image
+          source={{ uri: imageUrl }}
+          style={styles.memberAvatarImage}
+          onError={() => setImageError(true)}
+        />
+      ) : (
+        <Text style={styles.memberAvatarText}>{initial}</Text>
+      )}
+    </View>
+  );
+};
+
 const ManageGroup: React.FC<ManageGroupProps> = ({
   navigation,
   route,
@@ -197,26 +219,22 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
         ]
       );
     } else if (action === "profile") {
-      // TODO: Navigate to user profile
-      Toast.info('View profile feature coming soon');
+      const member = members.find((m: any) => m.id.toString() === memberId);
+      if (member) {
+        navigation.navigate('UserProfile', { userId: member.id, user: member });
+      } else {
+        Toast.error('User not found');
+      }
     }
   };
 
   const renderMember = ({ item: member }: { item: any }) => {
-    const displayName = member.displayName || member.userName || 'Unknown';
+    const displayName = member.displayName || member.userName || member.name || 'Unknown';
     const location = member.userAddress?.city || member.location || 'Unknown location';
-    const avatar = displayName.charAt(0).toUpperCase();
-    
     return (
       <View style={styles.memberItem}>
         <View style={styles.memberInfo}>
-          <View style={styles.memberAvatar}>
-            {member.imageUrl ? (
-              <Image source={{ uri: member.imageUrl }} style={styles.memberAvatarImage} />
-            ) : (
-              <Text style={styles.memberAvatarText}>{avatar}</Text>
-            )}
-          </View>
+          <MemberAvatar member={member} styles={styles} />
           <View style={styles.memberDetails}>
             <Text style={styles.memberName}>{displayName}</Text>
             <Text style={styles.memberLocation}>{location}</Text>

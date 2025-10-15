@@ -23,7 +23,7 @@ import { r } from "../../designing/responsiveDesigns";
 import GroupDetails from "./GroupDetails";
 import STRINGS from "../../config/strings";
 import BasicTopBar from "../../components/BasicTopBar";
-import { useGetUserGroupsQuery } from '../../services/api/groupsApi';
+import { useGetAllGroupsQuery } from '../../services/api/groupsApi';
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -41,8 +41,8 @@ const GroupsScreen: React.FC<GroupsScreenProps> = ({ navigation }) => {
   
   const categories = ["All", "Gym", "Running", "Cycling", "Yoga", "Swimming"];
   
-  // Fetch user groups with pagination and filter
-  const { data: groupsData, isLoading, isFetching, refetch } = useGetUserGroupsQuery({ 
+  // Fetch all groups (visible to everyone) with pagination and filter
+  const { data: groupsData, isLoading, isFetching, refetch } = useGetAllGroupsQuery({ 
     page, 
     limit: 10,
     type: selectedCategory 
