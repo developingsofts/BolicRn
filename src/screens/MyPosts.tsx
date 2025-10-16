@@ -1,13 +1,15 @@
 
 
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, RefreshControl, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Alert } from 'react-native';
+import RefreshableScrollView from '../components/RefreshableScrollView';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BasicTopBar from '../components/BasicTopBar';
 import { Like, CommentIcon } from '../../assets';
 import { COLORS, DIMENSIONS } from '../config/constants';
 import FontWeight from '../hooks/useInterFonts';
 import { useAuth } from '../contexts/AuthContext';
+import { useGetUserPostsQuery } from '../services/api';
 
 const mockPosts = [
   {
@@ -32,11 +34,12 @@ const MyPosts: React.FC = ({ navigation }: any) => {
   const { user } = useAuth();
   const [posts, setPosts] = useState(mockPosts);
   const [refreshing, setRefreshing] = useState(false);
+  const { refetch: refetchPosts } = useGetUserPostsQuery({ userId: user?.id || '' }, { skip: !user?.id });
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    // TODO: Fetch posts from API
-    setTimeout(() => setRefreshing(false), 1000);
+    await refetchPosts();
+    setRefreshing(false);
   };
 
   const handlePostAction = (action: string, postId: string) => {
@@ -52,17 +55,11 @@ const MyPosts: React.FC = ({ navigation }: any) => {
         containerStyle={{ paddingTop: DIMENSIONS.spacing.xxl, paddingBottom: DIMENSIONS.spacing.lg }}
       />
 
-      <ScrollView
+      <RefreshableScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            colors={[COLORS.primary]}
-            tintColor={COLORS.primary}
-          />
-        }
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
       >
         <TouchableOpacity
           style={styles.createPostButton}
@@ -116,7 +113,7 @@ const MyPosts: React.FC = ({ navigation }: any) => {
             </View>
           ))}
         </View>
-      </ScrollView>
+  </RefreshableScrollView>
 
 
     </SafeAreaView>

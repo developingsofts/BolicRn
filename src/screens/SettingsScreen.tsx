@@ -7,13 +7,13 @@ import {
   Switch,
   Image,
   ActivityIndicator,
-  ScrollView,
-  RefreshControl,
 } from "react-native";
+import RefreshableScrollView from '../components/RefreshableScrollView';
 import { SafeAreaView } from "react-native-safe-area-context";
 import { COLORS, DIMENSIONS } from "../config/constants";
 import STRINGS from "../config/strings";
 import { useAuth } from "../contexts/AuthContext";
+import { useGetMyProfileQuery } from '../services/api/userApi';
 import { Close, Deactivate } from "../../assets";
 import FontWeight from "../hooks/useInterFonts";
 import {
@@ -45,11 +45,12 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
   const [deleteAccount, { isLoading: isDeleting }] =
     useDeleteMyAccountMutation();
   const [refreshing, setRefreshing] = useState(false);
+  const { refetch: refetchMyProfile } = useGetMyProfileQuery();
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    // Settings don't need refetch, just simulate refresh
-    setTimeout(() => setRefreshing(false), 500);
+    await refetchMyProfile();
+    setRefreshing(false);
   };
 
   const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(
@@ -221,16 +222,10 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
           </TouchableOpacity>
         </View>
       </View>
-      <ScrollView
+      <RefreshableScrollView
         showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            colors={[COLORS.primary]}
-            tintColor={COLORS.primary}
-          />
-        }
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
       >
         {/* Notification Settings */}
         <View style={styles.section}>
@@ -333,7 +328,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
             {STRINGS.SETTINGS.deactivateAccount}
           </Text>
         </TouchableOpacity>
-      </ScrollView>
+  </RefreshableScrollView>
 
       <ConfirmationDialog
         visible={showDeactivateDialog}

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import RefreshableScrollView from '../components/RefreshableScrollView';
 import { Menu, Button, Chip } from 'react-native-paper';
 import { COLORS, DIMENSIONS } from '../config/constants';
 import STRINGS from '../config/strings';
@@ -285,18 +286,12 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation }) => {
 
   return (
     <SafeAreaView edges={[]} style={styles.container}>
-      <ScrollView 
+      <RefreshableScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            colors={[COLORS.primary]}
-            tintColor={COLORS.primary}
-          />
-        }
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
       >
         {/* Header Section */}
         <View style={styles.headerContainer}>
@@ -374,7 +369,7 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation }) => {
             </View>
           )}
         </View>
-      </ScrollView>
+  </RefreshableScrollView>
 
      
     </SafeAreaView>

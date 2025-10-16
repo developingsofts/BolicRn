@@ -2,18 +2,18 @@ import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
-  ScrollView,
   TouchableOpacity,
   StyleSheet,
   TextInput,
   Alert,
   Image,
   ActivityIndicator,
-  RefreshControl,
   Modal,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
 } from "react-native";
+import RefreshableScrollView from '../components/RefreshableScrollView';
 import { useAuth } from "../contexts/AuthContext";
 import { COLORS, DIMENSIONS } from "../config/constants";
 import STRINGS from "../config/strings";
@@ -384,17 +384,11 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
   return (
     <SafeAreaView edges={["left", "right"]} style={styles.container}>
-      <ScrollView
+      <RefreshableScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            colors={[COLORS.primary]}
-            tintColor={COLORS.primary}
-          />
-        }
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
       >
         {/* Header */}
         <BasicTopBar
@@ -935,7 +929,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             </TouchableOpacity>
           </View>
         </View>
-      </ScrollView>
+  </RefreshableScrollView>
 
       {/* Comments Modal */}
       {selectedPostId && (

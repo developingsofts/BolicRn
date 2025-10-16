@@ -4,15 +4,14 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  ScrollView,
   Pressable,
   Dimensions,
   Image,
   FlatList,
   Modal,
   ActivityIndicator,
-  RefreshControl,
 } from "react-native";
+import RefreshableScrollView from '../../components/RefreshableScrollView';
 import { Menu, Button, Divider, FAB } from "react-native-paper";
 import { COLORS, DIMENSIONS } from "../../config/constants";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -177,39 +176,28 @@ const GroupsScreen: React.FC<GroupsScreenProps> = ({ navigation }) => {
           </TouchableOpacity>
         </View>
       ) : (
-        <FlatList
-          data={userGroups}
-          renderItem={renderGroupItem}
-          keyExtractor={(item) => item.id.toString()}
+        <RefreshableScrollView
           style={styles.groupsContainer}
           contentContainerStyle={styles.flatListContent}
           showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={handleRefresh}
-              colors={[COLORS.primary]}
-              tintColor={COLORS.primary}
-            />
-          }
-          ListFooterComponent={() => (
-            <>
-              {isFetching && page > 1 && (
-                <View style={{ padding: 10, alignItems: 'center' }}>
-                  <ActivityIndicator size="small" color={COLORS.primary} />
-                </View>
-              )}
-              {pagination?.hasNextPage && !isFetching && (
-                <TouchableOpacity 
-                  style={styles.loadMoreButton}
-                  onPress={handleLoadMore}
-                >
-                  <Text style={styles.loadMoreText}>Load More</Text>
-                </TouchableOpacity>
-              )}
-            </>
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+        >
+          {userGroups.map((group) => renderGroupItem({ item: group }))}
+          {isFetching && page > 1 && (
+            <View style={{ padding: 10, alignItems: 'center' }}>
+              <ActivityIndicator size="small" color={COLORS.primary} />
+            </View>
           )}
-        />
+          {pagination?.hasNextPage && !isFetching && (
+            <TouchableOpacity 
+              style={styles.loadMoreButton}
+              onPress={handleLoadMore}
+            >
+              <Text style={styles.loadMoreText}>Load More</Text>
+            </TouchableOpacity>
+          )}
+        </RefreshableScrollView>
       )}
 
       <TouchableOpacity 

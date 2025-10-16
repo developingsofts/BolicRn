@@ -4,12 +4,14 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  ScrollView,
   Image,
-  RefreshControl,
 } from "react-native";
+import RefreshableScrollView from '../components/RefreshableScrollView';
 import { useFocusEffect } from "@react-navigation/native";
 import { useAuth } from "../contexts/AuthContext";
+import { useAppDispatch } from '../store/hooks';
+import { updateUser } from '../store/userSlice';
+import { useGetMyProfileQuery, useGetUserProfileQuery } from '../services/api/userApi';
 import { COLORS, DIMENSIONS } from "../config/constants";
 import STRINGS from "../config/strings";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -68,12 +70,25 @@ interface Connection {
 
 const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
   const { user, logout } = useAuth();
+  const dispatch = useAppDispatch();
   const [refreshing, setRefreshing] = useState(false);
-  
+  const userId = route?.params?.userId;
+  const isOwnProfile = !userId || userId === user?.id;
+  const { data: myProfileData, refetch: refetchMyProfile } = useGetMyProfileQuery(undefined, { skip: !isOwnProfile });
+  const { data: userProfileData, refetch: refetchUserProfile } = useGetUserProfileQuery(userId || '', { skip: isOwnProfile || !userId });
+
   const handleRefresh = async () => {
     setRefreshing(true);
-    // Add any API refetch calls here if needed
-    setTimeout(() => setRefreshing(false), 1000);
+    if (isOwnProfile) {
+      const result = await refetchMyProfile();
+      const apiRes = result?.data;
+      if (apiRes && apiRes.status && 'data' in apiRes && apiRes.data) {
+        dispatch(updateUser(apiRes.data));
+      }
+    } else if (userId) {
+      await refetchUserProfile();
+    }
+    setRefreshing(false);
   };
   
   const activityPosts = [
@@ -133,8 +148,8 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
   const [isFollowing, setIsFollowing] = useState(false);
 
   const isGuest = route?.params?.isGuest || !user;
-  const isOwnProfile =
-    !route?.params?.userId || route.params.userId === user?.id;
+  // const isOwnProfile =
+  //   !route?.params?.userId || route.params.userId === user?.id;
   const navigationNative = useNavigation();
   const [localOnboardingStep, setLocalOnboardingStep] = useLocalState(user?.onboardingStep ?? 0);
   console.log('User role:', user);
@@ -227,7 +242,14 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
     },
   ];
 
-  const menuItems = [
+  const trainerMenuItems = [
+    { id: "all-bookings", label: "All Bookings", icon: "calendar-outline" as const },
+    { id: "my-availability", label: "My Availability", icon: "time-outline" as const },
+    { id: "my-pricing", label: "My Pricing", icon: "pricetag-outline" as const },
+    { id: "my-rating", label: "My Rating", icon: "star-outline" as const },
+  ];
+
+  const menuItems = isTrainer ? trainerMenuItems : [
     {
       id: "posts",
       label: showOwnProfileFeatures ? "My Posts" : STRINGS.PROFILE.posts,
@@ -488,82 +510,6 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
     </View>
   );
 
-  const renderActionButtons = () => {
-    // if (isGuest) {
-    //   return (
-    //     <View style={styles.actionButtons}>
-    //       <TouchableOpacity
-    //         style={[styles.actionButton, styles.followButton]}
-    //         onPress={handleFollowToggle}
-    //       >
-    //         <Text style={styles.followButtonText}>
-    //           {isFollowing
-    //             ? STRINGS.PROFILE.buttons.following
-    //             : STRINGS.PROFILE.buttons.following}
-    //         </Text>
-    //       </TouchableOpacity>
-    //     </View>
-    //   );
-    // }
-
-    // if (!isOwnProfile) {
-    //   return (
-    //     <View style={styles.actionButtons}>
-    //       <TouchableOpacity
-    //         style={[styles.actionButton, styles.followButton]}
-    //         onPress={handleFollowToggle}
-    //       >
-    //         <Text style={styles.followButtonText}>
-    //           {isFollowing
-    //             ? STRINGS.PROFILE.following
-    //             : STRINGS.PROFILE.buttons.follow}
-    //         </Text>
-    //       </TouchableOpacity>
-    //       <TouchableOpacity
-    //         style={[styles.actionButton, styles.messageButton]}
-    //         onPress={() => handleMessageUser(route?.params?.userId || "")}
-    //       >
-    //         <Text style={styles.messageButtonText}>
-    //           {STRINGS.PROFILE.buttons.message}
-    //         </Text>
-    //       </TouchableOpacity>
-    //     </View>
-    //   );
-    // }
-
-    return null;
-  };
-
-  const renderTabBar = () => (
-    <View style={styles.tabBar}>
-      <TouchableOpacity
-        style={[styles.tab, activeTab === "activity" && styles.activeTab]}
-        onPress={() => setActiveTab("activity")}
-      >
-        <Text
-          style={[
-            styles.tabText,
-            activeTab === "activity" && styles.activeTabText,
-          ]}
-        >
-          Your Activity
-        </Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={[styles.tab, activeTab === "achievements" && styles.activeTab]}
-        onPress={() => setActiveTab("achievements")}
-      >
-        <Text
-          style={[
-            styles.tabText,
-            activeTab === "achievements" && styles.activeTabText,
-          ]}
-        >
-          {STRINGS.PROFILE.achievements}
-        </Text>
-      </TouchableOpacity>
-    </View>
-  );
 
   const renderActivityTab = () => (
     <View style={styles.tabContent}>
@@ -717,18 +663,12 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
       style={[styles.container, isGuest && styles.guestContainer]}
     >
       {/* <View style={styles.profileHeader} /> */}
-      <ScrollView
+      <RefreshableScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            colors={[COLORS.primary]}
-            tintColor={COLORS.primary}
-          />
-        }
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
       >
         <View>
           {renderProfileAvatar()}
@@ -813,21 +753,35 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
                 index === 0 && styles.menuItemActive,
               ]}
               onPress={() => {
-                if (item.id === "posts") {
-                  navigation.navigate("MyPosts");
-                } else if (item.id === "workout-history") {
-                  navigation.navigate("WorkoutHistory");
-                } else if (item.id === "connections") {
-                  navigation.navigate("Connections");
-                } else if (item.id === "schedule-session") {
-                  navigation.navigate("ScheduledSessions");
-                } else if (item.id === "achievements") {
-                  navigation.navigate("Achievements");
-                } else if (item.id === "rating") {
-                  navigation.navigate("MyRatings");
+                if (isTrainer) {
+                  if (item.id === "all-bookings") {
+                    navigation.navigate("TrainerBookings");
+                  } else if (item.id === "my-availability") {
+                    navigation.navigate("TrainerAvailability");
+                  } else if (item.id === "my-pricing") {
+                    navigation.navigate("TrainerPricing");
+                  } else if (item.id === "my-rating") {
+                    navigation.navigate("TrainerRatings");
+                  } else {
+                    console.log(`Pressed ${item.label}`);
+                  }
                 } else {
-                  // Handle other menu items as needed
-                  console.log(`Pressed ${item.label}`);
+                  if (item.id === "posts") {
+                    navigation.navigate("MyPosts");
+                  } else if (item.id === "workout-history") {
+                    navigation.navigate("WorkoutHistory");
+                  } else if (item.id === "connections") {
+                    navigation.navigate("Connections");
+                  } else if (item.id === "schedule-session") {
+                    navigation.navigate("ScheduledSessions");
+                  } else if (item.id === "achievements") {
+                    navigation.navigate("Achievements");
+                  } else if (item.id === "rating") {
+                    navigation.navigate("MyRatings");
+                  } else {
+                    // Handle other menu items as needed
+                    console.log(`Pressed ${item.label}`);
+                  }
                 }
               }}
               activeOpacity={0.7}
@@ -849,7 +803,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
             </TouchableOpacity>
           ))}
         </View>}
-      </ScrollView>
+  </RefreshableScrollView>
       {isOwnProfile && !isGuest && (
         <View style={styles.logoutSection}>
           <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>

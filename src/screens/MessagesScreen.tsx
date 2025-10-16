@@ -4,9 +4,8 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  ScrollView,
-  RefreshControl,
 } from "react-native";
+import RefreshableScrollView from '../components/RefreshableScrollView';
 import { COLORS, DIMENSIONS } from "../config/constants";
 import STRINGS from "../config/strings";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -70,16 +69,10 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ navigation }) => {
         />
 
 
-      <ScrollView 
+      <RefreshableScrollView
         style={styles.conversationsContainer}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            colors={[COLORS.primary]}
-            tintColor={COLORS.primary}
-          />
-        }
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
       >
         {mockConversations.map((conversation) => (
           <TouchableOpacity
@@ -108,7 +101,7 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ navigation }) => {
             </View>
           </TouchableOpacity>
         ))}
-      </ScrollView>
+  </RefreshableScrollView>
 
       <View style={styles.footer}>
         <Text style={styles.footerText}>{STRINGS.MESSAGES.footer}</Text>

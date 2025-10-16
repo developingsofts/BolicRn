@@ -4,15 +4,14 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  ScrollView,
   Pressable,
   FlatList,
   Image,
   TextInput,
   Modal,
   ActivityIndicator,
-  RefreshControl,
 } from "react-native";
+import RefreshableScrollView from '../../components/RefreshableScrollView';
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS, DIMENSIONS } from "../../config/constants";
@@ -549,18 +548,12 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({ navigation, route, group: p
 
   return (
     <SafeAreaView edges={["left", "right"]} style={styles.container}>
-      <ScrollView 
+      <RefreshableScrollView
         style={styles.content}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            colors={[COLORS.primary]}
-            tintColor={COLORS.primary}
-          />
-        }
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
       >
         <BasicTopBar
           showBackButton={false}
@@ -719,7 +712,7 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({ navigation, route, group: p
             </>
           )}
         </View>
-      </ScrollView>
+  </RefreshableScrollView>
 
       <TouchableOpacity style={styles.fab}>
         <Image source={Add} style={{ width: 20, height: 20 }} />

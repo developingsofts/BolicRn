@@ -1,49 +1,86 @@
-
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { COLORS, DIMENSIONS } from '../config/constants';
-import FontWeight from '../hooks/useInterFonts';
-import TrainerSetupStep1 from '../components/TrainerSetupStep1';
-import TrainerSetupStep2 from '../components/TrainerSetupStep2';
-import BasicTopBar from '../components/BasicTopBar';
+import React, { useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+  Keyboard,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
+import { COLORS, DIMENSIONS } from "../config/constants";
+import FontWeight from "../hooks/useInterFonts";
+import TrainerSetupStep1 from "../components/TrainerSetupStep1";
+import TrainerSetupStep2 from "../components/TrainerSetupStep2";
+import BasicTopBar from "../components/BasicTopBar";
 
 const TrainerSetup: React.FC = ({ navigation }: any) => {
   const [step, setStep] = useState(1);
-
+const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   // Handlers for step navigation
   const handleNext = () => setStep(2);
-  const handleSaveDraft = () => alert('Draft saved. Your availability has been saved as draft.');
+  const handleSaveDraft = () =>
+    alert("Draft saved. Your availability has been saved as draft.");
   const handleConfirm = () => {
-    alert('Profile is live! Your trainer profile is now active.');
-    navigation.navigate('Home');
+    alert("Profile is live! Your trainer profile is now active.");
+    navigation.navigate("Home");
   };
+  useEffect(() => {  
+    const showSubscription = Keyboard.addListener("keyboardDidShow", () => {
+      setIsKeyboardVisible(true);
+    });
+    const hideSubscription = Keyboard.addListener("keyboardDidHide", () => {
+      setIsKeyboardVisible(false);
+    });
+
+    return () => {
+        showSubscription.remove();
+        hideSubscription.remove();
+      };
+  },[]);
 
   return (
-    <SafeAreaView edges={[]} style={{ flex: 1, backgroundColor: COLORS.background }}>
-      <BasicTopBar
-        onBackPress={() => navigation.goBack()}
-        title="Trainer Setup"
-        subtitle="Manage your sessions and charges"
-        containerStyle={{ paddingTop: DIMENSIONS.spacing.xxl, paddingBottom: DIMENSIONS.spacing.lg }}
-      />
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: COLORS.background }}
+      behavior={isKeyboardVisible?"height":undefined}
+    >
+      <SafeAreaView edges={[]} style={{ flex: 1 }}>
+        <BasicTopBar
+          onBackPress={() => navigation.goBack()}
+          title="Trainer Setup"
+          subtitle="Manage your sessions and charges"
+          containerStyle={{
+            paddingTop: DIMENSIONS.spacing.xxl,
+            paddingBottom: DIMENSIONS.spacing.lg,
+          }}
+        />
 
-      {/* Progress Indicator */}
-      <View style={styles.progressSection}>
-        <Text style={styles.progressStep}>Step {step} of 2</Text>
-        <View style={styles.progressBarBg}>
-          <View style={[styles.progressBarFill, { width: step === 1 ? '50%' : '100%' }]} />
+        {/* Progress Indicator */}
+        <View style={styles.progressSection}>
+          <Text style={styles.progressStep}>Step {step} of 2</Text>
+          <View style={styles.progressBarBg}>
+            <View
+              style={[
+                styles.progressBarFill,
+                { width: step === 1 ? "50%" : "100%" },
+              ]}
+            />
+          </View>
         </View>
-      </View>
 
-      {/* Step Content */}
-      {step === 1 ? (
-        <TrainerSetupStep1 onNext={handleNext} />
-      ) : (
-        <TrainerSetupStep2 onSaveDraft={handleSaveDraft} onConfirm={handleConfirm} />
-      )}
-    </SafeAreaView>
+        {/* Step Content */}
+        {step === 1 ? (
+          <TrainerSetupStep1 onNext={handleNext} />
+        ) : (
+          <TrainerSetupStep2
+            onSaveDraft={handleSaveDraft}
+            onConfirm={handleConfirm}
+          />
+        )}
+      </SafeAreaView>
+    </KeyboardAvoidingView>
   );
 };
 
@@ -71,19 +108,19 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "600",
     color: COLORS.white,
-    textAlign: 'center',
+    textAlign: "center",
     flex: 1,
   },
   headerSubtitle: {
     color: COLORS.white,
     fontSize: 14,
     opacity: 0.8,
-    textAlign: 'center',
+    textAlign: "center",
     marginTop: 4,
     marginBottom: 8,
   },
   progressSection: {
-    backgroundColor: '#F5F5F5',
+    backgroundColor: "#F5F5F5",
     paddingHorizontal: 16,
     paddingVertical: 18,
   },
@@ -96,7 +133,7 @@ const styles = StyleSheet.create({
     height: 8,
     backgroundColor: COLORS._E2E2E2,
     borderRadius: 4,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   progressBarFill: {
     height: 8,
