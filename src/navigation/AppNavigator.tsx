@@ -31,6 +31,7 @@ import BookTrainerScreen from "../screens/BookTrainerScreen";
 import SelectDateTimeScreen from "../screens/SelectDateTimeScreen";
 import BookingConfirmationScreen from "../screens/BookingConfirmationScreen";
 import BookingSuccessScreen from "../screens/BookingSuccessScreen";
+import TrainerSetup from "../screens/TrainerSetup";
 
 // Import components
 import LoadingScreen from "../components/LoadingScreen";
@@ -186,14 +187,8 @@ const AppNavigator: React.FC = () => {
           <>
             <Stack.Screen name="Main" component={MainTabNavigator} />
             <Stack.Screen name="Chat" component={ChatScreen} />
-            <Stack.Screen
-              name="SelectWorkout"
-              component={SelectWorkoutScreen}
-            />
-            <Stack.Screen
-              name="WorkoutSession"
-              component={WorkoutSessionScreen}
-            />
+            <Stack.Screen name="SelectWorkout" component={SelectWorkoutScreen} />
+            <Stack.Screen name="WorkoutSession" component={WorkoutSessionScreen} />
             <Stack.Screen name="CreatePost" component={CreatePostScreen} />
             <Stack.Screen name="Settings" component={SettingsScreen} />
             <Stack.Screen name="GroupDetails" component={GroupDetails} />
@@ -211,7 +206,7 @@ const AppNavigator: React.FC = () => {
             <Stack.Screen name="SelectDateTime" component={SelectDateTimeScreen} />
             <Stack.Screen name="BookingConfirmation" component={BookingConfirmationScreen} />
             <Stack.Screen name="BookingSuccess" component={BookingSuccessScreen} />
-
+            <Stack.Screen name="TrainerSetup" component={TrainerSetup} />
           </>
         ) : (
           // Auth stack

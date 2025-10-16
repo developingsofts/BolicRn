@@ -325,6 +325,7 @@ export type RootStackParamList = {
   Achievements: undefined;
   MyRatings: undefined;
   UserProfile: { userId: string; user: any };
+  TrainerSetup: undefined;
 };
 
 export type MainTabParamList = {

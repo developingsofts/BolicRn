@@ -145,9 +145,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
 
   // Handler to launch onboarding flow and update onboardingStep after completion
   const handleTrainerOnboarding = () => {
-    navigation.navigate('TrainerSetup', {
-      onComplete: () => setLocalOnboardingStep(2),
-    });
+    navigation.navigate('TrainerSetup');
   };
   const profileBio = (() => {
     if (isGuest) {

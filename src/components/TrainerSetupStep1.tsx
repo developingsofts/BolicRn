@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { COLORS, DIMENSIONS } from '../config/constants';
 import FontWeight from '../hooks/useInterFonts';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,54 +9,111 @@ interface TrainerSetupStep1Props {
 }
 
 const TrainerSetupStep1: React.FC<TrainerSetupStep1Props> = ({ onNext }) => {
+  const [singleSession, setSingleSession] = useState({
+    name: 'Single Session',
+    description: 'One-on-one personalized training session.',
+    price: '$75/hr',
+  });
+  const [packSession, setPackSession] = useState({
+    name: '5-Session Pack',
+    description: 'Save 10% with a bundle of 5 sessions.',
+    price: '$67.5/hr',
+  });
+
   const handleAddSession = () => {
     alert('Add session feature coming soon');
   };
 
   return (
-    <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-      <TouchableOpacity style={styles.addSessionBtn} onPress={handleAddSession}>
-        <Ionicons name="add" size={20} color={COLORS.primary} style={{ marginRight: 8 }} />
-        <Text style={styles.addSessionText}>Add New Session</Text>
-      </TouchableOpacity>
-      <View style={{ marginBottom: 16 }}>
-        <Text style={styles.sectionTitle}>Set Your Rates</Text>
-        <Text style={styles.sectionDesc}>
-          Create packages for clients to book. You can add more later.
-        </Text>
-      </View>
-      <View style={styles.sessionCard}>
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Session name</Text>
-          <View style={styles.inputField}><Text style={styles.inputText}>Single Session</Text></View>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={80}
+    >
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+        <TouchableOpacity style={styles.addSessionBtn} onPress={handleAddSession}>
+          <Ionicons name="add" size={20} color={COLORS.primary} style={{ marginRight: 8 }} />
+          <Text style={styles.addSessionText}>Add New Session</Text>
+        </TouchableOpacity>
+        <View style={{ marginBottom: 16 }}>
+          <Text style={styles.sectionTitle}>Set Your Rates</Text>
+          <Text style={styles.sectionDesc}>
+            Create packages for clients to book. You can add more later.
+          </Text>
         </View>
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Description</Text>
-          <View style={[styles.inputField, { height: 48 }]}><Text style={styles.inputText}>One-on-one personalized training session.</Text></View>
+        <View style={styles.sessionCard}>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Session name</Text>
+            <TextInput
+              style={styles.inputField}
+              value={singleSession.name}
+              onChangeText={text => setSingleSession({ ...singleSession, name: text })}
+              placeholder="Session name"
+              placeholderTextColor={COLORS.textSecondary}
+            />
+          </View>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Description</Text>
+            <TextInput
+              style={[styles.inputField, { height: 48 }]}
+              value={singleSession.description}
+              onChangeText={text => setSingleSession({ ...singleSession, description: text })}
+              placeholder="Description"
+              placeholderTextColor={COLORS.textSecondary}
+              multiline
+            />
+          </View>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Price per hour</Text>
+            <TextInput
+              style={styles.inputField}
+              value={singleSession.price}
+              onChangeText={text => setSingleSession({ ...singleSession, price: text })}
+              placeholder="$ per hour"
+              placeholderTextColor={COLORS.textSecondary}
+              keyboardType="numeric"
+            />
+          </View>
         </View>
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Price per hour</Text>
-          <View style={styles.inputField}><Text style={styles.inputText}>$75/hr</Text></View>
+        <View style={styles.sessionCard}>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Session name</Text>
+            <TextInput
+              style={styles.inputField}
+              value={packSession.name}
+              onChangeText={text => setPackSession({ ...packSession, name: text })}
+              placeholder="Session name"
+              placeholderTextColor={COLORS.textSecondary}
+            />
+          </View>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Description</Text>
+            <TextInput
+              style={[styles.inputField, { height: 48 }]}
+              value={packSession.description}
+              onChangeText={text => setPackSession({ ...packSession, description: text })}
+              placeholder="Description"
+              placeholderTextColor={COLORS.textSecondary}
+              multiline
+            />
+          </View>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Price per hour</Text>
+            <TextInput
+              style={styles.inputField}
+              value={packSession.price}
+              onChangeText={text => setPackSession({ ...packSession, price: text })}
+              placeholder="$ per hour"
+              placeholderTextColor={COLORS.textSecondary}
+              keyboardType="numeric"
+            />
+          </View>
         </View>
-      </View>
-      <View style={styles.sessionCard}>
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Session name</Text>
-          <View style={styles.inputField}><Text style={styles.inputText}>5-Session Pack</Text></View>
-        </View>
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Description</Text>
-          <View style={[styles.inputField, { height: 48 }]}><Text style={styles.inputText}>Save 10% with a bundle of 5 sessions.</Text></View>
-        </View>
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Price per hour</Text>
-          <View style={styles.inputField}><Text style={styles.inputText}>$67.5/hr</Text></View>
-        </View>
-      </View>
-      <TouchableOpacity style={styles.nextBtn} onPress={onNext}>
-        <Text style={styles.nextBtnText}>Next</Text>
-      </TouchableOpacity>
-    </ScrollView>
+        <TouchableOpacity style={styles.nextBtn} onPress={onNext}>
+          <Text style={styles.nextBtnText}>Next</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 };
 
