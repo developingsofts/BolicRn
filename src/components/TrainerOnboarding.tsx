@@ -25,8 +25,10 @@ const TrainerOnboarding: React.FC<TrainerOnboardingProps> = ({ onGetStarted }) =
 
 const styles = StyleSheet.create({
   card: {
-    width: '100%',
+    width: '90%',
     maxWidth: 400,
+    marginTop: -40,
+    zIndex: 1,
     alignSelf: 'center',
     backgroundColor: COLORS.card,
     borderRadius: 18,

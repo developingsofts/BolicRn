@@ -23,6 +23,7 @@ export interface User {
   experienceLevel?: string;
   availability?: string;
   onboardingStep?: number;
+  role?: 'user' | 'trainer';
   createdAt: Date;
   updatedAt: Date;
 }

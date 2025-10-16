@@ -13,6 +13,9 @@ import { useAuth } from "../contexts/AuthContext";
 import { COLORS, DIMENSIONS } from "../config/constants";
 import STRINGS from "../config/strings";
 import { SafeAreaView } from "react-native-safe-area-context";
+import TrainerOnboarding from '../components/TrainerOnboarding';
+import { useNavigation } from '@react-navigation/native';
+import { useState as useLocalState } from 'react';
 import { Ionicons } from "@expo/vector-icons";
 import {
   Awards,
@@ -132,7 +135,20 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
   const isGuest = route?.params?.isGuest || !user;
   const isOwnProfile =
     !route?.params?.userId || route.params.userId === user?.id;
-  const showOwnProfileFeatures = isOwnProfile && !isGuest;
+  const navigationNative = useNavigation();
+  const [localOnboardingStep, setLocalOnboardingStep] = useLocalState(user?.onboardingStep ?? 0);
+  console.log('User role:', user);
+  const isTrainer = user?.role == 'trainer';
+  const onboardingStep = localOnboardingStep;
+  const showTrainerOnboarding = isOwnProfile && isTrainer && onboardingStep !== 2;
+  const showOwnProfileFeatures = isOwnProfile && !isGuest && (!isTrainer || onboardingStep === 2);
+
+  // Handler to launch onboarding flow and update onboardingStep after completion
+  const handleTrainerOnboarding = () => {
+    navigation.navigate('TrainerSetup', {
+      onComplete: () => setLocalOnboardingStep(2),
+    });
+  };
   const profileBio = (() => {
     if (isGuest) {
       return STRINGS.PROFILE.bio;
@@ -695,13 +711,14 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
     }
   };
 
+
+
   return (
     <SafeAreaView
       edges={["left", "right"]}
       style={[styles.container, isGuest && styles.guestContainer]}
     >
       {/* <View style={styles.profileHeader} /> */}
-
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -717,15 +734,13 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
       >
         <View>
           {renderProfileAvatar()}
-          {renderStatsRow()}
+          {showTrainerOnboarding ? <TrainerOnboarding onGetStarted={handleTrainerOnboarding} /> : renderStatsRow()}
         </View>
-
-        {showOwnProfileFeatures && (
+        {!showTrainerOnboarding && showOwnProfileFeatures && (
           <View style={styles.weeklyActivityCard}>
             <View style={styles.weeklyActivityHeader}>
               <Text style={styles.weeklyActivityTitle}>Weekly Activity</Text>
             </View>
-
             <View style={styles.weeklyActivityContent}>
               {/* Weekly Goal Section */}
               <View style={styles.weeklyGoalSection}>
@@ -737,7 +752,6 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
                   <View style={[styles.progressBarFill, { width: "60%" }]} />
                 </View>
               </View>
-
               {/* Streak Stats */}
               <View style={styles.streakStatsContainer}>
                 <View style={styles.streakStatItem}>
@@ -749,7 +763,6 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
                   <Text style={styles.streakStatValue}>157 Days</Text>
                 </View>
               </View>
-
               {/* Daily Streak */}
               <View style={styles.dailyStreakSection}>
                 <Text style={styles.dailyStreakLabel}>Daily Streak</Text>
@@ -787,9 +800,8 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
             </View>
           </View>
         )}
-
         {/* Menu List Section */}
-        <View
+       {!showTrainerOnboarding&& <View
           style={[
             styles.menuListContainer,
             isGuest && styles.menuListGuestSpacing,
@@ -838,13 +850,8 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
               />
             </TouchableOpacity>
           ))}
-        </View>
-
-        {/* {renderActionButtons()}
-        {renderTabBar()}
-        {renderTabContent()} */}
+        </View>}
       </ScrollView>
-
       {isOwnProfile && !isGuest && (
         <View style={styles.logoutSection}>
           <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
