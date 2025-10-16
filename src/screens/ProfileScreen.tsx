@@ -38,6 +38,7 @@ interface ProfileScreenProps {
       isGuest?: boolean;
       userId?: string;
       bio?: string;
+      user?: any;
     };
   };
 }
@@ -359,11 +360,13 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
     );
   };
   const renderProfileAvatar = () => {
-    const initial = user?.displayName?.charAt(0) || (isGuest ? "G" : "D");
-    const displayName = isGuest ? STRINGS.PROFILE.guestUser : user?.displayName;
-    isGuest ? STRINGS.PROFILE.guestUser : STRINGS.PROFILE.developmentUser;
-    const location = user?.location || STRINGS.PROFILE.defaultLocation;
-
+    // Prefer user from route params if present (for visiting other profiles)
+    const routeUser = route?.params?.user;
+    const profileUser = routeUser || user;
+    const displayName = profileUser?.displayName || profileUser?.userName || STRINGS.PROFILE.guestUser;
+    const initial = displayName?.charAt(0)?.toUpperCase() || "G";
+    const location = profileUser?.location || STRINGS.PROFILE.defaultLocation;
+    const imageUrl = profileUser?.imageUrl;
     return (
       <LinearGradient
         colors={[COLORS.gradient1, COLORS.gradient2, COLORS.gradient3]}
@@ -419,8 +422,8 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
 
         <View style={styles.avatarContainer}>
           <View style={[styles.avatar, isGuest && styles.guestAvatar]}>
-            {user?.imageUrl ? (
-              <Image source={{ uri: user.imageUrl }} style={styles.avatarImage} />
+            {imageUrl ? (
+              <Image source={{ uri: imageUrl }} style={styles.avatarImage} />
             ) : (
               <Text style={styles.avatarText}>{initial}</Text>
             )}
@@ -429,7 +432,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
           <Text style={styles.locationText}>{location}</Text>
         </View>
 
-  {profileBio ? <Text style={styles.bioText}>{profileBio}</Text> : null}
+        {profileBio ? <Text style={styles.bioText}>{profileBio}</Text> : null}
         {isGuest && renderFollowingView()}
       </LinearGradient>
     );
@@ -800,8 +803,22 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
                 index === 0 && styles.menuItemActive,
               ]}
               onPress={() => {
-                // Handle navigation or action here
-                console.log(`Pressed ${item.label}`);
+                if (item.id === "posts") {
+                  navigation.navigate("MyPosts");
+                } else if (item.id === "workout-history") {
+                  navigation.navigate("WorkoutHistory");
+                } else if (item.id === "connections") {
+                  navigation.navigate("Connections");
+                } else if (item.id === "schedule-session") {
+                  navigation.navigate("ScheduledSessions");
+                } else if (item.id === "achievements") {
+                  navigation.navigate("Achievements");
+                } else if (item.id === "rating") {
+                  navigation.navigate("MyRatings");
+                } else {
+                  // Handle other menu items as needed
+                  console.log(`Pressed ${item.label}`);
+                }
               }}
               activeOpacity={0.7}
             >

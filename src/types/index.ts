@@ -317,6 +317,13 @@ export type RootStackParamList = {
   SelectDateTime: { trainerId?: string; trainerName?: string; packageTitle?: string; price?: number } | undefined;
   BookingConfirmation: { trainerId?: string; trainerName?: string; packageTitle?: string; price?: number; date?: string; time?: string } | undefined;
   BookingSuccess: { trainerId?: string; trainerName?: string; dateTime?: string; location?: string } | undefined;
+  MyPosts: undefined;
+  WorkoutHistory: undefined;
+  Connections: undefined;
+  ScheduledSessions: undefined;
+  Achievements: undefined;
+  MyRatings: undefined;
+  UserProfile: { userId: string; user: any };
 };
 
 export type MainTabParamList = {

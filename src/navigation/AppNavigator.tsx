@@ -1,3 +1,5 @@
+import MyRatings from "../screens/MyRatings";
+import Achievements from "../screens/Achievements";
 import React from "react";
 import { Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -6,6 +8,10 @@ import { createStackNavigator } from "@react-navigation/stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { useAuth } from "../contexts/AuthContext";
 import { RootStackParamList, MainTabParamList, FindStackParams, HomeStackParams } from "../types";
+import MyPosts from "../screens/MyPosts";
+import WorkoutHistory from "../screens/WorkoutHistory";
+import Connections from "../screens/Connections";
+import ScheduledSessions from "../screens/ScheduledSessions";
 import { COLORS, DIMENSIONS } from "../config/constants";
 
 // Import screens
@@ -193,7 +199,14 @@ const AppNavigator: React.FC = () => {
             <Stack.Screen name="GroupDetails" component={GroupDetails} />
             <Stack.Screen name="ManageGroup" component={ManageGroup} />
             <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+            <Stack.Screen name="UserProfile" component={ProfileScreen} />
+            <Stack.Screen name="MyPosts" component={MyPosts} />
+            <Stack.Screen name="WorkoutHistory" component={WorkoutHistory} />
+            <Stack.Screen name="Connections" component={Connections} />
             <Stack.Screen name="ShareWorkout" component={ShareWorkoutScreen} />
+            <Stack.Screen name="Achievements" component={Achievements} />
+            <Stack.Screen name="MyRatings" component={MyRatings} />
+            <Stack.Screen name="ScheduledSessions" component={ScheduledSessions} />
             <Stack.Screen name="BookTrainer" component={BookTrainerScreen} />
             <Stack.Screen name="SelectDateTime" component={SelectDateTimeScreen} />
             <Stack.Screen name="BookingConfirmation" component={BookingConfirmationScreen} />

@@ -5,12 +5,21 @@ import type { ApiResponse } from './types';
 
 // ...existing code...
 
-// Leave group (exit as a member)
-export const leaveGroup = async (groupId: string) => {
-  return baseApi.fetchBaseQuery({
-    url: `/groups/${groupId}/leave`,
-    method: 'POST',
-  });
-};
+
+// Leave group (exit as a member) - RTK Query endpoint
+export const leaveGroupApi = baseApi.injectEndpoints({
+  endpoints: (builder) => ({
+    leaveGroup: builder.mutation<ApiResponse<any>, string>({
+      query: (groupId) => ({
+        url: `/groups/${groupId}/leave`,
+        method: 'POST',
+      }),
+      invalidatesTags: ['Groups'],
+    }),
+  }),
+  overrideExisting: false,
+});
+
+export const { useLeaveGroupMutation } = leaveGroupApi;
 
 // ...existing code...
