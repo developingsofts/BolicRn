@@ -42,6 +42,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Calendar } from "react-native-calendars";
 import BookingCard from "../components/BookingCard";
 import BookingList from "../components/BookingList";
+import ScheduleList from "../components/ScheduleList";
 
 interface ProfileScreenProps {
   navigation: any;
@@ -305,85 +306,9 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
     await logout();
   };
 
-  const handleFollowToggle = () => {
-    setIsFollowing(!isFollowing);
-  };
 
-  const handleMessageUser = (userId: string) => {
-    // Navigate to chat screen with specific user
-    navigation.navigate("Messages", { userId });
-  };
 
-  const renderPostView = (post: any) => (
-    <View key={post.id} style={styles.postCard}>
-      <Text style={styles.postContent}>{post.content}</Text>
-      <View style={styles.postActions}>
-        <Text style={styles.postTime}>{post.timeAgo}</Text>
-        <View
-          style={{
-            flexDirection: "row",
-            gap: 20,
-            justifyContent: "flex-end",
-            flex: 1,
-          }}
-        >
-          <View style={{ flexDirection: "row", alignItems: "center" }}>
-            <Image source={Like} style={styles.postIconSize} />
-            <Text style={styles.postAction}>{post.likes}</Text>
-          </View>
-          <View style={{ flexDirection: "row", alignItems: "center" }}>
-            <Image source={Comment} style={styles.postIconSize} />
-            <Text style={styles.postAction}>{post.comments}</Text>
-          </View>
-        </View>
-      </View>
-    </View>
-  );
 
-  const renderWorkoutView = (item: any) => (
-    <View key={item.id} style={styles.workoutCard}>
-      <View style={{ flexDirection: "row", alignItems: "center" }}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.workoutTitle}>{item.title}</Text>
-          <View style={styles.workoutDetails}>
-            <View style={[styles.workoutTag, styles.strengthTag]}>
-              <Text style={styles.workoutTagText}>{item.category}</Text>
-            </View>
-            <Text style={styles.workoutInfo}>{item.duration}</Text>
-            <Text style={styles.workoutInfo}>{item.difficulty}</Text>
-          </View>
-          <Text style={styles.workoutCompleted}>
-            {STRINGS.PROFILE.workoutCompleted} {item.completedDate}
-          </Text>
-        </View>
-        <TouchableOpacity style={styles.postItButton}>
-          <Text style={styles.postItButtonText}>
-            {STRINGS.PROFILE.buttons.postIt}
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-
-  const renderConnections = (connection: any) => (
-    <View key={connection.id} style={styles.connectionCard}>
-      <View style={[styles.connectionAvatar]}>
-        <Text style={styles.connectionAvatarText}>{connection.initial}</Text>
-      </View>
-      <View style={styles.connectionInfo}>
-        <Text style={styles.connectionName}>{connection.name}</Text>
-        <Text style={styles.connectionLocation}>{connection.location}</Text>
-      </View>
-      <TouchableOpacity
-        style={styles.postItButton}
-        onPress={() => handleMessageUser(connection.id)}
-      >
-        <Text style={styles.postItButtonText}>
-          {STRINGS.PROFILE.buttons.message}
-        </Text>
-      </TouchableOpacity>
-    </View>
-  );
 
   const handleBookTrainer = () => {
     navigation.navigate('BookTrainer', {
@@ -504,157 +429,33 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
     { icon: Awards, count: 8, title: STRINGS.PROFILE.statsLabels.awards },
   ];
     const statsDataTrainer = [
-    { icon: Request, count: 2, title: "Requests" },
-    { icon: Calender, count: 1, title: "Today" },
-    { icon: Users2, count: 12, title: "Clients" },     
-  ];
+      { icon: Request, count: 2, title: "Requests" },
+      { icon: Calender, count: 1, title: "Today" },
+      { icon: Users2, count: 12, title: "Clients" },     
+    ];
 
-
-  const renderActivityTab = () => (
-    <View style={styles.tabContent}>
-      <View style={styles.subTabContainer}>
-        <TouchableOpacity
-          style={[
-            styles.subTab,
-            activeSubTab === "posts" && styles.activeSubTab,
-          ]}
-          onPress={() => setActiveSubTab("posts")}
-        >
-          <Text
-            style={[
-              styles.subTabText,
-              activeSubTab === "posts" && styles.activeSubTabText,
-            ]}
-          >
-            {STRINGS.PROFILE.posts}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[
-            styles.subTab,
-            activeSubTab === "workouts" && styles.activeSubTab,
-          ]}
-          onPress={() => setActiveSubTab("workouts")}
-        >
-          <Text
-            style={[
-              styles.subTabText,
-              activeSubTab === "workouts" && styles.activeSubTabText,
-            ]}
-          >
-            {STRINGS.PROFILE.workouts}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[
-            styles.subTab,
-            activeSubTab === "connections" && styles.activeSubTab,
-          ]}
-          onPress={() => setActiveSubTab("connections")}
-        >
-          <Text
-            style={[
-              styles.subTabText,
-              activeSubTab === "connections" && styles.activeSubTabText,
-            ]}
-          >
-            Connections
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {activeSubTab === "posts" && (
-        <View>{activityPosts.map((post) => renderPostView(post))}</View>
-      )}
-
-      {activeSubTab === "workouts" && (
-        <View>
-          {workoutHistory.map((item) => {
-            if (item.type === "post") {
-              return renderPostView(item);
-            } else {
-              return renderWorkoutView(item);
-            }
-          })}
-        </View>
-      )}
-
-      {activeSubTab === "connections" && (
-        <View>
-          {connections.map((connection) => renderConnections(connection))}
-        </View>
-      )}
-    </View>
-  );
-
-  const renderAchievementsTab = () => (
-    <View style={styles.achievementTabContent}>
-      <View style={styles.achievementsGrid}>
-        {achievements.map((achievement, idx) => (
-          <View key={achievement.id} style={styles.achievementCardGrid}>
-            <View style={{ width: "100%" }}>
-              <View
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                  width: "100%",
-                }}
-              >
-                <View style={styles.achievementIcon}>
-                  <Image source={Awards} style={styles.achievementIconText} />
-                </View>
-                {achievement.completed && (
-                  <View style={styles.achievementIcon}>
-                    <Image source={Awards} style={styles.achievementIconText} />
-                  </View>
-                )}
-              </View>
-              <Text style={styles.achievementTitle}>{achievement.title}</Text>
-              {achievement.description && (
-                <Text style={styles.achievementDescription}>
-                  {achievement.description}
-                </Text>
-              )}
-            </View>
-            <View style={styles.achievementProgress}>
-              <View style={styles.achievementProgressBar}>
-                <View
-                  style={[
-                    styles.achievementProgressFill,
-                    {
-                      width: `${
-                        achievement.completed
-                          ? 100
-                          : ((achievement.progress || 0) /
-                              (achievement.maxProgress || 1)) *
-                            100
-                      }%`,
-                      backgroundColor: achievement.completed
-                        ? COLORS._3FE363
-                        : COLORS._F3A455,
-                    },
-                  ]}
-                />
-              </View>
-            </View>
-          </View>
-        ))}
-      </View>
-    </View>
-  );
-
-  const renderTabContent = () => {
-    switch (activeTab) {
-      case "activity":
-        return renderActivityTab();
-      case "achievements":
-        return renderAchievementsTab();
-      default:
-        return renderActivityTab();
-    }
-  };
-
-
+    const schedulesData = [
+      {
+        id: "1",
+        startTime: "11:30 AM",
+        endTime: "12:30 PM",
+        clientName: "Jane Smith",
+        sessionType: "Yoga",
+        onRemove: () => console.log("Removed"),
+        onMessage: () => console.log("Message Jane Smith"),
+      },
+      {
+        id: "2",
+        startTime: "1:00 PM",
+        endTime: "2:00 PM",
+        clientName: "Bob Lee",
+        sessionType: "HIIT",
+        onRemove: () => console.log("Removed"),
+        onMessage: () => console.log("Message Bob Lee"),
+      },
+      // Add more schedules as needed
+    ];
+       
 
   return (
     <SafeAreaView
@@ -671,7 +472,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
       >
         <View>
           {renderProfileAvatar()}
-          {showTrainerOnboarding ? <TrainerOnboarding onGetStarted={handleTrainerOnboarding} /> : <StatsRow stats={statsData} />}
+          {showTrainerOnboarding ? <TrainerOnboarding onGetStarted={handleTrainerOnboarding} /> : <StatsRow stats={isTrainer ? statsDataTrainer :  statsData} />}
         </View>
         {!showTrainerOnboarding && !isTrainer && showOwnProfileFeatures && (
           <View style={styles.weeklyActivityCard}>
@@ -741,6 +542,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
           isTrainer && !showTrainerOnboarding && (
             <View style={{ marginTop: 60, width: '90%',margin:"auto"}}>
               <BookingList bookings={bookingsData} />
+              <ScheduleList schedules={schedulesData} />    
             </View>
           
           )

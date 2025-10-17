@@ -37,6 +37,8 @@ export const CommentRemove=require('../assets/comment_remove.png');
 export const Users2=require('../assets/users2.png');
 export const Request=require('../assets/request.png');
 export const Calender=require('../assets/calender.png');
+export const ScheduleChat=require('../assets/schedule-chat.png');
+export const ScheduleClose=require('../assets/schedule-close.png');
 
 
 
