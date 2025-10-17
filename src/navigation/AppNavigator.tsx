@@ -33,6 +33,8 @@ import BookingConfirmationScreen from "../screens/BookingConfirmationScreen";
 import BookingSuccessScreen from "../screens/BookingSuccessScreen";
 import TrainerSetup from "../screens/TrainerSetup";
 import MyBookingsScreen from "../screens/MyBookingsScreen";
+import RescheduleSessionScreen from "../screens/RescheduleSessionScreen";
+import TrainerAvailability from "../screens/TrainerAvailability";
 
 // Import components
 import LoadingScreen from "../components/LoadingScreen";
@@ -209,6 +211,8 @@ const AppNavigator: React.FC = () => {
             <Stack.Screen name="BookingSuccess" component={BookingSuccessScreen} />
             <Stack.Screen name="TrainerSetup" component={TrainerSetup} />
             <Stack.Screen name="MyBookings" component={MyBookingsScreen} />
+            <Stack.Screen name="RescheduleSession" component={RescheduleSessionScreen} />
+            <Stack.Screen name="TrainerAvailability" component={TrainerAvailability} />
           </>
         ) : (
           // Auth stack

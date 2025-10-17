@@ -12,6 +12,8 @@ interface MyBookingCardProps {
   clientInitial: string;
   onDecline?: (clientName: string) => void;
   onReschedule?: (clientName: string) => void;
+  hideActions?: boolean;
+  navigation?: any;
 }
 
 const MyBookingCard = ({
@@ -22,6 +24,8 @@ const MyBookingCard = ({
   clientInitial,
   onDecline,
   onReschedule,
+  hideActions,
+  navigation,
 }: MyBookingCardProps) => {
   const handleDecline = () => {
     if (onDecline) onDecline(clientName);
@@ -29,8 +33,13 @@ const MyBookingCard = ({
   };
 
   const handleReschedule = () => {
-    if (onReschedule) onReschedule(clientName);
-    else alert(`Booking with ${clientName} has been rescheduled`);
+    if (navigation && typeof navigation.navigate === 'function') {
+      navigation.navigate('RescheduleSession');
+    } else if (onReschedule) {
+      onReschedule(clientName);
+    } else {
+      alert(`Booking with ${clientName} has been rescheduled`);
+    }
   };
 
   return (
@@ -58,24 +67,27 @@ const MyBookingCard = ({
           </View>
         </View>
       </View>
-      <View style={styles.actions}>
-        <TouchableOpacity
-          style={[styles.actionButton, styles.declineButton]}
-          onPress={handleDecline}
-        >
-          <Text style={[styles.actionButtonText, styles.declineButtonText]}>
-            Decline
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.actionButton, styles.rescheduleButton]}
-          onPress={handleReschedule}
-        >
-          <Text style={[styles.actionButtonText, styles.rescheduleButtonText]}>
-            Reschedule
-          </Text>
-        </TouchableOpacity>
-      </View>
+      {/* Actions */}
+      {!hideActions && (
+        <View style={styles.actions}>
+          <TouchableOpacity
+            style={[styles.actionButton, styles.declineButton]}
+            onPress={handleDecline}
+          >
+            <Text style={[styles.actionButtonText, styles.declineButtonText]}>
+              Decline
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.actionButton, styles.rescheduleButton]}
+            onPress={handleReschedule}
+          >
+            <Text style={[styles.actionButtonText, styles.rescheduleButtonText]}>
+              Reschedule
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 };

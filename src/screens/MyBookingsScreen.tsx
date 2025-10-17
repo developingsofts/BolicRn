@@ -80,15 +80,32 @@ const MyBookingsScreen = ({ navigation }: any) => {
 								{...booking}
 								onDecline={handleDecline}
 								onReschedule={handleReschedule}
+								navigation={navigation}
 							/>
 						))}
 					</View>
 				)}
 				{activeTab === 'completed' && (
-					<View style={styles.emptyState}><Text style={styles.emptyStateText}>No completed bookings</Text></View>
+					<View style={styles.bookingList}>
+						{mockBookings.map((booking) => (
+							<MyBookingCard
+								key={booking.id}
+								{...booking}
+								hideActions
+							/>
+						))}
+					</View>
 				)}
 				{activeTab === 'canceled' && (
-					<View style={styles.emptyState}><Text style={styles.emptyStateText}>No canceled bookings</Text></View>
+					<View style={styles.bookingList}>
+						{mockBookings.map((booking) => (
+							<MyBookingCard
+								key={booking.id}
+								{...booking}
+								hideActions
+							/>
+						))}
+					</View>
 				)}
 			</ScrollView>
 		</SafeAreaView>
