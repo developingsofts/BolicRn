@@ -327,6 +327,7 @@ export type RootStackParamList = {
   MyRatings: undefined;
   UserProfile: { userId: string; user: any };
   TrainerSetup: undefined;
+  MyBookings: undefined;
 };
 
 export type MainTabParamList = {

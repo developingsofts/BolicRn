@@ -564,7 +564,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
               onPress={() => {
                 if (isTrainer) {
                   if (item.id === "all-bookings") {
-                    navigation.navigate("TrainerBookings");
+                    navigation.navigate("MyBookings");
                   } else if (item.id === "my-availability") {
                     navigation.navigate("TrainerAvailability");
                   } else if (item.id === "my-pricing") {
@@ -587,6 +587,8 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
                     navigation.navigate("Achievements");
                   } else if (item.id === "rating") {
                     navigation.navigate("MyRatings");
+                  } else if (item.id === "my-bookings") {
+                    navigation.navigate("MyBookings");
                   } else {
                     // Handle other menu items as needed
                     console.log(`Pressed ${item.label}`);
