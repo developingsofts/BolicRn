@@ -67,7 +67,7 @@ const TrainerAvailability: React.FC<{ navigation: any }> = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView edges={[]} style={styles.container}>
       <BasicTopBar
         onBackPress={() => navigation.goBack()}
         title="My Availability"
