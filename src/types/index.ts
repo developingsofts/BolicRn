@@ -330,6 +330,7 @@ export type RootStackParamList = {
   MyBookings: undefined;
   RescheduleSession: undefined;
   TrainerAvailability: undefined;
+  TrainerPricing: undefined;
 };
 
 export type MainTabParamList = {

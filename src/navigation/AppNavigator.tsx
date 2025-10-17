@@ -35,6 +35,7 @@ import TrainerSetup from "../screens/TrainerSetup";
 import MyBookingsScreen from "../screens/MyBookingsScreen";
 import RescheduleSessionScreen from "../screens/RescheduleSessionScreen";
 import TrainerAvailability from "../screens/TrainerAvailability";
+import TrainerPricing from "../screens/TrainerPricing";
 
 // Import components
 import LoadingScreen from "../components/LoadingScreen";
@@ -213,6 +214,7 @@ const AppNavigator: React.FC = () => {
             <Stack.Screen name="MyBookings" component={MyBookingsScreen} />
             <Stack.Screen name="RescheduleSession" component={RescheduleSessionScreen} />
             <Stack.Screen name="TrainerAvailability" component={TrainerAvailability} />
+            <Stack.Screen name="TrainerPricing" component={TrainerPricing} />
           </>
         ) : (
           // Auth stack

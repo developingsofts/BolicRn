@@ -570,7 +570,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
                   } else if (item.id === "my-pricing") {
                     navigation.navigate("TrainerPricing");
                   } else if (item.id === "my-rating") {
-                    navigation.navigate("TrainerRatings");
+                    navigation.navigate("MyRatings");
                   } else {
                     console.log(`Pressed ${item.label}`);
                   }
