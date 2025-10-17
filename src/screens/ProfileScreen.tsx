@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import StatsRow from '../components/StatsRow';
 import {
   View,
   Text,
@@ -21,6 +22,7 @@ import { useState as useLocalState } from 'react';
 import { Ionicons } from "@expo/vector-icons";
 import {
   Awards,
+  Calender,
   CircleComment,
   CircleEdit,
   Comment,
@@ -29,12 +31,17 @@ import {
   Fire,
   Following,
   Like,
+  Request,
   Settings,
   Thunder,
   Users,
+  Users2,
 } from "../../assets";
 import FontWeight from "../hooks/useInterFonts";
 import { LinearGradient } from "expo-linear-gradient";
+import { Calendar } from "react-native-calendars";
+import BookingCard from "../components/BookingCard";
+import BookingList from "../components/BookingList";
 
 interface ProfileScreenProps {
   navigation: any;
@@ -151,12 +158,14 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
   // const isOwnProfile =
   //   !route?.params?.userId || route.params.userId === user?.id;
   const navigationNative = useNavigation();
-  const [localOnboardingStep, setLocalOnboardingStep] = useLocalState(user?.onboardingStep ?? 0);
-  console.log('User role:', user);
-  const isTrainer = user?.role == 'trainer';
-  const onboardingStep = localOnboardingStep;
-  const showTrainerOnboarding = isOwnProfile && isTrainer && onboardingStep !== 2;
-  const showOwnProfileFeatures = isOwnProfile && !isGuest && (!isTrainer || onboardingStep === 2);
+  // Use trainerOnboardingStep for trainers, fallback to onboardingStep for users
+  const isTrainer = user?.role === 'trainer';
+  const trainerOnboardingStep = user?.trainerOnboardingStep ?? 0;
+  const onboardingStep = isTrainer ? trainerOnboardingStep : (user?.onboardingStep ?? 0);
+  // Show onboarding only if trainer and step < 2
+  const showTrainerOnboarding = isOwnProfile && isTrainer && onboardingStep < 2;
+  // Show trainer menu if trainer and onboarding complete (step >= 2)
+  const showOwnProfileFeatures = isOwnProfile && !isGuest && (!isTrainer || onboardingStep >= 2);
 
   // Handler to launch onboarding flow and update onboardingStep after completion
   const handleTrainerOnboarding = () => {
@@ -240,6 +249,20 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
       initial: "E",
       color: COLORS.secondary,
     },
+  ];
+    const bookingsData = [
+    {
+      id: "1",
+      guestName: "John Doe",
+      guestInitial: "JD",
+      date: "2023-09-15",
+      timeRange: "10:00 AM - 11:00 AM",
+      sessionType: "Personal Training",
+      price: 50,
+      onAccept: () => console.log("Accepted"),
+      onDecline: () => console.log("Declined"),
+    },
+ 
   ];
 
   const trainerMenuItems = [
@@ -474,41 +497,17 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
     );
   };
 
-  const renderStatsRow = () => (
-    <View style={styles.statsRow}>
-      <View style={styles.statItem}>
-        <Image source={Thunder} style={styles.smallIconSize} />
-        <Text style={styles.statNumber}>157</Text>
-        <Text style={styles.statLabel}>
-          {STRINGS.PROFILE.statsLabels.workouts}
-        </Text>
-      </View>
-      <View style={styles.statDivider} />
-      <View style={styles.statItem}>
-        <Image source={Fire} style={styles.smallIconSize} />
-        <Text style={styles.statNumber}>157</Text>
-        <Text style={styles.statLabel}>
-          {STRINGS.PROFILE.statsLabels.streak}
-        </Text>
-      </View>
-      <View style={styles.statDivider} />
-      <View style={styles.statItem}>
-        <Image source={Users} style={[styles.smallIconSize, { top: 2 }]} />
-        <Text style={styles.statNumber}>12</Text>
-        <Text style={styles.statLabel}>
-          {STRINGS.PROFILE.statsLabels.partners}
-        </Text>
-      </View>
-      <View style={styles.statDivider} />
-      <View style={styles.statItem}>
-        <Image source={Awards} style={[styles.smallIconSize, { top: 2 }]} />
-        <Text style={styles.statNumber}>8</Text>
-        <Text style={styles.statLabel}>
-          {STRINGS.PROFILE.statsLabels.awards}
-        </Text>
-      </View>
-    </View>
-  );
+  const statsData = [
+    { icon: Thunder, count: 157, title: STRINGS.PROFILE.statsLabels.workouts },
+    { icon: Fire, count: 157, title: STRINGS.PROFILE.statsLabels.streak },
+    { icon: Users, count: 12, title: STRINGS.PROFILE.statsLabels.partners },
+    { icon: Awards, count: 8, title: STRINGS.PROFILE.statsLabels.awards },
+  ];
+    const statsDataTrainer = [
+    { icon: Request, count: 2, title: "Requests" },
+    { icon: Calender, count: 1, title: "Today" },
+    { icon: Users2, count: 12, title: "Clients" },     
+  ];
 
 
   const renderActivityTab = () => (
@@ -672,9 +671,9 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
       >
         <View>
           {renderProfileAvatar()}
-          {showTrainerOnboarding ? <TrainerOnboarding onGetStarted={handleTrainerOnboarding} /> : renderStatsRow()}
+          {showTrainerOnboarding ? <TrainerOnboarding onGetStarted={handleTrainerOnboarding} /> : <StatsRow stats={statsData} />}
         </View>
-        {!showTrainerOnboarding && showOwnProfileFeatures && (
+        {!showTrainerOnboarding && !isTrainer && showOwnProfileFeatures && (
           <View style={styles.weeklyActivityCard}>
             <View style={styles.weeklyActivityHeader}>
               <Text style={styles.weeklyActivityTitle}>Weekly Activity</Text>
@@ -738,7 +737,15 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
             </View>
           </View>
         )}
-        {/* Menu List Section */}
+        {
+          isTrainer && !showTrainerOnboarding && (
+            <View style={{ marginTop: 60, width: '90%',margin:"auto"}}>
+              <BookingList bookings={bookingsData} />
+            </View>
+          
+          )
+        }
+
        {!showTrainerOnboarding&& <View
           style={[
             styles.menuListContainer,

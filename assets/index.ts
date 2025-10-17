@@ -34,6 +34,9 @@ export const StrengthTraining = require('../assets/strength.png');
 export const WeightLifting = require('../assets/weightlifting.png');
 export const Man=require('../assets/man.png');
 export const CommentRemove=require('../assets/comment_remove.png');
+export const Users2=require('../assets/users2.png');
+export const Request=require('../assets/request.png');
+export const Calender=require('../assets/calender.png');
 
 
 

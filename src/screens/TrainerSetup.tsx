@@ -14,37 +14,60 @@ import { COLORS, DIMENSIONS } from "../config/constants";
 import FontWeight from "../hooks/useInterFonts";
 import TrainerSetupStep1 from "../components/TrainerSetupStep1";
 import TrainerSetupStep2 from "../components/TrainerSetupStep2";
+import { useUser } from "../store/hooks";
+import { useUpdateMyProfileMutation } from "../services/api/userApi";
 import BasicTopBar from "../components/BasicTopBar";
 
 const TrainerSetup: React.FC = ({ navigation }: any) => {
+  const user = useUser();
   const [step, setStep] = useState(1);
-const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const [updateMyProfile] = useUpdateMyProfileMutation();
+
+  // Sync step with backend value on mount
+  useEffect(() => {
+    if (user?.trainerOnboardingStep && user.trainerOnboardingStep > 0 && user.trainerOnboardingStep <= 2) {
+      setStep(user.trainerOnboardingStep);
+    }
+  }, [user?.trainerOnboardingStep]);
+
   // Handlers for step navigation
-  const handleNext = () => setStep(2);
-  const handleSaveDraft = () =>
+  const handleNext = async () => {
+    setStep(2);
+    // Persist step 2 as progress
+    if (user?.trainerOnboardingStep !== 2) {
+      await updateMyProfile({ trainerOnboardingStep: 2 });
+    }
+  };
+  const handleSaveDraft = async () => {
+    // Save current step as draft (step 2, but not confirmed)
+    await updateMyProfile({ trainerOnboardingStep: 2 });
     alert("Draft saved. Your availability has been saved as draft.");
-  const handleConfirm = () => {
+  };
+  const handleConfirm = async () => {
+    // Mark onboarding as complete (step 0 or 3 = complete)
+    await updateMyProfile({ trainerOnboardingStep: 3 });
     alert("Profile is live! Your trainer profile is now active.");
     navigation.navigate("Home");
   };
-  useEffect(() => {  
+
+  useEffect(() => {
     const showSubscription = Keyboard.addListener("keyboardDidShow", () => {
       setIsKeyboardVisible(true);
     });
     const hideSubscription = Keyboard.addListener("keyboardDidHide", () => {
       setIsKeyboardVisible(false);
     });
-
     return () => {
-        showSubscription.remove();
-        hideSubscription.remove();
-      };
-  },[]);
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
 
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: COLORS.background }}
-      behavior={isKeyboardVisible?"height":undefined}
+      behavior={isKeyboardVisible ? "height" : undefined}
     >
       <SafeAreaView edges={[]} style={{ flex: 1 }}>
         <BasicTopBar
