@@ -80,8 +80,14 @@ const TrainerAvailability: React.FC<{ navigation: any }> = ({ navigation }) => {
             <View key={day} style={[styles.row, { flexWrap: 'wrap' }]}> 
               <Text style={styles.dayLabel}>{day}</Text>
               {availability[day].isOff ? (
-                <View style={styles.offBadgeContainer}>
-                  <Text style={styles.offBadge}>OFF</Text>
+                <View style={styles.timeInputs}>
+                  <View style={styles.offTimeBox}>
+                    <Text style={styles.offTimeText}>OFF</Text>
+                  </View>
+                  <Text style={styles.toText}>-</Text>
+                  <View style={styles.offTimeBox}>
+                    <Text style={styles.offTimeText}>OFF</Text>
+                  </View>
                 </View>
               ) : (
                 <View style={styles.timeInputs}>
@@ -91,7 +97,7 @@ const TrainerAvailability: React.FC<{ navigation: any }> = ({ navigation }) => {
                   >
                     <Text style={styles.timeText}>{availability[day].startTime}</Text>
                   </TouchableOpacity>
-                  <Text style={styles.toText}>to</Text>
+                  <Text style={styles.toText}>-</Text>
                   <TouchableOpacity
                     style={styles.timeBtn}
                     onPress={() => Alert.alert('Select end time')}
@@ -119,6 +125,21 @@ const TrainerAvailability: React.FC<{ navigation: any }> = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
+  offTimeBox: {
+    backgroundColor: '#E6E6E6',
+    borderRadius: 20,
+    paddingHorizontal: 18,
+    paddingVertical: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 50,
+  },
+  offTimeText: {
+    color: '#DA9393',
+    fontWeight: 'bold',
+    fontSize: 15,
+    textAlign: 'center',
+  },
   offBadgeContainer: {
     flex: 1,
     alignItems: 'center',
