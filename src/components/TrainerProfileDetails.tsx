@@ -1,16 +1,9 @@
 import React, { useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Platform,
-  Image,
-  Alert,
-} from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
 import { Picker } from "@react-native-picker/picker";
+import { Video, ResizeMode } from "expo-av";
 
 const YEARS = [
   { label: "1 Year", value: "1" },
@@ -28,7 +21,6 @@ const YEARS = [
 const TrainerProfileDetails: React.FC = () => {
   const [workExperience, setWorkExperience] = useState("7");
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
-  const [videoName, setVideoName] = useState<string | null>(null);
 
   const handleVideoUpload = async () => {
     try {
@@ -42,14 +34,13 @@ const TrainerProfileDetails: React.FC = () => {
         return;
       }
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+        mediaTypes: ["videos"],
         allowsEditing: false,
         quality: 1,
       });
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const asset = result.assets[0];
         setVideoPreview(asset.uri);
-        setVideoName(asset.fileName || "Selected Video");
       }
     } catch (error) {
       Alert.alert("Error", "Failed to pick video.");
@@ -84,19 +75,38 @@ const TrainerProfileDetails: React.FC = () => {
       {/* Intro Video Section */}
       <View style={styles.section}>
         <Text style={styles.label}>Intro Video</Text>
-        <TouchableOpacity style={styles.uploadBtn} onPress={handleVideoUpload}>
-          <Ionicons
-            name="videocam-outline"
-            size={20}
-            color="#2563eb"
-            style={{ marginRight: 8 }}
-          />
-          <Text style={styles.uploadBtnText}>Add Intro/Promotional Video</Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          <TouchableOpacity
+            style={styles.uploadBtn}
+            onPress={handleVideoUpload}
+          >
+            <Ionicons
+              name="videocam-outline"
+              size={20}
+              color="#2563eb"
+              style={{ marginRight: 8 }}
+            />
+            <Text style={styles.uploadBtnText}>
+              {videoPreview ? "Change Video" : "Add Intro/Promotional Video"}
+            </Text>
+          </TouchableOpacity>
+          {videoPreview && (
+            <TouchableOpacity
+              style={styles.removeVideoBtn}
+              onPress={() => setVideoPreview(null)}
+            >
+              <Text style={styles.removeVideoBtnText}>Remove Video</Text>
+            </TouchableOpacity>
+          )}
+        </View>
         {videoPreview ? (
           <View style={styles.videoPreviewBox}>
-            <VideoPlayer uri={videoPreview} />
-            <Text style={styles.videoName}>{videoName}</Text>
+            <Video
+              key={videoPreview} // Add this line
+              source={{ uri: videoPreview }}
+              style={{ width: "100%", height: "100%" }}
+              resizeMode={ResizeMode.COVER}
+            />
           </View>
         ) : (
           <View style={styles.videoPreviewBoxEmpty}>
@@ -108,37 +118,15 @@ const TrainerProfileDetails: React.FC = () => {
   );
 };
 
-const VideoPlayer: React.FC<{ uri: string }> = ({ uri }) => {
-  return (
-    <View
-      style={{
-        width: "100%",
-        aspectRatio: 16 / 9,
-        borderRadius: 10,
-        overflow: "hidden",
-        backgroundColor: "#f3f4f6",
-      }}
-    >
-      {/* For Expo/React Native, use expo-av for video playback */}
-      {/* Replace below with expo-av <Video> for real playback */}
-      <Text style={{ textAlign: "center", marginTop: 40, color: "#888" }}>
-        [Video Preview Here]
-      </Text>
-    </View>
-  );
-};
-
 const styles = StyleSheet.create({
   container: {
     width: "100%",
     maxWidth: 400,
     alignSelf: "center",
     backgroundColor: "#fff",
-
     padding: 20,
     marginTop: 24,
     marginBottom: 24,
-    shadowRadius: 6,
     borderRadius: 8,
     boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
     elevation: 4,
@@ -179,6 +167,18 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     fontSize: 15,
   },
+  removeVideoBtn: {
+    marginLeft: 12,
+    backgroundColor: "transparent",
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+  },
+  removeVideoBtnText: {
+    color: "#ef4444",
+    fontWeight: "600",
+    fontSize: 15,
+  },
   videoPreviewBox: {
     width: "100%",
     aspectRatio: 16 / 9,
@@ -201,11 +201,6 @@ const styles = StyleSheet.create({
   videoEmptyText: {
     color: "#888",
     fontSize: 14,
-  },
-  videoName: {
-    color: "#888",
-    fontSize: 13,
-    marginTop: 4,
   },
 });
 
