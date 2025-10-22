@@ -221,7 +221,7 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
     } else if (action === "profile") {
       const member = members.find((m: any) => m.id.toString() === memberId);
       if (member) {
-        navigation.navigate('UserProfile', { userId: member.id, user: member });
+        navigation.navigate('UserProfile', { userId: member.id?.toString?.() || member.id, isGuest: true });
       } else {
         Toast.error('User not found');
       }

@@ -183,7 +183,11 @@ const GroupsScreen: React.FC<GroupsScreenProps> = ({ navigation }) => {
           refreshing={refreshing}
           onRefresh={handleRefresh}
         >
-          {userGroups.map((group) => renderGroupItem({ item: group }))}
+          {userGroups.map((group) => (
+            <React.Fragment key={group.id}>
+              {renderGroupItem({ item: group })}
+            </React.Fragment>
+          ))}
           {isFetching && page > 1 && (
             <View style={{ padding: 10, alignItems: 'center' }}>
               <ActivityIndicator size="small" color={COLORS.primary} />

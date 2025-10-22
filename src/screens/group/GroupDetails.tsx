@@ -11,6 +11,7 @@ import {
   Modal,
   ActivityIndicator,
 } from "react-native";
+import { Menu } from "react-native-paper";
 import RefreshableScrollView from '../../components/RefreshableScrollView';
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -33,6 +34,7 @@ import { Group } from "../../types";
 import ManageGroup from "./ManageGroup";
 import BasicTopBar from "../../components/BasicTopBar";
 import { useGetGroupByIdQuery, useGetGroupMembersQuery, useGetGroupPostsQuery, useJoinGroupMutation, useDeleteGroupMutation } from "../../services/api/groupsApi";
+import { useLeaveGroupMutation } from '../../services/api/leaveGroup';
 import { useAuth } from "../../contexts/AuthContext";
 import { Toast } from "../../components/ToastManager";
 
@@ -404,6 +406,7 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({ navigation, route, group: p
   const [membersPage, setMembersPage] = useState(1);
   const [postsPage, setPostsPage] = useState(1);
   const [refreshing, setRefreshing] = useState(false);
+  const [memberMenuVisible, setMemberMenuVisible] = useState<string | null>(null);
 
   // Get group from props or route
   const passedGroup = propGroup || route?.params?.group;
@@ -433,10 +436,21 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({ navigation, route, group: p
   const group = (groupData?.status && groupData?.data) ? groupData.data : passedGroup;
   const members = (membersData?.status && membersData?.data?.members) ? membersData.data.members : [];
 
-  // Exit group handler (to be implemented)
+  // Exit group handler
+  const [leaveGroup, { isLoading: isLeaving }] = useLeaveGroupMutation();
   const handleExitGroup = async () => {
-    // TODO: Implement exit group API call
-    Toast.info('Exit group feature coming soon');
+    if (!group?.id) return;
+    try {
+      await leaveGroup(group.id.toString()).unwrap();
+      Toast.success('You have left the group');
+      if (typeof onClose === 'function') {
+        onClose();
+      } else if (navigation && typeof navigation.goBack === 'function') {
+        navigation.goBack();
+      }
+    } catch (error: any) {
+      Toast.error(error?.data?.message || 'Failed to leave group');
+    }
   };
 
   const handleDeleteGroup = async () => {
@@ -458,6 +472,12 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({ navigation, route, group: p
   const isCreator = user?.id && group?.creatorId && Number(user.id) === Number(group.creatorId);
   // Check if current user is a member (you may need to add this logic based on your data structure)
   const isMember = group?.isMember || isCreator;
+
+  // Handler for viewing a member's profile
+  const handleViewProfile = (member: any) => {
+    setMemberMenuVisible(null);
+    navigation?.navigate('UserProfile', { userId: member.id?.toString?.() || member.id, isGuest: true });
+  };
 
   // Posts and pagination
   const posts = (postsData?.status && postsData?.data?.posts) ? postsData.data.posts : [];
@@ -629,40 +649,51 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({ navigation, route, group: p
             <Text style={styles.membersCount}>{group?.memberCount || 0} Members</Text>
           </View>
 
-          <View style={styles.membersContent}>
-            <View style={styles.avatarsContainer}>
-              {members.slice(0, 3).map((member, index) => (
-                <View
-                  key={member.id || index}
-                  style={[
-                    styles.memberAvatar,
-                    { backgroundColor: COLORS.primary },
-                    index > 0 && { marginLeft: -12 },
-                  ]}
-                >
-                  <Text style={styles.memberAvatarText}>
-                    {(member.displayName?.charAt(0) || member.userName?.charAt(0) || 'U').toUpperCase()}
-                  </Text>
-                </View>
-              ))}
-              {group?.memberCount && group.memberCount > 3 && (
-                <View
-                  style={[
-                    styles.memberAvatar,
-                    styles.memberCountAvatar,
-                    { marginLeft: -12 },
-                  ]}
-                >
-                  <Text style={styles.memberCountText}>
-                    +{group?.memberCount ? group.memberCount - 3 : 0}
-                  </Text>
-                </View>
-              )}
-            </View>
-            <TouchableOpacity>
-              <Text style={styles.viewListText}>View list</Text>
-            </TouchableOpacity>
+          <View style={styles.avatarsContainer}>
+            {members.slice(0, 3).map((member, index) => (
+              <Menu
+                key={member.id || index}
+                visible={memberMenuVisible === (member.id?.toString?.() || member.id)}
+                onDismiss={() => setMemberMenuVisible(null)}
+                anchor={
+                  <TouchableOpacity
+                    style={[
+                      styles.memberAvatar,
+                      { backgroundColor: COLORS.primary },
+                      index > 0 && { marginLeft: -12 },
+                    ]}
+                    onPress={() => setMemberMenuVisible(member.id?.toString?.() || member.id)}
+                  >
+                    <Text style={styles.memberAvatarText}>
+                      {(member.displayName?.charAt(0) || member.userName?.charAt(0) || 'U').toUpperCase()}
+                    </Text>
+                  </TouchableOpacity>
+                }
+                contentStyle={{ minWidth: 140 }}
+              >
+                <Menu.Item
+                  onPress={() => handleViewProfile(member)}
+                  title="View Profile"
+                />
+              </Menu>
+            ))}
+            {group?.memberCount && group.memberCount > 3 && (
+              <View
+                style={[
+                  styles.memberAvatar,
+                  styles.memberCountAvatar,
+                  { marginLeft: -12 },
+                ]}
+              >
+                <Text style={styles.memberCountText}>
+                  +{group?.memberCount ? group.memberCount - 3 : 0}
+                </Text>
+              </View>
+            )}
           </View>
+          <TouchableOpacity>
+            <Text style={styles.viewListText}>View list</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Recent Posts Section */}
@@ -711,8 +742,9 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({ navigation, route, group: p
               )}
             </>
           )}
+
         </View>
-  </RefreshableScrollView>
+      </RefreshableScrollView>
 
       <TouchableOpacity style={styles.fab}>
         <Image source={Add} style={{ width: 20, height: 20 }} />
