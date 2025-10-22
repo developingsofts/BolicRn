@@ -320,7 +320,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
   const renderFollowingView = () => {
     return (
       <View style={styles.followingRow}>
-        <TouchableOpacity 
+        {/* <TouchableOpacity 
           style={styles.followingMainBtn}
           onPress={handleBookTrainer}
         >
@@ -328,7 +328,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
             <Ionicons name="calendar" size={20} color={COLORS.gradient1} />
             <Text style={styles.followingText}>Book Session</Text>
           </View>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
         <TouchableOpacity style={styles.followingMainBtn}>
           <View style={styles.followingMainBtnContent}>
             <Image source={Following} style={styles.smallIconSize} />
@@ -576,7 +576,11 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
                   }
                 } else {
                   if (item.id === "posts") {
-                    navigation.navigate("MyPosts");
+                    if (isOwnProfile) {
+                      navigation.navigate("MyPosts");
+                    } else {
+                      navigation.navigate("MyPosts", { userId });
+                    }
                   } else if (item.id === "workout-history") {
                     navigation.navigate("WorkoutHistory");
                   } else if (item.id === "connections") {

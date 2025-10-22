@@ -1,5 +1,3 @@
-
-
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, Alert } from 'react-native';
 import RefreshableScrollView from '../components/RefreshableScrollView';
@@ -11,30 +9,16 @@ import FontWeight from '../hooks/useInterFonts';
 import { useAuth } from '../contexts/AuthContext';
 import { useGetUserPostsQuery } from '../services/api';
 
-const mockPosts = [
-  {
-    id: '1',
-    content: 'Great morning run! Feeling energized for the day. Who else got their workout in?',
-    timestamp: '1d ago',
-    likes: 241,
-    comments: 4,
-    hasImage: false,
-  },
-  {
-    id: '2',
-    content: 'Great morning run! Feeling energized for the day. Who else got their workout in?',
-    timestamp: '2d ago',
-    likes: 21,
-    comments: 2,
-    hasImage: true,
-  },
-];
 
-const MyPosts: React.FC = ({ navigation }: any) => {
+const MyPosts: React.FC = ({ navigation, route }: any) => {
   const { user } = useAuth();
-  const [posts, setPosts] = useState(mockPosts);
+  // Accept userId from route params (if present)
+  const userId = route?.params?.userId || user?.id;
+  const isOwnProfile = !route?.params?.userId || route?.params?.userId === user?.id;
   const [refreshing, setRefreshing] = useState(false);
-  const { refetch: refetchPosts } = useGetUserPostsQuery({ userId: user?.id || '' }, { skip: !user?.id });
+  // Fetch posts for the correct user
+  const { data: postsData, refetch: refetchPosts, isLoading } = useGetUserPostsQuery({ userId }, { skip: !userId });
+  const posts = postsData && postsData.status && 'data' in postsData ? postsData.data.posts : [];
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -43,15 +27,19 @@ const MyPosts: React.FC = ({ navigation }: any) => {
   };
 
   const handlePostAction = (action: string, postId: string) => {
-    Alert.alert(`${action} post ${postId}`);
+    if (action === 'create') {
+      navigation.navigate('CreatePost');
+    } else {
+      Alert.alert(`${action} post ${postId}`);
+    }
   };
 
   return (
     <SafeAreaView edges={[]} style={styles.container}>
       <BasicTopBar
         onBackPress={() => navigation.goBack()}
-        title="My Posts"
-        subtitle="View / Manage your shared posts"
+        title={isOwnProfile ? 'My Posts' : 'Posts'}
+        subtitle={isOwnProfile ? 'View / Manage your shared posts' : 'Posts shared by this user'}
         containerStyle={{ paddingTop: DIMENSIONS.spacing.xxl, paddingBottom: DIMENSIONS.spacing.lg }}
       />
 
@@ -61,61 +49,69 @@ const MyPosts: React.FC = ({ navigation }: any) => {
         refreshing={refreshing}
         onRefresh={handleRefresh}
       >
-        <TouchableOpacity
-          style={styles.createPostButton}
-          onPress={() => handlePostAction('create', '')}
-        >
-          <Text style={styles.createPostButtonText}>Create New Post</Text>
-        </TouchableOpacity>
+        {isOwnProfile && (
+          <TouchableOpacity
+            style={styles.createPostButton}
+            onPress={() => handlePostAction('create', '')}
+          >
+            <Text style={styles.createPostButtonText}>Create New Post</Text>
+          </TouchableOpacity>
+        )}
 
         <View style={styles.postsList}>
-          {posts.map((post) => (
-            <View key={post.id} style={styles.postCard}>
-              <View style={styles.postHeader}>
-                <View style={styles.avatarContainer}>
-                  {user?.imageUrl ? (
-                    <Image source={{ uri: user.imageUrl }} style={styles.avatarImage} />
-                  ) : (
-                    <Text style={styles.avatarText}>{user?.displayName?.charAt(0) || 'U'}</Text>
+          {isLoading ? (
+            <Text>Loading...</Text>
+          ) : posts.length === 0 ? (
+            <Text style={{ textAlign: 'center', color: COLORS._5E5E5E, marginTop: 32 }}>No posts yet.</Text>
+          ) : (
+            posts.map((post: any) => (
+              <View key={post.id} style={styles.postCard}>
+                <View style={styles.postHeader}>
+                  <View style={styles.avatarContainer}>
+                    {post.user?.imageUrl ? (
+                      <Image source={{ uri: post.user.imageUrl }} style={styles.avatarImage} />
+                    ) : (
+                      <Text style={styles.avatarText}>{post.user?.displayName?.charAt(0) || 'U'}</Text>
+                    )}
+                  </View>
+                  <View style={styles.postHeaderInfo}>
+                    <Text style={styles.postUserName}>{post.user?.displayName || 'User'}</Text>
+                    <Text style={styles.postTimestamp}>{post.createdAt ? new Date(post.createdAt).toLocaleDateString() : ''}</Text>
+                  </View>
+                  {isOwnProfile && (
+                    <TouchableOpacity
+                      style={styles.postMenuButton}
+                      onPress={() => handlePostAction('menu', post.id)}
+                    >
+                      <Text style={styles.postMenuDots}>⋮</Text>
+                    </TouchableOpacity>
                   )}
                 </View>
-                <View style={styles.postHeaderInfo}>
-                  <Text style={styles.postUserName}>{user?.displayName || 'You'}</Text>
-                  <Text style={styles.postTimestamp}>{post.timestamp}</Text>
-                </View>
-                <TouchableOpacity
-                  style={styles.postMenuButton}
-                  onPress={() => handlePostAction('menu', post.id)}
-                >
-                  <Text style={styles.postMenuDots}>⋮</Text>
-                </TouchableOpacity>
-              </View>
 
-              <Text style={styles.postContent}>{post.content}</Text>
+                <Text style={styles.postContent}>{post.title || post.content}</Text>
 
-              {post.hasImage && (
-                <View style={styles.postImagePlaceholder} />
-              )}
+                {post.mediaUrl && (
+                  <Image source={{ uri: post.mediaUrl }} style={styles.postImagePlaceholder} />
+                )}
 
-              <View style={styles.postMetaRow}>
-                <Text style={styles.postTimestampLeft}>{post.timestamp}</Text>
-                <View style={styles.postMetaIconsRight}>
-                  <View style={styles.postMetaItem}>
-                    <Image source={Like} style={styles.postMetaIconImage} />
-                    <Text style={styles.postMetaText}>{post.likes}</Text>
-                  </View>
-                  <View style={styles.postMetaItem}>
-                    <Image source={CommentIcon} style={styles.postMetaIconImage} />
-                    <Text style={styles.postMetaText}>{post.comments}</Text>
+                <View style={styles.postMetaRow}>
+                  <Text style={styles.postTimestampLeft}>{post.createdAt ? new Date(post.createdAt).toLocaleDateString() : ''}</Text>
+                  <View style={styles.postMetaIconsRight}>
+                    <View style={styles.postMetaItem}>
+                      <Image source={Like} style={styles.postMetaIconImage} />
+                      <Text style={styles.postMetaText}>{post.likeCount || 0}</Text>
+                    </View>
+                    <View style={styles.postMetaItem}>
+                      <Image source={CommentIcon} style={styles.postMetaIconImage} />
+                      <Text style={styles.postMetaText}>{post.commentCount || 0}</Text>
+                    </View>
                   </View>
                 </View>
               </View>
-            </View>
-          ))}
+            ))
+          )}
         </View>
-  </RefreshableScrollView>
-
-
+      </RefreshableScrollView>
     </SafeAreaView>
   );
 };
