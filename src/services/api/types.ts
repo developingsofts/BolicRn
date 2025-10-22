@@ -23,6 +23,7 @@ export interface AuthCredentials {
 export interface RegisterPayload {
   email: string;
   password: string;
+  role?: 'user' | 'trainer';
   displayName?: string;
   phoneNumber?: string;
   age?: string;
