@@ -27,6 +27,8 @@ export interface User {
   role?: 'user' | 'trainer';
   createdAt: Date;
   updatedAt: Date;
+  workExperience?: string;
+  introVideo?: string; // URL or file path to intro video
 }
 
 export interface UserProfile {

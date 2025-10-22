@@ -53,10 +53,17 @@ const averageRating = 4.8;
 const totalReviews = 24;
 
 const MyRatings: React.FC = ({ navigation }: any) => {
+  const handleBack = () => {
+    if (navigation.canGoBack && navigation.canGoBack()) {
+      navigation.goBack();
+    } else {
+      navigation.navigate('Profile');
+    }
+  };
   return (
     <SafeAreaView edges={[]} style={styles.container}>
       <BasicTopBar
-        onBackPress={() => navigation.goBack()}
+        onBackPress={handleBack}
         title="My Ratings"
         subtitle="Track your achievements"
         containerStyle={{ paddingTop: DIMENSIONS.spacing.xxl, paddingBottom: DIMENSIONS.spacing.lg }}

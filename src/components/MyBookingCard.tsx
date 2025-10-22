@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { COLORS } from "../config/constants";
 import FontWeight from "../hooks/useInterFonts";
+import ConfirmDialog from "./ConfirmDialog";
 
 interface MyBookingCardProps {
   id: string;
@@ -27,9 +28,15 @@ const MyBookingCard = ({
   hideActions,
   navigation,
 }: MyBookingCardProps) => {
+  const [showDeclineDialog, setShowDeclineDialog] = useState(false);
+
   const handleDecline = () => {
+    setShowDeclineDialog(true);
+  };
+
+  const handleDeclineConfirm = () => {
+    setShowDeclineDialog(false);
     if (onDecline) onDecline(clientName);
-    else alert(`You've declined the booking with ${clientName}`);
   };
 
   const handleReschedule = () => {
@@ -88,6 +95,17 @@ const MyBookingCard = ({
           </TouchableOpacity>
         </View>
       )}
+      <ConfirmDialog
+        visible={showDeclineDialog}
+        onClose={() => setShowDeclineDialog(false)}
+        onConfirm={handleDeclineConfirm}
+        title="Decline Client Request"
+        description={`Confirm if you wish to decline upcoming client session request for the ${date} ${timeRange}.
+
+Client will be notified and refund will be initiated.`}
+        confirmText="Decline"
+        cancelText="Cancel"
+      />
     </View>
   );
 };

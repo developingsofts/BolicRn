@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { Image } from "react-native";
+import ConfirmDialog from "./ConfirmDialog";
 
 interface BookingCardProps {
   id: string;
@@ -24,6 +25,17 @@ const BookingCard: React.FC<BookingCardProps> = ({
   onAccept,
   onDecline,
 }) => {
+  const [showDeclineDialog, setShowDeclineDialog] = useState(false);
+
+  const handleDecline = () => {
+    setShowDeclineDialog(true);
+  };
+
+  const handleDeclineConfirm = () => {
+    setShowDeclineDialog(false);
+    if (onDecline) onDecline();
+  };
+
   return (
     <View style={styles.card}>
       <View style={styles.headerRow}>
@@ -43,7 +55,7 @@ const BookingCard: React.FC<BookingCardProps> = ({
       <View style={styles.buttonRow}>
         <TouchableOpacity
           style={[styles.button, styles.declineButton]}
-          onPress={onDecline}
+          onPress={handleDecline}
         >
           <Text style={styles.declineText}>Decline</Text>
         </TouchableOpacity>
@@ -54,6 +66,17 @@ const BookingCard: React.FC<BookingCardProps> = ({
           <Text style={styles.acceptText}>Accept</Text>
         </TouchableOpacity>
       </View>
+      <ConfirmDialog
+        visible={showDeclineDialog}
+        onClose={() => setShowDeclineDialog(false)}
+        onConfirm={handleDeclineConfirm}
+        title="Decline Client Request"
+        description={`Confirm if you wish to decline upcoming client session request for the ${date} ${timeRange}.
+
+Client will be notified and refund will be initiated.`}
+        confirmText="Decline"
+        cancelText="Cancel"
+      />
     </View>
   );
 };

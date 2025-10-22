@@ -23,6 +23,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { r } from "../designing/responsiveDesigns";
 import { useUpdateMyProfileWithImageMutation, useUpdateMyProfileMutation } from "../services/api/userApi";
 import { Toast } from "../components/ToastManager";
+import TrainerProfileDetails from "../components/TrainerProfileDetails";
 
 interface EditProfileScreenProps {
   navigation: any;
@@ -444,7 +445,9 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
         {renderProfileAvatar()}
         <View style={styles.formWrapper}>
             {renderProfileForm()}
-
+      {user?.role === 'trainer' && (
+          <TrainerProfileDetails />
+        )}
             <TouchableOpacity 
               style={[styles.saveBtn, isLoading && styles.saveBtnDisabled]} 
               onPress={handleSave}
@@ -468,10 +471,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.white,
+   
   },
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: 0,
+   paddingBottom:0
+
   },
   profileHeader: {
     backgroundColor: COLORS.gradient3,
@@ -579,6 +584,8 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     paddingHorizontal: 20,
     gap: 20,
+    paddingBottom: 90,
+    
   },
   profileFormContainer: {
     width: "100%",
@@ -675,7 +682,6 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     alignItems: "center",
     zIndex: 10,
-    marginTop: 16,
 
   },
   saveBtnDisabled: {

@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import BasicTopBar from '../components/BasicTopBar';
 import { COLORS, DIMENSIONS } from '../config/constants';
 import { Ionicons } from '@expo/vector-icons';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 interface Package {
   id: string;
@@ -35,10 +36,22 @@ const initialPackages: Package[] = [
 
 const TrainerPricing: React.FC<{ navigation: any }> = ({ navigation }) => {
   const [packages, setPackages] = useState<Package[]>(initialPackages);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const handleDelete = (id: string) => {
-    setPackages(packages.filter((pkg) => pkg.id !== id));
-    Alert.alert('Package deleted successfully!');
+    setDeleteId(id);
+    setShowDeleteDialog(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (deleteId) {
+      setPackages(packages.filter((pkg) => pkg.id !== deleteId));
+    }
+    setShowDeleteDialog(false);
+    setDeleteId(null);
+    // Optionally show a toast or alert here
+    // Alert.alert('Package deleted successfully!');
   };
 
   const handleEdit = (id: string) => {
@@ -89,6 +102,17 @@ const TrainerPricing: React.FC<{ navigation: any }> = ({ navigation }) => {
           </TouchableOpacity>
         </View>
       </ScrollView>
+      <ConfirmDialog
+        visible={showDeleteDialog}
+        onClose={() => setShowDeleteDialog(false)}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Session"
+        description={
+          `Once session is deleted, your upcoming applications for the session will be cancelled and users will be notified.`
+        }
+        confirmText="Delete"
+        cancelText="Cancel"
+      />
     </SafeAreaView>
   );
 };
