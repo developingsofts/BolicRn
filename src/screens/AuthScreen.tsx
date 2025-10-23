@@ -31,10 +31,12 @@ import { setUser } from "../store/userSlice";
 import { storageService } from "../services/storage";
 import { User } from "../types";
 import { SUCCESS_MESSAGES, ERROR_MESSAGES } from "../config/constants";
-import {
-  loginSchema,
-  signUpSchema,
-} from "../validation/authSchemas";
+import { loginSchema, signUpSchema } from "../validation/authSchemas";
+import RoleSelection from "../components/RoleSelection";
+import OnboardingStepHeader from "../components/OnboardingStepHeader";
+import UserProfileForm from "../components/UserProfileForm";
+import TrainerProfileDetails from "../components/TrainerProfileDetails";
+import CreateAccountForm from "../components/CreateAccountForm";
 
 const { width, height } = Dimensions.get("window");
 
@@ -63,8 +65,10 @@ interface SignUpFormValues {
 export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
   const dispatch = useAppDispatch();
   const [triggerLogin, { isLoading: isLoginLoading }] = useLoginMutation();
-  const [triggerRegister, { isLoading: isRegisterLoading }] = useRegisterMutation();
-  const [updateProfile, { isLoading: isUpdatingProfile }] = useUpdateMyProfileMutation();
+  const [triggerRegister, { isLoading: isRegisterLoading }] =
+    useRegisterMutation();
+  const [updateProfile, { isLoading: isUpdatingProfile }] =
+    useUpdateMyProfileMutation();
   const isMutating = isLoginLoading || isRegisterLoading || isUpdatingProfile;
 
   // Form state
@@ -72,8 +76,12 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
   const [isPhoneVerified, setIsPhoneVerified] = useState(false);
   const [isSendingCode, setIsSendingCode] = useState(false);
   const [isVerifyingCode, setIsVerifyingCode] = useState(false);
-  const [expectedVerificationCode, setExpectedVerificationCode] = useState<string | null>(null);
-  const [verifiedPhoneNumber, setVerifiedPhoneNumber] = useState<string | null>(null); // Track which number was sent code
+  const [expectedVerificationCode, setExpectedVerificationCode] = useState<
+    string | null
+  >(null);
+  const [verifiedPhoneNumber, setVerifiedPhoneNumber] = useState<string | null>(
+    null
+  ); // Track which number was sent code
   const [authToken, setAuthToken] = useState<string | null>(null); // Store token after step 1
   const FINAL_SIGN_UP_STEP = 6;
   const [signUpStep, setSignUpStep] = useState(0);
@@ -139,12 +147,13 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
     ]).start();
   }, []);
 
-  const hydrateUser = async (payload: { user: User; token: string }, successMessage?: string) => {
-    console.log('🔐 hydrateUser called with:', { hasUser: !!payload.user, hasToken: !!payload.token });
+  const hydrateUser = async (
+    payload: { user: User; token: string },
+    successMessage?: string
+  ) => {
     // Only save token, not user profile
     await storageService.setAuthToken(payload.token);
     dispatch(setUser(payload));
-    console.log('✅ User dispatched to Redux, isAuthenticated should now be true');
     Toast.success(successMessage ?? SUCCESS_MESSAGES.loginSuccess);
   };
 
@@ -153,7 +162,11 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
       const response = await triggerLogin(values).unwrap();
 
       if (response.status && response.data) {
-        const { token, password: _password, ...rest } = response.data as Record<string, unknown> & {
+        const {
+          token,
+          password: _password,
+          ...rest
+        } = response.data as Record<string, unknown> & {
           token?: string;
           password?: string;
           onboardingStep?: number;
@@ -164,53 +177,56 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
         }
 
         const sanitizedUser = rest as unknown as User;
-        
+
         // Check if user needs to complete onboarding
         const onboardingStep = sanitizedUser.onboardingStep || 0;
-        
+
         if (onboardingStep > 0 && onboardingStep < 7) {
           // User has incomplete onboarding - switch to signup mode and resume
-          console.log('🔄 Resuming onboarding from step:', onboardingStep);
+          console.log("🔄 Resuming onboarding from step:", onboardingStep);
           setIsSignUp(true);
           setSignUpStep(onboardingStep);
           setAuthToken(token);
           await storageService.setAuthToken(token);
-          
+
           // Pre-fill form values from user data
           setSignUpFormValues({
-            email: sanitizedUser.email || '',
-            password: '',
-            displayName: sanitizedUser.displayName || '',
-            phoneNumber: sanitizedUser.phoneNumber || '',
-            verificationCode: '',
-            age: sanitizedUser.age?.toString() || '',
+            email: sanitizedUser.email || "",
+            password: "",
+            displayName: sanitizedUser.displayName || "",
+            phoneNumber: sanitizedUser.phoneNumber || "",
+            verificationCode: "",
+            age: sanitizedUser.age?.toString() || "",
             trainingTypes: sanitizedUser.trainingTypes || [],
-            genderPreference: sanitizedUser.genderPreference || '',
-            userGender: sanitizedUser.userGender || '',
-            currentPRs: sanitizedUser.currentPRs || '',
+            genderPreference: sanitizedUser.genderPreference || "",
+            userGender: sanitizedUser.userGender || "",
+            currentPRs: sanitizedUser.currentPRs || "",
           });
-          
+
           // If phone was already verified, set that state
           if (sanitizedUser.phoneVerified) {
             setIsPhoneVerified(true);
             setVerifiedPhoneNumber(sanitizedUser.phoneNumber || null);
           }
-          
+
           Toast.success("Welcome back! Please complete your profile setup.");
           return;
         }
-        
+
         // User has completed onboarding - proceed with normal login
-        await hydrateUser({ user: sanitizedUser, token }, response.message || STRINGS.AUTH.success.loggedIn);
+        await hydrateUser(
+          { user: sanitizedUser, token },
+          response.message || STRINGS.AUTH.success.loggedIn
+        );
       } else {
         throw new Error(response.message || ERROR_MESSAGES.authenticationError);
       }
     } catch (error: any) {
       // Handle RTK Query errors
       let message = "Authentication failed";
-      
-      console.error('Login error:', error);
-      
+
+      console.error("Login error:", error);
+
       // RTK Query error structure
       if (error?.data?.message) {
         // Backend error response
@@ -230,12 +246,12 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
         } else if (error.status === 500) {
           message = "Server error. Please try again later.";
         }
-      } else if (typeof error === 'string') {
+      } else if (typeof error === "string") {
         message = error;
       }
-      
+
       Toast.error(message);
-      console.log('Error toast shown:', message);
+      console.log("Error toast shown:", message);
     }
   };
 
@@ -249,10 +265,16 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
         }).unwrap();
 
         if (!registrationResponse.status) {
-          throw new Error(registrationResponse.message || ERROR_MESSAGES.authenticationError);
+          throw new Error(
+            registrationResponse.message || ERROR_MESSAGES.authenticationError
+          );
         }
 
-        const { token, password: _password, ...rest } = registrationResponse.data as Record<string, unknown> & {
+        const {
+          token,
+          password: _password,
+          ...rest
+        } = registrationResponse.data as Record<string, unknown> & {
           token?: string;
           password?: string;
         };
@@ -265,20 +287,21 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
         setAuthToken(token);
         await storageService.setAuthToken(token);
 
-        console.log('✅ Account created, token saved. Now collecting additional info...');
+        console.log(
+          "✅ Account created, token saved. Now collecting additional info..."
+        );
         // Don't show toast here - only show on final step
-        
+
         // Move to next step after successful account creation
         nextStep();
         return;
       }
-      
     } catch (error: any) {
       // Handle RTK Query errors
       let message = "Authentication failed";
-      
+
       // console.error('Signup error:', error);
-      
+
       // RTK Query error structure
       if (error?.data?.message) {
         // Backend error response (e.g., "Email already exists")
@@ -292,14 +315,15 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
       } else if (error?.status) {
         // HTTP status code errors
         if (error.status === 409 || error.status === 400) {
-          message = "This email is already registered. Please use a different email or sign in.";
+          message =
+            "This email is already registered. Please use a different email or sign in.";
         } else if (error.status === 500) {
           message = "Server error. Please try again later.";
         }
-      } else if (typeof error === 'string') {
+      } else if (typeof error === "string") {
         message = error;
       }
-      
+
       Toast.error(message);
       // console.log('Error toast shown:', message);
     }
@@ -371,7 +395,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
       if (verificationCode.trim() === expectedVerificationCode) {
         setIsPhoneVerified(true);
         // Don't show toast here - only show on final step
-        console.log('Phone verified successfully');
+        console.log("Phone verified successfully");
         nextStep();
       } else {
         Toast.error(STRINGS.AUTH.errors.invalidCode);
@@ -398,26 +422,30 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
     validateForm: any
   ) => {
     // Helper function to convert gender preference UI value to backend value
-    const convertGenderPreference = (preference: string, userGender: string): string => {
-      if (preference === 'All') return 'all';
-      if (preference === 'Same Gender Only') {
+    const convertGenderPreference = (
+      preference: string,
+      userGender: string
+    ): string => {
+      if (preference === "All") return "all";
+      if (preference === "Same Gender Only") {
         // Convert user's gender to lowercase
         return userGender.toLowerCase();
       }
-      if (preference === 'Opposite Gender Only') {
+      if (preference === "Opposite Gender Only") {
         // Return opposite gender(s)
         const gender = userGender.toLowerCase();
-        if (gender === 'male') return 'female';
-        if (gender === 'female') return 'male';
-        if (gender === 'non-binary' || gender === 'prefer not to say') return 'all'; // Non-binary and prefer not to say sees all
-        return 'all';
+        if (gender === "male") return "female";
+        if (gender === "female") return "male";
+        if (gender === "non-binary" || gender === "prefer not to say")
+          return "all"; // Non-binary and prefer not to say sees all
+        return "all";
       }
       return preference.toLowerCase();
     };
 
     const handleNextWithValidation = async () => {
       const validationErrors = await validateForm();
-      
+
       // Get field names for current step
       let fieldsToValidate: string[] = [];
       switch (signUpStep) {
@@ -449,11 +477,15 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
           break;
       }
 
-      const hasErrors = fieldsToValidate.some(field => validationErrors[field]);
-      
+      const hasErrors = fieldsToValidate.some(
+        (field) => validationErrors[field]
+      );
+
       if (hasErrors) {
         // Show first error
-        const firstError = fieldsToValidate.find(field => validationErrors[field]);
+        const firstError = fieldsToValidate.find(
+          (field) => validationErrors[field]
+        );
         if (firstError) {
           Toast.error(validationErrors[firstError]);
         }
@@ -470,15 +502,20 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
       // Steps 1-6: Update profile with current step data
       try {
         const updateData: any = {};
-        
+
         // Always update onboarding step to track progress
         updateData.onboardingStep = signUpStep;
-        
+
         switch (signUpStep) {
           case 1: // Phone Number
             // Check if verification code was sent to this phone number
-            if (!verifiedPhoneNumber || values.phoneNumber.trim() !== verifiedPhoneNumber) {
-              Toast.error("Please send verification code to this phone number first");
+            if (
+              !verifiedPhoneNumber ||
+              values.phoneNumber.trim() !== verifiedPhoneNumber
+            ) {
+              Toast.error(
+                "Please send verification code to this phone number first"
+              );
               return;
             }
             updateData.phoneNumber = values.phoneNumber;
@@ -497,19 +534,27 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
             break;
           case 6: // Gender & Preferences
             updateData.userGender = values.userGender.toLowerCase();
-            updateData.genderPreference = convertGenderPreference(values.genderPreference, values.userGender);
+            updateData.genderPreference = convertGenderPreference(
+              values.genderPreference,
+              values.userGender
+            );
             if (values.currentPRs) updateData.currentPRs = values.currentPRs;
             // Mark onboarding as complete
             updateData.onboardingStep = 7;
             break;
         }
 
-        console.log(`📤 Step ${signUpStep}: Updating profile with:`, Object.keys(updateData));
+        console.log(
+          `📤 Step ${signUpStep}: Updating profile with:`,
+          Object.keys(updateData)
+        );
 
         const updateResponse = await updateProfile(updateData).unwrap();
 
         if (!updateResponse.status) {
-          throw new Error(updateResponse.message || ERROR_MESSAGES.authenticationError);
+          throw new Error(
+            updateResponse.message || ERROR_MESSAGES.authenticationError
+          );
         }
 
         // Don't show toast for intermediate steps - only on final step
@@ -520,7 +565,10 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
         // If this is the final step, hydrate user and navigate
         if (signUpStep === FINAL_SIGN_UP_STEP) {
           const sanitizedUser = updateResponse.data as User;
-          await hydrateUser({ user: sanitizedUser, token: authToken! }, "Account created successfully!");
+          await hydrateUser(
+            { user: sanitizedUser, token: authToken! },
+            "Account created successfully!"
+          );
         } else {
           // Move to next step
           setSignUpFormValues({ ...signUpFormValues, ...values });
@@ -528,402 +576,54 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
         }
       } catch (error: any) {
         let message = "Failed to update profile";
-        
+
         if (error?.data?.message) {
           message = error.data.message;
         } else if (error?.message) {
           message = error.message;
         }
-        
+
         Toast.error(message);
       }
     };
-
+    const navigationbtns = (
+      <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+        <TouchableOpacity style={styles.backButton} onPress={prevStep}>
+          <Text style={styles.backBtnText}>Back</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.nextButton}
+          onPress={handleNextWithValidation}
+        >
+          <Text style={styles.nextButtonText}>{STRINGS.AUTH.next}</Text>
+        </TouchableOpacity>
+      </View>
+    );
     switch (signUpStep) {
-      case 0: // Email/Password
+      case 0: 
+        return (
+            <RoleSelection onNext={(role) => setSignUpStep(1)} />
+        );
+
+      case 1: 
         return (
           <View style={styles.stepContainer}>
-            <Text style={styles.stepTitle}>{STRINGS.AUTH.createAccount}</Text>
-            <Text style={styles.stepSubtitle}>{STRINGS.AUTH.steps.step1}</Text>
-
-            <TextInput
-              style={[styles.input, errors.email && touched.email && styles.inputError]}
-              placeholder={STRINGS.AUTH.email}
-              value={values.email}
-              onChangeText={handleChange("email")}
-              onBlur={handleBlur("email")}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-            {errors.email && touched.email && (
-              <Text style={styles.errorText}>{errors.email}</Text>
-            )}
-
-            <TextInput
-              style={[styles.input, errors.password && touched.password && styles.inputError]}
-              placeholder={STRINGS.AUTH.password}
-              value={values.password}
-              onChangeText={handleChange("password")}
-              onBlur={handleBlur("password")}
-              secureTextEntry
-            />
-            {errors.password && touched.password && (
-              <Text style={styles.errorText}>{errors.password}</Text>
-            )}
-
-            <TouchableOpacity style={styles.nextButton} onPress={handleNextWithValidation}>
-              <Text style={styles.nextButtonText}>{STRINGS.AUTH.next}</Text>
-            </TouchableOpacity>
+            <CreateAccountForm />
+            {navigationbtns}
           </View>
         );
 
-      case 1: // Phone Number
+      case 2: 
         return (
           <View style={styles.stepContainer}>
-            <Text style={styles.stepTitle}>{STRINGS.AUTH.phoneNumber}</Text>
-            <Text style={styles.stepSubtitle}>{STRINGS.AUTH.steps.step2}</Text>
-
-            <Text style={styles.fieldLabel}>
-              {STRINGS.AUTH.labels.verificationMessage}
-            </Text>
-
-            <TextInput
-              style={[styles.input, errors.phoneNumber && touched.phoneNumber && styles.inputError]}
-              placeholder={STRINGS.AUTH.phoneNumber}
-              value={values.phoneNumber}
-              onChangeText={(text) => {
-                handleChange("phoneNumber")(text);
-                // If phone number changes, clear the verification status
-                if (text.trim() !== verifiedPhoneNumber) {
-                  setExpectedVerificationCode(null);
-                  setVerifiedPhoneNumber(null);
-                }
-              }}
-              onBlur={handleBlur("phoneNumber")}
-              keyboardType="phone-pad"
-            />
-            {errors.phoneNumber && touched.phoneNumber && (
-              <Text style={styles.errorText}>{errors.phoneNumber}</Text>
-            )}
-
-            <TouchableOpacity
-              style={[
-                styles.sendCodeButton,
-                isSendingCode && styles.sendCodeButtonDisabled,
-              ]}
-              onPress={() => sendVerificationCode(values.phoneNumber)}
-              disabled={isSendingCode}
-            >
-              {isSendingCode ? (
-                <View style={styles.loadingContainer}>
-                  <ActivityIndicator color={COLORS.primary} size="small" />
-                  <Text style={[styles.sendCodeButtonText, { marginLeft: 8 }]}>
-                    {STRINGS.AUTH.sending}
-                  </Text>
-                </View>
-              ) : (
-                <Text style={styles.sendCodeButtonText}>
-                  {STRINGS.AUTH.sendCode}
-                </Text>
-              )}
-            </TouchableOpacity>
-
-            <View style={styles.stepButtons}>
-              <TouchableOpacity style={styles.backButton} onPress={prevStep}>
-                <Text style={styles.backButtonText}>{STRINGS.AUTH.back}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={[
-                  styles.nextButton,
-                  (!verifiedPhoneNumber || values.phoneNumber.trim() !== verifiedPhoneNumber) && styles.nextButtonDisabled
-                ]}
-                onPress={handleNextWithValidation}
-                disabled={!verifiedPhoneNumber || values.phoneNumber.trim() !== verifiedPhoneNumber}
-              >
-                <Text style={styles.nextButtonText}>{STRINGS.AUTH.next}</Text>
-              </TouchableOpacity>
-            </View>
+  <UserProfileForm />
           </View>
         );
 
-      case 2: // Phone Verification
+      case 3: 
         return (
           <View style={styles.stepContainer}>
-            <Text style={styles.stepTitle}>{STRINGS.AUTH.verifyCode}</Text>
-            <Text style={styles.stepSubtitle}>{STRINGS.AUTH.steps.step3}</Text>
-
-            <Text style={styles.fieldLabel}>
-              {STRINGS.AUTH.labels.enterCodeMessage} {values.phoneNumber}
-            </Text>
-
-            <TextInput
-              style={[styles.input, errors.verificationCode && touched.verificationCode && styles.inputError]}
-              placeholder={STRINGS.AUTH.verificationCode}
-              value={values.verificationCode}
-              onChangeText={handleChange("verificationCode")}
-              onBlur={handleBlur("verificationCode")}
-              keyboardType="numeric"
-              maxLength={6}
-            />
-            {errors.verificationCode && touched.verificationCode && (
-              <Text style={styles.errorText}>{errors.verificationCode}</Text>
-            )}
-
-            <TouchableOpacity
-              style={[
-                styles.verifyButton,
-                isVerifyingCode && styles.verifyButtonDisabled,
-              ]}
-              onPress={() => verifyCode(values.verificationCode)}
-              disabled={isVerifyingCode}
-            >
-              {isVerifyingCode ? (
-                <View style={styles.loadingContainer}>
-                  <ActivityIndicator color={COLORS.white} size="small" />
-                  <Text style={[styles.verifyButtonText, { marginLeft: 8 }]}>
-                    {STRINGS.AUTH.verifying}
-                  </Text>
-                </View>
-              ) : (
-                <Text style={styles.verifyButtonText}>
-                  {STRINGS.AUTH.verifyCode}
-                </Text>
-              )}
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.resendButton}
-              onPress={() => sendVerificationCode(values.phoneNumber)}
-              disabled={isSendingCode}
-            >
-              {isSendingCode ? (
-                <View style={styles.loadingContainer}>
-                  <ActivityIndicator color={COLORS.primary} size="small" />
-                  <Text style={[styles.resendButtonText, { marginLeft: 8 }]}>
-                    Resending...
-                  </Text>
-                </View>
-              ) : (
-                <Text style={styles.resendButtonText}>{STRINGS.AUTH.resendCode}</Text>
-              )}
-            </TouchableOpacity>
-
-            <View style={styles.stepButtons}>
-              <TouchableOpacity style={styles.backButton} onPress={prevStep}>
-                <Text style={styles.backButtonText}>{STRINGS.AUTH.back}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.nextButton,
-                  !isPhoneVerified && styles.nextButtonDisabled,
-                ]}
-                onPress={handleNextWithValidation}
-                disabled={!isPhoneVerified}
-              >
-                <Text style={styles.nextButtonText}>{STRINGS.AUTH.next}</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        );
-
-      case 3: // Display Name
-        return (
-          <View style={styles.stepContainer}>
-            <Text style={styles.stepTitle}>{STRINGS.AUTH.yourName}</Text>
-            <Text style={styles.stepSubtitle}>{STRINGS.AUTH.steps.step4}</Text>
-
-            <TextInput
-              style={[styles.input, errors.displayName && touched.displayName && styles.inputError]}
-              placeholder={STRINGS.AUTH.displayName}
-              value={values.displayName}
-              onChangeText={handleChange("displayName")}
-              onBlur={handleBlur("displayName")}
-            />
-            {errors.displayName && touched.displayName && (
-              <Text style={styles.errorText}>{errors.displayName}</Text>
-            )}
-
-            <View style={styles.stepButtons}>
-              <TouchableOpacity style={styles.backButton} onPress={prevStep}>
-                <Text style={styles.backButtonText}>{STRINGS.AUTH.back}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.nextButton} onPress={handleNextWithValidation}>
-                <Text style={styles.nextButtonText}>{STRINGS.AUTH.next}</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        );
-
-      case 4: // Age
-        return (
-          <View style={styles.stepContainer}>
-            <Text style={styles.stepTitle}>{STRINGS.AUTH.yourAge}</Text>
-            <Text style={styles.stepSubtitle}>{STRINGS.AUTH.steps.step5}</Text>
-
-            <TextInput
-              style={[styles.input, errors.age && touched.age && styles.inputError]}
-              placeholder={STRINGS.AUTH.age}
-              value={values.age}
-              onChangeText={handleChange("age")}
-              onBlur={handleBlur("age")}
-              keyboardType="numeric"
-            />
-            {errors.age && touched.age && (
-              <Text style={styles.errorText}>{errors.age}</Text>
-            )}
-
-            <View style={styles.stepButtons}>
-              <TouchableOpacity style={styles.backButton} onPress={prevStep}>
-                <Text style={styles.backButtonText}>{STRINGS.AUTH.back}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.nextButton} onPress={handleNextWithValidation}>
-                <Text style={styles.nextButtonText}>{STRINGS.AUTH.next}</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        );
-
-      case 5: // Training Types
-        return (
-          <View style={styles.stepContainer}>
-            <Text style={styles.stepTitle}>{STRINGS.AUTH.trainingTypes}</Text>
-            <Text style={styles.stepSubtitle}>{STRINGS.AUTH.steps.step6}</Text>
-
-            <ScrollView style={styles.trainingTypesContainer}>
-              {TRAINING_TYPES.map((type) => (
-                <TouchableOpacity
-                  key={type}
-                  style={[
-                    styles.trainingTypeButton,
-                    values.trainingTypes.includes(type) &&
-                      styles.trainingTypeButtonActive,
-                  ]}
-                  onPress={() => {
-                    const newTypes = values.trainingTypes.includes(type)
-                      ? values.trainingTypes.filter((t) => t !== type)
-                      : [...values.trainingTypes, type];
-                    setFieldValue("trainingTypes", newTypes);
-                  }}
-                >
-                  <Text
-                    style={[
-                      styles.trainingTypeText,
-                      values.trainingTypes.includes(type) &&
-                        styles.trainingTypeTextActive,
-                    ]}
-                  >
-                    {type}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-            {errors.trainingTypes && touched.trainingTypes && (
-              <Text style={styles.errorText}>{errors.trainingTypes}</Text>
-            )}
-
-            <View style={styles.stepButtons}>
-              <TouchableOpacity style={styles.backButton} onPress={prevStep}>
-                <Text style={styles.backButtonText}>{STRINGS.AUTH.back}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.nextButton} onPress={handleNextWithValidation}>
-                <Text style={styles.nextButtonText}>{STRINGS.AUTH.next}</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        );
-
-      case 6: // Gender Preferences
-        return (
-          <View style={styles.stepContainer}>
-            <Text style={styles.stepTitle}>{STRINGS.AUTH.genderPreferences}</Text>
-            <Text style={styles.stepSubtitle}>{STRINGS.AUTH.steps.step7}</Text>
-
-            <Text style={styles.fieldLabel}>{STRINGS.AUTH.yourGender}</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={styles.optionsContainer}
-            >
-              {GENDER_OPTIONS.map((gender) => (
-                <TouchableOpacity
-                  key={gender}
-                  style={[
-                    styles.optionButton,
-                    values.userGender === gender && styles.optionButtonActive,
-                  ]}
-                  onPress={() => setFieldValue("userGender", gender)}
-                >
-                  <Text
-                    style={[
-                      styles.optionText,
-                      values.userGender === gender && styles.optionTextActive,
-                    ]}
-                  >
-                    {gender}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-            {errors.userGender && touched.userGender && (
-              <Text style={styles.errorText}>{errors.userGender}</Text>
-            )}
-
-            <Text style={styles.fieldLabel}>{STRINGS.AUTH.trainingPartnerPreference}</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={styles.optionsContainer}
-            >
-              {GENDER_PREFERENCE_OPTIONS.map((pref) => (
-                <TouchableOpacity
-                  key={pref}
-                  style={[
-                    styles.optionButton,
-                    values.genderPreference === pref && styles.optionButtonActive,
-                  ]}
-                  onPress={() => setFieldValue("genderPreference", pref)}
-                >
-                  <Text
-                    style={[
-                      styles.optionText,
-                      values.genderPreference === pref && styles.optionTextActive,
-                    ]}
-                  >
-                    {pref}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-            {errors.genderPreference && touched.genderPreference && (
-              <Text style={styles.errorText}>{errors.genderPreference}</Text>
-            )}
-
-            <View style={styles.stepButtons}>
-              <TouchableOpacity style={styles.backButton} onPress={prevStep}>
-                <Text style={styles.backButtonText}>{STRINGS.AUTH.back}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.nextButton,
-                  isMutating && styles.nextButtonDisabled,
-                ]}
-                onPress={handleNextWithValidation}
-                disabled={isMutating}
-              >
-                {isMutating ? (
-                  <View style={styles.loadingContainer}>
-                    <ActivityIndicator color={COLORS.white} size="small" />
-                    <Text style={[styles.nextButtonText, { marginLeft: 8 }]}>
-                      {STRINGS.AUTH.sending}
-                    </Text>
-                  </View>
-                ) : (
-                  <Text style={styles.nextButtonText}>
-                    {STRINGS.AUTH.createAccount}
-                  </Text>
-                )}
-              </TouchableOpacity>
-            </View>
+   
           </View>
         );
 
@@ -941,13 +641,23 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
       validateOnChange={true}
       validateOnBlur={true}
     >
-      {({ values, errors, touched, handleChange, handleBlur, handleSubmit }) => (
+      {({
+        values,
+        errors,
+        touched,
+        handleChange,
+        handleBlur,
+        handleSubmit,
+      }) => (
         <View style={styles.formContainer}>
           <Text style={styles.title}>Welcome Back</Text>
           <Text style={styles.subtitle}>Sign in to continue</Text>
 
           <TextInput
-            style={[styles.input, errors.email && touched.email && styles.inputError]}
+            style={[
+              styles.input,
+              errors.email && touched.email && styles.inputError,
+            ]}
             placeholder="Email"
             value={values.email}
             onChangeText={handleChange("email")}
@@ -960,7 +670,10 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
           )}
 
           <TextInput
-            style={[styles.input, errors.password && touched.password && styles.inputError]}
+            style={[
+              styles.input,
+              errors.password && touched.password && styles.inputError,
+            ]}
             placeholder="Password"
             value={values.password}
             onChangeText={handleChange("password")}
@@ -971,7 +684,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
             <Text style={styles.errorText}>{errors.password}</Text>
           )}
 
-          <TouchableOpacity 
+          <TouchableOpacity
             onPress={handleForgotPassword}
             style={styles.forgotPasswordContainer}
           >
@@ -979,7 +692,10 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.submitButton, isMutating && styles.submitButtonDisabled]}
+            style={[
+              styles.submitButton,
+              isMutating && styles.submitButtonDisabled,
+            ]}
             onPress={() => handleSubmit()}
             disabled={isMutating}
           >
@@ -1009,8 +725,24 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
       validateOnBlur={true}
       enableReinitialize
     >
-      {({ values, errors, touched, handleChange, handleBlur, setFieldValue, validateForm }) =>
-        renderSignUpStep(values, errors, touched, handleChange, handleBlur, setFieldValue, validateForm)
+      {({
+        values,
+        errors,
+        touched,
+        handleChange,
+        handleBlur,
+        setFieldValue,
+        validateForm,
+      }) =>
+        renderSignUpStep(
+          values,
+          errors,
+          touched,
+          handleChange,
+          handleBlur,
+          setFieldValue,
+          validateForm
+        )
       }
     </Formik>
   );
@@ -1018,8 +750,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
     >
       <ScrollView
         style={styles.container}
@@ -1035,72 +767,83 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
             },
           ]}
         >
-        {/* Header */}
-        <View style={styles.header}>
-          <MaskedView
-            maskElement={
-              <Text style={styles.brandName}>BolicBuddy</Text>
-            }
-          >
-            <LinearGradient
-              colors={[COLORS.gradient1, COLORS.gradient2, COLORS.gradient3]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 0, y: 0 }}
+          {/* Header */}
+          <View style={styles.header}>
+            <MaskedView
+              maskElement={<Text style={styles.brandName}>BolicBuddy</Text>}
             >
-              <Text style={[styles.brandName, { opacity: 0 }]}>BolicBuddy</Text>
-            </LinearGradient>
-          </MaskedView>
-          <Text style={styles.brandTagline}>
-            Find your perfect training partner
-          </Text>
-        </View>
-
-        {/* Mode Toggle */}
-        <View style={styles.modeToggle}>
-          <TouchableOpacity
-            style={[styles.modeButton, !isSignUp && styles.modeButtonActive]}
-            onPress={() => {
-              resetFormStates();
-              setIsSignUp(false);
-            }}
-          >
-            <Text style={[styles.modeText, !isSignUp && styles.modeTextActive]}>
-              Sign In
+              <LinearGradient
+                colors={[COLORS.gradient1, COLORS.gradient2, COLORS.gradient3]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 0, y: 0 }}
+              >
+                <Text style={[styles.brandName, { opacity: 0 }]}>
+                  BolicBuddy
+                </Text>
+              </LinearGradient>
+            </MaskedView>
+            <Text style={styles.brandTagline}>
+              Find your perfect training partner
             </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.modeButton, isSignUp && styles.modeButtonActive]}
-            onPress={() => {
-              resetFormStates();
-              setIsSignUp(true);
-            }}
-          >
-            <Text style={[styles.modeText, isSignUp && styles.modeTextActive]}>
-              Sign Up
+          </View>
+
+          {/* Mode Toggle */}
+          <View style={styles.modeToggle}>
+            <TouchableOpacity
+              style={[styles.modeButton, !isSignUp && styles.modeButtonActive]}
+              onPress={() => {
+                resetFormStates();
+                setIsSignUp(false);
+              }}
+            >
+              <Text
+                style={[styles.modeText, !isSignUp && styles.modeTextActive]}
+              >
+                Sign In
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.modeButton, isSignUp && styles.modeButtonActive]}
+              onPress={() => {
+                resetFormStates();
+                setIsSignUp(true);
+              }}
+            >
+              <Text
+                style={[styles.modeText, isSignUp && styles.modeTextActive]}
+              >
+                Sign Up
+              </Text>
+            </TouchableOpacity>
+          </View>
+          {isSignUp && (
+            <OnboardingStepHeader
+              title="Join as a..."
+              stepText="Step 1 of 4"
+              progress={0.25}
+            />
+          )}
+          {/* Form */}
+          {isSignUp ? renderSignUpForm() : renderLoginForm()}
+
+          {/* Footer */}
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>
+              {isSignUp ? "Already have an account?" : "Don't have an account?"}
             </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Form */}
-        {isSignUp ? renderSignUpForm() : renderLoginForm()}
-
-        {/* Footer */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            {isSignUp ? "Already have an account?" : "Don't have an account?"}
-          </Text>
-          <TouchableOpacity onPress={() => {
-            resetFormStates();
-            setIsSignUp(!isSignUp);
-          }}>
-            <Text style={styles.footerLink}>
-              {isSignUp ? "Sign In" : "Sign Up"}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-      </Animated.View>
-    </ScrollView>
+            <TouchableOpacity
+              onPress={() => {
+                resetFormStates();
+                setIsSignUp(!isSignUp);
+              }}
+            >
+              <Text style={styles.footerLink}>
+                {isSignUp ? "Sign In" : "Sign Up"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 };
@@ -1279,13 +1022,11 @@ const styles = StyleSheet.create({
   },
   backButton: {
     flex: 1,
-    backgroundColor: COLORS.surface,
+    backgroundColor: COLORS.white,
     borderRadius: DIMENSIONS.borderRadius,
     paddingVertical: DIMENSIONS.spacing.md,
     alignItems: "center",
-    marginRight: DIMENSIONS.spacing.sm,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    marginLeft: DIMENSIONS.spacing.sm,
   },
   backButtonText: {
     fontSize: 16,
@@ -1307,6 +1048,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     color: COLORS.surface,
+  },
+  backBtnText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: COLORS.text,
   },
   sendCodeButton: {
     backgroundColor: COLORS.primary,

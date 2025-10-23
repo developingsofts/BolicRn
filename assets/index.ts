@@ -39,8 +39,8 @@ export const Request=require('../assets/request.png');
 export const Calender=require('../assets/calender.png');
 export const ScheduleChat=require('../assets/schedule-chat.png');
 export const ScheduleClose=require('../assets/schedule-close.png');
-
-
+export const User3=require('../assets/icon-user.png');
+export const Trainer=require('../assets/icon-trainer.png');
 
 
 

@@ -1,8 +1,10 @@
 import React, { useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, Image } from "react-native";
 import { MaterialIcons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { Button } from "react-native-paper";
 import OnboardingStepHeader from "./OnboardingStepHeader";
+import { Trainer, User3 } from "../../assets";
+import { COLORS } from "../config/constants";
 
 type Role = "user" | "trainer" | null;
 
@@ -11,93 +13,65 @@ interface RoleSelectionProps {
 }
 
 const RoleSelection: React.FC<RoleSelectionProps> = ({ onNext }) => {
-  const [selectedRole, setSelectedRole] = useState<Role>(null);
+  const renderCard = ({
+    icon,
+    name,
+    desc,
+  }: {
+    icon: React.ReactNode;
+    name: string;
+    desc: string;
+  }) => {
+    return (
+      <TouchableOpacity
+        style={styles.card}
+        onPress={() => onNext?.(name.toLowerCase() as Role)}
+        activeOpacity={0.8}
+      >
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            marginBottom: 8,
+            gap: 8,
+          }}
+        >
+          {icon} <Text style={styles.cardTitle}>{name}</Text>
+        </View>
 
-  const handleContinue = () => {
-    if (selectedRole && onNext) {
-      onNext(selectedRole);
-    }
+        <Text style={styles.cardDesc}>{desc}</Text>
+      </TouchableOpacity>
+    );
   };
 
   return (
     <View style={styles.container}>
-      {/* Header & Progress */}
-      <OnboardingStepHeader title="Join as a..." stepText="Step 1 of 4" progress={0.25} />
-
-      {/* Role Selection Cards */}
-      <View style={styles.cards}>
-        {/* User Card */}
-        <TouchableOpacity
-          style={[
-            styles.card,
-            selectedRole === "user" && styles.cardSelected,
-          ]}
-          onPress={() => setSelectedRole("user")}
-          activeOpacity={0.8}
-        >
-          <View style={styles.iconCircle}>
-            <MaterialIcons name="person" size={28} color="#fff" />
-          </View>
-          <Text style={styles.cardTitle}>User</Text>
-          <Text style={styles.cardDesc}>
-            Find partners, join groups, and track progress.
-          </Text>
-        </TouchableOpacity>
-
-        {/* Trainer Card */}
-        <TouchableOpacity
-          style={[
-            styles.card,
-            selectedRole === "trainer" && styles.cardSelected,
-          ]}
-          onPress={() => setSelectedRole("trainer")}
-          activeOpacity={0.8}
-        >
-          <View style={styles.iconCircle}>
-            <MaterialCommunityIcons name="account-group" size={28} color="#fff" />
-          </View>
-          <Text style={styles.cardTitle}>Trainer</Text>
-          <Text style={styles.cardDesc}>
-            Manage clients, schedule sessions, and grow your business.
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      <Button
-        mode="contained"
-        style={{ marginTop: 24 }}
-        onPress={handleContinue}
-        disabled={!selectedRole}
-      >
-        Continue
-      </Button>
-
-      {/* Sign In Link */}
-      <View style={styles.signIn}>
-        <Text style={styles.signInText}>
-          Already have an account?{" "}
-          <Button
-            mode="text"
-            compact
-            onPress={() => {/* handle sign in navigation */}}
-            labelStyle={styles.signInButton}
-          >
-            Sign In
-          </Button>
-        </Text>
-      </View>
+      {renderCard({
+        icon: <Image source={User3} style={{ width: 24, height: 24 }} />,
+        name: "User",
+        desc: "Find partners, join groups, and track progress.",
+      })}
+      {renderCard({
+        icon: <Image source={Trainer} style={{ width: 24, height: 24 }} />,
+        name: "Trainer",
+        desc: "I want to help others reach their fitness potential.",
+      })}
     </View>
   );
 };
 
-
 const styles = StyleSheet.create({
-  container: { width: "100%", maxWidth: 400, alignSelf: "center", padding: 24, flex: 1, justifyContent: "center" },
+  container: {
+    width: "100%",
+    alignSelf: "center",
+    flex: 1,
+    justifyContent: "center",
+  },
   // header, title, step, progress styles are now in OnboardingStepHeader
   cards: { gap: 16 },
   card: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
+    backgroundColor: COLORS.white,
+    borderRadius: 16,
     padding: 20,
     alignItems: "center",
     borderWidth: 1,
@@ -115,6 +89,7 @@ const styles = StyleSheet.create({
   iconCircle: {
     width: 48,
     height: 48,
+
     borderRadius: 24,
     backgroundColor: "#222",
     alignItems: "center",
@@ -125,7 +100,11 @@ const styles = StyleSheet.create({
   cardDesc: { fontSize: 14, color: "#888", textAlign: "center", marginTop: 4 },
   signIn: { alignItems: "center", marginTop: 24 },
   signInText: { fontSize: 14, color: "#888" },
-  signInButton: { color: "#6366F1", fontWeight: "400", textDecorationLine: "underline" },
+  signInButton: {
+    color: "#6366F1",
+    fontWeight: "400",
+    textDecorationLine: "underline",
+  },
 });
 
 export default RoleSelection;
