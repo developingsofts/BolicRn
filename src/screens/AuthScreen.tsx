@@ -18,9 +18,6 @@ import { Formik } from "formik";
 import {
   COLORS,
   DIMENSIONS,
-  TRAINING_TYPES,
-  GENDER_OPTIONS,
-  GENDER_PREFERENCE_OPTIONS,
 } from "../config/constants";
 import STRINGS from "../config/strings";
 import { Toast } from "../components/ToastManager";
@@ -37,6 +34,7 @@ import OnboardingStepHeader from "../components/OnboardingStepHeader";
 import UserProfileForm from "../components/UserProfileForm";
 import TrainerProfileDetails from "../components/TrainerProfileDetails";
 import CreateAccountForm from "../components/CreateAccountForm";
+import AvatarUploadForm from "../components/AvatarUploadForm";
 
 const { width, height } = Dimensions.get("window");
 
@@ -83,8 +81,13 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
     null
   ); // Track which number was sent code
   const [authToken, setAuthToken] = useState<string | null>(null); // Store token after step 1
-  const FINAL_SIGN_UP_STEP = 6;
+  const FINAL_SIGN_UP_STEP = 3;
   const [signUpStep, setSignUpStep] = useState(0);
+
+  // Refs for form components
+  const createAccountFormRef = React.useRef<{ submit: () => void }>(null);
+  const userProfileFormRef = React.useRef<{ submit: () => void }>(null);
+  const avatarUploadFormRef = React.useRef<{ submit: () => void; getData: () => { avatar: string | null; name: string; description: string } }>(null);
 
   // Combined form values for multi-step signup
   const [signUpFormValues, setSignUpFormValues] = useState<SignUpFormValues>({
@@ -600,30 +603,88 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
       </View>
     );
     switch (signUpStep) {
-      case 0: 
-        return (
-            <RoleSelection onNext={(role) => setSignUpStep(1)} />
-        );
+      case 0:
+        return <RoleSelection onNext={(role) => {
+          setSignUpFormValues(prev => ({ ...prev, role }));
+          setSignUpStep(1);
+        }} />;
 
-      case 1: 
+      case 1:
         return (
           <View style={styles.stepContainer}>
-            <CreateAccountForm />
-            {navigationbtns}
+            <CreateAccountForm
+              ref={createAccountFormRef}
+              onNext={(data) => {
+                // Store the account data and move to next step
+                setSignUpFormValues(prev => ({ ...prev, email: data.email, password: data.password }));
+                setSignUpStep(2);
+              }}
+            />
+            <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 20 }}>
+              <TouchableOpacity style={styles.backButton} onPress={() => setSignUpStep(0)}>
+                <Text style={styles.backBtnText}>Back</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.nextButton} onPress={() => {
+                createAccountFormRef.current?.submit();
+              }}>
+                <Text style={styles.nextButtonText}>Next</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         );
 
-      case 2: 
+      case 2:
         return (
           <View style={styles.stepContainer}>
-  <UserProfileForm />
+            <UserProfileForm
+              ref={userProfileFormRef}
+              onNext={(data) => {
+                // Store the profile data and move to next step
+                setSignUpFormValues(prev => ({ ...prev, ...data }));
+                setSignUpStep(3);
+              }}
+            />
+            <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 20 }}>
+              <TouchableOpacity style={styles.backButton} onPress={() => setSignUpStep(1)}>
+                <Text style={styles.backBtnText}>Back</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.nextButton} onPress={() => {
+                userProfileFormRef.current?.submit();
+              }}>
+                <Text style={styles.nextButtonText}>Next</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         );
 
-      case 3: 
+      case 3:
         return (
           <View style={styles.stepContainer}>
-   
+            <AvatarUploadForm
+              ref={avatarUploadFormRef}
+              onDataChange={(data) => {
+                // Store the avatar data and complete signup
+                setSignUpFormValues(prev => ({ ...prev, ...data }));
+                console.log('Complete signup data:', { ...signUpFormValues, ...data });
+                Toast.success("Account created successfully!");
+              }}
+              initialName={signUpFormValues.displayName || ""}
+              initialDescription=""
+              initialAvatar={null}
+            />
+            <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 20 }}>
+              <TouchableOpacity style={styles.backButton} onPress={() => setSignUpStep(2)}>
+                <Text style={styles.backBtnText}>Back</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.nextButton} 
+                onPress={() => {
+                  avatarUploadFormRef.current?.submit();
+                }}
+              >
+                <Text style={styles.nextButtonText}>Complete</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         );
 
@@ -818,9 +879,14 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
           </View>
           {isSignUp && (
             <OnboardingStepHeader
-              title="Join as a..."
-              stepText="Step 1 of 4"
-              progress={0.25}
+              title={
+                signUpStep === 0 ? "Join as a..." :
+                signUpStep === 1 ? "Create Account" :
+                signUpStep === 2 ? "Tell us about yourself" :
+                "Setup Profile"
+              }
+              stepText={`Step ${signUpStep + 1} of 4`}
+              progress={(signUpStep + 1) / 4}
             />
           )}
           {/* Form */}

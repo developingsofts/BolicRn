@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useImperativeHandle } from "react";
 import {
   View,
   Text,
@@ -18,10 +18,9 @@ interface CreateAccountFormProps {
   onBack?: () => void;
 }
 
-const CreateAccountForm: React.FC<CreateAccountFormProps> = ({
-  onNext,
-  onBack,
-}) => {
+const CreateAccountForm = React.forwardRef<{
+  submit: () => void;
+}, CreateAccountFormProps>(({ onNext, onBack }, ref) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -30,6 +29,10 @@ const CreateAccountForm: React.FC<CreateAccountFormProps> = ({
     password?: string;
     confirmPassword?: string;
   }>({});
+
+  useImperativeHandle(ref, () => ({
+    submit: onSubmit,
+  }));
 
   const validate = () => {
     const newErrors: typeof errors = {};
@@ -106,7 +109,9 @@ const CreateAccountForm: React.FC<CreateAccountFormProps> = ({
       </View>
     </View>
   );
-};
+});
+
+CreateAccountForm.displayName = 'CreateAccountForm';
 
 const styles = StyleSheet.create({
   form: { gap: 16,
