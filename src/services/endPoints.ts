@@ -47,7 +47,15 @@ export const API_END_POINTS = {
     join: (groupId: string) => `/groups/${groupId}/join`,
     leave: (groupId: string) => `/groups/${groupId}/leave`,
   },
+  trainingTypes: {
+    all: "/training-type/all",
+  },
 
+  selectedTrainingTypes: {
+    all: "/selected-training-type/all",
+    add: "/selected-training-type/add",
+    update: "/selected-training-type/update",
+  },
   posts: {
     list: (page: number = 1, limit: number = 20) =>
       `/posts?page=${page}&limit=${limit}`,

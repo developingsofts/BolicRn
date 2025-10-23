@@ -22,17 +22,16 @@ import {
 import STRINGS from "../config/strings";
 import { Toast } from "../components/ToastManager";
 import { useLoginMutation, useRegisterMutation } from "../services/api/authApi";
-import { useUpdateMyProfileMutation } from "../services/api/userApi";
+import { useUpdateMyProfileMutation, useUpdateMyProfileWithImageMutation } from "../services/api/userApi";
 import { useAppDispatch } from "../store/hooks";
 import { setUser } from "../store/userSlice";
 import { storageService } from "../services/storage";
 import { User } from "../types";
 import { SUCCESS_MESSAGES, ERROR_MESSAGES } from "../config/constants";
-import { loginSchema, signUpSchema } from "../validation/authSchemas";
+import { loginSchema } from "../validation/authSchemas";
 import RoleSelection from "../components/RoleSelection";
 import OnboardingStepHeader from "../components/OnboardingStepHeader";
 import UserProfileForm from "../components/UserProfileForm";
-import TrainerProfileDetails from "../components/TrainerProfileDetails";
 import CreateAccountForm from "../components/CreateAccountForm";
 import AvatarUploadForm from "../components/AvatarUploadForm";
 
@@ -50,14 +49,11 @@ interface LoginFormValues {
 interface SignUpFormValues {
   email: string;
   password: string;
-  displayName: string;
-  phoneNumber: string;
-  verificationCode: string;
-  age: string;
+  role?: "user" | "trainer" | null;
+  location: string;
   trainingTypes: string[];
-  genderPreference: string;
-  userGender: string;
-  currentPRs: string;
+  displayName: string;
+  bio: string;
 }
 
 export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
@@ -67,19 +63,12 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
     useRegisterMutation();
   const [updateProfile, { isLoading: isUpdatingProfile }] =
     useUpdateMyProfileMutation();
-  const isMutating = isLoginLoading || isRegisterLoading || isUpdatingProfile;
+  const [updateProfileWithImage, { isLoading: isUpdatingProfileWithImage }] =
+    useUpdateMyProfileWithImageMutation();
+  const isMutating = isLoginLoading || isRegisterLoading || isUpdatingProfile || isUpdatingProfileWithImage;
 
   // Form state
   const [isSignUp, setIsSignUp] = useState(false);
-  const [isPhoneVerified, setIsPhoneVerified] = useState(false);
-  const [isSendingCode, setIsSendingCode] = useState(false);
-  const [isVerifyingCode, setIsVerifyingCode] = useState(false);
-  const [expectedVerificationCode, setExpectedVerificationCode] = useState<
-    string | null
-  >(null);
-  const [verifiedPhoneNumber, setVerifiedPhoneNumber] = useState<string | null>(
-    null
-  ); // Track which number was sent code
   const [authToken, setAuthToken] = useState<string | null>(null); // Store token after step 1
   const FINAL_SIGN_UP_STEP = 3;
   const [signUpStep, setSignUpStep] = useState(0);
@@ -93,14 +82,11 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
   const [signUpFormValues, setSignUpFormValues] = useState<SignUpFormValues>({
     email: "",
     password: "",
-    displayName: "",
-    phoneNumber: "",
-    verificationCode: "",
-    age: "",
+    role: null,
+    location: "",
     trainingTypes: [],
-    genderPreference: "",
-    userGender: "",
-    currentPRs: "",
+    displayName: "",
+    bio: "",
   });
 
   // Function to reset all form states
@@ -108,18 +94,12 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
     setSignUpFormValues({
       email: "",
       password: "",
-      displayName: "",
-      phoneNumber: "",
-      verificationCode: "",
-      age: "",
+      role: null,
+      location: "",
       trainingTypes: [],
-      genderPreference: "",
-      userGender: "",
-      currentPRs: "",
+      displayName: "",
+      bio: "",
     });
-    setIsPhoneVerified(false);
-    setExpectedVerificationCode(null);
-    setVerifiedPhoneNumber(null);
     setAuthToken(null);
     setSignUpStep(0);
   };
@@ -184,11 +164,26 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
         // Check if user needs to complete onboarding
         const onboardingStep = sanitizedUser.onboardingStep || 0;
 
-        if (onboardingStep > 0 && onboardingStep < 7) {
-          // User has incomplete onboarding - switch to signup mode and resume
-          console.log("🔄 Resuming onboarding from step:", onboardingStep);
+        // Also check if user has data that suggests incomplete onboarding
+        const hasLocation = sanitizedUser.location && sanitizedUser.location.trim();
+        const hasTrainingTypes = sanitizedUser.trainingTypes && sanitizedUser.trainingTypes.length > 0;
+        const hasDisplayName = sanitizedUser.displayName && sanitizedUser.displayName.trim();
+        const hasBio = sanitizedUser.bio && sanitizedUser.bio.trim();
+
+        console.log("🔍 Login: onboarding analysis", {
+          onboardingStep,
+          hasLocation,
+          hasTrainingTypes,
+          hasDisplayName,
+          hasBio,
+          shouldRedirect: onboardingStep === 1 || onboardingStep === 2 || (onboardingStep === 0 && (hasLocation || hasTrainingTypes))
+        });
+
+        if (onboardingStep === 1) {
+          // User completed registration but not profile - resume from step 2
+          console.log("🔄 Resuming onboarding from profile step");
           setIsSignUp(true);
-          setSignUpStep(onboardingStep);
+          setSignUpStep(2);
           setAuthToken(token);
           await storageService.setAuthToken(token);
 
@@ -196,23 +191,123 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
           setSignUpFormValues({
             email: sanitizedUser.email || "",
             password: "",
-            displayName: sanitizedUser.displayName || "",
-            phoneNumber: sanitizedUser.phoneNumber || "",
-            verificationCode: "",
-            age: sanitizedUser.age?.toString() || "",
+            role: sanitizedUser.role || null,
+            location: sanitizedUser.location || "",
             trainingTypes: sanitizedUser.trainingTypes || [],
-            genderPreference: sanitizedUser.genderPreference || "",
-            userGender: sanitizedUser.userGender || "",
-            currentPRs: sanitizedUser.currentPRs || "",
+            displayName: sanitizedUser.displayName || "",
+            bio: sanitizedUser.bio || "",
           });
 
-          // If phone was already verified, set that state
-          if (sanitizedUser.phoneVerified) {
-            setIsPhoneVerified(true);
-            setVerifiedPhoneNumber(sanitizedUser.phoneNumber || null);
+          Toast.success("Welcome back! Please complete your profile setup.");
+          return;
+        } else if (onboardingStep === 2) {
+          // User completed profile but not avatar - resume from step 3
+          console.log("🔄 Resuming onboarding from avatar step");
+          setIsSignUp(true);
+          setSignUpStep(3);
+          setAuthToken(token);
+          await storageService.setAuthToken(token);
+
+          // Pre-fill form values from user data
+          setSignUpFormValues({
+            email: sanitizedUser.email || "",
+            password: "",
+            role: sanitizedUser.role || null,
+            location: sanitizedUser.location || "",
+            trainingTypes: sanitizedUser.trainingTypes || [],
+            displayName: sanitizedUser.displayName || "",
+            bio: sanitizedUser.bio || "",
+          });
+
+          Toast.success("Welcome back! Please upload your profile picture.");
+          return;
+        } else if (onboardingStep === 0 && (hasLocation || hasTrainingTypes)) {
+          // User has some profile data but onboardingStep is 0 - likely started but didn't complete
+          // Determine which step to resume from based on what data they have
+          if (hasDisplayName && hasBio) {
+            // Has profile data but no avatar - resume from step 3
+            console.log("🔄 Detected incomplete onboarding - resuming from avatar step");
+            setIsSignUp(true);
+            setSignUpStep(3);
+            setAuthToken(token);
+            await storageService.setAuthToken(token);
+
+            setSignUpFormValues({
+              email: sanitizedUser.email || "",
+              password: "",
+              role: sanitizedUser.role || null,
+              location: sanitizedUser.location || "",
+              trainingTypes: sanitizedUser.trainingTypes || [],
+              displayName: sanitizedUser.displayName || "",
+              bio: sanitizedUser.bio || "",
+            });
+
+            Toast.success("Welcome back! Please upload your profile picture.");
+            return;
+          } else {
+            // Has some profile data but not complete - resume from step 2
+            console.log("🔄 Detected incomplete onboarding - resuming from profile step");
+            setIsSignUp(true);
+            setSignUpStep(2);
+            setAuthToken(token);
+            await storageService.setAuthToken(token);
+
+            setSignUpFormValues({
+              email: sanitizedUser.email || "",
+              password: "",
+              role: sanitizedUser.role || null,
+              location: sanitizedUser.location || "",
+              trainingTypes: sanitizedUser.trainingTypes || [],
+              displayName: sanitizedUser.displayName || "",
+              bio: sanitizedUser.bio || "",
+            });
+
+            Toast.success("Welcome back! Please complete your profile setup.");
+            return;
           }
+        }
+
+        if (onboardingStep === 1) {
+          // User completed registration but not profile - resume from step 2
+          console.log("🔄 Resuming onboarding from profile step");
+          setIsSignUp(true);
+          setSignUpStep(2);
+          setAuthToken(token);
+          await storageService.setAuthToken(token);
+
+          // Pre-fill form values from user data
+          setSignUpFormValues({
+            email: sanitizedUser.email || "",
+            password: "",
+            role: sanitizedUser.role || null,
+            location: sanitizedUser.location || "",
+            trainingTypes: sanitizedUser.trainingTypes || [],
+            displayName: sanitizedUser.displayName || "",
+            bio: sanitizedUser.bio || "",
+          });
 
           Toast.success("Welcome back! Please complete your profile setup.");
+          return;
+        } else if (onboardingStep === 2) {
+          // User completed profile but not avatar - resume from step 3
+          console.log("🔄 Resuming onboarding from avatar step");
+          setIsSignUp(true);
+          setSignUpStep(3);
+          setAuthToken(token);
+          await storageService.setAuthToken(token);
+
+          // Pre-fill form values from user data
+          setSignUpFormValues({
+            email: sanitizedUser.email || "",
+            password: "",
+            role: sanitizedUser.role || null,
+            location: sanitizedUser.location || "",
+            trainingTypes: sanitizedUser.trainingTypes || [],
+            displayName: sanitizedUser.displayName || "",
+            bio: sanitizedUser.bio || "",
+          });
+
+          Toast.success("Welcome back! Please upload your profile picture.");
           return;
         }
 
@@ -258,80 +353,6 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
     }
   };
 
-  const handleSignUp = async (values: SignUpFormValues) => {
-    try {
-      // Step 0: Create account with only email and password
-      if (!authToken) {
-        const registrationResponse = await triggerRegister({
-          email: values.email,
-          password: values.password,
-        }).unwrap();
-
-        if (!registrationResponse.status) {
-          throw new Error(
-            registrationResponse.message || ERROR_MESSAGES.authenticationError
-          );
-        }
-
-        const {
-          token,
-          password: _password,
-          ...rest
-        } = registrationResponse.data as Record<string, unknown> & {
-          token?: string;
-          password?: string;
-        };
-
-        if (!token || typeof token !== "string") {
-          throw new Error(ERROR_MESSAGES.authenticationError);
-        }
-
-        // Store token for subsequent updates
-        setAuthToken(token);
-        await storageService.setAuthToken(token);
-
-        console.log(
-          "✅ Account created, token saved. Now collecting additional info..."
-        );
-        // Don't show toast here - only show on final step
-
-        // Move to next step after successful account creation
-        nextStep();
-        return;
-      }
-    } catch (error: any) {
-      // Handle RTK Query errors
-      let message = "Authentication failed";
-
-      // console.error('Signup error:', error);
-
-      // RTK Query error structure
-      if (error?.data?.message) {
-        // Backend error response (e.g., "Email already exists")
-        message = error.data.message;
-      } else if (error?.data?.error) {
-        // Alternative backend error format
-        message = error.data.error;
-      } else if (error?.message) {
-        // Standard Error object
-        message = error.message;
-      } else if (error?.status) {
-        // HTTP status code errors
-        if (error.status === 409 || error.status === 400) {
-          message =
-            "This email is already registered. Please use a different email or sign in.";
-        } else if (error.status === 500) {
-          message = "Server error. Please try again later.";
-        }
-      } else if (typeof error === "string") {
-        message = error;
-      }
-
-      Toast.error(message);
-      // console.log('Error toast shown:', message);
-    }
-  };
-
   const handleForgotPassword = async () => {
     navigation.navigate("ForgotPassword");
   };
@@ -349,259 +370,11 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
         setAuthToken(null);
         storageService.removeAuthToken();
       }
-      // Reset verification states when going back to phone number step
-      if (signUpStep === 2) {
-        setVerifiedPhoneNumber(null);
-        setExpectedVerificationCode(null);
-        setIsPhoneVerified(false);
-      }
       setSignUpStep(signUpStep - 1);
     }
   };
 
-  const sendVerificationCode = async (phoneNumber: string) => {
-    const trimmedValue = phoneNumber.trim();
-    if (!/^\+?\d{10,15}$/.test(trimmedValue)) {
-      Toast.error("Please enter a valid phone number");
-      return;
-    }
-
-    setIsSendingCode(true);
-    try {
-      const demoCode = "123456";
-      setExpectedVerificationCode(demoCode);
-      setVerifiedPhoneNumber(trimmedValue); // Save the phone number that received the code
-      setIsPhoneVerified(false);
-
-      // Don't show toast here - only show on final step
-      console.log(`Verification code sent: ${demoCode}`);
-    } catch (error) {
-      Toast.error(STRINGS.AUTH.errors.failedToSend);
-    } finally {
-      setIsSendingCode(false);
-    }
-  };
-
-  const verifyCode = async (verificationCode: string) => {
-    if (!verificationCode || verificationCode.length !== 6) {
-      Toast.error(STRINGS.AUTH.errors.enterCode);
-      return;
-    }
-
-    setIsVerifyingCode(true);
-    try {
-      if (!expectedVerificationCode) {
-        Toast.error("Please request a new verification code first.");
-        return;
-      }
-
-      if (verificationCode.trim() === expectedVerificationCode) {
-        setIsPhoneVerified(true);
-        // Don't show toast here - only show on final step
-        console.log("Phone verified successfully");
-        nextStep();
-      } else {
-        Toast.error(STRINGS.AUTH.errors.invalidCode);
-      }
-    } catch (error) {
-      Toast.error(STRINGS.AUTH.errors.failedToVerify);
-    } finally {
-      setIsVerifyingCode(false);
-    }
-  };
-
-  const getStepSchema = (step: number) => {
-    // We use the full signUpSchema but validate only specific fields per step
-    return signUpSchema;
-  };
-
-  const renderSignUpStep = (
-    values: SignUpFormValues,
-    errors: any,
-    touched: any,
-    handleChange: any,
-    handleBlur: any,
-    setFieldValue: any,
-    validateForm: any
-  ) => {
-    // Helper function to convert gender preference UI value to backend value
-    const convertGenderPreference = (
-      preference: string,
-      userGender: string
-    ): string => {
-      if (preference === "All") return "all";
-      if (preference === "Same Gender Only") {
-        // Convert user's gender to lowercase
-        return userGender.toLowerCase();
-      }
-      if (preference === "Opposite Gender Only") {
-        // Return opposite gender(s)
-        const gender = userGender.toLowerCase();
-        if (gender === "male") return "female";
-        if (gender === "female") return "male";
-        if (gender === "non-binary" || gender === "prefer not to say")
-          return "all"; // Non-binary and prefer not to say sees all
-        return "all";
-      }
-      return preference.toLowerCase();
-    };
-
-    const handleNextWithValidation = async () => {
-      const validationErrors = await validateForm();
-
-      // Get field names for current step
-      let fieldsToValidate: string[] = [];
-      switch (signUpStep) {
-        case 0:
-          fieldsToValidate = ["email", "password"];
-          break;
-        case 1:
-          fieldsToValidate = ["phoneNumber"];
-          break;
-        case 2:
-          fieldsToValidate = ["verificationCode"];
-          // Check if phone is verified
-          if (!isPhoneVerified) {
-            Toast.error("Please verify your phone number first");
-            return;
-          }
-          break;
-        case 3:
-          fieldsToValidate = ["displayName"];
-          break;
-        case 4:
-          fieldsToValidate = ["age"];
-          break;
-        case 5:
-          fieldsToValidate = ["trainingTypes"];
-          break;
-        case 6:
-          fieldsToValidate = ["userGender", "genderPreference"];
-          break;
-      }
-
-      const hasErrors = fieldsToValidate.some(
-        (field) => validationErrors[field]
-      );
-
-      if (hasErrors) {
-        // Show first error
-        const firstError = fieldsToValidate.find(
-          (field) => validationErrors[field]
-        );
-        if (firstError) {
-          Toast.error(validationErrors[firstError]);
-        }
-        return;
-      }
-
-      // Step 0: Create account with email/password
-      if (signUpStep === 0) {
-        // Call handleSignUp which will create account and move to next step
-        await handleSignUp(values);
-        return;
-      }
-
-      // Steps 1-6: Update profile with current step data
-      try {
-        const updateData: any = {};
-
-        // Always update onboarding step to track progress
-        updateData.onboardingStep = signUpStep;
-
-        switch (signUpStep) {
-          case 1: // Phone Number
-            // Check if verification code was sent to this phone number
-            if (
-              !verifiedPhoneNumber ||
-              values.phoneNumber.trim() !== verifiedPhoneNumber
-            ) {
-              Toast.error(
-                "Please send verification code to this phone number first"
-              );
-              return;
-            }
-            updateData.phoneNumber = values.phoneNumber;
-            break;
-          case 2: // Phone Verification
-            updateData.phoneVerified = true;
-            break;
-          case 3: // Display Name
-            updateData.userName = values.displayName;
-            break;
-          case 4: // Age
-            updateData.age = parseInt(values.age);
-            break;
-          case 5: // Training Types
-            updateData.trainingTypes = values.trainingTypes;
-            break;
-          case 6: // Gender & Preferences
-            updateData.userGender = values.userGender.toLowerCase();
-            updateData.genderPreference = convertGenderPreference(
-              values.genderPreference,
-              values.userGender
-            );
-            if (values.currentPRs) updateData.currentPRs = values.currentPRs;
-            // Mark onboarding as complete
-            updateData.onboardingStep = 7;
-            break;
-        }
-
-        console.log(
-          `📤 Step ${signUpStep}: Updating profile with:`,
-          Object.keys(updateData)
-        );
-
-        const updateResponse = await updateProfile(updateData).unwrap();
-
-        if (!updateResponse.status) {
-          throw new Error(
-            updateResponse.message || ERROR_MESSAGES.authenticationError
-          );
-        }
-
-        // Don't show toast for intermediate steps - only on final step
-        if (signUpStep !== FINAL_SIGN_UP_STEP) {
-          console.log(`✅ Step ${signUpStep} completed`);
-        }
-
-        // If this is the final step, hydrate user and navigate
-        if (signUpStep === FINAL_SIGN_UP_STEP) {
-          const sanitizedUser = updateResponse.data as User;
-          await hydrateUser(
-            { user: sanitizedUser, token: authToken! },
-            "Account created successfully!"
-          );
-        } else {
-          // Move to next step
-          setSignUpFormValues({ ...signUpFormValues, ...values });
-          nextStep();
-        }
-      } catch (error: any) {
-        let message = "Failed to update profile";
-
-        if (error?.data?.message) {
-          message = error.data.message;
-        } else if (error?.message) {
-          message = error.message;
-        }
-
-        Toast.error(message);
-      }
-    };
-    const navigationbtns = (
-      <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-        <TouchableOpacity style={styles.backButton} onPress={prevStep}>
-          <Text style={styles.backBtnText}>Back</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.nextButton}
-          onPress={handleNextWithValidation}
-        >
-          <Text style={styles.nextButtonText}>{STRINGS.AUTH.next}</Text>
-        </TouchableOpacity>
-      </View>
-    );
+  const renderSignUpStep = () => {
     switch (signUpStep) {
       case 0:
         return <RoleSelection onNext={(role) => {
@@ -614,10 +387,39 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
           <View style={styles.stepContainer}>
             <CreateAccountForm
               ref={createAccountFormRef}
-              onNext={(data) => {
-                // Store the account data and move to next step
-                setSignUpFormValues(prev => ({ ...prev, email: data.email, password: data.password }));
-                setSignUpStep(2);
+              initialEmail={signUpFormValues.email}
+              initialPassword={signUpFormValues.password}
+              onNext={async (data) => {
+                try {
+                  // Call register API with email, password, and role
+                  const registerResponse = await triggerRegister({
+                    email: data.email,
+                    password: data.password,
+                    role: signUpFormValues.role || 'user', // Use role from step 0
+                    onboardingStep: 1, // Mark step 1 as completed
+                  }).unwrap();
+
+                  if (!registerResponse.status) {
+                    throw new Error(registerResponse.message || 'Registration failed');
+                  }
+
+                  // Store the auth token for subsequent API calls
+                  const token = registerResponse.data.token;
+                  setAuthToken(token);
+                  await storageService.setAuthToken(token);
+
+                  // Store user data and move to next step
+                  setSignUpFormValues(prev => ({ ...prev, email: data.email, password: data.password }));
+                  setSignUpStep(2);
+                } catch (error: any) {
+                  let message = 'Registration failed';
+                  if (error?.data?.message) {
+                    message = error.data.message;
+                  } else if (error?.message) {
+                    message = error.message;
+                  }
+                  Toast.error(message);
+                }
               }}
             />
             <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 20 }}>
@@ -638,10 +440,33 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
           <View style={styles.stepContainer}>
             <UserProfileForm
               ref={userProfileFormRef}
-              onNext={(data) => {
-                // Store the profile data and move to next step
-                setSignUpFormValues(prev => ({ ...prev, ...data }));
-                setSignUpStep(3);
+              initialLocation={signUpFormValues.location}
+              initialSpecialties={signUpFormValues.trainingTypes}
+              onNext={async (data) => {
+                try {
+                  // Call update API with location and specialties
+                  const updateResponse = await updateProfile({
+                    location: data.location,
+                    trainingTypes: data.specialties,
+                    onboardingStep: 2, // Mark step 2 as completed
+                  }).unwrap();
+
+                  if (!updateResponse.status) {
+                    throw new Error(updateResponse.message || 'Profile update failed');
+                  }
+
+                  // Store the profile data and move to next step
+                  setSignUpFormValues(prev => ({ ...prev, location: data.location, trainingTypes: data.specialties }));
+                  setSignUpStep(3);
+                } catch (error: any) {
+                  let message = 'Profile update failed';
+                  if (error?.data?.message) {
+                    message = error.data.message;
+                  } else if (error?.message) {
+                    message = error.message;
+                  }
+                  Toast.error(message);
+                }
               }}
             />
             <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 20 }}>
@@ -662,11 +487,41 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
           <View style={styles.stepContainer}>
             <AvatarUploadForm
               ref={avatarUploadFormRef}
-              onDataChange={(data) => {
-                // Store the avatar data and complete signup
-                setSignUpFormValues(prev => ({ ...prev, ...data }));
-                console.log('Complete signup data:', { ...signUpFormValues, ...data });
-                Toast.success("Account created successfully!");
+              onDataChange={async (data) => {
+                try {
+                  // Prepare data for API call
+                  const updateData: any = {
+                    displayName: data.name,
+                    bio: data.description,
+                  };
+
+                  // If there's an avatar image, use the image upload mutation
+                  if (data.avatar) {
+                    const imageFile = { uri: data.avatar, type: 'image/jpeg', name: 'profile.jpg' };
+                    await updateProfileWithImage({
+                      ...updateData,
+                      imageFile,
+                      onboardingStep: 3, // Mark onboarding as completed
+                    }).unwrap();
+                  } else {
+                    // No image, use regular update
+                    await updateProfile({
+                      ...updateData,
+                      onboardingStep: 3, // Mark onboarding as completed
+                    }).unwrap();
+                  }
+
+                  // Signup complete - show success message
+                  Toast.success("Account created successfully!");
+                } catch (error: any) {
+                  let message = 'Profile update failed';
+                  if (error?.data?.message) {
+                    message = error.data.message;
+                  } else if (error?.message) {
+                    message = error.message;
+                  }
+                  Toast.error(message);
+                }
               }}
               initialName={signUpFormValues.displayName || ""}
               initialDescription=""
@@ -776,37 +631,9 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
     </Formik>
   );
 
-  const renderSignUpForm = () => (
-    <Formik
-      key={`signup-form-${signUpStep}`}
-      initialValues={signUpFormValues}
-      validationSchema={getStepSchema(signUpStep)}
-      onSubmit={handleSignUp}
-      validateOnChange={true}
-      validateOnBlur={true}
-      enableReinitialize
-    >
-      {({
-        values,
-        errors,
-        touched,
-        handleChange,
-        handleBlur,
-        setFieldValue,
-        validateForm,
-      }) =>
-        renderSignUpStep(
-          values,
-          errors,
-          touched,
-          handleChange,
-          handleBlur,
-          setFieldValue,
-          validateForm
-        )
-      }
-    </Formik>
-  );
+  const renderSignUpForm = () => {
+    return renderSignUpStep();
+  };
 
   return (
     <KeyboardAvoidingView

@@ -36,7 +36,8 @@ const RoleSelection: React.FC<RoleSelectionProps> = ({ onNext }) => {
             gap: 8,
           }}
         >
-          {icon} <Text style={styles.cardTitle}>{name}</Text>
+          {icon}
+          <Text style={styles.cardTitle}>{name}</Text>
         </View>
 
         <Text style={styles.cardDesc}>{desc}</Text>

@@ -24,6 +24,7 @@ interface UpdateProfileWithImagePayload {
   userGender?: string;
   genderPreference?: string;
   currentPRs?: string;
+  onboardingStep?: number;
 }
 
 export const userApi = baseApi.injectEndpoints({
@@ -69,6 +70,7 @@ export const userApi = baseApi.injectEndpoints({
         if (payload.userGender) formData.append('userGender', payload.userGender);
         if (payload.genderPreference) formData.append('genderPreference', payload.genderPreference);
         if (payload.currentPRs) formData.append('currentPRs', payload.currentPRs);
+        if (payload.onboardingStep !== undefined) formData.append('onboardingStep', payload.onboardingStep.toString());
         
         // Add training types array
         if (payload.trainingTypes && payload.trainingTypes.length > 0) {
@@ -149,6 +151,38 @@ export const userApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['User'],
     }),
+    // Training Types
+    getTrainingTypes: builder.query<ApiResponse<any[]>, void>({
+      query: () => ({
+        url: API_END_POINTS.trainingTypes.all,
+        method: 'GET',
+      }),
+      providesTags: ['TrainingTypes'],
+    }),
+    // Selected Training Types
+    getSelectedTrainingTypes: builder.query<ApiResponse<any[]>, void>({
+      query: () => ({
+        url: API_END_POINTS.selectedTrainingTypes.all,
+        method: 'GET',
+      }),
+      providesTags: ['SelectedTrainingTypes'],
+    }),
+    addSelectedTrainingTypes: builder.mutation<ApiResponse<any>, { trainingTypeIds: string[] }>({
+      query: (data) => ({
+        url: API_END_POINTS.selectedTrainingTypes.add,
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: ['SelectedTrainingTypes', 'User'],
+    }),
+    updateSelectedTrainingTypes: builder.mutation<ApiResponse<any>, { removeIds: string[], addIds: string[] }>({
+      query: (data) => ({
+        url: API_END_POINTS.selectedTrainingTypes.update,
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: ['SelectedTrainingTypes', 'User'],
+    }),
   }),
   overrideExisting: false,
 });
@@ -163,4 +197,8 @@ export const {
   useUpdateUserProfileMutation,
   useGetUserStatsQuery,
   useUpdateUserStatsMutation,
+  useGetTrainingTypesQuery,
+  useGetSelectedTrainingTypesQuery,
+  useAddSelectedTrainingTypesMutation,
+  useUpdateSelectedTrainingTypesMutation,
 } = userApi;

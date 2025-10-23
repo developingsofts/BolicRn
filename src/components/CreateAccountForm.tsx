@@ -16,14 +16,23 @@ interface CreateAccountFormProps {
     confirmPassword: string;
   }) => void;
   onBack?: () => void;
+  initialEmail?: string;
+  initialPassword?: string;
+  initialConfirmPassword?: string;
 }
 
 const CreateAccountForm = React.forwardRef<{
   submit: () => void;
-}, CreateAccountFormProps>(({ onNext, onBack }, ref) => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+}, CreateAccountFormProps>(({
+  onNext,
+  onBack,
+  initialEmail = "",
+  initialPassword = "",
+  initialConfirmPassword = ""
+}, ref) => {
+  const [email, setEmail] = useState(initialEmail);
+  const [password, setPassword] = useState(initialPassword);
+  const [confirmPassword, setConfirmPassword] = useState(initialConfirmPassword);
   const [errors, setErrors] = useState<{
     email?: string;
     password?: string;

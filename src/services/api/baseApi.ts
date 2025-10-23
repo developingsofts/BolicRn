@@ -88,6 +88,8 @@ export const baseApi = createApi({
     'Posts',
     'Ratings',
     'Notifications',
+    'TrainingTypes',
+    'SelectedTrainingTypes',
   ],
   endpoints: () => ({}),
 });

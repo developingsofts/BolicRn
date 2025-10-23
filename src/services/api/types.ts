@@ -31,6 +31,7 @@ export interface RegisterPayload {
   genderPreference?: string;
   userGender?: string;
   currentPRs?: string;
+  onboardingStep?: number;
 }
 
 export interface PaginationParams {
