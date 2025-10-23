@@ -495,24 +495,32 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
                     bio: data.description,
                   };
 
+                  const imageFile = data.avatar ? { uri: data.avatar, type: 'image/jpeg', name: 'profile.jpg' } : null;
+
+                  let updateResponse;
+                  
                   // If there's an avatar image, use the image upload mutation
                   if (data.avatar) {
-                    const imageFile = { uri: data.avatar, type: 'image/jpeg', name: 'profile.jpg' };
-                    await updateProfileWithImage({
+                    updateResponse = await updateProfileWithImage({
                       ...updateData,
                       imageFile,
                       onboardingStep: 3, // Mark onboarding as completed
                     }).unwrap();
                   } else {
                     // No image, use regular update
-                    await updateProfile({
+                    updateResponse = await updateProfile({
                       ...updateData,
                       onboardingStep: 3, // Mark onboarding as completed
                     }).unwrap();
                   }
-
-                  // Signup complete - show success message
-                  Toast.success("Account created successfully!");
+                  
+                  // Signup complete - navigate to main screen
+                  await hydrateUser(
+                    { user: (updateResponse as any).data, token: authToken! },
+                    "Account created successfully!"
+                  );
+                  // Navigate to main screen - adjust this based on your navigation structure
+                  navigation.navigate('Main');
                 } catch (error: any) {
                   let message = 'Profile update failed';
                   if (error?.data?.message) {

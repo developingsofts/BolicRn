@@ -35,6 +35,11 @@ const UserProfileForm = React.forwardRef<
   const [currentPage, setCurrentPage] = useState(0);
   const itemsPerPage = 12; // Show 12 items per page (3 rows of 4)
 
+  // Expose submit function via ref
+  useImperativeHandle(ref, () => ({
+    submit: onSubmit,
+  }));
+
   // Fetch training types from API
   const { data: trainingTypesData, isLoading: isLoadingTrainingTypes } = useGetTrainingTypesQuery();
   const trainingTypes = (trainingTypesData as any)?.data || [];
@@ -151,10 +156,19 @@ const UserProfileForm = React.forwardRef<
   };
 
   const onSubmit = () => {
+    console.log("🔍 UserProfileForm onSubmit called");
+    console.log("Location:", location);
+    console.log("Selected specialties:", selectedSpecialties);
+    
     if (validate()) {
+      console.log("✅ Validation passed, calling onNext");
       if (onNext) {
         onNext({ location, specialties: selectedSpecialties });
+      } else {
+        console.log("❌ onNext is not defined");
       }
+    } else {
+      console.log("❌ Validation failed");
     }
   };
 
