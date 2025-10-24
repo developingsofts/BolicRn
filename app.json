@@ -13,7 +13,9 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.bolicbuddy.app",
@@ -44,7 +46,10 @@
               "host": "*"
             }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },
@@ -57,11 +62,17 @@
       "expo-notifications",
       "expo-font"
     ],
-    "permissions": ["LOCATION", "NOTIFICATIONS", "CAMERA", "MEDIA_LIBRARY"],
+    "permissions": [
+      "LOCATION",
+      "NOTIFICATIONS",
+      "CAMERA",
+      "MEDIA_LIBRARY"
+    ],
     "extra": {
       "eas": {
-        "projectId": "6d71676c-e4c8-417b-ac85-d1ac2936dcb9"
+        "projectId": "32ccada6-4f09-44f3-9d06-f3e5357967b0"
       }
-    }
+    },
+    "owner": "jbehl23"
   }
 }

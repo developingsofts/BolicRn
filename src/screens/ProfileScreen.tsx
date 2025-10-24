@@ -1461,7 +1461,7 @@ const styles = StyleSheet.create({
   },
   progressBarFill: {
     height: '100%',
-    backgroundColor: COLORS.primary,
+    backgroundColor: "#0DB312",
     borderRadius: 3,
   },
   streakStatsContainer: {
@@ -1518,7 +1518,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   dayCircleCompleted: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: "#0DB312",
   },
   dayCircleIncomplete: {
     borderWidth: 2,
