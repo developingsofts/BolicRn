@@ -18,8 +18,8 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   onConfirm,
   title = 'Delete Session',
   description = 'Once session is deleted, your upcoming applications for the session will be cancelled and users will be notified.',
-  confirmText = 'Cancel',
-  cancelText = 'Delete',
+  confirmText = 'Delete',
+  cancelText = 'Cancel',
 }) => {
   return (
     <Modal
@@ -33,11 +33,11 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
           <Text style={styles.title}>{title}</Text>
           <Text style={styles.description}>{description}</Text>
           <View style={styles.footer}>
-            <TouchableOpacity style={[styles.button, styles.deleteBtn]} onPress={onClose}>
-              <Text style={styles.deleteText}>{cancelText}</Text>
-            </TouchableOpacity>
             <TouchableOpacity style={[styles.button, styles.confirmBtn]} onPress={onConfirm}>
               <Text style={styles.confirmText}>{confirmText}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.button, styles.deleteBtn]} onPress={onClose}>
+              <Text style={styles.deleteText}>{cancelText}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -88,18 +88,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   deleteBtn: {
-    backgroundColor: COLORS.white,
-  },
-  confirmBtn: {
     backgroundColor: COLORS.primary,
   },
+  confirmBtn: {
+    backgroundColor: COLORS.white,
+  },
   deleteText: {
-    color: '#EB3434',
+    color: COLORS.white,
     fontWeight: '600',
     fontSize: 16,
   },
   confirmText: {
-    color: COLORS.white,
+    color: '#EB3434',
     fontWeight: '600',
     fontSize: 16,
   },

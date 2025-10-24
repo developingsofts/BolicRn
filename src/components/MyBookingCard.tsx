@@ -103,8 +103,8 @@ const MyBookingCard = ({
         description={`Confirm if you wish to decline upcoming client session request for the ${date} ${timeRange}.
 
 Client will be notified and refund will be initiated.`}
-        confirmText="Cancel"
-        cancelText="Delete"
+        confirmText="Delete"
+        cancelText="Cancel"
       />
     </View>
   );
