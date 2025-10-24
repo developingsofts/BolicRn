@@ -33,10 +33,11 @@ const TrainerSetup: React.FC = ({ navigation }: any) => {
 
   // Handlers for step navigation
   const handleNext = async () => {
-    setStep(2);
-    // Persist step 2 as progress
-    if (user?.trainerOnboardingStep !== 2) {
-      await updateMyProfile({ trainerOnboardingStep: 2 });
+    const nextStep = step + 1;
+    setStep(nextStep);
+    // Persist current step as progress
+    if (user?.trainerOnboardingStep !== step) {
+      await updateMyProfile({ trainerOnboardingStep: step });
     }
   };
   const handleSaveDraft = async () => {
@@ -47,8 +48,7 @@ const TrainerSetup: React.FC = ({ navigation }: any) => {
   const handleConfirm = async () => {
     // Mark onboarding as complete (step 0 or 3 = complete)
     await updateMyProfile({ trainerOnboardingStep: 3 });
-    alert("Profile is live! Your trainer profile is now active.");
-    navigation.navigate("Home");
+    navigation.navigate("Main", { screen: "Profile" });
   };
 
   useEffect(() => {
