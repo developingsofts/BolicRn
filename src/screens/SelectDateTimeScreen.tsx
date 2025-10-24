@@ -7,6 +7,7 @@ import {
   Text,
 } from "react-native";
 import DateTimeSelector from "../components/DateTimeSelector";
+import BasicTopBar from "../components/BasicTopBar";
 import { COLORS, DIMENSIONS } from "../config/constants";
 import FontWeight from "../hooks/useInterFonts";
 import { LeftArrow } from "../../assets";
@@ -46,24 +47,21 @@ const SelectDateTimeScreen: React.FC<SelectDateTimeScreenProps> = ({
   };
 
   const renderHeader = () => (
-    <View style={styles.topBar}>
-      <TouchableOpacity
-        onPress={() => navigation.goBack()}
-        style={styles.backButton}
-      >
+    <BasicTopBar
+      containerStyle={styles.topBar}
+      onBackPress={() => navigation.goBack()}
+      backButtonIcon={
         <Image
           source={LeftArrow}
           style={styles.backIcon}
           resizeMode="contain"
         />
-      </TouchableOpacity>
-      <View style={styles.titleContainer}>
-        <Text style={styles.topBarTitle}>Select Date & Time</Text>
-        <Text style={styles.topBarSubtitle}>
-          Select a time to schedule with {trainerName}
-        </Text>
-      </View>
-    </View>
+      }
+      title="Select Date & Time"
+      subtitle={`Select a time to schedule with ${trainerName}`}
+      titleStyle={styles.topBarTitle}
+      subtitleStyle={styles.topBarSubtitle}
+    />
   );
 
   return (
@@ -84,23 +82,13 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   topBar: {
-    flexDirection: "row",
-    alignItems: "center",
     paddingTop: DIMENSIONS.spacing.xxl,
     paddingBottom: DIMENSIONS.spacing.lg,
-    paddingHorizontal: DIMENSIONS.spacing.lg,
-    backgroundColor: COLORS.primary,
-  },
-  backButton: {
-    marginRight: DIMENSIONS.spacing.md,
   },
   backIcon: {
     width: 28,
     height: 28,
     tintColor: COLORS.white,
-  },
-  titleContainer: {
-    flex: 1,
   },
   topBarTitle: {
     fontFamily: FontWeight.SemiBold,

@@ -1069,18 +1069,22 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
         console.log('Full error object:', JSON.stringify(error, null, 2));
         
         // RTK Query error structure
-        if (error?.status && (error.status === 403 || error.status === 409 || error.status === 400)) {
-          // Consistent message for duplicate email
-          message = "Email already exists. Please use a different email or sign in.";
-          console.log('✅ Using consistent duplicate email message for status:', error.status);
-        } else if (error?.data?.message) {
-          // Backend error response
+        if (error?.data?.message) {
+          // Backend error response - use the actual message
           message = error.data.message;
           console.log('✅ Using backend message from error.data.message:', message);
         } else if (error?.data?.error) {
           // Alternative backend error format
           message = error.data.error;
           console.log('✅ Using alternative backend error from error.data.error:', message);
+        } else if (error?.status && (error.status === 403 || error.status === 409 || error.status === 400)) {
+          // Fallback for status-based errors when no message is available
+          if (error.status === 409) {
+            message = "Email already exists. Please use a different email or sign in.";
+          } else {
+            message = "Validation error. Please check your information and try again.";
+          }
+          console.log('✅ Using status-based fallback message for status:', error.status);
         } else if (error?.message) {
           // Standard Error object
           message = error.message;
