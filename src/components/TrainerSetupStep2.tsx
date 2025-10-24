@@ -40,7 +40,17 @@ const TrainerSetupStep2: React.FC<TrainerSetupStep2Props> = ({ onSaveDraft, onCo
                 </>
               ) : (
                 <>
+                <View 
+                style={{
+                  
+                  borderWidth: 0.5,
+                  borderColor: '#0000001F',
+                  paddingHorizontal: 12,
+                  paddingVertical: 9,
+                  borderRadius: 4,
+                }}>
                   <Text style={styles.timeText}>{slot.start}</Text>
+                  </View>
                   <Text style={styles.dash}>-</Text>
                   <Text style={styles.timeText}>{slot.end}</Text>
                 </>
@@ -87,18 +97,15 @@ const styles = StyleSheet.create({
     padding: 20,
     marginBottom: 18,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    shadowColor: COLORS.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
+    borderColor: "#EDEDED",
+    boxShadow: "0px 0px 8px 0px #6B6B6B26",
     elevation: 2,
   },
   scheduleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    marginBottom: 15,
   },
   dayText: {
     fontSize: 15,
@@ -112,14 +119,15 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   badgeOff: {
-    backgroundColor: '#F5F5F5',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 4,
+    backgroundColor: '#E6E6E6',
+    borderRadius: 32,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    
   },
   badgeText: {
-    color: COLORS.textSecondary,
-    fontSize: 13,
+    color: "#DA9393",
+    fontSize: 15,
   },
   dash: {
     color: COLORS.textSecondary,
