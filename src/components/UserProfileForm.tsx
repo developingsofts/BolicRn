@@ -67,7 +67,7 @@ const UserProfileForm = React.forwardRef<
     }, 500);
   };
 
-  // Location suggestions - using Google Places API or similar
+  // Location suggestions - using API
   const fetchSuggestions = useCallback(async (query: string) => {
     const trimmed = query.trim();
 
@@ -77,82 +77,18 @@ const UserProfileForm = React.forwardRef<
     }
 
     try {
-      // Example: Using Google Places API (you'll need to add your API key)
-      // const apiKey = 'YOUR_GOOGLE_PLACES_API_KEY';
-      // const response = await fetch(
-      //   `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(trimmed)}&types=(cities)&key=${apiKey}`
-      // );
-      // const data = await response.json();
-      // const suggestions = data.predictions?.slice(0, 5).map((prediction: any) => ({
-      //   text: prediction.description,
-      //   placeId: prediction.place_id,
-      //   isCollection: false
-      // })) || [];
+      const response = await fetch(
+        `${LOCATION_CONFIG.geocodeSuggestUrl}?text=${encodeURIComponent(
+          trimmed
+        )}&f=json`
+      );
+      const data = await response.json();
 
-      // For now, using the static list with API-like structure
-      const commonLocations = [
-        "New York, NY",
-        "Los Angeles, CA",
-        "Chicago, IL",
-        "Houston, TX",
-        "Phoenix, AZ",
-        "Philadelphia, PA",
-        "San Antonio, TX",
-        "San Diego, CA",
-        "Dallas, TX",
-        "San Jose, CA",
-        "Austin, TX",
-        "Jacksonville, FL",
-        "Fort Worth, TX",
-        "Columbus, OH",
-        "Charlotte, NC",
-        "San Francisco, CA",
-        "Indianapolis, IN",
-        "Seattle, WA",
-        "Denver, CO",
-        "Boston, MA",
-        "El Paso, TX",
-        "Nashville, TN",
-        "Detroit, MI",
-        "Oklahoma City, OK",
-        "Portland, OR",
-        "Las Vegas, NV",
-        "Memphis, TN",
-        "Louisville, KY",
-        "Baltimore, MD",
-        "Milwaukee, WI",
-        "Albuquerque, NM",
-        "Tucson, AZ",
-        "Fresno, CA",
-        "Sacramento, CA",
-        "Mesa, AZ",
-        "Kansas City, MO",
-        "Atlanta, GA",
-        "Long Beach, CA",
-        "Colorado Springs, CO",
-        "Raleigh, NC",
-        "Miami, FL",
-        "Virginia Beach, VA",
-        "Omaha, NE",
-        "Oakland, CA",
-        "Minneapolis, MN",
-        "Tulsa, OK",
-        "Arlington, TX",
-        "Tampa, FL",
-        "New Orleans, LA",
-        "Wichita, KS"
-      ];
-
-      const filteredLocations = commonLocations
-        .filter(location => location.toLowerCase().includes(trimmed.toLowerCase()))
-        .slice(0, 5)
-        .map(location => ({
-          text: location,
-          magicKey: location,
-          isCollection: false
-        }));
-
-      setSuggestions(filteredLocations);
+      if (data?.suggestions) {
+        setSuggestions(data.suggestions);
+      } else {
+        setSuggestions([]);
+      }
     } catch (error) {
       console.error("Error fetching suggestions:", error);
       setSuggestions([]);
