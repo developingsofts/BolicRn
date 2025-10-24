@@ -1,10 +1,18 @@
-import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated, Dimensions, TouchableOpacity } from 'react-native';
-import { COLORS, DIMENSIONS } from '../config/constants';
+import React, { useEffect, useRef } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Animated,
+  Dimensions,
+  TouchableOpacity,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { COLORS, DIMENSIONS } from "../config/constants";
 
-const { width, height } = Dimensions.get('window');
+const { width, height } = Dimensions.get("window");
 
-export type ToastType = 'success' | 'error' | 'warning' | 'info';
+export type ToastType = "success" | "error" | "warning" | "info";
 
 interface CustomToastProps {
   message: string;
@@ -13,11 +21,11 @@ interface CustomToastProps {
   onHide: () => void;
 }
 
-const CustomToast: React.FC<CustomToastProps> = ({ 
-  message, 
-  type, 
-  duration = 3000, 
-  onHide 
+const CustomToast: React.FC<CustomToastProps> = ({
+  message,
+  type,
+  duration = 3000,
+  onHide,
 }) => {
   const translateY = useRef(new Animated.Value(-100)).current;
   const opacity = useRef(new Animated.Value(0)).current;
@@ -63,34 +71,34 @@ const CustomToast: React.FC<CustomToastProps> = ({
 
   const getToastStyle = () => {
     switch (type) {
-      case 'success':
+      case "success":
         return {
           backgroundColor: COLORS._3FE363,
-          icon: '✓',
+          icon: "✓",
           iconColor: COLORS.white,
         };
-      case 'error':
+      case "error":
         return {
           backgroundColor: COLORS.error,
-          icon: '✕',
+          icon: "✕",
           iconColor: COLORS.white,
         };
-      case 'warning':
+      case "warning":
         return {
           backgroundColor: COLORS._F3A455,
-          icon: '⚠',
+          icon: "⚠",
           iconColor: COLORS.white,
         };
-      case 'info':
+      case "info":
         return {
           backgroundColor: COLORS._0B80FF,
-          icon: 'ℹ',
+          icon: "ℹ",
           iconColor: COLORS.white,
         };
       default:
         return {
           backgroundColor: COLORS.primary,
-          icon: 'ℹ',
+          icon: "ℹ",
           iconColor: COLORS.white,
         };
     }
@@ -109,7 +117,7 @@ const CustomToast: React.FC<CustomToastProps> = ({
         },
       ]}
     >
-      <TouchableOpacity 
+      <TouchableOpacity
         activeOpacity={0.9}
         onPress={hideToast}
         style={styles.content}
@@ -123,7 +131,7 @@ const CustomToast: React.FC<CustomToastProps> = ({
           {message}
         </Text>
         <TouchableOpacity onPress={hideToast} style={styles.closeButton}>
-          <Text style={styles.closeIcon}>×</Text>
+          <Ionicons name="close" size={20} color={COLORS.white} style={{ opacity: 0.8 }} />
         </TouchableOpacity>
       </TouchableOpacity>
     </Animated.View>
@@ -132,59 +140,55 @@ const CustomToast: React.FC<CustomToastProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    position: 'absolute',
+    position: "absolute",
     top: 60, // Position at top of screen below status bar
     left: DIMENSIONS.spacing.md,
     right: DIMENSIONS.spacing.md,
     borderRadius: 12,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 4,
     },
+    justifyContent: "center",
+    alignItems: "center",
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
     zIndex: 9999,
   },
   content: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 14,
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 16,
+    paddingVertical: 12,
   },
   iconContainer: {
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: 12,
   },
   icon: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   message: {
     flex: 1,
     color: COLORS.white,
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: "600",
     lineHeight: 20,
   },
   closeButton: {
     width: 24,
     height: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginLeft: 8,
-  },
-  closeIcon: {
-    color: COLORS.white,
-    fontSize: 24,
-    fontWeight: '300',
-    opacity: 0.8,
   },
 });
 
