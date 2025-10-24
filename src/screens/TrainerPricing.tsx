@@ -98,7 +98,7 @@ const TrainerPricing: React.FC<{ navigation: any }> = ({ navigation }) => {
           ))}
           <TouchableOpacity style={styles.addBtn} onPress={handleAddNew}>
             <Text style={styles.addBtnText}>Add New Session</Text>
-            <Ionicons name="add" size={22} color={COLORS.primary} style={{ marginLeft: 8 }} />
+            <Ionicons name="add" size={22} color={"#191919"} style={{ marginLeft: 8 }} />
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -209,15 +209,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.surface,
     borderRadius: 10,
-    borderWidth: 1,
-    borderColor: COLORS.primary,
+    backgroundColor: COLORS.white,
     paddingVertical: 18,
     marginTop: 8,
   },
   addBtnText: {
-    color: COLORS.primary,
+    color: "#383838",
     fontWeight: '600',
     fontSize: 16,
   },

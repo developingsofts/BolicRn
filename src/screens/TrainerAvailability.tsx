@@ -75,37 +75,47 @@ const TrainerAvailability: React.FC<{ navigation: any }> = ({ navigation }) => {
         containerStyle={{ paddingTop: DIMENSIONS.spacing.xxl, paddingBottom: DIMENSIONS.spacing.lg }}
       />
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.card}>
+        <View style={styles.sessionCard}>
           {daysOfWeek.map((day, idx) => (
-            <View key={day} style={[styles.row, { flexWrap: 'wrap' }]}> 
-              <Text style={styles.dayLabel}>{day}</Text>
-              {availability[day].isOff ? (
-                <View style={styles.timeInputs}>
-                  <View style={styles.offTimeBox}>
-                    <Text style={styles.offTimeText}>OFF</Text>
-                  </View>
-                  <Text style={styles.toText}>-</Text>
-                  <View style={styles.offTimeBox}>
-                    <Text style={styles.offTimeText}>OFF</Text>
-                  </View>
-                </View>
-              ) : (
-                <View style={styles.timeInputs}>
-                  <TouchableOpacity
-                    style={styles.timeBtn}
-                    onPress={() => Alert.alert('Select start time')}
-                  >
-                    <Text style={styles.timeText}>{availability[day].startTime}</Text>
-                  </TouchableOpacity>
-                  <Text style={styles.toText}>-</Text>
-                  <TouchableOpacity
-                    style={styles.timeBtn}
-                    onPress={() => Alert.alert('Select end time')}
-                  >
-                    <Text style={styles.timeText}>{availability[day].endTime}</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
+            <View key={day} style={styles.scheduleRow}>
+              <Text style={styles.dayText}>{day}</Text>
+              <View style={styles.timeRow}>
+                {availability[day].isOff ? (
+                  <>
+                    <View style={styles.badgeOff}><Text style={styles.badgeText}>OFF</Text></View>
+                    <Text style={styles.dash}>-</Text>
+                    <View style={styles.badgeOff}><Text style={styles.badgeText}>OFF</Text></View>
+                  </>
+                ) : (
+                  <>
+                    <TouchableOpacity
+                      style={{
+                        borderWidth: 0.5,
+                        borderColor: '#0000001F',
+                        paddingHorizontal: 12,
+                        paddingVertical: 9,
+                        borderRadius: 32,
+                      }}
+                      onPress={() => Alert.alert('Select start time')}
+                    >
+                      <Text style={styles.timeText}>{availability[day].startTime}</Text>
+                    </TouchableOpacity>
+                    <Text style={styles.dash}>-</Text>
+                    <TouchableOpacity
+                      style={{
+                        borderWidth: 0.5,
+                        borderColor: '#0000001F',
+                        paddingHorizontal: 12,
+                        paddingVertical: 9,
+                        borderRadius: 32,
+                      }}
+                      onPress={() => Alert.alert('Select end time')}
+                    >
+                      <Text style={styles.timeText}>{availability[day].endTime}</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+              </View>
             </View>
           ))}
         </View>
@@ -175,6 +185,51 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 6,
     elevation: 2,
+  },
+  sessionCard: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 14,
+    padding: 20,
+    marginBottom: 18,
+    borderWidth: 1,
+    borderColor: "#EDEDED",
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  scheduleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 15,
+  },
+  dayText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.text,
+    minWidth: 100,
+  },
+  timeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '60%',
+  },
+  badgeOff: {
+    backgroundColor: '#E6E6E6',
+    borderRadius: 32,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+  },
+  badgeText: {
+    color: "#DA9393",
+    fontSize: 15,
+  },
+  dash: {
+    color: COLORS.textSecondary,
+    marginHorizontal: 6,
   },
   row: {
     flexDirection: 'row',
