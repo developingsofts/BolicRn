@@ -47,12 +47,23 @@ const TrainerSetupStep2: React.FC<TrainerSetupStep2Props> = ({ onSaveDraft, onCo
                   borderColor: '#0000001F',
                   paddingHorizontal: 12,
                   paddingVertical: 9,
-                  borderRadius: 4,
+                  borderRadius: 32,
+
                 }}>
                   <Text style={styles.timeText}>{slot.start}</Text>
                   </View>
                   <Text style={styles.dash}>-</Text>
-                  <Text style={styles.timeText}>{slot.end}</Text>
+                  <View
+                    style={{
+                      borderWidth: 0.5,
+                      borderColor: '#0000001F',
+                      paddingHorizontal: 12,
+                      paddingVertical: 9,
+                      borderRadius: 32,
+                    }}
+                  >
+                    <Text style={styles.timeText}>{slot.end}</Text>
+                  </View>
                 </>
               )}
             </View>
@@ -116,7 +127,8 @@ const styles = StyleSheet.create({
   timeRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'space-between',
+    width: '60%',
   },
   badgeOff: {
     backgroundColor: '#E6E6E6',
@@ -157,12 +169,16 @@ const styles = StyleSheet.create({
     fontFamily: FontWeight.Medium,
   },
   outlineBtn: {
-    backgroundColor: COLORS.background,
-    borderWidth: 1,
-    borderColor: COLORS.primary,
+    backgroundColor: COLORS.white,
+   boxShadow: "0px 0px 12px 0px #76767626",
+   flex:0,
+   justifyContent:'center',
+   alignItems:'center',
+   paddingHorizontal:10,
+   paddingVertical:12,
   },
   outlineBtnText: {
-    color: COLORS.primary,
+    color: "#383838",
   },
 });
 
