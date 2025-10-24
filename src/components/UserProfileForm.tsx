@@ -6,9 +6,10 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  ActivityIndicator,
 } from "react-native";
 import { Button, ProgressBar } from "react-native-paper";
-import { COLORS, LOCATION_CONFIG } from "../config/constants";
+import { COLORS, LOCATION_CONFIG, TRAINING_TYPES } from "../config/constants";
 import { useGetTrainingTypesQuery } from "../services/api/userApi";
 
 interface UserProfileFormProps {
@@ -32,8 +33,9 @@ const UserProfileForm = React.forwardRef<
     location?: string;
     specialties?: string;
   }>({});
-  const [currentPage, setCurrentPage] = useState(0);
-  const itemsPerPage = 12; // Show 12 items per page (3 rows of 4)
+
+  const [visibleCount, setVisibleCount] = useState(12);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   // Expose submit function via ref
   useImperativeHandle(ref, () => ({
@@ -42,17 +44,32 @@ const UserProfileForm = React.forwardRef<
 
   // Fetch training types from API
   const { data: trainingTypesData, isLoading: isLoadingTrainingTypes } = useGetTrainingTypesQuery();
-  const trainingTypes = (trainingTypesData as any)?.data || [];
+  const apiTrainingTypes = (trainingTypesData as any)?.data || [];
+  const trainingTypes = apiTrainingTypes.length > 0 ? apiTrainingTypes : TRAINING_TYPES.map(title => ({ id: title, title }));
 
-  const totalPages = Math.ceil(trainingTypes.length / itemsPerPage);
-  const paginatedTypes = trainingTypes.slice(
-    currentPage * itemsPerPage,
-    (currentPage + 1) * itemsPerPage
-  );
+  const visibleTypes = trainingTypes.slice(0, visibleCount);
 
-  // Location suggestions - using a simple list for now
+  const handleScroll = (event: any) => {
+    const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+    const isCloseToBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - 50;
+    if (isCloseToBottom) {
+      loadMore();
+    }
+  };
+
+  const loadMore = () => {
+    if (isLoadingMore || visibleCount >= trainingTypes.length) return;
+    setIsLoadingMore(true);
+    // Simulate loading delay
+    setTimeout(() => {
+      setVisibleCount(prev => Math.min(prev + 12, trainingTypes.length));
+      setIsLoadingMore(false);
+    }, 500);
+  };
+
+  // Location suggestions - using Google Places API or similar
   const fetchSuggestions = useCallback(async (query: string) => {
-    const trimmed = query.trim().toLowerCase();
+    const trimmed = query.trim();
 
     if (!trimmed || trimmed.length < 2) {
       setSuggestions([]);
@@ -60,7 +77,19 @@ const UserProfileForm = React.forwardRef<
     }
 
     try {
-      // Simple location suggestions - can be expanded with more cities
+      // Example: Using Google Places API (you'll need to add your API key)
+      // const apiKey = 'YOUR_GOOGLE_PLACES_API_KEY';
+      // const response = await fetch(
+      //   `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(trimmed)}&types=(cities)&key=${apiKey}`
+      // );
+      // const data = await response.json();
+      // const suggestions = data.predictions?.slice(0, 5).map((prediction: any) => ({
+      //   text: prediction.description,
+      //   placeId: prediction.place_id,
+      //   isCollection: false
+      // })) || [];
+
+      // For now, using the static list with API-like structure
       const commonLocations = [
         "New York, NY",
         "Los Angeles, CA",
@@ -115,7 +144,7 @@ const UserProfileForm = React.forwardRef<
       ];
 
       const filteredLocations = commonLocations
-        .filter(location => location.toLowerCase().includes(trimmed))
+        .filter(location => location.toLowerCase().includes(trimmed.toLowerCase()))
         .slice(0, 5)
         .map(location => ({
           text: location,
@@ -156,19 +185,10 @@ const UserProfileForm = React.forwardRef<
   };
 
   const onSubmit = () => {
-    console.log("🔍 UserProfileForm onSubmit called");
-    console.log("Location:", location);
-    console.log("Selected specialties:", selectedSpecialties);
-    
     if (validate()) {
-      console.log("✅ Validation passed, calling onNext");
       if (onNext) {
         onNext({ location, specialties: selectedSpecialties });
-      } else {
-        console.log("❌ onNext is not defined");
       }
-    } else {
-      console.log("❌ Validation failed");
     }
   };
 
@@ -220,60 +240,55 @@ const UserProfileForm = React.forwardRef<
             <Text style={styles.loadingText}>Loading training types...</Text>
           ) : (
             <View style={styles.specialtiesContainer}>
-              <ScrollView
-                style={styles.specialtiesScrollView}
-                contentContainerStyle={styles.badgeContainer}
-                showsVerticalScrollIndicator={true}
-              >
-                {paginatedTypes.map((trainingType: any) => {
-                  const selected = selectedSpecialties.includes(trainingType.title);
-                  return (
-                    <TouchableOpacity
-                      key={trainingType.id}
-                      style={[
-                        styles.badge,
-                        selected ? styles.badgeSelected : styles.badgeUnselected,
-                      ]}
-                      onPress={() => toggleSpecialty(trainingType.title)}
-                      activeOpacity={0.8}
-                    >
-                      <Text
-                        style={[
-                          styles.badgeText,
-                          selected && styles.badgeTextSelected,
-                        ]}
-                      >
-                        {trainingType.title}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-
-              {/* Pagination Controls */}
-              {totalPages > 1 && (
-                <View style={styles.paginationContainer}>
-                  <TouchableOpacity
-                    style={[styles.paginationButton, currentPage === 0 && styles.paginationButtonDisabled]}
-                    onPress={() => setCurrentPage(Math.max(0, currentPage - 1))}
-                    disabled={currentPage === 0}
-                  >
-                    <Text style={[styles.paginationText, currentPage === 0 && styles.paginationTextDisabled]}>‹</Text>
-                  </TouchableOpacity>
-
-                  <Text style={styles.pageIndicator}>
-                    {currentPage + 1} of {totalPages}
-                  </Text>
-
-                  <TouchableOpacity
-                    style={[styles.paginationButton, currentPage === totalPages - 1 && styles.paginationButtonDisabled]}
-                    onPress={() => setCurrentPage(Math.min(totalPages - 1, currentPage + 1))}
-                    disabled={currentPage === totalPages - 1}
-                  >
-                    <Text style={[styles.paginationText, currentPage === totalPages - 1 && styles.paginationTextDisabled]}>›</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
+  
+                <ScrollView
+                  style={styles.specialtiesScrollView}
+                  contentContainerStyle={styles.badgeContainer}
+                  showsVerticalScrollIndicator={true}
+                  onScroll={handleScroll}
+                  scrollEventThrottle={16}
+                >
+                  {visibleTypes.length === 0 ? (
+                    <Text style={styles.loadingText}>No training types available</Text>
+                  ) : (
+                    visibleTypes.map((trainingType: any) => {
+                      const selected = selectedSpecialties.includes(trainingType.title);
+                      return (
+                        <TouchableOpacity
+                          key={trainingType.id}
+                          style={[
+                            styles.badge,
+                            selected ? styles.badgeSelected : styles.badgeUnselected,
+                          ]}
+                          onPress={() => toggleSpecialty(trainingType.title)}
+                          activeOpacity={0.8}
+                        >
+                          <Text
+                            style={[
+                              styles.badgeText,
+                              selected && styles.badgeTextSelected,
+                            ]}
+                          >
+                            {trainingType.title}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })
+                  )}
+                  {isLoadingMore && (
+                    <View style={styles.loadingMoreContainer}>
+                      <ActivityIndicator size="small" color={COLORS.primary} />
+                      <Text style={styles.loadingMoreText}>Loading more...</Text>
+                    </View>
+                  )}
+                  {isLoadingMore && (
+                    <View style={styles.loadingMoreContainer}>
+                      <ActivityIndicator size="small" color={COLORS.primary} />
+                      <Text style={styles.loadingMoreText}>Loading more...</Text>
+                    </View>
+                  )}
+                </ScrollView>
+          
             </View>
           )}
           {errors.specialties && (
@@ -383,10 +398,12 @@ const styles = StyleSheet.create({
     color: COLORS.text,
   },
   specialtiesContainer: {
-    height: 200, // Fixed height for scrolling
+    maxHeight: 250,
+    minHeight: 250,
   },
   specialtiesScrollView: {
-    flex: 1,
+    maxHeight: 250,
+    minHeight: 250,
   },
   paginationContainer: {
     flexDirection: 'row',
@@ -420,6 +437,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.textSecondary,
     marginHorizontal: 16,
+  },
+  loadingMoreContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+    width: '100%',
+  },
+  loadingMoreText: {
+    marginTop: 8,
+    fontSize: 14,
+    color: COLORS.textSecondary,
   },
 });
 

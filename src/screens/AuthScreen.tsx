@@ -218,7 +218,6 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
           email: values.email,
           password: values.password,
         }).unwrap();
-console.log('Registration response:', registrationResponse);
         if (!registrationResponse.status) {
           throw new Error(registrationResponse.message || ERROR_MESSAGES.authenticationError);
         }
@@ -248,14 +247,17 @@ console.log('Registration response:', registrationResponse);
       // Handle RTK Query errors
       let message = "Authentication failed";
       
-      console.error('Signup error:', error);
       console.log('Error data:', error.data);
       console.log('Error status:', error.status);
       console.log('Error message:', error.message);
       console.log('Full error object:', JSON.stringify(error, null, 2));
       
       // RTK Query error structure
-      if (error?.data?.message) {
+      if (error?.status && (error.status === 403 || error.status === 409 || error.status === 400)) {
+        // Consistent message for duplicate email
+        message = "Email already exists. Please use a different email or sign in.";
+        console.log('✅ Using consistent duplicate email message for status:', error.status);
+      } else if (error?.data?.message) {
         // Backend error response
         message = error.data.message;
         console.log('✅ Using backend message from error.data.message:', message);
@@ -270,14 +272,11 @@ console.log('Registration response:', registrationResponse);
       } else if (error?.status) {
         // HTTP status code errors
         console.log('Checking status:', error.status);
-        if (error.status === 409 || error.status === 400) {
-          message = error?.data?.message || error?.data?.error || "Email already exists. Please use a different email or sign in.";
-          console.log('✅ Using status-based message for 409/400:', message);
-        } else if (error.status === 500) {
+        if (error.status === 500) {
           message = "Server error. Please try again later.";
           console.log('✅ Using status-based message for 500:', message);
         } else {
-          console.log('Status not 409/400/500, status:', error.status);
+          console.log('Status not handled:', error.status);
         }
       } else if (typeof error === 'string') {
         message = error;
@@ -458,9 +457,9 @@ console.log('Registration response:', registrationResponse);
           // User flow logic (old 7-step)
           const finalStep = 7;
           if (onboardingStep > 0 && onboardingStep < finalStep) {
-            console.log('🔄 Resuming user onboarding from step:', onboardingStep);
+            console.log('🔄 Resuming user onboarding from step:', onboardingStep + 1);
             setIsSignUp(true);
-            setSignUpStep(onboardingStep);
+            setSignUpStep(onboardingStep + 1);
             setAuthToken(token);
             await storageService.setAuthToken(token);
 
@@ -501,8 +500,6 @@ console.log('Registration response:', registrationResponse);
     } catch (error: any) {
       // Handle RTK Query errors
       let message = "Authentication failed";
-
-      console.error("Login error:", error);
 
       // RTK Query error structure
       if (error?.data?.message) {
@@ -676,14 +673,17 @@ console.log('Registration response:', registrationResponse);
                   setSignUpFormValues(prev => ({ ...prev, email: data.email, password: data.password }));
                   setSignUpStep(2);
                 } catch (error: any) {
-                  console.error('Trainer signup step 1 error:', error);
                   console.log('Error data:', error.data);
                   console.log('Error status:', error.status);
                   console.log('Error message:', error.message);
                   console.log('Full error object:', JSON.stringify(error, null, 2));
                   
                   let message = 'Registration failed';
-                  if (error?.data?.message) {
+                  if (error?.status && (error.status === 403 || error.status === 409 || error.status === 400)) {
+                    // Consistent message for duplicate email
+                    message = "Email already exists. Please use a different email or sign in.";
+                    console.log('✅ Using consistent duplicate email message for status:', error.status);
+                  } else if (error?.data?.message) {
                     message = error.data.message;
                     console.log('✅ Using backend message from error.data.message:', message);
                   } else if (error?.data?.error) {
@@ -694,10 +694,7 @@ console.log('Registration response:', registrationResponse);
                     console.log('✅ Using error.message:', message);
                   } else if (error?.status) {
                     console.log('Checking status:', error.status);
-                    if (error.status === 409 || error.status === 400) {
-                      message = error?.data?.message || error?.data?.error || "Email already exists. Please use a different email or sign in.";
-                      console.log('✅ Using status-based message for 409/400:', message);
-                    } else if (error.status === 500) {
+                    if (error.status === 500) {
                       message = "Server error. Please try again later.";
                       console.log('✅ Using status-based message for 500:', message);
                     }
@@ -747,7 +744,6 @@ console.log('Registration response:', registrationResponse);
                   setSignUpFormValues(prev => ({ ...prev, location: data.location, trainingTypes: data.specialties }));
                   setSignUpStep(3);
                 } catch (error: any) {
-                  console.error('Trainer signup step 2 error:', error);
                   console.log('Error data:', error.data);
                   console.log('Error status:', error.status);
                   console.log('Error message:', error.message);
@@ -831,7 +827,6 @@ console.log('Registration response:', registrationResponse);
                   );
                   navigation.navigate('Main');
                 } catch (error: any) {
-                  console.error('Trainer signup step 3 error:', error);
                   console.log('Error data:', error.data);
                   console.log('Error status:', error.status);
                   console.log('Error message:', error.message);
@@ -955,7 +950,7 @@ console.log('Registration response:', registrationResponse);
 
     const handleNextWithValidation = async () => {
       const validationErrors = await validateForm();
-      
+    
       let fieldsToValidate: string[] = [];
       switch (signUpStep) {
         case 1:
@@ -996,13 +991,14 @@ console.log('Registration response:', registrationResponse);
       }
 
       if (signUpStep === 1) {
+         try {
         const registrationResponse = await triggerRegister({
           email: values.email,
           password: values.password,
           role: signUpFormValues.role || 'user',
           onboardingStep: 1,
         }).unwrap();
-
+ 
         if (!registrationResponse.status) {
           throw new Error(registrationResponse.message || ERROR_MESSAGES.authenticationError);
         }
@@ -1013,7 +1009,11 @@ console.log('Registration response:', registrationResponse);
 
         nextStep();
         return;
+      } catch (error: any) {
+  
+        
       }
+    }
 
       try {
         const updateData: any = { onboardingStep: signUpStep };
@@ -1063,14 +1063,17 @@ console.log('Registration response:', registrationResponse);
         // Handle RTK Query errors
         let message = "Failed to update profile";
         
-        console.error(signUpStep === 1 ? 'Signup error:' : 'Profile update error:', error);
         console.log('Error data:', error.data);
         console.log('Error status:', error.status);
         console.log('Error message:', error.message);
         console.log('Full error object:', JSON.stringify(error, null, 2));
         
         // RTK Query error structure
-        if (error?.data?.message) {
+        if (error?.status && (error.status === 403 || error.status === 409 || error.status === 400)) {
+          // Consistent message for duplicate email
+          message = "Email already exists. Please use a different email or sign in.";
+          console.log('✅ Using consistent duplicate email message for status:', error.status);
+        } else if (error?.data?.message) {
           // Backend error response
           message = error.data.message;
           console.log('✅ Using backend message from error.data.message:', message);
@@ -1085,14 +1088,11 @@ console.log('Registration response:', registrationResponse);
         } else if (error?.status) {
           // HTTP status code errors
           console.log('Checking status:', error.status);
-          if (error.status === 409 || error.status === 400) {
-            message = error?.data?.message || error?.data?.error || "Email already exists. Please use a different email or sign in.";
-            console.log('✅ Using status-based message for 409/400:', message);
-          } else if (error.status === 500) {
+          if (error.status === 500) {
             message = "Server error. Please try again later.";
             console.log('✅ Using status-based message for 500:', message);
           } else {
-            console.log('Status not 409/400/500, status:', error.status);
+            console.log('Status not handled:', error.status);
           }
         } else if (typeof error === 'string') {
           message = error;
@@ -1103,7 +1103,6 @@ console.log('Registration response:', registrationResponse);
         
         console.log('Final message to display:', message);
         Toast.error(message);
-        alert('Error: ' + message); // Temporary debug
         console.log('Error toast shown:', message);
       }
     };
@@ -1344,7 +1343,9 @@ console.log('Registration response:', registrationResponse);
       case 6: // Training Types
         return (
           <View style={styles.stepContainer}>
-
+            <View style={{
+              maxHeight: 300,
+            }}>
             <ScrollView style={styles.trainingTypesContainer}>
               {TRAINING_TYPES.map((type) => (
                 <TouchableOpacity
@@ -1373,6 +1374,7 @@ console.log('Registration response:', registrationResponse);
                 </TouchableOpacity>
               ))}
             </ScrollView>
+            </View>
             {errors.trainingTypes && touched.trainingTypes && (
               <Text style={styles.errorText}>{errors.trainingTypes}</Text>
             )}
@@ -1652,7 +1654,6 @@ const styles = StyleSheet.create({
   },
   stepContainer: {
     marginBottom: DIMENSIONS.spacing.lg,
-    maxHeight: 250
   },
   title: {
     fontSize: 24,

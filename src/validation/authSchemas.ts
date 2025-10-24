@@ -48,13 +48,11 @@ export const signUpSchema = Yup.object().shape({
   verificationCode: Yup.string()
     .matches(/^\d{6}$/, "Verification code must be 6 digits")
     .optional(),
-  age: Yup.string()
-    .matches(/^\d+$/, "Age must be a number")
-    .test("valid-age", "You must be at least 13 years old", (value) => {
-      if (!value) return false;
-      const age = parseInt(value, 10);
-      return age >= 13 && age <= 120;
-    })
+  age: Yup.number()
+    .typeError("Age must be a number")
+    .integer("Age must be a whole number")
+    .min(13, "You must be at least 13 years old")
+    .max(120, "Age must not exceed 120 years")
     .required("Age is required"),
   trainingTypes: Yup.array()
     .of(Yup.string())
