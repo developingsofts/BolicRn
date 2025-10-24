@@ -9,19 +9,41 @@ interface TrainerSetupStep1Props {
 }
 
 const TrainerSetupStep1: React.FC<TrainerSetupStep1Props> = ({ onNext }) => {
-  const [singleSession, setSingleSession] = useState({
-    name: 'Single Session',
-    description: 'One-on-one personalized training session.',
-    price: '$75/hr',
-  });
-  const [packSession, setPackSession] = useState({
-    name: '5-Session Pack',
-    description: 'Save 10% with a bundle of 5 sessions.',
-    price: '$67.5/hr',
-  });
+  const [sessions, setSessions] = useState([
+    {
+      id: '1',
+      name: 'Single Session',
+      description: 'One-on-one personalized training session.',
+      price: '$75/hr',
+    },
+    {
+      id: '2',
+      name: '5-Session Pack',
+      description: 'Save 10% with a bundle of 5 sessions.',
+      price: '$67.5/hr',
+    },
+  ]);
 
   const handleAddSession = () => {
-    alert('Add session feature coming soon');
+    const newSession = {
+      id: Date.now().toString(),
+      name: '',
+      description: '',
+      price: '',
+    };
+    setSessions([...sessions, newSession]);
+  };
+
+  const updateSession = (id: string, field: string, value: string) => {
+    setSessions(sessions.map(session => 
+      session.id === id ? { ...session, [field]: value } : session
+    ));
+  };
+
+  const removeSession = (id: string) => {
+    if (sessions.length > 1) {
+      setSessions(sessions.filter(session => session.id !== id));
+    }
   };
 
   return (
@@ -41,74 +63,54 @@ const TrainerSetupStep1: React.FC<TrainerSetupStep1Props> = ({ onNext }) => {
             Create packages for clients to book. You can add more later.
           </Text>
         </View>
-        <View style={styles.sessionCard}>
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Session name</Text>
-            <TextInput
-              style={styles.inputField}
-              value={singleSession.name}
-              onChangeText={text => setSingleSession({ ...singleSession, name: text })}
-              placeholder="Session name"
-              placeholderTextColor={COLORS.textSecondary}
-            />
+        {sessions.map((session, index) => (
+          <View key={session.id} style={styles.sessionCard}>
+            <View style={styles.sessionHeader}>
+              <Text style={styles.sessionTitle}>Session {index + 1}</Text>
+              {sessions.length > 1 && (
+                <TouchableOpacity
+                  style={styles.removeBtn}
+                  onPress={() => removeSession(session.id)}
+                >
+                  <Text style={styles.removeBtnText}>Remove</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Session name</Text>
+              <TextInput
+                style={styles.inputField}
+                value={session.name}
+                onChangeText={text => updateSession(session.id, 'name', text)}
+                placeholder="Session name"
+                placeholderTextColor={COLORS.textSecondary}
+              />
+            </View>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Description</Text>
+              <TextInput
+                style={[styles.inputField, { height: 48 }]}
+                value={session.description}
+                onChangeText={text => updateSession(session.id, 'description', text)}
+                placeholder="Description"
+                placeholderTextColor={COLORS.textSecondary}
+                multiline
+              />
+            </View>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Price per hour</Text>
+              <TextInput
+                style={styles.inputField}
+                value={session.price}
+                onChangeText={text => updateSession(session.id, 'price', text)}
+                placeholder="$ per hour"
+                placeholderTextColor={COLORS.textSecondary}
+                keyboardType="numeric"
+              />
+            </View>
           </View>
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Description</Text>
-            <TextInput
-              style={[styles.inputField, { height: 48 }]}
-              value={singleSession.description}
-              onChangeText={text => setSingleSession({ ...singleSession, description: text })}
-              placeholder="Description"
-              placeholderTextColor={COLORS.textSecondary}
-              multiline
-            />
-          </View>
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Price per hour</Text>
-            <TextInput
-              style={styles.inputField}
-              value={singleSession.price}
-              onChangeText={text => setSingleSession({ ...singleSession, price: text })}
-              placeholder="$ per hour"
-              placeholderTextColor={COLORS.textSecondary}
-              keyboardType="numeric"
-            />
-          </View>
-        </View>
-        <View style={styles.sessionCard}>
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Session name</Text>
-            <TextInput
-              style={styles.inputField}
-              value={packSession.name}
-              onChangeText={text => setPackSession({ ...packSession, name: text })}
-              placeholder="Session name"
-              placeholderTextColor={COLORS.textSecondary}
-            />
-          </View>
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Description</Text>
-            <TextInput
-              style={[styles.inputField, { height: 48 }]}
-              value={packSession.description}
-              onChangeText={text => setPackSession({ ...packSession, description: text })}
-              placeholder="Description"
-              placeholderTextColor={COLORS.textSecondary}
-              multiline
-            />
-          </View>
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Price per hour</Text>
-            <TextInput
-              style={styles.inputField}
-              value={packSession.price}
-              onChangeText={text => setPackSession({ ...packSession, price: text })}
-              placeholder="$ per hour"
-              placeholderTextColor={COLORS.textSecondary}
-              keyboardType="numeric"
-            />
-          </View>
-        </View>
+        ))}
+
         <TouchableOpacity style={styles.nextBtn} onPress={onNext}>
           <Text style={styles.nextBtnText}>Next</Text>
         </TouchableOpacity>
@@ -165,6 +167,28 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 2,
+  },
+  sessionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  sessionTitle: {
+    fontSize: 16,
+    fontFamily: FontWeight.SemiBold,
+    color: COLORS.text,
+  },
+  removeBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: COLORS.primary,
+    borderRadius: 6,
+  },
+  removeBtnText: {
+    color: COLORS.white,
+    fontSize: 12,
+    fontFamily: FontWeight.Medium,
   },
   inputGroup: {
     marginBottom: 12,
