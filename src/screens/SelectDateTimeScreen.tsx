@@ -269,7 +269,14 @@ const SelectDateTimeScreen: React.FC<SelectDateTimeScreenProps> = ({
       >
         {renderCalendar()}
         {renderAvailableSlots()}
-
+     <View style={styles.sessionCard}>
+              <Text style={styles.sessionTitle}>Single Session</Text>
+              <Text style={styles.sessionDesc}>One-on-one personalized training session.</Text>
+              <View style={styles.sessionDetailsRow}>
+                <Text style={styles.sessionPriceDesc}>$75/hr x 4 hours</Text>
+                <Text style={styles.sessionPrice}>$300</Text>
+              </View>
+            </View>
         <TouchableOpacity
           style={[
             styles.continueButton,
@@ -439,6 +446,39 @@ const styles = StyleSheet.create({
     fontFamily: FontWeight.SemiBold,
     fontSize: 16,
     color: COLORS.white,
+  },
+    sessionCard: {
+    backgroundColor: COLORS.card,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    padding: 20,
+    marginBottom: 24,
+  },
+  sessionTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: COLORS.text,
+    marginBottom: 6,
+  },
+  sessionDesc: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    marginBottom: 10,
+  },
+  sessionDetailsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  sessionPriceDesc: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+  },
+  sessionPrice: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: COLORS.primary,
   },
 });
 

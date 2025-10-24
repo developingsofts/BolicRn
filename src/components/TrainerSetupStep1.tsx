@@ -32,8 +32,8 @@ const TrainerSetupStep1: React.FC<TrainerSetupStep1Props> = ({ onNext }) => {
     >
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         <TouchableOpacity style={styles.addSessionBtn} onPress={handleAddSession}>
-          <Ionicons name="add" size={20} color={COLORS.primary} style={{ marginRight: 8 }} />
           <Text style={styles.addSessionText}>Add New Session</Text>
+          <Ionicons name="add" size={20} color={"#383838"} style={{ marginRight: 8 }} />
         </TouchableOpacity>
         <View style={{ marginBottom: 16 }}>
           <Text style={styles.sectionTitle}>Set Your Rates</Text>
@@ -129,17 +129,17 @@ const styles = StyleSheet.create({
   addSessionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: COLORS.primary,
-    borderRadius: 10,
+    borderRadius: 4,
     paddingVertical: 14,
     paddingHorizontal: 0,
+    boxShadow: '0px 0px 12px 0px #76767626',
     marginBottom: 24,
-    backgroundColor: COLORS.background,
+    gap: 8,
+    backgroundColor: COLORS.white,
     justifyContent: 'center',
   },
   addSessionText: {
-    color: COLORS.primary,
+    color: "#383838",
     fontSize: 16,
     fontFamily: FontWeight.Medium,
   },

@@ -875,7 +875,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
                   avatarUploadFormRef.current?.submit();
                 }}
               >
-                <Text style={styles.nextButtonText}>Complete</Text>
+                <Text style={styles.nextButtonText}>Finish</Text>
               </TouchableOpacity>
             </View>
           </View>

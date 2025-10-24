@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
   primaryButton: {
     width: "100%",
     backgroundColor: COLORS.primary,
-    paddingVertical: DIMENSIONS.spacing.lg,
+    paddingVertical: DIMENSIONS.spacing.md,
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
@@ -198,18 +198,17 @@ const styles = StyleSheet.create({
   },
   outlineButton: {
     width: "100%",
-    backgroundColor: "transparent",
-    paddingVertical: DIMENSIONS.spacing.lg,
+    backgroundColor:  COLORS.white,
+    paddingVertical: DIMENSIONS.spacing.md,
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 2,
-    borderColor: COLORS.primary,
+    boxShadow: "0px 0px 12px 0px #76767626",
   },
   outlineButtonText: {
-    fontSize: r(16),
+    fontSize:14,
     fontFamily: FontWeight.SemiBold,
-    color: COLORS.primary,
+    color: "#383838",
   },
   homeLink: {
     marginBottom: DIMENSIONS.spacing.xl,
