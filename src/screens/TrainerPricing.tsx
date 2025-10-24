@@ -190,20 +190,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   deleteBtn: {
-    backgroundColor: '#E6E6E6',
+    backgroundColor: COLORS.white,
+    boxShadow: '0px 0px 12px 0px #76767626',
   },
   editBtn: {
     backgroundColor: COLORS.primary,
   },
   deleteText: {
-    color: '#DA9393',
+    color: '#EB3434',
     fontWeight: '600',
-    fontSize: 16,
+    fontSize: 14,
   },
   editText: {
     color: COLORS.white,
     fontWeight: '600',
-    fontSize: 16,
+    fontSize: 14,
   },
   addBtn: {
     flexDirection: 'row',
