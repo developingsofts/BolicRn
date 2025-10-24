@@ -54,10 +54,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   dialog: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: "#F2F2F7",
     borderRadius: 16,
     padding: 24,
     width: '85%',
+    textAlign: 'left',
     maxWidth: 400,
     alignItems: 'center',
     elevation: 5,
@@ -73,7 +74,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: COLORS.textSecondary,
     marginBottom: 24,
-    textAlign: 'center',
   },
   footer: {
     flexDirection: 'row',
@@ -88,13 +88,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   deleteBtn: {
-    backgroundColor: '#E6E6E6',
+    backgroundColor: COLORS.white,
   },
   confirmBtn: {
     backgroundColor: COLORS.primary,
   },
   deleteText: {
-    color: '#DA9393',
+    color: '#EB3434',
     fontWeight: '600',
     fontSize: 16,
   },

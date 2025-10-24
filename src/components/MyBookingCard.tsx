@@ -90,7 +90,7 @@ const MyBookingCard = ({
             onPress={handleReschedule}
           >
             <Text style={[styles.actionButtonText, styles.rescheduleButtonText]}>
-              Reschedule
+              Rescheduled
             </Text>
           </TouchableOpacity>
         </View>
@@ -103,8 +103,8 @@ const MyBookingCard = ({
         description={`Confirm if you wish to decline upcoming client session request for the ${date} ${timeRange}.
 
 Client will be notified and refund will be initiated.`}
-        confirmText="Decline"
-        cancelText="Cancel"
+        confirmText="Cancel"
+        cancelText="Delete"
       />
     </View>
   );
@@ -132,8 +132,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 10,
+    justifyContent: "space-between",
     width: "100%",
-
   },
   dateTimeCol: {
 
@@ -165,6 +165,7 @@ const styles = StyleSheet.create({
   clientBadgeCol: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "flex-end",
     gap: 4,
   },
   clientTextCol: {
@@ -174,11 +175,13 @@ const styles = StyleSheet.create({
   clientLabel: {
     fontSize: 13,
     color: COLORS.textSecondary,
+    textAlign: "right",
   },
   clientName: {
     fontSize: 15,
     color: COLORS.text,
     fontWeight: "500",
+    textAlign: "right",
   },
   avatar: {
     width: 32,
