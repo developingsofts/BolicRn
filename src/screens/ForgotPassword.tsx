@@ -12,7 +12,7 @@ import {
   Linking,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation, useRoute } from "@react-navigation/native";
+import { useNavigation, useRoute, CommonActions } from "@react-navigation/native";
 import FontWeight from "../hooks/useInterFonts";
 import { COLORS } from "../config/constants";
 import STRINGS from "../config/strings";
@@ -29,9 +29,10 @@ interface ForgotPasswordProps {
   navigation?: any;
 }
 
-const ForgotPassword: React.FC<ForgotPasswordProps> = ({ navigation }) => {
+const ForgotPassword: React.FC<ForgotPasswordProps> = ({ navigation: navProp }) => {
   const styles = useResponsive(baseStyles);
   const route = useRoute();
+  const navigation = useNavigation();
   const [currentStep, setCurrentStep] = useState<ForgotPasswordStep>("email");
   const [email, setEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -116,19 +117,7 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ navigation }) => {
     }
   };
 
-  const handleResendEmail = async () => {
-    try {
-      const result = await forgotPassword(email).unwrap();
-      
-      if (result.status) {
-        Toast.success("Password reset link resent!");
-      } else {
-        Toast.error(result.message || STRINGS.FORGOT_PASSWORD.errors.failedToResend);
-      }
-    } catch (error: any) {
-      Toast.error(error?.data?.message || STRINGS.FORGOT_PASSWORD.errors.failedToResend);
-    }
-  };
+ 
 
   const handleResetPassword = async () => {
     if (!newPassword.trim()) {
@@ -167,7 +156,10 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ navigation }) => {
   };
 
   const handleBackToLogin = () => {
-    navigation.goBack();
+    navigation.dispatch(CommonActions.reset({
+      index: 0,
+      routes: [{ name: 'Auth' }],
+    }));
   };
 
   const renderEmailStep = () => (
@@ -274,7 +266,7 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ navigation }) => {
       </TouchableOpacity>
 
       <TouchableOpacity onPress={handleBackToLogin}>
-        <Text style={styles.linkText}>Back to Login</Text>
+        <Text style={styles.linkText}>Bacfk to Login</Text>
       </TouchableOpacity>
     </>
   );
@@ -314,7 +306,10 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ navigation }) => {
         style={styles.keyboardAvoid}
       >
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
+          <TouchableOpacity onPress={() => navigation.dispatch(CommonActions.reset({
+            index: 0,
+            routes: [{ name: 'Auth' }],
+          }))}>
             <Ionicons
               name="chevron-back"
               size={24}

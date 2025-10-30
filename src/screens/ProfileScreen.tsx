@@ -13,6 +13,8 @@ import { useAuth } from "../contexts/AuthContext";
 import { useAppDispatch } from '../store/hooks';
 import { updateUser } from '../store/userSlice';
 import { useGetMyProfileQuery, useGetUserProfileQuery } from '../services/api/userApi';
+import { useFollowUserMutation, useUnfollowUserMutation } from '../services/api/followsApi';
+import type { User, UserProfile } from '../types';
 import { COLORS, DIMENSIONS } from "../config/constants";
 import STRINGS from "../config/strings";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -50,8 +52,8 @@ interface ProfileScreenProps {
     params?: {
       isGuest?: boolean;
       userId?: string;
-      bio?: string;
       user?: any;
+      bio?: string;
     };
   };
 }
@@ -77,13 +79,28 @@ interface Connection {
 }
 
 const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
-  const { user, logout } = useAuth();
+  const { user, logout, isAuthenticated } = useAuth();
   const dispatch = useAppDispatch();
   const [refreshing, setRefreshing] = useState(false);
-  const userId = route?.params?.userId;
-  const isOwnProfile = !userId || userId === user?.id;
-  const { data: myProfileData, refetch: refetchMyProfile } = useGetMyProfileQuery(undefined, { skip: !isOwnProfile });
-  const { data: userProfileData, refetch: refetchUserProfile } = useGetUserProfileQuery(userId || '', { skip: isOwnProfile || !userId });
+  const passedUser = route?.params?.user;
+  const userId = passedUser?.id || route?.params?.userId;
+  const isOwnProfile = !userId && !passedUser;
+  const { data: myProfileData, refetch: refetchMyProfile } = useGetMyProfileQuery(undefined, { skip: !isOwnProfile || !isAuthenticated });
+  const { data: userProfileData, refetch: refetchUserProfile } = useGetUserProfileQuery(userId || '', { skip: isOwnProfile || !userId || !isAuthenticated });
+
+  const [followUser] = useFollowUserMutation();
+  const [unfollowUser] = useUnfollowUserMutation();
+
+  // Use correct profile data based on context
+  const profileData: User | UserProfile | undefined|null = isOwnProfile
+  ? (myProfileData && myProfileData.status === true && myProfileData.data ? myProfileData.data : user)
+  : passedUser ? passedUser : (userProfileData && userProfileData.status === true && userProfileData.data ? userProfileData.data : undefined);
+
+  useEffect(() => {
+    if (!isOwnProfile && profileData && 'isFollowing' in profileData) {
+      setIsFollowing(profileData.isFollowing || false);
+    }
+  }, [profileData, isOwnProfile]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -97,6 +114,28 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
       await refetchUserProfile();
     }
     setRefreshing(false);
+  };
+
+  const handleFollow = async () => {
+    const targetUserId = passedUser?.id || userId;
+    if (!targetUserId) return;
+    try {
+      await followUser({ followUserId: targetUserId });
+      setIsFollowing(true);
+    } catch (error) {
+      console.error('Follow error:', error);
+    }
+  };
+
+  const handleUnfollow = async () => {
+    const targetUserId = passedUser?.id || userId;
+    if (!targetUserId) return;
+    try {
+      await unfollowUser({ unfollowUserId: targetUserId });
+      setIsFollowing(false);
+    } catch (error) {
+      console.error('Unfollow error:', error);
+    }
   };
   
   const activityPosts = [
@@ -176,7 +215,6 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
     if (isGuest) {
       return STRINGS.PROFILE.bio;
     }
-
     const routeBio = route?.params?.bio;
     if (routeBio) {
       const cleanedRouteBio = routeBio.trim();
@@ -184,15 +222,13 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
         return cleanedRouteBio;
       }
     }
-
-    const rawUserBio = user?.bio;
+    const rawUserBio = profileData?.bio;
     if (rawUserBio) {
       const cleaned = rawUserBio.trim();
       if (cleaned.length > 0) {
         return cleaned;
       }
     }
-
     return STRINGS.PROFILE.bio;
   })();
 
@@ -329,28 +365,28 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
             <Text style={styles.followingText}>Book Session</Text>
           </View>
         </TouchableOpacity> */}
-        <TouchableOpacity style={styles.followingMainBtn}>
+        <TouchableOpacity style={styles.followingMainBtn} onPress={isFollowing ? undefined : handleFollow}>
           <View style={styles.followingMainBtnContent}>
             <Image source={Following} style={styles.smallIconSize} />
             <Text style={styles.followingText}>
-              {STRINGS.PROFILE.following}
+              {isFollowing ? STRINGS.PROFILE.following : "Follow"}
             </Text>
           </View>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.followingIconBtn}>
-          <Image source={DeleteUser} style={styles.smallIconSize} />
-        </TouchableOpacity>
+        {isFollowing && (
+          <TouchableOpacity style={styles.followingIconBtn} onPress={handleUnfollow}>
+            <Image source={DeleteUser} style={styles.smallIconSize} />
+          </TouchableOpacity>
+        )}
       </View>
     );
   };
   const renderProfileAvatar = () => {
     // Prefer user from route params if present (for visiting other profiles)
-    const routeUser = route?.params?.user;
-    const profileUser = routeUser || user;
-    const displayName = profileUser?.displayName || profileUser?.userName || STRINGS.PROFILE.guestUser;
+  const displayName = profileData?.displayName || (profileData as any)?.userName || STRINGS.PROFILE.guestUser;
     const initial = displayName?.charAt(0)?.toUpperCase() || "G";
-    const location = profileUser?.location || STRINGS.PROFILE.defaultLocation;
-    const imageUrl = profileUser?.imageUrl;
+    const location = profileData?.location || STRINGS.PROFILE.defaultLocation;
+  const imageUrl = (profileData as any)?.imageUrl || (profileData as any)?.profilePicture;
     return (
       <LinearGradient
         colors={[COLORS.gradient1, COLORS.gradient2, COLORS.gradient3]}
@@ -576,11 +612,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
                   }
                 } else {
                   if (item.id === "posts") {
-                    if (isOwnProfile) {
-                      navigation.navigate("MyPosts");
-                    } else {
-                      navigation.navigate("MyPosts", { userId });
-                    }
+                    navigation.navigate("MyPosts", { userId });
                   } else if (item.id === "workout-history") {
                     navigation.navigate("WorkoutHistory");
                   } else if (item.id === "connections") {

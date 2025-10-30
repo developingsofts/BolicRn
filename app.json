@@ -22,7 +22,10 @@
       "buildNumber": "1.0.0",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
-      }
+      },
+      "associatedDomains": [
+        "applinks:api.bolicbuddy.com"
+      ]
     },
     "android": {
       "adaptiveIcon": {
@@ -44,6 +47,11 @@
             {
               "scheme": "bolic",
               "host": "*"
+            },
+            {
+              "scheme": "https",
+              "host": "api.bolicbuddy.com",
+              "pathPrefix": "/reset-password"
             }
           ],
           "category": [

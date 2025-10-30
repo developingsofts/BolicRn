@@ -1,237 +1,336 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
-import RefreshableScrollView from '../components/RefreshableScrollView';
-import { Menu, Button, Chip } from 'react-native-paper';
-import { COLORS, DIMENSIONS } from '../config/constants';
-import STRINGS from '../config/strings';
-import SwipeableCard, { TrainingPartner, Trainer, SwipeableItem } from '../components/SwipeableCard';
-import RatingModal from '../components/RatingModal';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import BasicTopBar from '../components/BasicTopBar';
+import React, { useState } from "react";
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from "react-native";
+import RefreshableScrollView from "../components/RefreshableScrollView";
+import { Menu, Button, Chip } from "react-native-paper";
+import { COLORS, DIMENSIONS } from "../config/constants";
+import STRINGS from "../config/strings";
+import SwipeableCard, {
+  TrainingPartner,
+  Trainer,
+  SwipeableItem,
+} from "../components/SwipeableCard";
+import RatingModal from "../components/RatingModal";
+import { SafeAreaView } from "react-native-safe-area-context";
+import BasicTopBar from "../components/BasicTopBar";
+import { useGetPotentialMatchesQuery } from "../services/api/matchingApi";
+
+// Helper to map API user to SwipeableItem
+function mapToSwipeableItem(item: any): SwipeableItem {
+  console.log('mapToSwipeableItem item:', item.name, item.imageUrl, item.profilePicture);
+  if (item.role === "user") {
+    return {
+      id: item.id,
+      name: item.displayName || item.name || "",
+      age: item.age,
+      type: item.trainingTypes?.[0] || "",
+      distance: item.distance ? String(item.distance) : "",
+      compatibility: item.compatibility ?? 0,
+      bio: item.bio,
+      location: item.location,
+      experience: item.experienceLevel || item.experience,
+      rating: item.rating,
+      totalRatings: item.totalRatings,
+      imageUrl: item.profilePicture || item.imageUrl || "",
+    } as TrainingPartner;
+  } else {
+    return {
+      id: item.id,
+      name: item.displayName || item.name || "",
+      age: item.age,
+      specialty: item.specialty || item.trainingTypes?.[0] || "",
+      distance: item.distance ? String(item.distance) : "",
+      rating: item.rating,
+      hourlyRate: item.hourlyRate || "",
+      bio: item.bio,
+      location: item.location,
+      experience: item.experienceLevel || item.experience,
+      certifications: item.certifications || [],
+      totalRatings: item.totalRatings,
+      imageUrl: item.profilePicture || item.imageUrl || "",
+    } as Trainer;
+  }
+}
 
 interface FindScreenProps {
   navigation: any;
 }
 
 const FindScreen: React.FC<FindScreenProps> = ({ navigation }) => {
-  const [selectedFilters, setSelectedFilters] = useState<string[]>(['All']);
+  const [selectedFilters, setSelectedFilters] = useState<string[]>(["All"]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [activeTab, setActiveTab] = useState<'partners' | 'trainers'>('partners');
+  const [activeTab, setActiveTab] = useState<"partners" | "trainers">(
+    "partners"
+  );
   const [menuVisible, setMenuVisible] = useState(false);
   const [ratingModalVisible, setRatingModalVisible] = useState(false);
-  const [selectedUserForRating, setSelectedUserForRating] = useState<{ name: string; type: 'partner' | 'trainer' } | null>(null);
+  const [selectedUserForRating, setSelectedUserForRating] = useState<{
+    name: string;
+    type: "partner" | "trainer";
+  } | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+
+  const {
+    data: potentialData,
+    refetch,
+    isLoading,
+    isFetching,
+    error,
+  } = useGetPotentialMatchesQuery();
+ 
+  const partnersData = potentialData?.status === true ? potentialData.data.filter((item: any) => item.role === "user") : [];
+  const trainersData = potentialData?.status === true ? potentialData.data.filter((item: any) => item.role === "trainer") : [];
+ 
+const getCurrentData = () => {
+  if (!potentialData || potentialData.status !== true) return [];
+  let data = potentialData.data;
+  if (activeTab === "partners") {
+    data = data.filter((item: any) => item.role === "user");
+  } else {
+    data = data.filter((item: any) => item.role === "trainer");
+  }
+  if (selectedFilters.includes("All") || selectedFilters.length === 0) {
+    return data;
+  }
+  return data.filter((item: any) => {
+    const type =
+      activeTab === "partners"
+        ? item.trainingTypes?.join(", ")
+        : item.specialty || item.trainingTypes?.join(", ");
+    return selectedFilters.some((filter) =>
+      type?.toLowerCase().includes(filter.toLowerCase())
+    );
+  });
+};
 
   const handleRefresh = async () => {
     setRefreshing(true);
+    await refetch();
     setCurrentIndex(0);
-    setTimeout(() => setRefreshing(false), 1000);
+    setRefreshing(false);
   };
+  // const handleRefresh = async () => {
+  //   setRefreshing(true);
+  //   setCurrentIndex(0);
+  //   setTimeout(() => setRefreshing(false), 1000);
+  // };
 
   const trainingCategories = [
-    'All',
-    'Strength Training',
-    'Cardio',
-    'Yoga',
-    'CrossFit',
-    'HIIT',
-    'Pilates',
-    'Running',
-    'Cycling',
-    'Swimming',
-    'Boxing',
-    'Martial Arts',
-    'Dance',
-    'Nearby'
+    "All",
+    "Strength Training",
+    "Cardio",
+    "Yoga",
+    "CrossFit",
+    "HIIT",
+    "Pilates",
+    "Running",
+    "Cycling",
+    "Swimming",
+    "Boxing",
+    "Martial Arts",
+    "Dance",
+    "Nearby",
   ];
 
   const mockPartners: TrainingPartner[] = [
     {
       id: 1,
-      name: 'Alex',
+      name: "Alex",
       age: 28,
-      type: 'Strength Training',
-      distance: '2.3km',
+      type: "Strength Training",
+      distance: "2.3km",
       compatibility: 95,
-      location: 'Downtown Gym',
-      experience: '3 years',
-      bio: 'Passionate about powerlifting and helping others reach their fitness goals. Looking for a serious training partner!',
+      location: "Downtown Gym",
+      experience: "3 years",
+      bio: "Passionate about powerlifting and helping others reach their fitness goals. Looking for a serious training partner!",
       rating: 4.8,
-      totalRatings: 24
+      totalRatings: 24,
     },
     {
       id: 2,
-      name: 'Sarah',
+      name: "Sarah",
       age: 25,
-      type: 'Cardio & HIIT',
-      distance: '1.8km',
+      type: "Cardio & HIIT",
+      distance: "1.8km",
       compatibility: 87,
-      location: 'Central Park',
-      experience: '2 years',
-      bio: 'Love running and high-intensity workouts. Always up for a challenge and pushing limits together!',
+      location: "Central Park",
+      experience: "2 years",
+      bio: "Love running and high-intensity workouts. Always up for a challenge and pushing limits together!",
       rating: 4.6,
-      totalRatings: 18
+      totalRatings: 18,
     },
     {
       id: 3,
-      name: 'Mike',
+      name: "Mike",
       age: 30,
-      type: 'CrossFit',
-      distance: '3.1km',
+      type: "CrossFit",
+      distance: "3.1km",
       compatibility: 92,
-      location: 'CrossFit Box',
-      experience: '4 years',
-      bio: 'CrossFit enthusiast looking for someone to tackle WODs with. Let\'s get stronger together!',
+      location: "CrossFit Box",
+      experience: "4 years",
+      bio: "CrossFit enthusiast looking for someone to tackle WODs with. Let's get stronger together!",
       rating: 4.9,
-      totalRatings: 31
+      totalRatings: 31,
     },
     {
       id: 4,
-      name: 'Emma',
+      name: "Emma",
       age: 27,
-      type: 'Yoga & Pilates',
-      distance: '1.2km',
+      type: "Yoga & Pilates",
+      distance: "1.2km",
       compatibility: 78,
-      location: 'Yoga Studio',
-      experience: '5 years',
-      bio: 'Yoga instructor seeking a mindful training partner. Balance strength with flexibility!',
+      location: "Yoga Studio",
+      experience: "5 years",
+      bio: "Yoga instructor seeking a mindful training partner. Balance strength with flexibility!",
       rating: 4.7,
-      totalRatings: 22
+      totalRatings: 22,
     },
     {
       id: 5,
-      name: 'David',
+      name: "David",
       age: 32,
-      type: 'Mixed Training',
-      distance: '4.5km',
+      type: "Mixed Training",
+      distance: "4.5km",
       compatibility: 89,
-      location: 'Fitness Center',
-      experience: '6 years',
-      bio: 'Versatile trainer who enjoys mixing different styles. Let\'s create the perfect workout routine!',
+      location: "Fitness Center",
+      experience: "6 years",
+      bio: "Versatile trainer who enjoys mixing different styles. Let's create the perfect workout routine!",
       rating: 4.5,
-      totalRatings: 15
+      totalRatings: 15,
     },
   ];
 
   const mockTrainers: Trainer[] = [
     {
       id: 101,
-      name: 'Coach Maria',
+      name: "Coach Maria",
       age: 35,
-      specialty: 'Strength & Conditioning',
-      distance: '1.5km',
+      specialty: "Strength & Conditioning",
+      distance: "1.5km",
       rating: 4.9,
-      hourlyRate: '$75/hr',
-      location: 'Elite Fitness Center',
-      experience: '8 years',
-      bio: 'Certified strength coach specializing in functional training and injury prevention. Let\'s build strength together!',
-      certifications: ['NASM', 'ACE', 'CrossFit L2'],
-      totalRatings: 47
+      hourlyRate: "$75/hr",
+      location: "Elite Fitness Center",
+      experience: "8 years",
+      bio: "Certified strength coach specializing in functional training and injury prevention. Let's build strength together!",
+      certifications: ["NASM", "ACE", "CrossFit L2"],
+      totalRatings: 47,
     },
     {
       id: 102,
-      name: 'Trainer James',
+      name: "Trainer James",
       age: 29,
-      specialty: 'HIIT & Cardio',
-      distance: '2.1km',
+      specialty: "HIIT & Cardio",
+      distance: "2.1km",
       rating: 4.7,
-      hourlyRate: '$65/hr',
-      location: 'Cardio Studio',
-      experience: '5 years',
-      bio: 'HIIT specialist who loves pushing limits and achieving results. Ready to transform your fitness journey!',
-      certifications: ['ACE', 'HIIT Specialist'],
-      totalRatings: 33
+      hourlyRate: "$65/hr",
+      location: "Cardio Studio",
+      experience: "5 years",
+      bio: "HIIT specialist who loves pushing limits and achieving results. Ready to transform your fitness journey!",
+      certifications: ["ACE", "HIIT Specialist"],
+      totalRatings: 33,
     },
     {
       id: 103,
-      name: 'Yoga Master Lisa',
+      name: "Yoga Master Lisa",
       age: 42,
-      specialty: 'Yoga & Mindfulness',
-      distance: '0.8km',
+      specialty: "Yoga & Mindfulness",
+      distance: "0.8km",
       rating: 4.8,
-      hourlyRate: '$80/hr',
-      location: 'Zen Yoga Studio',
-      experience: '12 years',
-      bio: 'Experienced yoga instructor focusing on mindfulness, flexibility, and stress relief. Find your inner peace.',
-      certifications: ['RYT-500', 'Meditation Teacher'],
-      totalRatings: 89
+      hourlyRate: "$80/hr",
+      location: "Zen Yoga Studio",
+      experience: "12 years",
+      bio: "Experienced yoga instructor focusing on mindfulness, flexibility, and stress relief. Find your inner peace.",
+      certifications: ["RYT-500", "Meditation Teacher"],
+      totalRatings: 89,
     },
     {
       id: 104,
-      name: 'CrossFit Pro Tom',
+      name: "CrossFit Pro Tom",
       age: 31,
-      specialty: 'CrossFit & Olympic Lifting',
-      distance: '3.2km',
+      specialty: "CrossFit & Olympic Lifting",
+      distance: "3.2km",
       rating: 4.6,
-      hourlyRate: '$70/hr',
-      location: 'CrossFit Box',
-      experience: '6 years',
-      bio: 'CrossFit Level 2 trainer passionate about Olympic lifting and functional fitness. Let\'s crush some WODs!',
-      certifications: ['CrossFit L2', 'USA Weightlifting'],
-      totalRatings: 56
+      hourlyRate: "$70/hr",
+      location: "CrossFit Box",
+      experience: "6 years",
+      bio: "CrossFit Level 2 trainer passionate about Olympic lifting and functional fitness. Let's crush some WODs!",
+      certifications: ["CrossFit L2", "USA Weightlifting"],
+      totalRatings: 56,
     },
     {
       id: 105,
-      name: 'Nutrition Coach Anna',
+      name: "Nutrition Coach Anna",
       age: 28,
-      specialty: 'Nutrition & Wellness',
-      distance: '1.9km',
+      specialty: "Nutrition & Wellness",
+      distance: "1.9km",
       rating: 4.9,
-      hourlyRate: '$85/hr',
-      location: 'Wellness Center',
-      experience: '4 years',
-      bio: 'Holistic nutrition coach combining fitness and nutrition for complete wellness transformation.',
-      certifications: ['Precision Nutrition', 'Wellness Coach'],
-      totalRatings: 42
+      hourlyRate: "$85/hr",
+      location: "Wellness Center",
+      experience: "4 years",
+      bio: "Holistic nutrition coach combining fitness and nutrition for complete wellness transformation.",
+      certifications: ["Precision Nutrition", "Wellness Coach"],
+      totalRatings: 42,
     },
   ];
 
+  // const handleSwipeLeft = (item: SwipeableItem) => {
+  //   const currentData = activeTab === "partners" ? mockPartners : mockTrainers;
+  //   setCurrentIndex((prev) => Math.min(prev + 1, currentData.length - 1));
+  // };
   const handleSwipeLeft = (item: SwipeableItem) => {
-    const currentData = activeTab === 'partners' ? mockPartners : mockTrainers;
-    setCurrentIndex(prev => Math.min(prev + 1, currentData.length - 1));
-  };
+  const currentData = getCurrentData();
+  setCurrentIndex((prev) => Math.min(prev + 1, currentData.length - 1));
+};
 
   const handleSwipeRight = (item: SwipeableItem) => {
-    const message = activeTab === 'partners' 
-      ? `${STRINGS.FIND.alerts.youAnd} ${item.name} ${STRINGS.FIND.alerts.matchMessage}`
-      : `${STRINGS.FIND.alerts.greatChoice} ${item.name} ${STRINGS.FIND.alerts.bookTrainerMessage}`;
-    
+    const message =
+      activeTab === "partners"
+        ? `${STRINGS.FIND.alerts.youAnd} ${item.name} ${STRINGS.FIND.alerts.matchMessage}`
+        : `${STRINGS.FIND.alerts.greatChoice} ${item.name} ${STRINGS.FIND.alerts.bookTrainerMessage}`;
+
     Alert.alert(
-      activeTab === 'partners' ? STRINGS.FIND.alerts.matchTitle : STRINGS.FIND.alerts.bookTrainerTitle,
+      activeTab === "partners"
+        ? STRINGS.FIND.alerts.matchTitle
+        : STRINGS.FIND.alerts.bookTrainerTitle,
       message,
       [
         {
           text: STRINGS.FIND.alerts.notNow,
-          style: 'cancel',
+          style: "cancel",
         },
         {
           text: STRINGS.FIND.alerts.rateExperience,
           onPress: () => {
             setSelectedUserForRating({
               name: item.name,
-              type: activeTab === 'partners' ? 'partner' : 'trainer'
+              type: activeTab === "partners" ? "partner" : "trainer",
             });
             setRatingModalVisible(true);
           },
         },
         {
-          text: activeTab === 'partners' ? STRINGS.FIND.alerts.startChat : STRINGS.FIND.alerts.bookSession,
+          text:
+            activeTab === "partners"
+              ? STRINGS.FIND.alerts.startChat
+              : STRINGS.FIND.alerts.bookSession,
           onPress: () => {
-            if (activeTab === 'partners') {
-              navigation.navigate('Chat', {
+            if (activeTab === "partners") {
+              navigation.navigate("Chat", {
                 partnerId: item.id.toString(),
                 partnerName: item.name,
               });
             } else {
               // Handle trainer booking
-              Alert.alert(STRINGS.FIND.alerts.bookingTitle, `${STRINGS.FIND.alerts.bookingMessage} ${item.name}`);
+              Alert.alert(
+                STRINGS.FIND.alerts.bookingTitle,
+                `${STRINGS.FIND.alerts.bookingMessage} ${item.name}`
+              );
             }
           },
         },
       ]
     );
-    const currentData = activeTab === 'partners' ? mockPartners : mockTrainers;
-    setCurrentIndex(prev => Math.min(prev + 1, currentData.length - 1));
+    const currentData = activeTab === "partners" ? mockPartners : mockTrainers;
+    setCurrentIndex((prev) => Math.min(prev + 1, currentData.length - 1));
   };
 
   const resetCards = () => {
@@ -250,13 +349,13 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation }) => {
   };
 
   const handleCategorySelect = (category: string) => {
-    if (category === 'All') {
-      setSelectedFilters(['All']);
+    if (category === "All") {
+      setSelectedFilters(["All"]);
     } else {
-      setSelectedFilters(prev => {
-        const newFilters = prev.filter(f => f !== 'All');
+      setSelectedFilters((prev) => {
+        const newFilters = prev.filter((f) => f !== "All");
         if (newFilters.includes(category)) {
-          return newFilters.filter(f => f !== category);
+          return newFilters.filter((f) => f !== category);
         } else {
           return [...newFilters, category];
         }
@@ -265,20 +364,21 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation }) => {
     setCurrentIndex(0);
   };
 
-  const getCurrentData = () => {
-    const data = activeTab === 'partners' ? mockPartners : mockTrainers;
-    if (selectedFilters.includes('All') || selectedFilters.length === 0) {
-      return data;
-    }
-    return data.filter(item => {
-      const type = activeTab === 'partners' 
-        ? (item as TrainingPartner).type 
-        : (item as Trainer).specialty;
-      return selectedFilters.some(filter => 
-        type.toLowerCase().includes(filter.toLowerCase())
-      );
-    });
-  };
+  // const getCurrentData = () => {
+  //   const data = activeTab === "partners" ? mockPartners : mockTrainers;
+  //   if (selectedFilters.includes("All") || selectedFilters.length === 0) {
+  //     return data;
+  //   }
+  //   return data.filter((item) => {
+  //     const type =
+  //       activeTab === "partners"
+  //         ? (item as TrainingPartner).type
+  //         : (item as Trainer).specialty;
+  //     return selectedFilters.some((filter) =>
+  //       type.toLowerCase().includes(filter.toLowerCase())
+  //     );
+  //   });
+  // };
 
   const currentData = getCurrentData();
   const currentItem = currentData[currentIndex];
@@ -303,42 +403,52 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation }) => {
             bottomView={
               <View style={styles.tabContainerWrapper}>
                 <View style={styles.tabContainer}>
-                  <TouchableOpacity
-                    style={[
-                      styles.tabButton,
-                      activeTab === 'partners' && styles.tabButtonActivePartners
-                    ]}
-                    onPress={() => {
-                      setActiveTab('partners');
-                      setCurrentIndex(0);
-                      setSelectedFilters(['All']);
-                    }}
-                  >
-                    <Text style={[
-                      styles.tabText,
-                      activeTab === 'partners' && styles.tabTextActive
-                    ]}>
-                      {STRINGS.FIND.partners}
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[
-                      styles.tabButton,
-                      activeTab === 'trainers' && styles.tabButtonActiveTrainers
-                    ]}
-                    onPress={() => {
-                      setActiveTab('trainers');
-                      setCurrentIndex(0);
-                      setSelectedFilters(['All']);
-                    }}
-                  >
-                    <Text style={[
-                      styles.tabText,
-                      activeTab === 'trainers' && styles.tabTextActive
-                    ]}>
-                      {STRINGS.FIND.trainers}
-                    </Text>
-                  </TouchableOpacity>
+                  {partnersData.length > 0 && (
+                    <TouchableOpacity
+                      style={[
+                        styles.tabButton,
+                        activeTab === "partners" &&
+                          styles.tabButtonActivePartners,
+                      ]}
+                      onPress={() => {
+                        setActiveTab("partners");
+                        setCurrentIndex(0);
+                        setSelectedFilters(["All"]);
+                      }}
+                    >
+                      <Text
+                        style={[
+                          styles.tabText,
+                          activeTab === "partners" && styles.tabTextActive,
+                        ]}
+                      >
+                        {STRINGS.FIND.partners}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                  {trainersData.length > 0 && (
+                    <TouchableOpacity
+                      style={[
+                        styles.tabButton,
+                        activeTab === "trainers" &&
+                          styles.tabButtonActiveTrainers,
+                      ]}
+                      onPress={() => {
+                        setActiveTab("trainers");
+                        setCurrentIndex(0);
+                        setSelectedFilters(["All"]);
+                      }}
+                    >
+                      <Text
+                        style={[
+                          styles.tabText,
+                          activeTab === "trainers" && styles.tabTextActive,
+                        ]}
+                      >
+                        {STRINGS.FIND.trainers}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
               </View>
             }
@@ -347,10 +457,20 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation }) => {
 
         {/* Cards Section */}
         <View style={styles.cardsSection}>
-          {currentItem ? (
+          {isLoading ? (
+            <View style={{ padding: 20, alignItems: 'center', justifyContent: 'center', flex: 1 }}>
+              <ActivityIndicator size="large" color={COLORS.primary} />
+              <Text style={{ marginTop: 10, color: COLORS.textSecondary }}>Finding matches...</Text>
+            </View>
+          ) : currentItem ? (
             <SwipeableCard
-              partner={currentItem}
-              onPress={() => navigation.navigate('UserProfile', { userId: currentItem.id.toString(), isGuest: true })}
+              partner={mapToSwipeableItem(currentItem)}
+              onPress={() =>
+                navigation.navigate("UserProfile", {
+                  user: currentItem,
+                  isGuest: true,
+                })
+              }
               onSwipeLeft={handleSwipeLeft}
               onSwipeRight={handleSwipeRight}
               onSkip={handleSwipeLeft}
@@ -359,9 +479,12 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation }) => {
             />
           ) : (
             <View style={styles.noMoreCards}>
-              <Text style={styles.noMoreCardsTitle}>{STRINGS.FIND.noMoreCardsTitle}</Text>
+              <Text style={styles.noMoreCardsTitle}>
+                {STRINGS.FIND.noMoreCardsTitle}
+              </Text>
               <Text style={styles.noMoreCardsText}>
-                {STRINGS.FIND.noMoreCardsText} {activeTab} {STRINGS.FIND.forThisFilter}
+                {STRINGS.FIND.noMoreCardsText} {activeTab}{" "}
+                {STRINGS.FIND.forThisFilter}
               </Text>
               <TouchableOpacity style={styles.resetButton} onPress={resetCards}>
                 <Text style={styles.resetButtonText}>{STRINGS.FIND.reset}</Text>
@@ -369,9 +492,7 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation }) => {
             </View>
           )}
         </View>
-  </RefreshableScrollView>
-
-     
+      </RefreshableScrollView>
     </SafeAreaView>
   );
 };
@@ -385,25 +506,24 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-
   },
   headerContainer: {
     marginBottom: DIMENSIONS.spacing.md,
-    position: 'relative',
+    position: "relative",
   },
   tabContainerWrapper: {
-    position: 'absolute',
+    position: "absolute",
     top: 25,
     left: 0,
     right: 0,
     zIndex: 10,
   },
   tabContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     backgroundColor: COLORS.surface,
     borderRadius: 50,
     padding: 6,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
@@ -411,11 +531,11 @@ const styles = StyleSheet.create({
   },
   tabButton: {
     flex: 1,
-    backgroundColor: 'transparent',
+    backgroundColor: "transparent",
     borderRadius: 50,
     paddingVertical: DIMENSIONS.spacing.sm,
     marginHorizontal: 2,
-    alignItems: 'center',
+    alignItems: "center",
   },
   tabButtonActivePartners: {
     backgroundColor: COLORS.primary,
@@ -426,23 +546,23 @@ const styles = StyleSheet.create({
   tabText: {
     fontSize: 14,
     color: COLORS.text,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   tabTextActive: {
     color: COLORS.white,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   filtersSection: {
     paddingHorizontal: DIMENSIONS.spacing.lg,
     marginBottom: DIMENSIONS.spacing.lg,
   },
   dropdownContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: DIMENSIONS.spacing.sm,
   },
   chipsWrapper: {
     minHeight: 40,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   dropdownButton: {
     backgroundColor: COLORS.surface,
@@ -456,7 +576,7 @@ const styles = StyleSheet.create({
   dropdownButtonLabel: {
     fontSize: 14,
     color: COLORS.text,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   menuItemText: {
     fontSize: 14,
@@ -464,7 +584,7 @@ const styles = StyleSheet.create({
   },
   menuItemTextActive: {
     color: COLORS.primary,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   selectedChipsContainer: {
     paddingHorizontal: DIMENSIONS.spacing.lg,
@@ -481,24 +601,24 @@ const styles = StyleSheet.create({
   },
   cardsSection: {
     minHeight: 550,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingHorizontal: DIMENSIONS.spacing.lg,
-   marginTop: DIMENSIONS.spacing.lg,
+    marginTop: DIMENSIONS.spacing.lg,
   },
   noMoreCards: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     padding: DIMENSIONS.spacing.xl,
   },
   noMoreCardsTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: DIMENSIONS.spacing.md,
   },
   noMoreCardsText: {
     fontSize: 16,
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: DIMENSIONS.spacing.lg,
   },
   resetButton: {
@@ -508,10 +628,10 @@ const styles = StyleSheet.create({
   },
   resetButtonText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   progressContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingHorizontal: DIMENSIONS.spacing.lg,
     paddingVertical: DIMENSIONS.spacing.md,
     backgroundColor: COLORS.background,
@@ -521,9 +641,8 @@ const styles = StyleSheet.create({
   progressText: {
     fontSize: 14,
     color: COLORS.text,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });
 
 export default FindScreen;
-

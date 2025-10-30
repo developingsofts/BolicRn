@@ -1,0 +1,14 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "com.bolicbuddy.app",
+        "paths": [
+          "/reset-password",
+          "/reset-password/*"
+        ]
+      }
+    ]
+  }
+}

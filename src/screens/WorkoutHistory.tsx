@@ -1,45 +1,75 @@
 
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BasicTopBar from '../components/BasicTopBar';
 import { COLORS, DIMENSIONS } from '../config/constants';
 import FontWeight from '../hooks/useInterFonts';
+import { useGetWorkoutHistoryQuery } from '../services/api/workoutApi';
 
-const workouts = [
-  {
-    id: '1',
-    title: 'Lower Body Endurance',
-    category: 'Cardio',
-    categoryColor: COLORS._D2E7FF, // All workout badges bg
-    duration: '30 mins',
-    intensity: 'High',
-    completedDate: 'Today',
-  },
-  {
-    id: '2',
-    title: 'Upper Body Power',
-    category: 'Strength',
-    categoryColor: COLORS._D2E7FF,
-    duration: '45 mins',
-    intensity: 'Medium',
-    completedDate: 'Yesterday',
-  },
-  {
-    id: '3',
-    title: 'Core Stability',
-    category: 'Flexibility',
-    categoryColor: COLORS._D2E7FF,
-    duration: '25 mins',
-    intensity: 'Low',
-    completedDate: 'Last Week',
-  },
-];
+interface WorkoutItem {
+  id: string;
+  title: string;
+  category: string;
+  categoryColor: string;
+  duration: string;
+  intensity: string;
+  completedDate: string;
+  workoutData: any;
+}
 
 const WorkoutHistory: React.FC = ({ navigation }: any) => {
+  const { data: workoutHistoryData, isLoading, error, refetch } = useGetWorkoutHistoryQuery();
+
+  console.log('WorkoutHistory - Full response:', JSON.stringify(workoutHistoryData, null, 2));
+
+  // Format duration from seconds to minutes
+  const formatDuration = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    return `${minutes} mins`;
+  };
+
+  // Format completed date
+  const formatCompletedDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+    return date.toLocaleDateString();
+  };
+
+  // Get workout category and intensity from workout data
+  const getWorkoutCategory = (workout: any) => {
+    return workout?.type || 'General';
+  };
+
+  const getWorkoutIntensity = (workout: any) => {
+    return workout?.difficulty || 'Medium';
+  };
+
+  // Transform API data to match UI structure
+  const apiData = workoutHistoryData as any;
+  const sessions = apiData?.data?.sessions || [];
+  const workouts: WorkoutItem[] = sessions
+    .filter((session: any) => session.status === 'completed') // Only show completed workouts
+    .map((session: any) => ({
+      id: session.id.toString(),
+      title: session.workout?.title || 'Unknown Workout',
+      category: getWorkoutCategory(session.workout),
+      categoryColor: COLORS._D2E7FF,
+      duration: formatDuration(session.totalDuration || 0),
+      intensity: getWorkoutIntensity(session.workout),
+      completedDate: formatCompletedDate(session.completedAt || session.createdAt),
+      workoutData: session
+    }));
+
   const handleStartWorkout = () => {
-    // TODO: Navigate to start workout screen
-    console.log('Start new workout');
+    navigation.navigate('SelectWorkout');
   };
 
   const handlePostIt = (workoutId: string) => {
@@ -64,36 +94,63 @@ const WorkoutHistory: React.FC = ({ navigation }: any) => {
           <Text style={styles.startButtonText}>Start New Workout</Text>
         </TouchableOpacity>
 
+        {/* Loading State */}
+        {isLoading && (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={COLORS.primary} />
+          </View>
+        )}
+
+        {/* Error State */}
+        {error && (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>Failed to load workout history</Text>
+            <TouchableOpacity style={styles.retryButton} onPress={refetch}>
+              <Text style={styles.retryButtonText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* Workouts List */}
-        <View style={styles.workoutList}>
-          {workouts.map((workout) => (
-            <View key={workout.id} style={styles.card}>
-              <View style={styles.cardRow}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.title}>{workout.title}</Text>
-                  <View style={styles.metaRow}>
-                    <View style={[styles.badge, { backgroundColor: workout.categoryColor }]}> 
-                      <Text
-                        style={[
-                          styles.badgeText,
-                          { color: COLORS._0B80FF },
-                        ]}
-                      >
-                        {workout.category}
-                      </Text>
+        {!isLoading && !error && workouts.length > 0 && (
+          <View style={styles.workoutList}>
+            {workouts.map((workout) => (
+              <View key={workout.id} style={styles.card}>
+                <View style={styles.cardRow}>
+                  <View style={{  }}>
+                    <Text style={styles.title}>{workout.title}</Text>
+                    <View style={styles.metaRow}>
+                      <View style={[styles.badge, { backgroundColor: workout.categoryColor }]}> 
+                        <Text
+                          style={[
+                            styles.badgeText,
+                            { color: COLORS._0B80FF },
+                          ]}
+                        >
+                          {workout.category}
+                        </Text>
+                      </View>
+                      <Text style={styles.metaText}>{workout.duration}</Text>
+                      <Text style={styles.metaText}>{workout.intensity}</Text>
                     </View>
-                    <Text style={styles.metaText}>{workout.duration}</Text>
-                    <Text style={styles.metaText}>{workout.intensity}</Text>
+                    <Text style={styles.completedText}>Completed: {workout.completedDate}</Text>
                   </View>
-                  <Text style={styles.completedText}>Completed: {workout.completedDate}</Text>
+                  <TouchableOpacity style={styles.postButton} onPress={() => handlePostIt(workout.id)}>
+                    <Text style={styles.postButtonText}>Post it</Text>
+                  </TouchableOpacity>
                 </View>
-                <TouchableOpacity style={styles.postButton} onPress={() => handlePostIt(workout.id)}>
-                  <Text style={styles.postButtonText}>Post it</Text>
-                </TouchableOpacity>
               </View>
-            </View>
-          ))}
-        </View>
+            ))}
+          </View>
+        )}
+
+        {/* Empty State */}
+        {!isLoading && !error && workouts.length === 0 && (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>No workout history yet</Text>
+            <Text style={styles.emptySubtext}>Complete your first workout to see it here!</Text>
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -160,18 +217,19 @@ const styles = StyleSheet.create({
   },
   cardRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
   },
   title: {
     fontSize: 16,
     fontFamily: FontWeight.SemiBold,
     color: COLORS.text,
+    //add ellipsis if too long
+    width: DIMENSIONS.screenWidth - 180,
     marginBottom: 6,
   },
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
     marginBottom: 6,
   },
   badge: {
@@ -197,14 +255,12 @@ const styles = StyleSheet.create({
     fontFamily: FontWeight.Regular,
   },
   postButton: {
-    marginLeft: 16,
     paddingHorizontal: 20,
     paddingVertical: 8,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: '#00000033',
     backgroundColor: COLORS.white,
-    alignSelf: 'flex-start',
     shadowColor: COLORS.black,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
@@ -215,6 +271,53 @@ const styles = StyleSheet.create({
     color: COLORS.app_black,
     fontFamily: FontWeight.Medium,
     fontSize: 14,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  errorText: {
+    color: COLORS.error,
+    fontSize: 16,
+    fontFamily: FontWeight.Regular,
+    marginBottom: 16,
+  },
+  retryButton: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: COLORS.white,
+    fontSize: 14,
+    fontFamily: FontWeight.Medium,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  emptyText: {
+    color: COLORS.text,
+    fontSize: 18,
+    fontFamily: FontWeight.SemiBold,
+    marginBottom: 8,
+  },
+  emptySubtext: {
+    color: COLORS._5E5E5E,
+    fontSize: 14,
+    fontFamily: FontWeight.Regular,
+    textAlign: 'center',
   },
 });
 

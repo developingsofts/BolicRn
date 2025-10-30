@@ -12,7 +12,7 @@ import MyPosts from "../screens/MyPosts";
 import WorkoutHistory from "../screens/WorkoutHistory";
 import Connections from "../screens/Connections";
 import ScheduledSessions from "../screens/ScheduledSessions";
-import { COLORS, DIMENSIONS } from "../config/constants";
+import { COLORS, DIMENSIONS, API_CONFIG } from "../config/constants";
 
 // Import screens
 import AuthScreen from "../screens/AuthScreen";
@@ -162,11 +162,16 @@ const AppNavigator: React.FC = () => {
 
   // Deep linking configuration
   const linking = {
-    prefixes: ['bolic://', 'https://bolic.app'],
+    prefixes: ['bolic://', API_CONFIG.baseUrl],
     config: {
       screens: {
         Auth: 'auth',
-        ForgotPassword: 'reset-password',
+        ForgotPassword: {
+          path: 'reset-password',
+          parse: {
+            token: (token: string) => token,
+          },
+        },
         Main: 'main',
       },
     },
@@ -179,51 +184,49 @@ const AppNavigator: React.FC = () => {
 
   return (
     <NavigationContainer linking={linking}>
-      
-      <Stack.Navigator
-        screenOptions={{
-          headerShown: false,
-          
-        }}
-      >
-        {isAuthenticated ? (
-          // Authenticated stack
-          <>
-            <Stack.Screen name="Main" component={MainTabNavigator} />
-            <Stack.Screen name="Chat" component={ChatScreen} />
-            <Stack.Screen name="SelectWorkout" component={SelectWorkoutScreen} />
-            <Stack.Screen name="WorkoutSession" component={WorkoutSessionScreen} />
-            <Stack.Screen name="CreatePost" component={CreatePostScreen} />
-            <Stack.Screen name="Settings" component={SettingsScreen} />
-            <Stack.Screen name="GroupDetails" component={GroupDetails} />
-            <Stack.Screen name="ManageGroup" component={ManageGroup} />
-            <Stack.Screen name="EditProfile" component={EditProfileScreen} />
-            <Stack.Screen name="UserProfile" component={ProfileScreen} />
-            <Stack.Screen name="MyPosts" component={MyPosts} />
-            <Stack.Screen name="WorkoutHistory" component={WorkoutHistory} />
-            <Stack.Screen name="Connections" component={Connections} />
-            <Stack.Screen name="ShareWorkout" component={ShareWorkoutScreen} />
-            <Stack.Screen name="Achievements" component={Achievements} />
-            <Stack.Screen name="MyRatings" component={MyRatings} />
-            <Stack.Screen name="ScheduledSessions" component={ScheduledSessions} />
-            <Stack.Screen name="BookTrainer" component={BookTrainerScreen} />
-            <Stack.Screen name="SelectDateTime" component={SelectDateTimeScreen} />
-            <Stack.Screen name="BookingConfirmation" component={BookingConfirmationScreen} />
-            <Stack.Screen name="BookingSuccess" component={BookingSuccessScreen} />
-            <Stack.Screen name="TrainerSetup" component={TrainerSetup} />
-            <Stack.Screen name="MyBookings" component={MyBookingsScreen} />
-            <Stack.Screen name="RescheduleSession" component={RescheduleSessionScreen} />
-            <Stack.Screen name="TrainerAvailability" component={TrainerAvailability} />
-            <Stack.Screen name="TrainerPricing" component={TrainerPricing} />
-          </>
-        ) : (
-          // Auth stack
-          <>
-            <Stack.Screen name="Auth" component={AuthScreen} />
-            <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
-          </>
-        )}
-      </Stack.Navigator>
+      {isAuthenticated ? (
+        <Stack.Navigator
+          screenOptions={{
+            headerShown: false,
+          }}
+        >
+          <Stack.Screen name="Main" component={MainTabNavigator} />
+          <Stack.Screen name="Chat" component={ChatScreen} />
+          <Stack.Screen name="SelectWorkout" component={SelectWorkoutScreen} />
+          <Stack.Screen name="WorkoutSession" component={WorkoutSessionScreen} />
+          <Stack.Screen name="CreatePost" component={CreatePostScreen} />
+          <Stack.Screen name="Settings" component={SettingsScreen} />
+          <Stack.Screen name="GroupDetails" component={GroupDetails} />
+          <Stack.Screen name="ManageGroup" component={ManageGroup} />
+          <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+          <Stack.Screen name="UserProfile" component={ProfileScreen} />
+          <Stack.Screen name="MyPosts" component={MyPosts} />
+          <Stack.Screen name="WorkoutHistory" component={WorkoutHistory} />
+          <Stack.Screen name="Connections" component={Connections} />
+          <Stack.Screen name="ShareWorkout" component={ShareWorkoutScreen} />
+          <Stack.Screen name="Achievements" component={Achievements} />
+          <Stack.Screen name="MyRatings" component={MyRatings} />
+          <Stack.Screen name="ScheduledSessions" component={ScheduledSessions} />
+          <Stack.Screen name="BookTrainer" component={BookTrainerScreen} />
+          <Stack.Screen name="SelectDateTime" component={SelectDateTimeScreen} />
+          <Stack.Screen name="BookingConfirmation" component={BookingConfirmationScreen} />
+          <Stack.Screen name="BookingSuccess" component={BookingSuccessScreen} />
+          <Stack.Screen name="TrainerSetup" component={TrainerSetup} />
+          <Stack.Screen name="MyBookings" component={MyBookingsScreen} />
+          <Stack.Screen name="RescheduleSession" component={RescheduleSessionScreen} />
+          <Stack.Screen name="TrainerAvailability" component={TrainerAvailability} />
+          <Stack.Screen name="TrainerPricing" component={TrainerPricing} />
+        </Stack.Navigator>
+      ) : (
+        <Stack.Navigator
+          screenOptions={{
+            headerShown: false,
+          }}
+        >
+          <Stack.Screen name="Auth" component={AuthScreen} />
+          <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
+        </Stack.Navigator>
+      )}
     </NavigationContainer>
   );
 };

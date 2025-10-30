@@ -16,12 +16,25 @@ export const API_END_POINTS = {
   },
 
   workouts: {
-    sessions: (userId?: string) =>
-      userId ? `/workouts/${userId}/sessions` : `/workouts/sessions`,
-    sessionById: (sessionId: string) => `/workouts/sessions/${sessionId}`,
-    goals: (userId?: string) =>
-      userId ? `/workouts/${userId}/goals` : `/workouts/goals`,
-    goalById: (goalId: string) => `/workouts/goals/${goalId}`,
+    all: "/workout/all",
+    byId: (id: string) => `/workout/${id}`,
+    userWorkouts: "/user-workout/all",
+    achievements: "/achivement/all",
+    sessions: {
+      start: "/workout-session/start",
+      active: "/workout-session/active",
+      completeExercise: "/workout-session/complete-exercise",
+      complete: "/workout-session/complete",
+      pause: "/workout-session/pause",
+      resume: "/workout-session/resume",
+      cancel: "/workout-session/cancel",
+      history: "/workout-session/history",
+    },
+  },
+
+  exercises: {
+    all: "/exercise/all",
+    byId: (id: string) => `/exercise/${id}`,
   },
 
   matching: {

@@ -1,0 +1,54 @@
+import { API_END_POINTS } from '../endPoints';
+import { baseApi } from './baseApi';
+import type { ApiResponse } from './types';
+
+interface FollowPayload {
+  followUserId: string;
+}
+
+interface UnfollowPayload {
+  unfollowUserId: string;
+}
+
+export const followsApi = baseApi.injectEndpoints({
+  endpoints: (builder) => ({
+    followUser: builder.mutation<ApiResponse<any>, FollowPayload>({
+      query: (body) => ({
+        url: '/follows/follow',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['User', 'Matching'],
+    }),
+    unfollowUser: builder.mutation<ApiResponse<any>, UnfollowPayload>({
+      query: (body) => ({
+        url: '/follows/unfollow',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['User', 'Matching'],
+    }),
+    getFollowers: builder.query<ApiResponse<any>, { userId: string; page?: number; limit?: number }>({
+      query: ({ userId, page = 1, limit = 10 }) => ({
+        url: `/follows/followers?userId=${userId}&page=${page}&limit=${limit}`,
+        method: 'GET',
+      }),
+      providesTags: ['User'],
+    }),
+    getFollowing: builder.query<ApiResponse<any>, { userId: string; page?: number; limit?: number }>({
+      query: ({ userId, page = 1, limit = 10 }) => ({
+        url: `/follows/following?userId=${userId}&page=${page}&limit=${limit}`,
+        method: 'GET',
+      }),
+      providesTags: ['User'],
+    }),
+  }),
+  overrideExisting: false,
+});
+
+export const {
+  useFollowUserMutation,
+  useUnfollowUserMutation,
+  useGetFollowersQuery,
+  useGetFollowingQuery,
+} = followsApi;

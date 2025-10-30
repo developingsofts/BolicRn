@@ -20,6 +20,10 @@ type ConfirmationDialogProps = {
   onConfirm: () => void;
   onCancel: () => void;
   loading?: boolean;
+  confirmButtonColor?: string;
+  cancelButtonColor?: string;
+  confirmTextColor?: string;
+  cancelTextColor?: string;
 };
 
 const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
@@ -31,6 +35,10 @@ const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
   onConfirm,
   onCancel,
   loading = false,
+  confirmButtonColor = COLORS.error,
+  cancelButtonColor = COLORS.buttonGrayBg,
+  confirmTextColor = COLORS.white,
+  cancelTextColor = COLORS.buttonGrayText,
 }) => {
   const handleCancel = useCallback(() => {
     if (!loading) {
@@ -62,20 +70,20 @@ const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
               onPress={handleCancel}
               disabled={loading}
               activeOpacity={0.8}
-              style={[styles.button, styles.cancelButton]}
+              style={[styles.button, { backgroundColor: cancelButtonColor }]}
             >
-              <Text style={[styles.buttonLabel, styles.cancelLabel]}>{cancelLabel}</Text>
+              <Text style={[styles.buttonLabel, { color: cancelTextColor }]}>{cancelLabel}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={handleConfirm}
               disabled={loading}
               activeOpacity={0.8}
-              style={[styles.button, styles.confirmButton, loading && styles.buttonDisabled]}
+              style={[styles.button, { backgroundColor: confirmButtonColor }, loading && styles.buttonDisabled]}
             >
               {loading ? (
-                <ActivityIndicator size="small" color={COLORS.white} />
+                <ActivityIndicator size="small" color={confirmTextColor} />
               ) : (
-                <Text style={[styles.buttonLabel, styles.confirmLabel]}>{confirmLabel}</Text>
+                <Text style={[styles.buttonLabel, { color: confirmTextColor }]}>{confirmLabel}</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -119,8 +127,8 @@ const styles = StyleSheet.create({
   actions: {
     marginTop: DIMENSIONS.spacing.md,
     flexDirection: "row",
-    justifyContent: "flex-end",
-    gap: DIMENSIONS.spacing.sm,
+    justifyContent: "center",
+    gap: DIMENSIONS.spacing.md,
   },
   button: {
     minWidth: 110,
@@ -131,10 +139,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   cancelButton: {
-    backgroundColor: COLORS.buttonGrayBg,
+    // Dynamic background color now passed as prop
   },
   confirmButton: {
-    backgroundColor: COLORS.error,
+    // Dynamic background color now passed as prop
   },
   buttonDisabled: {
     opacity: 0.7,
@@ -144,10 +152,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   cancelLabel: {
-    color: COLORS.buttonGrayText,
+    // Dynamic text color now passed as prop
   },
   confirmLabel: {
-    color: COLORS.white,
+    // Dynamic text color now passed as prop
   },
 });
 

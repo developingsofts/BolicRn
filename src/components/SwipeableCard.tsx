@@ -29,6 +29,7 @@ export interface TrainingPartner {
   experience?: string;
   rating?: number;
   totalRatings?: number;
+  imageUrl?: string;
 }
 
 export interface Trainer {
@@ -44,6 +45,7 @@ export interface Trainer {
   experience?: string;
   certifications: string[];
   totalRatings?: number;
+  imageUrl?: string;
 }
 
 export type SwipeableItem = TrainingPartner | Trainer;
@@ -56,6 +58,10 @@ interface SwipeableCardProps {
   onSkip?: (partner: SwipeableItem) => void;
   isFirst?: boolean;
   navigation?: any;
+  isFollowing?: boolean;
+  onFollow?: (partner: SwipeableItem) => void;
+  onUnfollow?: (partner: SwipeableItem) => void;
+  followLoading?: boolean;
 }
 
 const SwipeableCard: React.FC<SwipeableCardProps> = ({
@@ -66,12 +72,18 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
   onSkip,
   isFirst = false,
   navigation,
+  isFollowing = false,
+  onFollow,
+  onUnfollow,
+  followLoading = false,
 }) => {
+  console.log('SwipeableCard partner:', partner.name, partner.imageUrl);
   const translateX = useRef(new Animated.Value(0)).current;
   const scale = useRef(new Animated.Value(1)).current;
   const rotate = useRef(new Animated.Value(0)).current;
 
   const [isAnimating, setIsAnimating] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
   const handleGestureEvent = Animated.event(
     [{ nativeEvent: { translationX: translateX } }],
@@ -190,11 +202,23 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
         >
           {/* Background Image */}
           <View style={styles.imageContainer}>
-            <View style={styles.placeholderImage}>
-              <Text style={styles.placeholderText}>
-                {partner.name.charAt(0).toUpperCase()}
-              </Text>
-            </View>
+            {partner.imageUrl && !imageError ? (
+              <Image 
+                source={{ uri: partner.imageUrl }} 
+                style={styles.profileImage} 
+                onError={() => {
+                  console.log('Image load error for', partner.name, partner.imageUrl);
+                  setImageError(true);
+                }}
+                onLoad={() => console.log('Image loaded for', partner.name, partner.imageUrl)}
+              />
+            ) : (
+              <View style={styles.placeholderImage}>
+                <Text style={styles.placeholderText}>
+                  {partner?.name?.charAt(0).toUpperCase()}
+                </Text>
+              </View>
+            )}
           </View>
 
           {/* Card Info */}
@@ -207,12 +231,12 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
               </View>
               
               {/* Location */}
-              <Text style={styles.location}>{partner.location || 'Location not set'}</Text>
+              {partner.location && <Text style={styles.location}>{partner.location}</Text>}
               
               {/* Bio */}
-              <Text style={styles.bio} numberOfLines={3}>
-                {partner.bio || 'No bio available'}
-              </Text>
+              {partner.bio && <Text style={styles.bio} numberOfLines={3}>
+                {partner.bio}
+              </Text>}
 
               {/* Rating Stars */}
               <View style={styles.ratingSection}>
@@ -232,11 +256,11 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
               {/* Tags/Badges */}
               <View style={styles.tagsContainer}>
                 {/* Specialty/Type Badge */}
-                <View style={styles.tag}>
+               { ('specialty' in partner || partner.type) && <View style={styles.tag}>
                   <Text style={styles.tagText}>
                     {'specialty' in partner ? partner.specialty : partner.type}
                   </Text>
-                </View>
+                </View>}
                 
                 {/* Match/Rate Badge */}
                 <View style={[styles.tag, styles.tagAccent]}>
@@ -266,26 +290,22 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
                 >
                   <Text style={styles.outlineButtonText}>View Profile</Text>
                 </TouchableOpacity>
-                
                 <TouchableOpacity 
-                  style={styles.primaryButton}
+                  style={[styles.primaryButton, isFollowing ? { backgroundColor: '#E6E6E6' } : {}]}
                   onPress={(e) => {
                     e.stopPropagation();
-                    if ('hourlyRate' in partner && navigation) {
-                      // Navigate to BookTrainer screen for trainers
-                      navigation.navigate('BookTrainer', {
-                        trainerId: partner.id.toString(),
-                        trainerName: partner.name,
-                      });
+                    if (followLoading) return;
+                    if (isFollowing) {
+                      onUnfollow && onUnfollow(partner);
                     } else {
-                      // For partners, use the existing swipe right behavior
-                      onSwipeRight(partner);
+                      onFollow && onFollow(partner);
                     }
                   }}
                   activeOpacity={0.7}
+                  disabled={followLoading}
                 >
                   <Text style={styles.primaryButtonText}>
-                    {'hourlyRate' in partner ? 'Book Session' : 'Connect'}
+                    {followLoading ? '...' : isFollowing ? 'Unfollow' : 'Follow'}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -315,6 +335,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 12,
     elevation: 8,
+    width: screenWidth - 32, // Adjust for margins
   },
   cardContent: {
     borderRadius: 16,
@@ -328,6 +349,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     resizeMode: 'cover',
+    borderRadius: 16,
   },
   placeholderImage: {
     width: '100%',

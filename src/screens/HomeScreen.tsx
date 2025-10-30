@@ -26,6 +26,7 @@ import { useToggleLikeMutation } from '../services/api/likesCommentsApi';
 import { Like, CommentIcon, CommentRemove } from '../../assets';
 import CommentsModal from '../components/CommentsModal';
 import ConfirmationDialog from '../components/ConfirmationDialog';
+import EditPostModal from '../components/EditPostModal';
 
 interface HomeScreenProps {
   navigation: any;
@@ -75,7 +76,7 @@ interface WorkoutOfTheDay {
 }
 
 const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const [notes, setNotes] = useState<Note[]>([]);
   const [newNote, setNewNote] = useState("");
   const [refreshing, setRefreshing] = useState(false);
@@ -87,9 +88,23 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const [editingPost, setEditingPost] = useState<{ id: string; caption: string } | null>(null);
   const [editPostText, setEditPostText] = useState("");
   
-  // Fetch posts for Community Highlights
-  const { data: postsData, isLoading: postsLoading, refetch: refetchPosts } = useGetPostsQuery({ page: 1, limit: 5 });
+  // Fetch posts for Community Highlights - only when authenticated
+  const { data: postsData, isLoading: postsLoading, refetch: refetchPosts } = useGetPostsQuery(
+    { page: 1, limit: 5 },
+    { skip: !isAuthenticated }
+  );
   const communityPosts = (postsData?.status && postsData?.data?.posts) ? postsData.data.posts : [];
+
+  // Debug posts data
+  useEffect(() => {
+    console.log('Posts data:', postsData);
+    console.log('Community posts:', communityPosts);
+    if (communityPosts.length > 0) {
+      console.log('First post:', communityPosts[0]);
+      console.log('First post workout:', communityPosts[0]?.workout);
+      console.log('First post achievement:', communityPosts[0]?.achievement);
+    }
+  }, [postsData, communityPosts]);
   
   // Like mutation
   const [toggleLike, { isLoading: isLiking }] = useToggleLikeMutation();
@@ -565,6 +580,8 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                 style={styles.socialFeed}
               >
                 {communityPosts.slice(0, 3).map((post: any) => {
+                  console.log('Rendering post:', post?.id, 'workout:', post?.workout, 'achievement:', post?.achievement);
+                  
                   const postUser = post.user || {};
                   // Use displayName, userName, or email as fallback
                   const userName = postUser.displayName || postUser.userName || postUser.email || 'Anonymous User';
@@ -622,6 +639,31 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                       <Text style={styles.socialPostContent}>
                         {post.title}
                       </Text>
+                      
+                      {/* Workout Information */}
+                      {post.workout && (
+                        <View style={styles.postWorkoutBadge}>
+                          <Text style={styles.postWorkoutIcon}>💪</Text>
+                          <View style={styles.postWorkoutInfo}>
+                            <Text style={styles.postWorkoutTitle}>{post.workout.title}</Text>
+                            <Text style={styles.postWorkoutDetails}>
+                              {post.workout.totalDuration} min • {post.workout.difficulty}
+                            </Text>
+                          </View>
+                        </View>
+                      )}
+                      
+                      {/* Achievement Information */}
+                      {post.achievement && (
+                        <View style={styles.postAchievementBadge}>
+                          <Text style={styles.postAchievementIcon}>{post.achievement.icon || '🏆'}</Text>
+                          <View style={styles.postAchievementInfo}>
+                            <Text style={styles.postAchievementTitle}>{post.achievement.title}</Text>
+                            <Text style={styles.postAchievementDescription}>{post.achievement.description}</Text>
+                          </View>
+                        </View>
+                      )}
+                      
                       {post.mediaUrl && (
                         <Image 
                           source={{ uri: post.mediaUrl }} 
@@ -953,66 +995,14 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
       />
 
       {/* Edit Post Modal */}
-      <Modal
+      <EditPostModal
         visible={editingPost !== null}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={handleCancelEditPost}
-      >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.editPostModalContainer}
-        >
-          <TouchableOpacity 
-            style={styles.editPostModalOverlay} 
-            activeOpacity={1}
-            onPress={handleCancelEditPost}
-          />
-          <View style={styles.editPostModalContent}>
-            <View style={styles.editPostModalHeader}>
-              <Text style={styles.editPostModalTitle}>Edit Post</Text>
-              <TouchableOpacity onPress={handleCancelEditPost}>
-                <Text style={styles.editPostModalClose}>✕</Text>
-              </TouchableOpacity>
-            </View>
-            
-            <TextInput
-              style={styles.editPostInput}
-              value={editPostText}
-              onChangeText={setEditPostText}
-              placeholder="What's on your mind?"
-              placeholderTextColor={COLORS.textSecondary}
-              multiline
-              autoFocus
-              maxLength={500}
-            />
-            
-            <View style={styles.editPostModalActions}>
-              <TouchableOpacity 
-                style={styles.editPostCancelButton}
-                onPress={handleCancelEditPost}
-              >
-                <Text style={styles.editPostCancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={[
-                  styles.editPostSaveButton,
-                  (!editPostText.trim() || isUpdating) && styles.editPostSaveButtonDisabled
-                ]}
-                onPress={handleSaveEditPost}
-                disabled={!editPostText.trim() || isUpdating}
-              >
-                {isUpdating ? (
-                  <ActivityIndicator size="small" color={COLORS.white} />
-                ) : (
-                  <Text style={styles.editPostSaveButtonText}>Save</Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
+        onClose={handleCancelEditPost}
+        onSave={handleSaveEditPost}
+        editText={editPostText}
+        onChangeText={setEditPostText}
+        isUpdating={isUpdating}
+      />
     </SafeAreaView>
   );
 };
@@ -1547,18 +1537,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
   },
-  workoutBadge: {
-    backgroundColor: COLORS.primary + '20',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginLeft: 8,
-  },
-  workoutBadgeText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: COLORS.primary,
-  },
   socialPostImage: {
     width: '100%',
     height: 200,
@@ -1794,80 +1772,94 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
     marginRight: DIMENSIONS.spacing.sm,
   },
-  editPostModalContainer: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  editPostModalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  editPostModalContent: {
-    backgroundColor: COLORS.white,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: DIMENSIONS.spacing.lg,
-    maxHeight: '80%',
-  },
-  editPostModalHeader: {
+  workoutBadge: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: DIMENSIONS.spacing.lg,
-  },
-  editPostModalTitle: {
-    fontSize: 20,
-    fontFamily: FontWeight.SemiBold,
-    color: COLORS.gradient1,
-  },
-  editPostModalClose: {
-    fontSize: 24,
-    color: COLORS._616888,
-    fontWeight: 'bold',
-  },
-  editPostInput: {
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    backgroundColor: COLORS._D2E7FF,
     borderRadius: 12,
     padding: DIMENSIONS.spacing.md,
-    fontSize: 16,
-    color: COLORS.text,
-    minHeight: 120,
-    maxHeight: 300,
-    textAlignVertical: 'top',
-    marginBottom: DIMENSIONS.spacing.lg,
+    marginTop: DIMENSIONS.spacing.sm,
   },
-  editPostModalActions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: DIMENSIONS.spacing.md,
+  workoutIcon: {
+    fontSize: 20,
+    marginRight: DIMENSIONS.spacing.sm,
   },
-  editPostCancelButton: {
-    paddingVertical: DIMENSIONS.spacing.md,
-    paddingHorizontal: DIMENSIONS.spacing.xl,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+  workoutInfo: {
+    flex: 1,
   },
-  editPostCancelButtonText: {
-    fontSize: 16,
-    fontFamily: FontWeight.Medium,
-    color: COLORS.textSecondary,
-  },
-  editPostSaveButton: {
-    paddingVertical: DIMENSIONS.spacing.md,
-    paddingHorizontal: DIMENSIONS.spacing.xl,
-    borderRadius: 8,
-    backgroundColor: COLORS.primary,
-  },
-  editPostSaveButtonDisabled: {
-    opacity: 0.5,
-  },
-  editPostSaveButtonText: {
-    fontSize: 16,
+  workoutTitle: {
+    fontSize: 14,
     fontFamily: FontWeight.SemiBold,
-    color: COLORS.white,
+    color: COLORS.primary,
+    marginBottom: 2,
   },
+  workoutDetails: {
+    fontSize: 12,
+    fontFamily: FontWeight.Regular,
+    color: COLORS._616888,
+  },
+  achievementBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS._FFF5E9,
+    borderRadius: 12,
+    padding: DIMENSIONS.spacing.md,
+    marginTop: DIMENSIONS.spacing.sm,
+  },
+  postWorkoutBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS._D2E7FF,
+    borderRadius: 12,
+    padding: DIMENSIONS.spacing.md,
+    marginTop: DIMENSIONS.spacing.sm,
+  },
+  postWorkoutIcon: {
+    fontSize: 20,
+    marginRight: DIMENSIONS.spacing.sm,
+  },
+  postWorkoutInfo: {
+    flex: 1,
+  },
+  postWorkoutTitle: {
+    fontSize: 14,
+    fontFamily: FontWeight.SemiBold,
+    color: COLORS.primary,
+    marginBottom: 2,
+  },
+  postWorkoutDetails: {
+    fontSize: 12,
+    fontFamily: FontWeight.Regular,
+    color: COLORS._616888,
+  },
+  postAchievementBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS._FFF5E9,
+    borderRadius: 12,
+    padding: DIMENSIONS.spacing.md,
+    marginTop: DIMENSIONS.spacing.sm,
+  },
+  postAchievementIcon: {
+    fontSize: 20,
+    marginRight: DIMENSIONS.spacing.sm,
+  },
+  postAchievementInfo: {
+    flex: 1,
+  },
+  postAchievementTitle: {
+    fontSize: 14,
+    fontFamily: FontWeight.SemiBold,
+    color: COLORS._B9780E,
+    marginBottom: 2,
+  },
+  postAchievementDescription: {
+    fontSize: 12,
+    fontFamily: FontWeight.Regular,
+    color: COLORS._616888,
+  },
+
+
 });
 
 export default HomeScreen;

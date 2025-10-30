@@ -22,47 +22,24 @@ import { Divider } from "react-native-paper";
 import BasicTopBar from "../components/BasicTopBar";
 import * as ImagePicker from 'expo-image-picker';
 import { Toast } from '../components/ToastManager';
-import { useGetUserWorkoutsQuery } from '../services/api/workoutApi';
+import { useGetUserWorkoutsQuery, useGetUserAchievementsQuery } from '../services/api/workoutApi';
 import { useCreatePostMutation } from '../services/api/postsApi';
 import { useAuth } from '../contexts/AuthContext';
-
-type Workout = {
-  id: string;
-  userId: number;
-  workoutId: number;
-  isCompleted: boolean;
-  duration: number;
-  level: string;
-  createdAt: string;
-  updatedAt: string;
-  workout?: {
-    id: number;
-    name: string;
-    description: string;
-    difficulty: string;
-  };
-};
+import type { UserWorkout, Achievement as AchievementType } from '../types';
 
 interface ShareWorkoutScreenProps {
   navigation: any;
 }
 
-interface Achievement {
-  id: string;
-  title: string;
-  description: string;
-  icon: string;
-}
-
 const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
   navigation,
 }) => {
-  const [selectedWorkout, setSelectedWorkout] = useState<Workout | null>(null);
+  const [selectedWorkout, setSelectedWorkout] = useState<UserWorkout | null>(null);
   const [postText, setPostText] = useState("");
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<any>(null);
   const [selectedAchievement, setSelectedAchievement] =
-    useState<Achievement | null>(null);
+    useState<AchievementType | null>(null);
   const [showAchievementModal, setShowAchievementModal] = useState(false);
 
   // Get current user
@@ -73,11 +50,13 @@ const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
 
   // Fetch user workouts with pagination
   const { data: workoutsData, isLoading: workoutsLoading, isFetching } = useGetUserWorkoutsQuery({ page, limit: 3 });
+  const { data: achievementsData, isLoading: achievementsLoading } = useGetUserAchievementsQuery();
   const [createPost, { isLoading: isCreating }] = useCreatePostMutation();
 
   // Use API data
   const userWorkouts = (workoutsData?.status && workoutsData?.data?.workouts) ? workoutsData.data.workouts : [];
   const pagination = (workoutsData?.status && workoutsData?.data?.pagination) ? workoutsData.data.pagination : null;
+  const achievements: AchievementType[] = (achievementsData?.status && achievementsData?.data) ? achievementsData.data : [];
 
   // Handle load more
   const handleLoadMore = () => {
@@ -95,28 +74,6 @@ const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
       </View>
     );
   };
-
-  // Mock achievements data
-  const achievements: Achievement[] = [
-    {
-      id: "1",
-      title: "First Steps",
-      description: "Complete first workout",
-      icon: "🏃‍♂️",
-    },
-    {
-      id: "2",
-      title: "Century Club",
-      description: "Reach the 100 workout",
-      icon: "💯",
-    },
-    {
-      id: "3",
-      title: "Community Leader",
-      description: "Create your first group",
-      icon: "👥",
-    },
-  ];
 
   const handleSelectPhoto = async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -155,7 +112,7 @@ const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
     setShowAchievementModal(true);
   };
 
-  const handleAchievementSelect = (achievement: Achievement) => {
+  const handleAchievementSelect = (achievement: AchievementType) => {
     setSelectedAchievement(achievement);
     setShowAchievementModal(false);
   };
@@ -190,13 +147,13 @@ const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
 
     try {
       const payload: any = {
-        title: postText.trim() || `Completed ${selectedWorkout.workout?.name || 'workout'}!`,
+        title: postText.trim() || `Completed ${selectedWorkout.workout?.title || 'workout'}!`,
         type: 'workout_share',
-        workoutId: selectedWorkout.id,
+        workoutId: selectedWorkout.workoutId,
       };
 
       if (selectedAchievement) {
-        payload.achievementId = parseInt(selectedAchievement.id);
+        payload.achievementId = selectedAchievement.id;
       }
 
       if (imageFile) {
@@ -257,7 +214,7 @@ const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
           {/* Workout List */}
           {!workoutsLoading && userWorkouts.length > 0 && (
             <View style={styles.workoutListContainer}>
-              {userWorkouts.map((workout: Workout) => (
+              {userWorkouts.map((workout: UserWorkout) => (
                 <TouchableOpacity
                   key={workout.id}
                   style={[
@@ -269,7 +226,7 @@ const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
                   disabled={isCreating}
                 >
                   <Text style={styles.workoutName}>
-                    {workout.workout?.name || 'Workout'}
+                    {workout.workout?.title || 'Workout'}
                   </Text>
                   <View style={styles.workoutDetailsRow}>
                     <View
@@ -281,9 +238,9 @@ const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
                         alignSelf: "flex-start",
                       }}
                     >
-                      <Text style={styles.workoutType}>{workout.level || 'Medium'}</Text>
+                      <Text style={styles.workoutType}>{workout.workout?.difficulty || 'Medium'}</Text>
                     </View>
-                    <Text style={styles.workoutDetail}>{workout.duration} mins</Text>
+                    <Text style={styles.workoutDetail}>{Math.floor(workout.duration / 60)} mins</Text>
                     <Text style={styles.workoutDetail}>
                       {workout.workout?.difficulty || 'Medium'}
                     </Text>
@@ -296,7 +253,7 @@ const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
                       fontFamily: FontWeight.Regular,
                     }}
                   >
-                    {STRINGS.SHARE_WORKOUT.completed} {new Date(workout.createdAt).toLocaleDateString()}
+                                        {STRINGS.SHARE_WORKOUT.completed} {new Date(workout.createdAt).toLocaleDateString()}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -484,7 +441,7 @@ const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
                 }}
               />
 
-              <ScrollView>
+              <ScrollView style={{maxHeight:300}}>
                 {achievements.map((achievement) => (
                   <Pressable
                     key={achievement.id}
@@ -810,7 +767,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    maxHeight: "70%",
+    minHeight: "40%",
     paddingBottom: 20,
   },
   modalHeader: {

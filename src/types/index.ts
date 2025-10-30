@@ -29,6 +29,7 @@ export interface User {
   updatedAt: Date;
   workExperience?: string;
   introVideo?: string; // URL or file path to intro video
+  isFollowing?: boolean;
 }
 
 export interface UserProfile {
@@ -80,25 +81,84 @@ export interface UserStats {
 }
 
 // Workout Types
-export interface WorkoutSession {
+export interface Workout {
+  id: string;
+  title: string;
+  description: string;
+  type: string;
+  difficulty: 'Easy' | 'Medium' | 'Hard';
+  totalDuration: number; // in seconds
+  totalCalories: number;
+  exerciseCount: number;
+  targetMuscleGroups: string[]; // JSON parsed
+  equipmentRequired: string[]; // JSON parsed
+  workoutExercises?: WorkoutExercise[]; // Include related exercises
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Exercise {
+  id: string;
+  name: string;
+  description: string;
+  type: string;
+  difficulty: 'Easy' | 'Medium' | 'Hard';
+  duration: number; // in seconds
+  calories: number;
+  muscleGroups: string[]; // JSON parsed
+  equipment: string[]; // JSON parsed
+  instructions: string[]; // JSON parsed
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface WorkoutExercise {
+  id: string;
+  workoutId: string;
+  exerciseId: string;
+  order: number;
+  sets: number;
+  reps?: number;
+  duration?: number; // for time-based exercises
+  restTime: number; // in seconds
+  exercise?: Exercise; // populated when needed
+}
+
+export interface UserWorkout {
+  id: number;
+  userId: number;
+  workoutId: number;
+  isCompleted: boolean;
+  duration: number;
+  level: string;
+  createdAt: Date;
+  updatedAt: Date;
+  workout?: Workout; // populated when needed
+}
+
+export interface UserWorkoutSession {
   id: string;
   userId: string;
-  date: Date;
-  duration: number;
-  type: "strength" | "cardio" | "flexibility" | "mixed";
-  exercises: Array<{
-    name: string;
-    sets: number;
-    reps: number;
-    weight?: number;
-    notes?: string;
-    completed: boolean;
-  }>;
+  workoutId: string;
+  startedAt: Date;
+  completedAt?: Date;
+  totalDuration: number; // in seconds
+  totalCaloriesBurned: number;
+  status: 'in_progress' | 'completed' | 'paused' | 'cancelled';
+  workout?: Workout; // populated when needed
+  progress?: UserExerciseProgress[];
+}
+
+export interface UserExerciseProgress {
+  id: string;
+  userWorkoutSessionId: string;
+  workoutExerciseId: string;
+  setNumber: number;
+  repsCompleted?: number;
+  durationCompleted?: number; // in seconds
   caloriesBurned: number;
-  difficulty: "easy" | "medium" | "hard";
-  notes: string;
-  location?: string;
-  partnerId?: string;
+  completedAt: Date;
+  workoutExercise?: WorkoutExercise;
 }
 
 export interface ProgressGoal {
@@ -211,6 +271,18 @@ export interface Post {
   timestamp: Date;
   isLiked: boolean;
   tags: string[];
+  workout?: {
+    id: string;
+    title: string;
+    totalDuration: number;
+    difficulty: string;
+  };
+  achievement?: {
+    id: string;
+    title: string;
+    description: string;
+    icon: string;
+  };
 }
 
 // Rating Types
@@ -244,7 +316,7 @@ export interface UserRating {
 
 // Achievement Types
 export interface Achievement {
-  id: string;
+  id: number;
   userId: string;
   type: "streak" | "pr" | "workout" | "social" | "strength";
   title: string;

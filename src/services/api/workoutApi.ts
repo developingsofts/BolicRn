@@ -1,171 +1,210 @@
 import { API_END_POINTS } from '../endPoints';
-import type { ProgressGoal, WorkoutSession } from '../../types';
+import type { Workout, Exercise, UserWorkoutSession, UserExerciseProgress, UserWorkout, Achievement } from '../../types';
 import { baseApi } from './baseApi';
 import type { ApiResponse } from './types';
 
-interface WorkoutSessionPayload extends Partial<WorkoutSession> {
-  userId?: string;
+interface StartWorkoutPayload {
+  workoutId: string;
 }
 
-interface UpdateWorkoutSessionPayload {
+interface ActiveWorkoutSessionResponse {
+  session: UserWorkoutSession;
+  progress: UserExerciseProgress[];
+}
+
+interface CompleteExercisePayload {
   sessionId: string;
-  data: Partial<WorkoutSession>;
+  workoutExerciseId: string;
+  setNumber: number;
+  repsCompleted?: number;
+  durationCompleted?: number;
 }
 
-interface DeleteWorkoutSessionPayload {
-  sessionId: string;
+interface WorkoutsResponse {
+  workouts: Workout[];
+  pagination: {
+    currentPage: number;
+    totalPages: number;
+    totalWorkouts: number;
+    limit: number;
+    hasMore: boolean;
+  };
 }
 
-interface ProgressGoalPayload extends Partial<ProgressGoal> {
-  userId?: string;
+interface WorkoutHistoryResponse {
+  sessions: UserWorkoutSession[];
+  pagination: {
+    currentPage: number;
+    totalPages: number;
+    totalSessions: number;
+    limit: number;
+    hasMore: boolean;
+  };
 }
 
-interface UpdateProgressGoalPayload {
-  goalId: string;
-  data: Partial<ProgressGoal>;
+interface UserWorkoutsResponse {
+  workouts: UserWorkout[];
+  pagination: {
+    currentPage: number;
+    totalPages: number;
+    totalWorkouts: number;
+    limit: number;
+    hasMore: boolean;
+  };
 }
 
-interface DeleteProgressGoalPayload {
-  goalId: string;
-}
+// Get user achievements
 
 export const workoutApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    // Get user's completed workouts with pagination
-    getUserWorkouts: builder.query<
-      ApiResponse<{ workouts: any[]; pagination: any }>, 
-      { page?: number; limit?: number } | void
-    >({
-      query: (params) => {
-        const page = params?.page || 1;
-        const limit = params?.limit || 3;
-        return {
-          url: `/user-workout/all?page=${page}&limit=${limit}`,
-          method: 'GET',
-        };
-      },
-      providesTags: ['Workout'],
-      // Support for infinite scroll - merge results
-      serializeQueryArgs: ({ endpointName }) => {
-        // Use same cache key for all pages to enable merging
-        return endpointName;
-      },
-      merge: (currentCache, newItems, { arg }) => {
-        // If page 1 or no arg, return fresh data
-        if (!arg || arg.page === 1) {
-          return newItems;
-        }
-        
-        // Merge results for page > 1
-        if ('data' in currentCache && 'data' in newItems && currentCache.status && newItems.status) {
-          return {
-            ...newItems,
-            data: {
-              workouts: [
-                ...(currentCache.data?.workouts || []),
-                ...(newItems.data?.workouts || [])
-              ],
-              pagination: newItems.data?.pagination
-            }
-          };
-        }
-        
-        return newItems;
-      },
-      forceRefetch({ currentArg, previousArg }) {
-        return currentArg?.page !== previousArg?.page;
-      },
-    }),
-    getWorkoutSessions: builder.query<ApiResponse<WorkoutSession[]>, string>({
-      query: (userId) => ({
-        url: API_END_POINTS.workouts.sessions(userId),
+    // Get all workouts
+    getWorkouts: builder.query<ApiResponse<WorkoutsResponse>, void>({
+      query: () => ({
+        url: API_END_POINTS.workouts.all,
         method: 'GET',
       }),
       providesTags: ['Workout'],
     }),
-    createWorkoutSession: builder.mutation<
-      ApiResponse<WorkoutSession>,
-      WorkoutSessionPayload
-    >({
+
+    // Get workout by ID
+    getWorkoutById: builder.query<ApiResponse<Workout>, string>({
+      query: (id) => ({
+        url: API_END_POINTS.workouts.byId(id),
+        method: 'GET',
+      }),
+      providesTags: ['Workout'],
+    }),
+
+    // Get all exercises
+    getExercises: builder.query<ApiResponse<Exercise[]>, void>({
+      query: () => ({
+        url: API_END_POINTS.exercises.all,
+        method: 'GET',
+      }),
+      providesTags: ['Exercise'],
+    }),
+
+    // Get exercise by ID
+    getExerciseById: builder.query<ApiResponse<Exercise>, string>({
+      query: (id) => ({
+        url: API_END_POINTS.exercises.byId(id),
+        method: 'GET',
+      }),
+      providesTags: ['Exercise'],
+    }),
+
+    // Start workout session
+    startWorkoutSession: builder.mutation<ApiResponse<UserWorkoutSession>, StartWorkoutPayload>({
       query: (data) => ({
-        url: API_END_POINTS.workouts.sessions(),
+        url: API_END_POINTS.workouts.sessions.start,
         method: 'POST',
         body: data,
       }),
-      invalidatesTags: ['Workout'],
+      invalidatesTags: ['WorkoutSession'],
     }),
-    updateWorkoutSession: builder.mutation<
-      ApiResponse<WorkoutSession>,
-      UpdateWorkoutSessionPayload
-    >({
-      query: ({ sessionId, data }) => ({
-        url: API_END_POINTS.workouts.sessionById(sessionId),
-        method: 'PUT',
+
+    // Get active workout session
+    getActiveWorkoutSession: builder.query<ApiResponse<ActiveWorkoutSessionResponse | null>, void>({
+      query: () => ({
+        url: API_END_POINTS.workouts.sessions.active,
+        method: 'GET',
+      }),
+      providesTags: ['WorkoutSession'],
+    }),
+
+    // Complete exercise
+    completeExercise: builder.mutation<ApiResponse<UserExerciseProgress>, CompleteExercisePayload>({
+      query: (data) => ({
+        url: API_END_POINTS.workouts.sessions.completeExercise,
+        method: 'POST',
         body: data,
       }),
-      invalidatesTags: ['Workout'],
+      invalidatesTags: ['WorkoutSession'],
     }),
-    deleteWorkoutSession: builder.mutation<
-      ApiResponse<{ success: boolean }>,
-      DeleteWorkoutSessionPayload
-    >({
+
+    // Complete workout session
+    completeWorkoutSession: builder.mutation<ApiResponse<UserWorkoutSession>, { sessionId: string }>({
       query: ({ sessionId }) => ({
-        url: API_END_POINTS.workouts.sessionById(sessionId),
-        method: 'DELETE',
+        url: API_END_POINTS.workouts.sessions.complete,
+        method: 'POST',
+        body: { sessionId },
       }),
-      invalidatesTags: ['Workout'],
+      invalidatesTags: ['WorkoutSession'],
     }),
-    getProgressGoals: builder.query<ApiResponse<ProgressGoal[]>, string>({
-      query: (userId) => ({
-        url: API_END_POINTS.workouts.goals(userId),
+
+    // Pause workout session
+    pauseWorkoutSession: builder.mutation<ApiResponse<UserWorkoutSession>, { sessionId: string }>({
+      query: ({ sessionId }) => ({
+        url: API_END_POINTS.workouts.sessions.pause,
+        method: 'POST',
+        body: { sessionId },
+      }),
+      invalidatesTags: ['WorkoutSession'],
+    }),
+
+    // Resume workout session
+    resumeWorkoutSession: builder.mutation<ApiResponse<UserWorkoutSession>, { sessionId: string }>({
+      query: ({ sessionId }) => ({
+        url: API_END_POINTS.workouts.sessions.resume,
+        method: 'POST',
+        body: { sessionId },
+      }),
+      invalidatesTags: ['WorkoutSession'],
+    }),
+
+    // Cancel workout session
+    cancelWorkoutSession: builder.mutation<ApiResponse<UserWorkoutSession>, { sessionId: string }>({
+      query: ({ sessionId }) => ({
+        url: API_END_POINTS.workouts.sessions.cancel,
+        method: 'POST',
+        body: { sessionId },
+      }),
+      invalidatesTags: ['WorkoutSession'],
+    }),
+
+    // Get workout history
+    getWorkoutHistory: builder.query<ApiResponse<WorkoutHistoryResponse>, void>({
+      query: () => ({
+        url: API_END_POINTS.workouts.sessions.history,
         method: 'GET',
       }),
-      providesTags: ['Workout'],
+      providesTags: ['WorkoutSession'],
     }),
-    createProgressGoal: builder.mutation<
-      ApiResponse<ProgressGoal>,
-      ProgressGoalPayload
-    >({
-      query: (data) => ({
-        url: API_END_POINTS.workouts.goals(),
-        method: 'POST',
-        body: data,
+
+    // Get user workouts
+    getUserWorkouts: builder.query<ApiResponse<UserWorkoutsResponse>, { page?: number; limit?: number }>({
+      query: ({ page = 1, limit = 10 }) => ({
+        url: `${API_END_POINTS.workouts.userWorkouts}?page=${page}&limit=${limit}`,
+        method: 'GET',
       }),
-      invalidatesTags: ['Workout'],
+      providesTags: ['UserWorkout'],
     }),
-    updateProgressGoal: builder.mutation<
-      ApiResponse<ProgressGoal>,
-      UpdateProgressGoalPayload
-    >({
-      query: ({ goalId, data }) => ({
-        url: API_END_POINTS.workouts.goalById(goalId),
-        method: 'PUT',
-        body: data,
+
+    // Get user achievements
+    getUserAchievements: builder.query<ApiResponse<Achievement[]>, void>({
+      query: () => ({
+        url: API_END_POINTS.users.achievements('me'),
+        method: 'GET',
       }),
-      invalidatesTags: ['Workout'],
-    }),
-    deleteProgressGoal: builder.mutation<
-      ApiResponse<{ success: boolean }>,
-      DeleteProgressGoalPayload
-    >({
-      query: ({ goalId }) => ({
-        url: API_END_POINTS.workouts.goalById(goalId),
-        method: 'DELETE',
-      }),
-      invalidatesTags: ['Workout'],
+      providesTags: ['Achievements'],
     }),
   }),
   overrideExisting: false,
 });
 
 export const {
+  useGetWorkoutsQuery,
+  useGetWorkoutByIdQuery,
+  useGetExercisesQuery,
+  useGetExerciseByIdQuery,
+  useStartWorkoutSessionMutation,
+  useGetActiveWorkoutSessionQuery,
+  useCompleteExerciseMutation,
+  useCompleteWorkoutSessionMutation,
+  usePauseWorkoutSessionMutation,
+  useResumeWorkoutSessionMutation,
+  useCancelWorkoutSessionMutation,
+  useGetWorkoutHistoryQuery,
   useGetUserWorkoutsQuery,
-  useGetWorkoutSessionsQuery,
-  useCreateWorkoutSessionMutation,
-  useUpdateWorkoutSessionMutation,
-  useDeleteWorkoutSessionMutation,
-  useGetProgressGoalsQuery,
-  useCreateProgressGoalMutation,
-  useUpdateProgressGoalMutation,
-  useDeleteProgressGoalMutation,
+  useGetUserAchievementsQuery,
 } = workoutApi;

@@ -83,6 +83,18 @@ export const clearUserData = async () => {
   await multiRemove([
     STORAGE_KEYS.authToken,
     STORAGE_KEYS.userProfile,
+    STORAGE_KEYS.userStats,
+    STORAGE_KEYS.notificationSettings,
+    STORAGE_KEYS.workoutSessions,
+    STORAGE_KEYS.progressGoals,
+    STORAGE_KEYS.trainingPartners,
+    STORAGE_KEYS.messages,
+    STORAGE_KEYS.groups,
+    STORAGE_KEYS.notifications,
+    STORAGE_KEYS.posts,
+    STORAGE_KEYS.ratings,
+    STORAGE_KEYS.achievements,
+    STORAGE_KEYS.notepadNotes,
   ]);
 };
 

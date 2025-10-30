@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -12,7 +12,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Menu } from "react-native-paper";
-import RefreshableScrollView from '../../components/RefreshableScrollView';
+import RefreshableScrollView from "../../components/RefreshableScrollView";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS, DIMENSIONS } from "../../config/constants";
@@ -33,10 +33,27 @@ import {
 import { Group } from "../../types";
 import ManageGroup from "./ManageGroup";
 import BasicTopBar from "../../components/BasicTopBar";
-import { useGetGroupByIdQuery, useGetGroupMembersQuery, useGetGroupPostsQuery, useJoinGroupMutation, useDeleteGroupMutation } from "../../services/api/groupsApi";
-import { useLeaveGroupMutation } from '../../services/api/leaveGroup';
+import {
+  useGetGroupByIdQuery,
+  useGetGroupMembersQuery,
+  useGetGroupPostsQuery,
+  useJoinGroupMutation,
+  useDeleteGroupMutation,
+} from "../../services/api/groupsApi";
+import { useLeaveGroupMutation } from "../../services/api/leaveGroup";
+import {
+  useToggleLikeMutation,
+  useGetPostCommentsQuery,
+} from "../../services/api/likesCommentsApi";
+import {
+  useDeletePostMutation,
+  useUpdatePostMutation,
+} from "../../services/api/postsApi";
 import { useAuth } from "../../contexts/AuthContext";
 import { Toast } from "../../components/ToastManager";
+import CommentsModal from "../../components/CommentsModal";
+import EditPostModal from "../../components/EditPostModal";
+import { useFocusEffect } from "@react-navigation/native";
 
 interface GroupDetailsProps {
   navigation?: any;
@@ -52,28 +69,17 @@ interface GroupDetailsProps {
 const baseStyles = StyleSheet.create({
   loadingContainer: {
     padding: r(40),
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   emptyText: {
     fontSize: r(14),
     color: COLORS._5E5E5E,
-    textAlign: 'center',
+    textAlign: "center",
   },
   emptyPostsContainer: {
     padding: r(30),
-    alignItems: 'center',
-  },
-  loadMoreButton: {
-    padding: r(15),
-    alignItems: 'center',
-    marginTop: r(10),
-    marginBottom: r(20),
-  },
-  loadMoreText: {
-    fontSize: r(14),
-    color: COLORS.primary,
-    fontWeight: '600',
+    alignItems: "center",
   },
   container: {
     flex: 1,
@@ -255,7 +261,7 @@ const baseStyles = StyleSheet.create({
     fontFamily: FontWeight.Medium,
   },
   postsSection: {
-    paddingBottom: r(20),
+    minHeight: 200, // Minimum height to show content
   },
   postsTitle: {
     fontSize: 20,
@@ -276,6 +282,8 @@ const baseStyles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    paddingBottom: 30,
+    marginBottom: 10,
   },
   postHeader: {
     flexDirection: "row",
@@ -310,12 +318,20 @@ const baseStyles = StyleSheet.create({
     marginTop: r(2),
     fontFamily: FontWeight.Regular,
   },
+  postMenuButton: {
+    padding: r(8),
+  },
+  postMenuDots: {
+    fontSize: 18,
+    color: COLORS.textSecondary,
+    fontWeight: "700",
+  },
   postContent: {
     fontSize: 14,
     color: COLORS.app_black,
     fontFamily: FontWeight.Regular,
     lineHeight: 20,
-    marginBottom: r(5),
+    marginBottom: 10,
   },
   postActions: {
     flexDirection: "row",
@@ -325,6 +341,10 @@ const baseStyles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     marginRight: r(10),
+  },
+  actionIcon: {
+    width: 16,
+    height: 16,
   },
   actionText: {
     fontSize: 14,
@@ -396,34 +416,198 @@ const baseStyles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 4,
   },
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    backgroundColor: COLORS.white,
+    borderRadius: r(12),
+    padding: r(20),
+    marginHorizontal: r(20),
+    alignItems: "center",
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: COLORS.text,
+    marginBottom: r(8),
+  },
+  modalMessage: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    textAlign: "center",
+    marginBottom: r(20),
+  },
+  modalActions: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "100%",
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: r(12),
+    borderRadius: r(8),
+    alignItems: "center",
+    marginHorizontal: r(5),
+  },
+  cancelButton: {
+    backgroundColor: COLORS.surface,
+  },
+  cancelButtonText: {
+    color: COLORS.text,
+    fontSize: 16,
+    fontWeight: "500",
+  },
+  deleteButton: {
+    backgroundColor: COLORS._EB3434,
+  },
+  deleteButtonText: {
+    color: COLORS.white,
+    fontSize: 16,
+    fontWeight: "500",
+  },
+  deleteModalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 2000,
+  },
+  deleteModalContent: {
+    backgroundColor: COLORS.white,
+    borderRadius: r(12),
+    padding: r(20),
+    marginHorizontal: r(20),
+    alignItems: "center",
+  },
+  deleteModalTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: COLORS.text,
+    marginBottom: r(8),
+  },
+  deleteModalMessage: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    textAlign: "center",
+    marginBottom: r(20),
+  },
+  deleteModalActions: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "100%",
+  },
+  deleteModalCancelButton: {
+    flex: 1,
+    padding: r(12),
+    borderRadius: r(8),
+    backgroundColor: COLORS.surface,
+    marginRight: r(8),
+    alignItems: "center",
+  },
+  deleteModalCancelText: {
+    color: COLORS.text,
+    fontSize: 16,
+    fontWeight: "500",
+  },
+  deleteModalDeleteButton: {
+    flex: 1,
+    padding: r(12),
+    borderRadius: r(8),
+    backgroundColor: COLORS._EB3434,
+    marginLeft: r(8),
+    alignItems: "center",
+  },
+  deleteModalDeleteText: {
+    color: COLORS.white,
+    fontSize: 16,
+    fontWeight: "500",
+  },
+  postMenuDropdown: {
+    position: "absolute",
+    top: 35,
+    right: 0,
+    backgroundColor: COLORS.surface,
+    borderRadius: 8,
+    paddingVertical: r(4),
+    minWidth: 120,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+    zIndex: 1000,
+  },
+  postMenuOption: {
+    paddingVertical: r(8),
+    paddingHorizontal: r(12),
+  },
+  postMenuOptionText: {
+    fontSize: 14,
+    color: "#FF3B30",
+    fontWeight: "500",
+  },
 });
 
-const GroupDetails: React.FC<GroupDetailsProps> = ({ navigation, route, group: propGroup, onClose }) => {
+const GroupDetails: React.FC<GroupDetailsProps> = ({
+  navigation,
+  route,
+  group: propGroup,
+  onClose,
+}) => {
   const styles = useResponsive(baseStyles);
   const { user } = useAuth();
-  const [showManageGroup, setManageGroup] = useState(false);
-  const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
   const [membersPage, setMembersPage] = useState(1);
   const [postsPage, setPostsPage] = useState(1);
+  const [accumulatedPosts, setAccumulatedPosts] = useState<any[]>([]);
+  const [isLoadingMorePosts, setIsLoadingMorePosts] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [memberMenuVisible, setMemberMenuVisible] = useState<string | null>(null);
+  const [memberMenuVisible, setMemberMenuVisible] = useState<string | null>(
+    null
+  );
+  const [commentsModalVisible, setCommentsModalVisible] = useState(false);
+  const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
+  const [openPostMenuId, setOpenPostMenuId] = useState<string | null>(null);
+  const [showDeletePostDialog, setShowDeletePostDialog] = useState(false);
+  const [postToDelete, setPostToDelete] = useState<string | null>(null);
+  const [editingPost, setEditingPost] = useState<{
+    id: string;
+    caption: string;
+  } | null>(null);
+  const [editPostText, setEditPostText] = useState("");
+  const [scrollViewHeight, setScrollViewHeight] = useState(0);
+  const [contentHeight, setContentHeight] = useState(0);
+  const [likingPostId, setLikingPostId] = useState<string | null>(null);
 
   // Get group from props or route
   const passedGroup = propGroup || route?.params?.group;
   const groupId = passedGroup?.id?.toString();
 
   // Fetch group details
-  const { data: groupData, isLoading: isLoadingGroup, refetch: refetchGroup } = useGetGroupByIdQuery(
-    { groupId: groupId! },
-    { skip: !groupId }
-  );
+  const {
+    data: groupData,
+    isLoading: isLoadingGroup,
+    refetch: refetchGroup,
+  } = useGetGroupByIdQuery({ groupId: groupId! }, { skip: !groupId });
   // Fetch group members
-  const { data: membersData, isLoading: isLoadingMembers, refetch: refetchMembers } = useGetGroupMembersQuery(
+  const {
+    data: membersData,
+    isLoading: isLoadingMembers,
+    refetch: refetchMembers,
+  } = useGetGroupMembersQuery(
     { groupId: groupId!, page: membersPage, limit: 20 },
     { skip: !groupId }
   );
   // Fetch group posts
-  const { data: postsData, isLoading: isLoadingPosts, refetch: refetchPosts } = useGetGroupPostsQuery(
+  const {
+    data: postsData,
+    isLoading: isLoadingPosts,
+    refetch: refetchPosts,
+  } = useGetGroupPostsQuery(
     { groupId: groupId!, page: postsPage, limit: 10 },
     { skip: !groupId }
   );
@@ -431,10 +615,18 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({ navigation, route, group: p
   const [joinGroup, { isLoading: isJoining }] = useJoinGroupMutation();
   // Delete group mutation
   const [deleteGroup, { isLoading: isDeleting }] = useDeleteGroupMutation();
+  // Like mutation
+  const [toggleLike, { isLoading: isLiking }] = useToggleLikeMutation();
+  const [deletePost, { isLoading: isDeletingPost }] = useDeletePostMutation();
+  const [updatePost, { isLoading: isUpdatingPost }] = useUpdatePostMutation();
 
   // Use real data or fallback
-  const group = (groupData?.status && groupData?.data) ? groupData.data : passedGroup;
-  const members = (membersData?.status && membersData?.data?.members) ? membersData.data.members : [];
+  const group =
+    groupData?.status && groupData?.data ? groupData.data : passedGroup;
+  const members =
+    membersData?.status && membersData?.data?.members
+      ? membersData.data.members
+      : [];
 
   // Exit group handler
   const [leaveGroup, { isLoading: isLeaving }] = useLeaveGroupMutation();
@@ -442,14 +634,14 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({ navigation, route, group: p
     if (!group?.id) return;
     try {
       await leaveGroup(group.id.toString()).unwrap();
-      Toast.success('You have left the group');
-      if (typeof onClose === 'function') {
+      Toast.success("You have left the group");
+      if (typeof onClose === "function") {
         onClose();
-      } else if (navigation && typeof navigation.goBack === 'function') {
+      } else if (navigation && typeof navigation.goBack === "function") {
         navigation.goBack();
       }
     } catch (error: any) {
-      Toast.error(error?.data?.message || 'Failed to leave group');
+      Toast.error(error?.data?.message || "Failed to leave group");
     }
   };
 
@@ -457,31 +649,143 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({ navigation, route, group: p
     if (!group?.id) return;
     try {
       await deleteGroup({ groupId: group.id.toString() }).unwrap();
-      Toast.success('Group deleted successfully');
-      if (typeof onClose === 'function') {
+      Toast.success("Group deleted successfully");
+      if (typeof onClose === "function") {
         onClose();
-      } else if (navigation && typeof navigation.goBack === 'function') {
+      } else if (navigation && typeof navigation.goBack === "function") {
         navigation.goBack();
       }
     } catch (error: any) {
-      Toast.error(error?.data?.message || 'Failed to delete group');
+      Toast.error(error?.data?.message || "Failed to delete group");
     }
   };
 
   // Check if current user is the creator
-  const isCreator = user?.id && group?.creatorId && Number(user.id) === Number(group.creatorId);
+  const isCreator =
+    user?.id && group?.creatorId && Number(user.id) === Number(group.creatorId);
   // Check if current user is a member (you may need to add this logic based on your data structure)
   const isMember = group?.isMember || isCreator;
 
   // Handler for viewing a member's profile
   const handleViewProfile = (member: any) => {
     setMemberMenuVisible(null);
-    navigation?.navigate('UserProfile', { userId: member.id?.toString?.() || member.id, isGuest: true });
+    navigation?.navigate("UserProfile", {
+      userId: member.id?.toString?.() || member.id,
+      isGuest: true,
+    });
+  };
+
+  // Post handlers
+  const handleLikePost = async (postId: string) => {
+    try {
+      setLikingPostId(postId);
+      await toggleLike(postId).unwrap();
+      // Posts will auto-refresh due to cache invalidation
+    } catch (error) {
+      console.error("Failed to toggle like:", error);
+    } finally {
+      setLikingPostId(null);
+    }
+  };
+
+  const handleOpenComments = (postId: string) => {
+    setSelectedPostId(postId);
+    setCommentsModalVisible(true);
+  };
+
+  const handleCloseComments = () => {
+    setCommentsModalVisible(false);
+    setSelectedPostId(null);
+    refetchPosts(); // Refresh posts to update comment counts
+  };
+
+  const handlePostMenuPress = (postId: string) => {
+    setOpenPostMenuId(openPostMenuId === postId ? null : postId);
+  };
+
+  const handleDeletePostPress = (postId: string) => {
+    setOpenPostMenuId(null);
+    setPostToDelete(postId);
+    setShowDeletePostDialog(true);
+  };
+
+  const handleEditPostPress = (postId: string, caption: string) => {
+    setOpenPostMenuId(null);
+    setEditingPost({ id: postId, caption });
+    setEditPostText(caption);
+  };
+
+  const handleSaveEditPost = async () => {
+    if (!editingPost || !editPostText.trim()) return;
+
+    try {
+      await updatePost({
+        postId: editingPost.id,
+        title: editPostText.trim(),
+      }).unwrap();
+
+      setEditingPost(null);
+      setEditPostText("");
+      refetchPosts();
+      Toast.success("Post updated successfully!");
+    } catch (error) {
+      console.error("Failed to update post:", error);
+      Toast.error("Failed to update post. Please try again.");
+    }
+  };
+
+  const handleCancelEditPost = () => {
+    setEditingPost(null);
+    setEditPostText("");
+  };
+
+  const confirmDeletePost = async () => {
+    if (!postToDelete) return;
+
+    try {
+      await deletePost({ postId: postToDelete }).unwrap();
+      refetchPosts();
+      setShowDeletePostDialog(false);
+      setPostToDelete(null);
+    } catch (error) {
+      console.error("Failed to delete post:", error);
+      Toast.error("Failed to delete post.");
+      setShowDeletePostDialog(false);
+      setPostToDelete(null);
+    }
+  };
+
+  const cancelDeletePost = () => {
+    setShowDeletePostDialog(false);
+    setPostToDelete(null);
   };
 
   // Posts and pagination
-  const posts = (postsData?.status && postsData?.data?.posts) ? postsData.data.posts : [];
-  const postsPagination = (postsData?.status && postsData?.data?.pagination) ? postsData.data.pagination : null;
+  const posts =
+    postsData?.status && postsData?.data?.posts ? postsData.data.posts : [];
+  const postsPagination =
+    postsData?.status && postsData?.data?.pagination
+      ? postsData.data.pagination
+      : null;
+
+  // Accumulate posts when new data arrives
+  useEffect(() => {
+    if (postsData && posts.length > 0) {
+      if (postsPage === 1) {
+        // First page, replace all posts
+        setAccumulatedPosts(posts);
+      } else {
+        // Subsequent pages, append new posts
+        setAccumulatedPosts((prevPosts) => {
+          // Avoid duplicates by checking post IDs
+          const existingIds = new Set(prevPosts.map((p) => p.id));
+          const newPosts = posts.filter((p) => !existingIds.has(p.id));
+          return [...prevPosts, ...newPosts];
+        });
+      }
+    }
+    setIsLoadingMorePosts(false);
+  }, [posts, postsPage, postsData]);
 
   // Handle join group
   const handleJoinGroup = async () => {
@@ -489,14 +793,14 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({ navigation, route, group: p
     try {
       const response = await joinGroup({ groupId }).unwrap();
       if (response.status) {
-        Toast.success('Successfully joined the group!');
+        Toast.success("Successfully joined the group!");
         refetchGroup();
         refetchMembers();
       } else {
-        Toast.error(response.message || 'Failed to join group');
+        Toast.error(response.message || "Failed to join group");
       }
     } catch (error: any) {
-      Toast.error(error?.data?.message || 'Failed to join group');
+      Toast.error(error?.data?.message || "Failed to join group");
     }
   };
 
@@ -505,50 +809,186 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({ navigation, route, group: p
     setRefreshing(true);
     setMembersPage(1);
     setPostsPage(1);
-    await Promise.all([
-      refetchGroup(),
-      refetchMembers(),
-      refetchPosts()
-    ]);
+    // Don't clear accumulatedPosts here - let the useEffect handle it when new data arrives
+    await Promise.all([refetchGroup(), refetchMembers(), refetchPosts()]);
     setRefreshing(false);
   };
 
   // Handle load more posts
   const handleLoadMorePosts = () => {
-    if (postsPagination && postsPagination.currentPage < postsPagination.totalPages) {
+    if (
+      postsPagination &&
+      postsPagination.currentPage < postsPagination.totalPages &&
+      !isLoadingMorePosts
+    ) {
+      setIsLoadingMorePosts(true);
       setPostsPage(postsPagination.currentPage + 1);
     }
   };
 
+  // Handle scroll for infinite loading
+  const handleScroll = (event: any) => {
+    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+    const distanceFromBottom = contentSize.height - layoutMeasurement.height - contentOffset.y;
+    
+    // Load more when within 100 pixels of bottom
+    if (distanceFromBottom < 100 && !isLoadingMorePosts && accumulatedPosts.length > 0) {
+      handleLoadMorePosts();
+    }
+  };
+
+  const handleContentSizeChange = (contentWidth: number, contentHeight: number) => {
+    setContentHeight(contentHeight);
+  };
+
+  const handleLayout = (event: any) => {
+    setScrollViewHeight(event.nativeEvent.layout.height);
+  };
+
+  // Refresh posts when screen comes back into focus (e.g., after creating a post)
+  useFocusEffect(
+    React.useCallback(() => {
+      // Refresh posts when returning to this screen
+      refetchPosts();
+    }, [refetchPosts])
+  );
+
   // Render post
   const renderPost = ({ item: post, index }: { item: any; index: number }) => {
-    const authorInitial = post.userDisplayName?.charAt(0) || post.User?.displayName?.charAt(0) || 'U';
+    const authorInitial =
+      post.user?.displayName?.charAt(0) ||
+      post.user?.userName?.charAt(0) ||
+      "U";
     return (
       <View key={post.id || index}>
         <View style={styles.postCard}>
           <View style={styles.postHeader}>
             <View style={styles.authorAvatar}>
-              <Text style={styles.authorAvatarText}>{authorInitial.toUpperCase()}</Text>
+              <Text style={styles.authorAvatarText}>
+                {authorInitial.toUpperCase()}
+              </Text>
             </View>
             <View style={styles.postInfo}>
               <Text style={styles.authorName}>
-                {post.userDisplayName || post.User?.displayName || post.User?.userName || 'Anonymous'}
+                {post.user?.displayName || post.user?.userName || "Anonymous"}
               </Text>
               <Text style={styles.timeAgo}>
-                {post.createdAt ? new Date(post.createdAt).toLocaleDateString() : 'Recently'}
+                {post.createdAt
+                  ? new Date(post.createdAt).toLocaleDateString()
+                  : "Recently"}
               </Text>
             </View>
+            {user?.id === post.userId && (
+              <View>
+                <TouchableOpacity
+                  style={styles.postMenuButton}
+                  onPress={() => handlePostMenuPress(post.id.toString())}
+                >
+                  <Text style={styles.postMenuDots}>⋯</Text>
+                </TouchableOpacity>
+                {openPostMenuId === post.id.toString() && (
+                  <View style={styles.postMenuDropdown}>
+                    <TouchableOpacity
+                      onPress={() =>
+                        handleEditPostPress(
+                          post.id.toString(),
+                          post.title || ""
+                        )
+                      }
+                      style={styles.postMenuOption}
+                    >
+                      <Text
+                        style={[
+                          styles.postMenuOptionText,
+                          { color: COLORS.text },
+                        ]}
+                      >
+                        Edit
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => handleDeletePostPress(post.id.toString())}
+                      style={styles.postMenuOption}
+                    >
+                      <Text style={styles.postMenuOptionText}>Delete</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+            )}
           </View>
-          <Text style={styles.postContent}>{post.content || ''}</Text>
+          <Text style={styles.postContent}>{post.title}</Text>
+
+          {/* Workout Information */}
+          {post.workout && (
+            <View style={styles.workoutBadge}>
+              <Text style={styles.workoutIcon}>💪</Text>
+              <View style={styles.workoutInfo}>
+                <Text style={styles.workoutTitle}>{post.workout.title}</Text>
+                <Text style={styles.workoutDetails}>
+                  {post.workout.totalDuration} min • {post.workout.difficulty}
+                </Text>
+              </View>
+            </View>
+          )}
+
+          {/* Achievement Information */}
+          {post.achievement && (
+            <View style={styles.achievementBadge}>
+              <Text style={styles.achievementIcon}>
+                {post.achievement.icon || "🏆"}
+              </Text>
+              <View style={styles.achievementInfo}>
+                <Text style={styles.achievementTitle}>
+                  {post.achievement.title}
+                </Text>
+                <Text style={styles.achievementDescription}>
+                  {post.achievement.description}
+                </Text>
+              </View>
+            </View>
+          )}
+
+          {post.mediaUrl && (
+            <Image
+              source={{ uri: post.mediaUrl }}
+              style={styles.postImage}
+              resizeMode="cover"
+            />
+          )}
+
           <View style={styles.postActions}>
-            <View style={styles.actionItem}>
-              <Image source={Like} style={{ width: 20, height: 20 }} />
-              <Text style={styles.actionText}>{post.likes || 0}</Text>
-            </View>
-            <View style={styles.actionItem}>
-              <Image source={Comment} style={{ width: 20, height: 20 }} />
-              <Text style={styles.actionText}>{post.comments || 0}</Text>
-            </View>
+            <TouchableOpacity
+              style={styles.actionItem}
+              onPress={() => handleLikePost(post.id.toString())}
+              disabled={likingPostId === post.id.toString()}
+            >
+              {likingPostId === post.id.toString() ? (
+                <ActivityIndicator size="small" color={COLORS.primary} />
+              ) : (
+                <>
+                  <Image
+                    source={Like}
+                    style={[
+                      styles.actionIcon,
+                      {
+                        tintColor: post.isLikedByUser
+                          ? COLORS.primary
+                          : COLORS._818181,
+                      },
+                    ]}
+                  />
+                  <Text style={styles.actionText}>{post.likeCount || 0}</Text>
+                </>
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.actionItem}
+              onPress={() => handleOpenComments(post.id.toString())}
+            >
+              <Image source={Comment} style={styles.actionIcon} />
+              <Text style={styles.actionText}>{post.commentCount || 0}</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </View>
@@ -560,7 +1000,9 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({ navigation, route, group: p
       <SafeAreaView edges={["left", "right"]} style={styles.container}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={COLORS.primary} />
-          <Text style={[styles.emptyText, { marginTop: r(10) }]}>Loading group details...</Text>
+          <Text style={[styles.emptyText, { marginTop: r(10) }]}>
+            Loading group details...
+          </Text>
         </View>
       </SafeAreaView>
     );
@@ -574,11 +1016,15 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({ navigation, route, group: p
         showsVerticalScrollIndicator={false}
         refreshing={refreshing}
         onRefresh={handleRefresh}
+        onScroll={handleScroll}
+        onContentSizeChange={handleContentSizeChange}
+        onLayout={handleLayout}
+        scrollEventThrottle={16}
       >
         <BasicTopBar
           showBackButton={false}
           containerStyle={styles.heroSection}
-          title={group?.name || ''}
+          title={group?.name || ""}
           titleStyle={styles.heroTitle}
           endView={
             <TouchableOpacity style={styles.dropdownButton} onPress={onClose}>
@@ -590,21 +1036,25 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({ navigation, route, group: p
               <View style={styles.heroTags}>
                 <View style={styles.locationTag}>
                   <Image source={Location} style={{ width: 20, height: 20 }} />
-                  <Text style={styles.tagText}>{group?.location || ''}</Text>
+                  <Text style={styles.tagText}>{group?.location || ""}</Text>
                 </View>
                 <View style={styles.categoryTag}>
                   <Image source={Gym} style={{ width: 20, height: 20 }} />
                   <Text style={styles.tagText}>
-                    {group?.trainingTypes?.join(", ") || group?.type || "General"}
+                    {group?.trainingTypes?.join(", ") ||
+                      group?.type ||
+                      "General"}
                   </Text>
                 </View>
               </View>
 
-              <Text style={styles.heroDescription}>{group?.description || ''}</Text>
+              <Text style={styles.heroDescription}>
+                {group?.description || ""}
+              </Text>
             </View>
           }
         />
-        
+
         {/* Action Button - Manage Group or Join Group */}
         {isCreator ? (
           <Pressable
@@ -627,18 +1077,36 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({ navigation, route, group: p
               <ActivityIndicator size="small" color={COLORS.white} />
             ) : (
               <>
-                <Image source={Add} style={{ width: 16, height: 16, tintColor: COLORS.white }} />
-                <Text style={[styles.manageButtonText, styles.joinButtonText]}>Join Group</Text>
+                <Image
+                  source={Add}
+                  style={{ width: 16, height: 16, tintColor: COLORS.white }}
+                />
+                <Text style={[styles.manageButtonText, styles.joinButtonText]}>
+                  Join Group
+                </Text>
               </>
             )}
           </Pressable>
         ) : (
           <Pressable
-            style={[styles.manageButton, { backgroundColor: COLORS.white, borderColor: COLORS._EB3434, borderWidth: 1, marginTop: 10 }]}
+            style={[
+              styles.manageButton,
+              {
+                backgroundColor: COLORS.white,
+                borderColor: COLORS._EB3434,
+                borderWidth: 1,
+                marginTop: 10,
+              },
+            ]}
             onPress={handleExitGroup}
           >
-            <Image source={require('../../../assets/exit.png')} style={{ width: 16, height: 16, tintColor: COLORS._EB3434 }} />
-            <Text style={[styles.manageButtonText, { color: COLORS._EB3434 }]}>Exit Group</Text>
+            <Image
+              source={require("../../../assets/exit.png")}
+              style={{ width: 16, height: 16, tintColor: COLORS._EB3434 }}
+            />
+            <Text style={[styles.manageButtonText, { color: COLORS._EB3434 }]}>
+              Exit Group
+            </Text>
           </Pressable>
         )}
 
@@ -646,14 +1114,18 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({ navigation, route, group: p
         <View style={styles.membersCard}>
           <View style={styles.membersHeader}>
             <Text style={styles.membersTitle}>Members</Text>
-            <Text style={styles.membersCount}>{group?.memberCount || 0} Members</Text>
+            <Text style={styles.membersCount}>
+              {group?.memberCount || 0} Members
+            </Text>
           </View>
 
           <View style={styles.avatarsContainer}>
             {members.slice(0, 3).map((member, index) => (
               <Menu
                 key={member.id || index}
-                visible={memberMenuVisible === (member.id?.toString?.() || member.id)}
+                visible={
+                  memberMenuVisible === (member.id?.toString?.() || member.id)
+                }
                 onDismiss={() => setMemberMenuVisible(null)}
                 anchor={
                   <TouchableOpacity
@@ -662,10 +1134,16 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({ navigation, route, group: p
                       { backgroundColor: COLORS.primary },
                       index > 0 && { marginLeft: -12 },
                     ]}
-                    onPress={() => setMemberMenuVisible(member.id?.toString?.() || member.id)}
+                    onPress={() =>
+                      setMemberMenuVisible(member.id?.toString?.() || member.id)
+                    }
                   >
                     <Text style={styles.memberAvatarText}>
-                      {(member.displayName?.charAt(0) || member.userName?.charAt(0) || 'U').toUpperCase()}
+                      {(
+                        member.displayName?.charAt(0) ||
+                        member.userName?.charAt(0) ||
+                        "U"
+                      ).toUpperCase()}
                     </Text>
                   </TouchableOpacity>
                 }
@@ -707,48 +1185,147 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({ navigation, route, group: p
             }}
           />
           <Text style={styles.postsTitle}>Recent Posts</Text>
-          
+
           {isLoadingPosts && postsPage === 1 ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color={COLORS.primary} />
             </View>
-          ) : posts.length === 0 ? (
+          ) : accumulatedPosts.length === 0 ? (
             <View style={styles.emptyPostsContainer}>
-              <Text style={styles.emptyText}>No posts yet. Be the first to post!</Text>
+              <Text style={styles.emptyText}>
+                No posts yet. Be the first to post!
+              </Text>
             </View>
           ) : (
             <>
-              <FlatList
-                data={posts}
-                renderItem={renderPost}
-                keyExtractor={(item, index) => `${item.id}-${index}`}
-                showsVerticalScrollIndicator={false}
-                scrollEnabled={false}
-                ItemSeparatorComponent={() => <View style={{ height: 0 }} />}
-              />
-              
-              {postsPagination && postsPagination.currentPage < postsPagination.totalPages && (
-                <TouchableOpacity 
-                  style={styles.loadMoreButton}
-                  onPress={handleLoadMorePosts}
-                  disabled={isLoadingPosts}
-                >
-                  {isLoadingPosts ? (
-                    <ActivityIndicator size="small" color={COLORS.primary} />
-                  ) : (
-                    <Text style={styles.loadMoreText}>Load More Posts</Text>
-                  )}
-                </TouchableOpacity>
+              {accumulatedPosts.map((post, index) => (
+                <View key={post.id || index}>
+                  {renderPost({ item: post, index })}
+                </View>
+              ))}
+              {isLoadingMorePosts && (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="small" color={COLORS.primary} />
+                </View>
               )}
             </>
           )}
-
         </View>
       </RefreshableScrollView>
 
-      <TouchableOpacity style={styles.fab}>
-        <Image source={Add} style={{ width: 20, height: 20 }} />
-      </TouchableOpacity>
+      {isMember && (
+        <TouchableOpacity
+          style={styles.fab}
+          onPress={() => {
+            onClose?.();
+            navigation?.navigate("CreatePost", { groupId: group?.id });
+          }}
+        >
+          <Image source={Add} style={{ width: 20, height: 20 }} />
+        </TouchableOpacity>
+      )}
+
+      {/* Comments Modal */}
+      {selectedPostId && (
+        <CommentsModal
+          visible={commentsModalVisible}
+          postId={selectedPostId}
+          onClose={handleCloseComments}
+        />
+      )}
+
+      {/* Delete Post Confirmation Dialog */}
+      <Modal
+        visible={showDeletePostDialog}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={cancelDeletePost}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Delete Post</Text>
+            <Text style={styles.modalMessage}>
+              Are you sure you want to delete this post? This action cannot be
+              undone.
+            </Text>
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={cancelDeletePost}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.deleteButton]}
+                onPress={confirmDeletePost}
+                disabled={isDeletingPost}
+              >
+                {isDeletingPost ? (
+                  <ActivityIndicator size="small" color={COLORS.white} />
+                ) : (
+                  <Text style={styles.deleteButtonText}>Delete</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Edit Post Modal */}
+      <EditPostModal
+        visible={editingPost !== null}
+        onClose={handleCancelEditPost}
+        onSave={handleSaveEditPost}
+        editText={editPostText}
+        onChangeText={setEditPostText}
+        isUpdating={isUpdatingPost}
+      />
+
+      {/* Comments Modal */}
+      {selectedPostId && (
+        <CommentsModal
+          visible={commentsModalVisible}
+          postId={selectedPostId}
+          onClose={handleCloseComments}
+        />
+      )}
+
+      {/* Delete Post Confirmation Dialog */}
+      <Modal
+        visible={showDeletePostDialog}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={cancelDeletePost}
+      >
+        <View style={styles.deleteModalOverlay}>
+          <View style={styles.deleteModalContent}>
+            <Text style={styles.deleteModalTitle}>Delete Post</Text>
+            <Text style={styles.deleteModalMessage}>
+              Are you sure you want to delete this post? This action cannot be
+              undone.
+            </Text>
+            <View style={styles.deleteModalActions}>
+              <TouchableOpacity
+                style={styles.deleteModalCancelButton}
+                onPress={cancelDeletePost}
+              >
+                <Text style={styles.deleteModalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.deleteModalDeleteButton}
+                onPress={confirmDeletePost}
+                disabled={isDeletingPost}
+              >
+                {isDeletingPost ? (
+                  <ActivityIndicator size="small" color={COLORS.white} />
+                ) : (
+                  <Text style={styles.deleteModalDeleteText}>Delete</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };

@@ -1,5 +1,5 @@
 import { API_END_POINTS } from '../endPoints';
-import type { TrainingPartner } from '../../types';
+import type { TrainingPartner, User } from '../../types';
 import { baseApi } from './baseApi';
 import type { ApiResponse } from './types';
 
@@ -58,7 +58,7 @@ export const matchingApi = baseApi.injectEndpoints({
       providesTags: ['Matching'],
     }),
     getPotentialMatches: builder.query<
-      ApiResponse<TrainingPartner[]>,
+      ApiResponse<User[]>,
       void
     >({
       query: () => ({

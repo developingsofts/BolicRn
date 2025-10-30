@@ -40,12 +40,12 @@ interface SettingsScreenProps {
 }
 
 const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
-  const { logout, user, updateUser: updateAuthUser } = useAuth();
+  const { logout, user, updateUser: updateAuthUser, isAuthenticated } = useAuth();
   const [updateProfile, { isLoading: isSaving }] = useUpdateMyProfileMutation();
   const [deleteAccount, { isLoading: isDeleting }] =
     useDeleteMyAccountMutation();
   const [refreshing, setRefreshing] = useState(false);
-  const { refetch: refetchMyProfile } = useGetMyProfileQuery();
+  const { refetch: refetchMyProfile } = useGetMyProfileQuery(undefined, { skip: !isAuthenticated });
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -122,6 +122,15 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
     () => isSaving || isSubmitting || isDeleting,
     [isSaving, isSubmitting, isDeleting]
   );
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      // Navigation will be handled automatically by the auth state change
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
 
   const handleDeactivatePress = () => {
     setShowDeactivateDialog(true);
@@ -317,6 +326,16 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
         </View>
 
         <View style={styles.lineSeparator} />
+
+        <TouchableOpacity
+          onPress={handleLogout}
+          style={styles.deactivateBtn}
+          disabled={isBusy}
+        >
+          <Text style={styles.logoutText}>
+            {STRINGS.SETTINGS.logout}
+          </Text>
+        </TouchableOpacity>
 
         <TouchableOpacity
           onPress={handleDeactivatePress}

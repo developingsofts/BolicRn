@@ -30,9 +30,9 @@ export const postsApi = baseApi.injectEndpoints({
     // Get all posts with pagination
     getPosts: builder.query<
       ApiResponse<{ posts: Post[]; pagination: any }>,
-      { page?: number; limit?: number } | void
+      { page?: number; limit?: number }
     >({
-      query: (params) => {
+      query: (params = {}) => {
         const page = params?.page || 1;
         const limit = params?.limit || 10;
         return {
@@ -68,7 +68,7 @@ export const postsApi = baseApi.injectEndpoints({
         return newItems;
       },
       forceRefetch({ currentArg, previousArg }) {
-        return currentArg?.page !== previousArg?.page;
+        return (currentArg?.page || 1) !== (previousArg?.page || 1);
       },
     }),
     

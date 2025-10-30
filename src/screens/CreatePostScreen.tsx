@@ -28,6 +28,11 @@ import { Toast } from "../components/ToastManager";
 
 interface CreatePostScreenProps {
   navigation: any;
+  route?: {
+    params?: {
+      groupId?: string | number;
+    };
+  };
 }
 
 interface Achievement {
@@ -37,9 +42,10 @@ interface Achievement {
   icon: string;
 }
 
-const CreatePostScreen: React.FC<CreatePostScreenProps> = ({ navigation }) => {
+const CreatePostScreen: React.FC<CreatePostScreenProps> = ({ navigation, route }) => {
   const styles = useResponsive(baseStyles);
   const [createPost, { isLoading }] = useCreatePostMutation();
+  const groupId = route?.params?.groupId;
   
   const [postText, setPostText] = useState("");
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -169,11 +175,23 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({ navigation }) => {
         payload.mediaFile = imageFile;
       }
 
+      // Add group ID if creating post for a group
+      if (groupId) {
+        payload.groupId = groupId;
+      }
+
       const response = await createPost(payload).unwrap();
 
       if (response.status) {
         Toast.success(STRINGS.CREATE_POST.success.postCreated || 'Post created successfully!');
-        handleBack();
+        
+        // If this was a group post, navigate to GroupDetails screen
+        if (groupId) {
+          navigation.replace('GroupDetails', { group: { id: groupId } });
+        } else {
+          // Navigate back to previous screen (Home)
+          handleBack();
+        }
       } else {
         Toast.error(response.message || 'Failed to create post');
       }
@@ -199,7 +217,7 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({ navigation }) => {
         showBackButton={true}
         onBackPress={handleBack}
         title={STRINGS.CREATE_POST.title}
-        subtitle={STRINGS.CREATE_POST.subtitle}
+        subtitle={groupId ? "Posting to group" : STRINGS.CREATE_POST.subtitle}
         titleStyle={styles.headerTitle}
         subtitleStyle={styles.subtitle}
       />
