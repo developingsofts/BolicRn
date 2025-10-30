@@ -5,6 +5,7 @@ import BasicTopBar from '../components/BasicTopBar';
 import { COLORS, DIMENSIONS } from '../config/constants';
 import FontWeight from '../hooks/useInterFonts';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '../contexts/AuthContext';
 
 const reviews = [
   {
@@ -52,7 +53,10 @@ const reviews = [
 const averageRating = 4.8;
 const totalReviews = 24;
 
-const MyRatings: React.FC = ({ navigation }: any) => {
+const MyRatings: React.FC = ({ navigation, route }: any) => {
+  const { user } = useAuth();
+  const userId = route?.params?.userId || user?.id;
+  const isOwnProfile = !route?.params?.userId || route?.params?.userId === user?.id;
   const handleBack = () => {
     if (navigation.canGoBack && navigation.canGoBack()) {
       navigation.goBack();
@@ -64,8 +68,8 @@ const MyRatings: React.FC = ({ navigation }: any) => {
     <SafeAreaView edges={[]} style={styles.container}>
       <BasicTopBar
         onBackPress={handleBack}
-        title="My Ratings"
-        subtitle="Track your achievements"
+        title={isOwnProfile ? "My Ratings" : "User Ratings"}
+        subtitle={isOwnProfile ? "Track your achievements" : "View user ratings"}
         containerStyle={{ paddingTop: DIMENSIONS.spacing.xxl, paddingBottom: DIMENSIONS.spacing.lg }}
       />
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>

@@ -23,6 +23,7 @@ import GroupDetails from "./GroupDetails";
 import STRINGS from "../../config/strings";
 import BasicTopBar from "../../components/BasicTopBar";
 import { useGetAllGroupsQuery } from '../../services/api/groupsApi';
+import { useAuth } from '../../contexts/AuthContext';
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -38,6 +39,8 @@ const GroupsScreen: React.FC<GroupsScreenProps> = ({ navigation }) => {
   const [page, setPage] = useState(1);
   const [refreshing, setRefreshing] = useState(false);
   
+  const { isAuthenticated } = useAuth();
+  
   const categories = ["All", "Gym", "Running", "Cycling", "Yoga", "Swimming"];
   
   // Fetch all groups (visible to everyone) with pagination and filter
@@ -45,7 +48,7 @@ const GroupsScreen: React.FC<GroupsScreenProps> = ({ navigation }) => {
     page, 
     limit: 10,
     type: selectedCategory 
-  });
+  }, { skip: !isAuthenticated });
   const userGroups = (groupsData?.status && groupsData?.data?.groups) ? groupsData.data.groups : [];
   const pagination = (groupsData?.status && groupsData?.data?.pagination) ? groupsData.data.pagination : null;
 

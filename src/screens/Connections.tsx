@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import BasicTopBar from '../components/BasicTopBar';
 import { COLORS, DIMENSIONS } from '../config/constants';
 import FontWeight from '../hooks/useInterFonts';
+import { useAuth } from '../contexts/AuthContext';
 
 const connections = [
   {
@@ -32,7 +33,10 @@ const connections = [
   },
 ];
 
-const Connections: React.FC = ({ navigation }: any) => {
+const Connections: React.FC = ({ navigation, route }: any) => {
+  const { user } = useAuth();
+  const userId = route?.params?.userId || user?.id;
+  const isOwnProfile = !route?.params?.userId || route?.params?.userId === user?.id;
   const handleAddNew = () => {
     // TODO: Implement add new connection logic
     alert('Add new connection feature coming soon!');
@@ -49,14 +53,16 @@ const Connections: React.FC = ({ navigation }: any) => {
     <SafeAreaView edges={[]} style={styles.container}>
       <BasicTopBar
         onBackPress={() => navigation.goBack()}
-        title="Connections"
-        subtitle="View / Add Connections"
+        title={isOwnProfile ? "Connections" : "User Connections"}
+        subtitle={isOwnProfile ? "View / Add Connections" : "View user connections"}
         containerStyle={{ paddingTop: DIMENSIONS.spacing.xxl, paddingBottom: DIMENSIONS.spacing.lg }}
       />
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        <TouchableOpacity style={styles.addButton} onPress={handleAddNew}>
-          <Text style={styles.addButtonText}>Add New</Text>
-        </TouchableOpacity>
+        {isOwnProfile && (
+          <TouchableOpacity style={styles.addButton} onPress={handleAddNew}>
+            <Text style={styles.addButtonText}>Add New</Text>
+          </TouchableOpacity>
+        )}
         <View style={styles.connectionList}>
           {connections.map((connection) => (
             <View key={connection.id} style={styles.card}>
@@ -115,6 +121,7 @@ const styles = StyleSheet.create({
   },
   connectionList: {
     gap: 16,
+    marginTop: 10,
   },
   card: {
     backgroundColor: COLORS.card,

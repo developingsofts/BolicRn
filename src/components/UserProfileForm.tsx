@@ -11,6 +11,7 @@ import {
 import { Button, ProgressBar } from "react-native-paper";
 import { COLORS, LOCATION_CONFIG, TRAINING_TYPES } from "../config/constants";
 import { useGetTrainingTypesQuery } from "../services/api/userApi";
+import { useAuth } from '../contexts/AuthContext';
 
 interface UserProfileFormProps {
   onNext?: (data: { location: string; specialties: string[] }) => void;
@@ -25,6 +26,7 @@ const UserProfileForm = React.forwardRef<
   },
   UserProfileFormProps
 >(({ onNext, onBack, initialLocation = "", initialSpecialties = [] }, ref) => {
+  const { isAuthenticated } = useAuth();
   const [location, setLocation] = useState(initialLocation);
   const [selectedSpecialties, setSelectedSpecialties] = useState<string[]>(initialSpecialties);
   const [isLocationFocused, setIsLocationFocused] = useState(false);
@@ -43,7 +45,7 @@ const UserProfileForm = React.forwardRef<
   }));
 
   // Fetch training types from API
-  const { data: trainingTypesData, isLoading: isLoadingTrainingTypes } = useGetTrainingTypesQuery();
+  const { data: trainingTypesData, isLoading: isLoadingTrainingTypes } = useGetTrainingTypesQuery(undefined, { skip: !isAuthenticated });
   const apiTrainingTypes = (trainingTypesData as any)?.data || [];
   const trainingTypes = apiTrainingTypes.length > 0 ? apiTrainingTypes : TRAINING_TYPES.map(title => ({ id: title, title }));
 

@@ -94,7 +94,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
   // Use correct profile data based on context
   const profileData: User | UserProfile | undefined|null = isOwnProfile
   ? (myProfileData && myProfileData.status === true && myProfileData.data ? myProfileData.data : user)
-  : passedUser ? passedUser : (userProfileData && userProfileData.status === true && userProfileData.data ? userProfileData.data : undefined);
+  : (userProfileData && userProfileData.status === true && userProfileData.data ? userProfileData.data : passedUser);
 
   useEffect(() => {
     if (!isOwnProfile && profileData && 'isFollowing' in profileData) {
@@ -212,9 +212,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
     navigation.navigate('TrainerSetup');
   };
   const profileBio = (() => {
-    if (isGuest) {
-      return STRINGS.PROFILE.bio;
-    }
+    // First try route params bio (for specific cases)
     const routeBio = route?.params?.bio;
     if (routeBio) {
       const cleanedRouteBio = routeBio.trim();
@@ -222,6 +220,8 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
         return cleanedRouteBio;
       }
     }
+
+    // Then try profileData bio (from API)
     const rawUserBio = profileData?.bio;
     if (rawUserBio) {
       const cleaned = rawUserBio.trim();
@@ -229,7 +229,9 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
         return cleaned;
       }
     }
-    return STRINGS.PROFILE.bio;
+
+    // Fallback to default text
+    return isGuest ? "No bio available" : STRINGS.PROFILE.bio;
   })();
 
   const achievements: Achievement[] = [
@@ -309,7 +311,22 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
     { id: "my-rating", label: "My Rating", icon: "star-outline" as const },
   ];
 
-  const menuItems = isTrainer ? trainerMenuItems : [
+  const guestMenuItems = [
+    {
+      id: "posts",
+      label: STRINGS.PROFILE.posts,
+      icon: "document-text-outline" as const,
+    },
+    { id: "connections", label: "Connections", icon: "people-outline" as const },
+    { id: "achievements", label: STRINGS.PROFILE.achievements, icon: "trophy-outline" as const },
+    {
+      id: "rating",
+      label: "Rating",
+      icon: "star-outline" as const,
+    },
+  ];
+
+  const menuItems = isOwnProfile ? (isTrainer ? trainerMenuItems : [
     {
       id: "posts",
       label: showOwnProfileFeatures ? "My Posts" : STRINGS.PROFILE.posts,
@@ -336,7 +353,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
       label: showOwnProfileFeatures ? "My Ratings" : "Rating",
       icon: "star-outline" as const,
     },
-  ];
+  ]) : guestMenuItems;
 
   const handleLogout = async () => {
     await logout();
@@ -508,7 +525,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
       >
         <View>
           {renderProfileAvatar()}
-          {showTrainerOnboarding ? <TrainerOnboarding onGetStarted={handleTrainerOnboarding} /> : <StatsRow stats={isTrainer ? statsDataTrainer :  statsData} />}
+          {showTrainerOnboarding ? <TrainerOnboarding onGetStarted={handleTrainerOnboarding} /> : <StatsRow stats={(!isOwnProfile || !isTrainer) ? statsData : statsDataTrainer} />}
         </View>
         {!showTrainerOnboarding && !isTrainer && showOwnProfileFeatures && (
           <View style={styles.weeklyActivityCard}>
@@ -575,7 +592,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
           </View>
         )}
         {
-          isTrainer && !showTrainerOnboarding && (
+          isOwnProfile && isTrainer && !showTrainerOnboarding && (
             <View style={{ marginTop: 60, width: '90%',margin:"auto"}}>
               <BookingList bookings={bookingsData} />
               <ScheduleList schedules={schedulesData} />    
@@ -584,7 +601,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
           )
         }
 
-       {!showTrainerOnboarding&& <View
+       {!showTrainerOnboarding && (isOwnProfile || isGuest) && <View
           style={[
             styles.menuListContainer,
             isGuest && styles.menuListGuestSpacing,
@@ -598,6 +615,21 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
                 index === 0 && styles.menuItemActive,
               ]}
               onPress={() => {
+                // Handle guest profile navigation
+                if (isGuest) {
+                  if (item.id === "posts") {
+                    navigation.navigate("MyPosts", { userId: userId });
+                  } else if (item.id === "connections") {
+                    navigation.navigate("Connections", { userId: userId });
+                  } else if (item.id === "achievements") {
+                    navigation.navigate("Achievements", { userId: userId });
+                  } else if (item.id === "rating") {
+                    navigation.navigate("MyRatings", { userId: userId });
+                  }
+                  return;
+                }
+
+                // Handle own profile navigation
                 if (isTrainer) {
                   if (item.id === "all-bookings") {
                     navigation.navigate("MyBookings");
@@ -1587,8 +1619,8 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   menuItemActive: {
-    borderWidth: 2,
-    borderColor: COLORS.primary,
+    // borderWidth: 2,
+    // borderColor: COLORS.primary,
   },
   menuItemLeft: {
     flexDirection: 'row',

@@ -170,7 +170,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       console.log('🚪 Starting comprehensive logout process...');
 
-      // 1. Clear all stored data from AsyncStorage
+      // 1. Clear Redux user state FIRST (this makes isAuthenticated false)
+      console.log('👤 Clearing user state first...');
+      dispatch(clearUser());
+
+      // 2. Clear RTK Query cache to invalidate all API data
+      console.log('🔄 Clearing API cache...');
+      dispatch(baseApi.util.resetApiState());
+
+      // 3. Clear all stored data from AsyncStorage
       console.log('🗑️ Clearing all stored user data...');
       const allKeys = await AsyncStorage.getAllKeys();
       const userDataKeys = allKeys.filter(key =>
@@ -195,45 +203,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         console.log(`✅ Cleared ${userDataKeys.length} stored data items`);
       }
 
-      // 2. Clear RTK Query cache to invalidate all API data
-      console.log('🔄 Clearing API cache...');
-      dispatch(baseApi.util.resetApiState());
-
-      // 3. Clear Redux user state
-      console.log('👤 Clearing user state...');
-      dispatch(clearUser());
-
       // 4. Reset any error state
       setError(null);
 
-      // 5. Validate that all data has been cleared
-      console.log('🔍 Validating logout...');
-      const remainingKeys = await AsyncStorage.getAllKeys();
-      const remainingUserKeys = remainingKeys.filter(key =>
-        userDataKeys.includes(key)
-      );
-
-      if (remainingUserKeys.length > 0) {
-        console.warn('⚠️ Some user data keys were not cleared:', remainingUserKeys);
-        // Force clear any remaining keys
-        await AsyncStorage.multiRemove(remainingUserKeys);
-      }
-
-      // Verify Redux state is cleared
-      const currentState = store.getState();
-      if (currentState.user.token || currentState.user.user) {
-        console.warn('⚠️ Redux user state not fully cleared');
-      }
-
-      console.log('✅ All validations passed');
+      console.log('✅ Logout completed successfully');
+      Toast.success(SUCCESS_MESSAGES.logoutSuccess);
 
     } catch (error) {
       console.error('❌ Error during logout:', error);
       // Even if there's an error, try to clear the essential data
       try {
-        await storageService.clearUserData();
-        dispatch(clearUser());
+        dispatch(clearUser()); // Clear user state first
         dispatch(baseApi.util.resetApiState());
+        await storageService.clearUserData();
       } catch (fallbackError) {
         console.error('❌ Fallback logout failed:', fallbackError);
       }

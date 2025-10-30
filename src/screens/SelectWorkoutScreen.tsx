@@ -15,6 +15,7 @@ import BasicTopBar from '../components/BasicTopBar';
 import FontWeight from '../hooks/useInterFonts';
 import { WeightLifting, StrengthTraining, Cardio, BuddhistGym, Gym1, Man } from '../../assets';
 import { useGetWorkoutsQuery } from '../services/api/workoutApi';
+import { useAuth } from '../contexts/AuthContext';
 import type { Workout } from '../types';
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -27,7 +28,8 @@ interface SelectWorkoutScreenProps {
 }
 
 const SelectWorkoutScreen: React.FC<SelectWorkoutScreenProps> = ({ navigation }) => {
-  const { data: workoutsResponse, isLoading, error } = useGetWorkoutsQuery();
+  const { isAuthenticated } = useAuth();
+  const { data: workoutsResponse, isLoading, error } = useGetWorkoutsQuery(undefined, { skip: !isAuthenticated });
 
   console.log('Workouts query state:', { isLoading, error, data: workoutsResponse });
 

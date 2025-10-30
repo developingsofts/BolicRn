@@ -22,6 +22,7 @@ import { Location, Gym, Close, Trash, Exit, Add } from "../../../assets";
 import BasicTopBar from "../../components/BasicTopBar";
 import { useCreateGroupMutation, useUpdateGroupMutation, useDeleteGroupMutation, useGetGroupMembersQuery } from '../../services/api/groupsApi';
 import { Toast } from '../../components/ToastManager';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface ManageGroupProps {
   navigation: any;
@@ -70,6 +71,7 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
   group: propGroup,
   onClose,
 }) => {
+  const { isAuthenticated } = useAuth();
   const isEditing = route?.params?.isEditing ?? (propGroup ? true : false);
   const group = route?.params?.group || propGroup;
 
@@ -101,7 +103,7 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
   // Fetch group members when editing
   const { data: membersData, isLoading: isLoadingMembers } = useGetGroupMembersQuery(
     { groupId: group?.id?.toString() || '', page: 1, limit: 50 },
-    { skip: !isEditing || !group?.id }
+    { skip: !isEditing || !group?.id || !isAuthenticated }
   );
 
   const members = (membersData?.status && membersData?.data?.members) ? membersData.data.members : [];

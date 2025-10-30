@@ -5,6 +5,7 @@ import BasicTopBar from '../components/BasicTopBar';
 import { COLORS, DIMENSIONS } from '../config/constants';
 import FontWeight from '../hooks/useInterFonts';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '../contexts/AuthContext';
 
 const achievements = [
   {
@@ -63,7 +64,10 @@ const achievements = [
   },
 ];
 
-const Achievements: React.FC = ({ navigation }: any) => {
+const Achievements: React.FC = ({ navigation, route }: any) => {
+  const { user } = useAuth();
+  const userId = route?.params?.userId || user?.id;
+  const isOwnProfile = !route?.params?.userId || route?.params?.userId === user?.id;
   const handleBookSession = () => {
     navigation.navigate('ScheduledSessions');
   };
@@ -72,8 +76,8 @@ const Achievements: React.FC = ({ navigation }: any) => {
     <SafeAreaView edges={[]} style={styles.container}>
       <BasicTopBar
         onBackPress={() => navigation.goBack()}
-        title="Achievements"
-        subtitle="Track your achievements"
+        title={isOwnProfile ? "Achievements" : "User Achievements"}
+        subtitle={isOwnProfile ? "Track your achievements" : "View user achievements"}
         containerStyle={{ paddingTop: DIMENSIONS.spacing.xxl, paddingBottom: DIMENSIONS.spacing.lg }}
       />
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>

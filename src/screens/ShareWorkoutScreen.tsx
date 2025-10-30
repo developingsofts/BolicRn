@@ -43,14 +43,14 @@ const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
   const [showAchievementModal, setShowAchievementModal] = useState(false);
 
   // Get current user
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
 
   // Pagination state
   const [page, setPage] = useState(1);
 
   // Fetch user workouts with pagination
-  const { data: workoutsData, isLoading: workoutsLoading, isFetching } = useGetUserWorkoutsQuery({ page, limit: 3 });
-  const { data: achievementsData, isLoading: achievementsLoading } = useGetUserAchievementsQuery();
+  const { data: workoutsData, isLoading: workoutsLoading, isFetching } = useGetUserWorkoutsQuery({ page, limit: 3 }, { skip: !isAuthenticated });
+  const { data: achievementsData, isLoading: achievementsLoading } = useGetUserAchievementsQuery(undefined, { skip: !isAuthenticated });
   const [createPost, { isLoading: isCreating }] = useCreatePostMutation();
 
   // Use API data

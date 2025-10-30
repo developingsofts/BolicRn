@@ -22,6 +22,7 @@ export interface TrainingPartner {
   name: string;
   age: number;
   type: string;
+  trainingTypes?: string[];
   distance: string;
   compatibility: number;
   bio?: string;
@@ -37,6 +38,7 @@ export interface Trainer {
   name: string;
   age: number;
   specialty: string;
+  trainingTypes?: string[];
   distance: string;
   rating: number;
   hourlyRate: string;
@@ -77,7 +79,7 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
   onUnfollow,
   followLoading = false,
 }) => {
-  console.log('SwipeableCard partner:', partner.name, partner.imageUrl);
+  console.log('SwipeableCard partner:', partner);
   const translateX = useRef(new Animated.Value(0)).current;
   const scale = useRef(new Animated.Value(1)).current;
   const rotate = useRef(new Animated.Value(0)).current;
@@ -215,7 +217,7 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
             ) : (
               <View style={styles.placeholderImage}>
                 <Text style={styles.placeholderText}>
-                  {partner?.name?.charAt(0).toUpperCase()}
+                  {(partner?.name?.charAt(0) || '?').toUpperCase()}
                 </Text>
               </View>
             )}
@@ -226,17 +228,29 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
             <View style={styles.cardInfoContent}>
               {/* Name and Age */}
               <View style={styles.nameAgeContainer}>
-                <Text style={styles.name}>{partner.name}</Text>
-                <Text style={styles.age}>{partner.age}</Text>
+                <Text style={styles.name}>{partner.name || 'Unknown'}</Text>
+                {partner.age && <Text style={styles.age}>{partner.age}</Text>}
               </View>
               
               {/* Location */}
-              {partner.location && <Text style={styles.location}>{partner.location}</Text>}
+              <View style={styles.locationContainer}>
+                {partner.location && <Text style={styles.location}>{partner.location}</Text>}
+                {partner.distance && <Text style={styles.distance}>{partner.distance}</Text>}
+              </View>
               
-              {/* Bio */}
-              {partner.bio && <Text style={styles.bio} numberOfLines={3}>
-                {partner.bio}
-              </Text>}
+              {/* Training Types */}
+              {partner.trainingTypes && partner.trainingTypes.length > 0 && (
+                <View style={styles.trainingTypesContainer}>
+                  {partner.trainingTypes.slice(0, 3).map((trainingType, index) => (
+                    <View key={index} style={styles.trainingTypeTag}>
+                      <Text style={styles.trainingTypeText}>{trainingType}</Text>
+                    </View>
+                  ))}
+                  {partner.trainingTypes.length > 3 && (
+                    <Text style={styles.moreTypesText}>+{partner.trainingTypes.length - 3} more</Text>
+                  )}
+                </View>
+              )}
 
               {/* Rating Stars */}
               <View style={styles.ratingSection}>
@@ -248,7 +262,7 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
                     showRating={false}
                   />
                   <Text style={styles.ratingText}>
-                    {partner.rating?.toFixed(1) || '0.0'} ({partner.totalRatings || 0} Reviews)
+                    {partner.rating ? partner.rating.toFixed(1) : '0.0'} ({partner.totalRatings || 0} Reviews)
                   </Text>
                 </View>
               </View>
@@ -256,18 +270,18 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
               {/* Tags/Badges */}
               <View style={styles.tagsContainer}>
                 {/* Specialty/Type Badge */}
-               { ('specialty' in partner || partner.type) && <View style={styles.tag}>
+               { (('specialty' in partner && partner.specialty) || ('type' in partner && partner.type)) && <View style={styles.tag}>
                   <Text style={styles.tagText}>
-                    {'specialty' in partner ? partner.specialty : partner.type}
+                    {'specialty' in partner ? partner.specialty : ('type' in partner ? partner.type : '')}
                   </Text>
                 </View>}
                 
                 {/* Match/Rate Badge */}
                 <View style={[styles.tag, styles.tagAccent]}>
                   <Text style={styles.tagTextAccent}>
-                    {'compatibility' in partner 
+                    {'compatibility' in partner && partner.compatibility !== undefined
                       ? `${partner.compatibility}% Match` 
-                      : `${partner.hourlyRate}`
+                      : ('hourlyRate' in partner ? (partner.hourlyRate || 'Contact for rates') : 'Contact for rates')
                     }
                   </Text>
                 </View>
@@ -392,11 +406,42 @@ const styles = StyleSheet.create({
     color: COLORS._616888,
     marginBottom: 6,
   },
+  locationContainer: {
+    marginBottom: 6,
+  },
+  distance: {
+    fontSize: 12,
+    color: COLORS._616888,
+    fontWeight: '400',
+  },
   bio: {
     fontSize: 13,
     color: '#374151',
     lineHeight: 18,
     marginBottom: 6,
+  },
+  trainingTypesContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 12,
+    gap: 6,
+  },
+  trainingTypeTag: {
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  trainingTypeText: {
+    fontSize: 11,
+    color: '#374151',
+    fontWeight: '500',
+  },
+  moreTypesText: {
+    fontSize: 11,
+    color: '#6B7280',
+    fontWeight: '400',
+    alignSelf: 'center',
   },
   fitnessLevelContainer: {
     flexDirection: 'row',

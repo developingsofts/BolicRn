@@ -560,7 +560,7 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
   onClose,
 }) => {
   const styles = useResponsive(baseStyles);
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const [membersPage, setMembersPage] = useState(1);
   const [postsPage, setPostsPage] = useState(1);
   const [accumulatedPosts, setAccumulatedPosts] = useState<any[]>([]);
@@ -592,7 +592,7 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
     data: groupData,
     isLoading: isLoadingGroup,
     refetch: refetchGroup,
-  } = useGetGroupByIdQuery({ groupId: groupId! }, { skip: !groupId });
+  } = useGetGroupByIdQuery({ groupId: groupId! }, { skip: !groupId || !isAuthenticated });
   // Fetch group members
   const {
     data: membersData,
@@ -600,7 +600,7 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
     refetch: refetchMembers,
   } = useGetGroupMembersQuery(
     { groupId: groupId!, page: membersPage, limit: 20 },
-    { skip: !groupId }
+    { skip: !groupId || !isAuthenticated }
   );
   // Fetch group posts
   const {
@@ -609,7 +609,7 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
     refetch: refetchPosts,
   } = useGetGroupPostsQuery(
     { groupId: groupId!, page: postsPage, limit: 10 },
-    { skip: !groupId }
+    { skip: !groupId || !isAuthenticated }
   );
   // Join group mutation
   const [joinGroup, { isLoading: isJoining }] = useJoinGroupMutation();

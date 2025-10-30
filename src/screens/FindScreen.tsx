@@ -23,6 +23,7 @@ function mapToSwipeableItem(item: any): SwipeableItem {
       name: item.displayName || item.name || "",
       age: item.age,
       type: item.trainingTypes?.[0] || "",
+      trainingTypes: item.trainingTypes || [],
       distance: item.distance ? String(item.distance) : "",
       compatibility: item.compatibility ?? 0,
       bio: item.bio,
@@ -38,6 +39,7 @@ function mapToSwipeableItem(item: any): SwipeableItem {
       name: item.displayName || item.name || "",
       age: item.age,
       specialty: item.specialty || item.trainingTypes?.[0] || "",
+      trainingTypes: item.trainingTypes || [],
       distance: item.distance ? String(item.distance) : "",
       rating: item.rating,
       hourlyRate: item.hourlyRate || "",
@@ -82,7 +84,7 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation }) => {
  
 const getCurrentData = () => {
   if (!potentialData || potentialData.status !== true) return [];
-  let data = potentialData.data;
+  let data = potentialData.data.filter((item: any) => item && item.id && item.role); // Filter out invalid items
   if (activeTab === "partners") {
     data = data.filter((item: any) => item.role === "user");
   } else {
@@ -462,7 +464,7 @@ const getCurrentData = () => {
               <ActivityIndicator size="large" color={COLORS.primary} />
               <Text style={{ marginTop: 10, color: COLORS.textSecondary }}>Finding matches...</Text>
             </View>
-          ) : currentItem ? (
+          ) : currentItem && currentItem.id ? (
             <SwipeableCard
               partner={mapToSwipeableItem(currentItem)}
               onPress={() =>

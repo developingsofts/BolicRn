@@ -55,7 +55,7 @@ interface Comment {
 }
 
 const CommentsModal: React.FC<CommentsModalProps> = ({ visible, postId, onClose }) => {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const [commentText, setCommentText] = useState('');
   const [replyingTo, setReplyingTo] = useState<{ id: number; name: string } | null>(null);
   const [editingComment, setEditingComment] = useState<{ id: number; content: string } | null>(null);
@@ -66,7 +66,7 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ visible, postId, onClose 
 
   const { data: commentsData, isLoading, refetch } = useGetPostCommentsQuery(
     { postId, page: 1, limit: 50 },
-    { skip: !visible }
+    { skip: !visible || !isAuthenticated }
   );
 
   const [createComment, { isLoading: isCreating }] = useCreateCommentMutation();
