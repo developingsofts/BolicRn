@@ -403,7 +403,7 @@ const getCurrentData = () => {
             bottomView={
               <View style={styles.tabContainerWrapper}>
                 <View style={styles.tabContainer}>
-                  {partnersData.length > 0 && (
+                  { (
                     <TouchableOpacity
                       style={[
                         styles.tabButton,
@@ -426,7 +426,7 @@ const getCurrentData = () => {
                       </Text>
                     </TouchableOpacity>
                   )}
-                  {trainersData.length > 0 && (
+                  { (
                     <TouchableOpacity
                       style={[
                         styles.tabButton,

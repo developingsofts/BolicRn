@@ -37,6 +37,7 @@ import OnboardingStepHeader from "../components/OnboardingStepHeader";
 import UserProfileForm from "../components/UserProfileForm";
 import CreateAccountForm from "../components/CreateAccountForm";
 import AvatarUploadForm from "../components/AvatarUploadForm";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const { width, height } = Dimensions.get("window");
 
@@ -1495,6 +1496,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
 
 
   return (
+    <SafeAreaView style={{ flex: 1 }} edges={[]}>
     <KeyboardAvoidingView
       style={{ flex: 1 }}
       behavior={Platform.OS === "ios" ? "position" : "height"}
@@ -1597,6 +1599,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
         </Animated.View>
       </ScrollView>
     </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 
@@ -1610,6 +1613,7 @@ const styles = StyleSheet.create({
     paddingTop: height * 0.15,
     paddingHorizontal: DIMENSIONS.spacing.lg,
     paddingBottom: DIMENSIONS.spacing.lg,
+
   },
   animatedContainer: {
     width: "100%",
@@ -1655,6 +1659,7 @@ const styles = StyleSheet.create({
   },
   formContainer: {
     marginBottom: DIMENSIONS.spacing.lg,
+    
   },
   stepContainer: {
     marginBottom: DIMENSIONS.spacing.lg,
@@ -1720,7 +1725,7 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
   },
   trainingTypesContainer: {
-    maxHeight: 320,
+    maxHeight: 200,
     marginBottom: DIMENSIONS.spacing.md,
   },
   trainingTypeButton: {
