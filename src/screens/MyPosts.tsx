@@ -272,7 +272,7 @@ const MyPosts: React.FC = ({ navigation, route }: any) => {
         onRequestClose={handleCancelEditPost}
       >
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          // behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.editPostModalContainer}
         >
           <TouchableOpacity

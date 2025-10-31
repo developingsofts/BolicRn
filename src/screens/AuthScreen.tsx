@@ -67,6 +67,7 @@ interface SignUpFormValues {
 }
 
 export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
+
   const dispatch = useAppDispatch();
   const [triggerLogin, { isLoading: isLoginLoading }] = useLoginMutation();
   const [triggerRegister, { isLoading: isRegisterLoading }] =
@@ -1499,7 +1500,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
     <SafeAreaView style={{ flex: 1 }} edges={[]}>
     <KeyboardAvoidingView
       style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "position" : "height"}
+      // behavior={Platform.OS === "ios" ? "position" : "height"}
       keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
     >
       <ScrollView

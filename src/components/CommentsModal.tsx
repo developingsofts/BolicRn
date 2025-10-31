@@ -284,7 +284,7 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ visible, postId, onClose 
 
               <KeyboardAvoidingView
                 style={styles.keyboardView}
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                // behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 keyboardVerticalOffset={0}
               >
                 {isLoading ? (

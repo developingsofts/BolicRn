@@ -13,19 +13,18 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.bolicbuddy.app",
       "buildNumber": "1.0.0",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true
+        }
       },
-      "associatedDomains": [
-        "applinks:api.bolicbuddy.com"
-      ]
+      "associatedDomains": ["applinks:api.bolicbuddy.com"]
     },
     "android": {
       "adaptiveIcon": {
@@ -54,10 +53,7 @@
               "pathPrefix": "/reset-password"
             }
           ],
-          "category": [
-            "BROWSABLE",
-            "DEFAULT"
-          ]
+          "category": ["BROWSABLE", "DEFAULT"]
         }
       ]
     },
@@ -66,6 +62,19 @@
       "bundler": "metro"
     },
     "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          },
+          "ios": {
+            "NSAppTransportSecurity": {
+              "NSAllowsArbitraryLoads": true
+            }
+          }
+        }
+      ],
       "expo-location",
       "expo-notifications",
       "expo-font"
@@ -74,13 +83,14 @@
       "LOCATION",
       "NOTIFICATIONS",
       "CAMERA",
-      "MEDIA_LIBRARY"
+      "MEDIA_LIBRARY",
+      "INTERNET"
     ],
     "extra": {
       "eas": {
-        "projectId": "32ccada6-4f09-44f3-9d06-f3e5357967b0"
+        "projectId": "b8206805-43ec-4456-827f-1817455836b5"
       }
     },
-    "owner": "jbehl23"
+    "owner": "the-demski-group"
   }
 }

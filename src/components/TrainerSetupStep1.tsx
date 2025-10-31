@@ -49,7 +49,7 @@ const TrainerSetupStep1: React.FC<TrainerSetupStep1Props> = ({ onNext }) => {
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      // behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={80}
     >
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>

@@ -302,7 +302,7 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ navigation: navProp }) 
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        // behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardAvoid}
       >
         <View style={styles.header}>

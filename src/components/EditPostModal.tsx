@@ -38,7 +38,7 @@ const EditPostModal: React.FC<EditPostModalProps> = ({
       onRequestClose={onClose}
     >
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        // behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.editPostModalContainer}
       >
         <TouchableOpacity

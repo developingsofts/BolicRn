@@ -512,9 +512,10 @@ const styles = StyleSheet.create({
   headerContainer: {
     marginBottom: DIMENSIONS.spacing.md,
     position: "relative",
+    zIndex: 20,
   },
   tabContainerWrapper: {
-    position: "absolute",
+    // position: "absolute",
     top: 25,
     left: 0,
     right: 0,

@@ -181,7 +181,7 @@ const AppNavigator: React.FC = () => {
   if (isBootstrapping) {
     return <LoadingScreen />;
   }
-
+console.log("API URL:", API_CONFIG.baseUrl,isAuthenticated);
   return (
     <NavigationContainer linking={linking}>
       {isAuthenticated ? (
