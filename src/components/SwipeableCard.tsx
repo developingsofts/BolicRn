@@ -86,6 +86,7 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
 
   const [isAnimating, setIsAnimating] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const isTrainer = 'specialty' in partner || 'hourlyRate' in partner;
 
   const handleGestureEvent = Animated.event(
     [{ nativeEvent: { translationX: translateX } }],
@@ -305,10 +306,25 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
                   <Text style={styles.outlineButtonText}>View Profile</Text>
                 </TouchableOpacity>
                 <TouchableOpacity 
-                  style={[styles.primaryButton, isFollowing ? { backgroundColor: '#E6E6E6' } : {}]}
+                  style={[
+                    styles.primaryButton,
+                    !isTrainer && isFollowing ? { backgroundColor: '#E6E6E6' } : {},
+                  ]}
                   onPress={(e) => {
                     e.stopPropagation();
-                    if (followLoading) return;
+
+                    if (isTrainer) {
+                      navigation?.navigate?.('BookTrainer', {
+                        trainerId: String(partner.id),
+                        trainerName: partner.name,
+                      });
+                      return;
+                    }
+
+                    if (followLoading) {
+                      return;
+                    }
+
                     if (isFollowing) {
                       onUnfollow && onUnfollow(partner);
                     } else {
@@ -316,10 +332,16 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
                     }
                   }}
                   activeOpacity={0.7}
-                  disabled={followLoading}
+                  disabled={!isTrainer && followLoading}
                 >
                   <Text style={styles.primaryButtonText}>
-                    {followLoading ? '...' : isFollowing ? 'Unfollow' : 'Follow'}
+                    {isTrainer
+                      ? 'Book Session'
+                      : followLoading
+                        ? '...'
+                        : isFollowing
+                          ? 'Unfollow'
+                          : 'Follow'}
                   </Text>
                 </TouchableOpacity>
               </View>
