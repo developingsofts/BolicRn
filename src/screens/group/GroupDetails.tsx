@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   View,
   Text,
@@ -38,6 +38,7 @@ import {
   useGetGroupMembersQuery,
   useGetGroupPostsQuery,
   useJoinGroupMutation,
+  useRequestJoinGroupMutation,
   useDeleteGroupMutation,
 } from "../../services/api/groupsApi";
 import { useLeaveGroupMutation } from "../../services/api/leaveGroup";
@@ -192,6 +193,9 @@ const baseStyles = StyleSheet.create({
   joinButtonText: {
     color: COLORS.white,
   },
+  joinButtonDisabled: {
+    opacity: 0.7,
+  },
 
   membersCard: {
     backgroundColor: "white",
@@ -259,6 +263,116 @@ const baseStyles = StyleSheet.create({
     fontSize: 14,
     textDecorationLine: "underline",
     fontFamily: FontWeight.Medium,
+  },
+  membersModalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: r(16),
+  },
+  membersModalContent: {
+    backgroundColor: COLORS.white,
+    borderRadius: r(16),
+    width: "100%",
+    maxHeight: "85%",
+    paddingVertical: r(20),
+  },
+  membersModalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: r(20),
+    marginBottom: r(4),
+  },
+  membersModalTitle: {
+    fontSize: 18,
+    fontFamily: FontWeight.SemiBold,
+    color: COLORS.app_black,
+  },
+  membersModalSubtitle: {
+    fontSize: 14,
+    fontFamily: FontWeight.Regular,
+    color: COLORS._5E5E5E,
+    paddingHorizontal: r(20),
+    marginBottom: r(12),
+  },
+  membersModalCloseButton: {
+    width: r(32),
+    height: r(32),
+    borderRadius: r(16),
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: COLORS.surface,
+  },
+  membersModalList: {
+    paddingHorizontal: r(20),
+    paddingBottom: r(16),
+  },
+  membersModalItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: r(12),
+  },
+  membersModalAvatar: {
+    width: r(44),
+    height: r(44),
+    borderRadius: r(22),
+    backgroundColor: COLORS.primary,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: r(12),
+    overflow: "hidden",
+  },
+  membersModalAvatarImage: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
+  },
+  membersModalAvatarText: {
+    color: COLORS.white,
+    fontSize: 18,
+    fontFamily: FontWeight.SemiBold,
+  },
+  membersModalDetails: {
+    flex: 1,
+  },
+  membersModalName: {
+    fontSize: 16,
+    fontFamily: FontWeight.SemiBold,
+    color: COLORS.app_black,
+  },
+  membersModalLocation: {
+    fontSize: 13,
+    fontFamily: FontWeight.Regular,
+    color: COLORS._5E5E5E,
+    marginTop: r(2),
+  },
+  membersModalEmptyContainer: {
+    paddingVertical: r(40),
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  membersModalEmptyText: {
+    fontSize: 14,
+    fontFamily: FontWeight.Medium,
+    color: COLORS._5E5E5E,
+  },
+  membersModalFooter: {
+    paddingVertical: r(16),
+  },
+  membersModalCloseButtonFull: {
+    marginHorizontal: r(20),
+    marginTop: r(8),
+    paddingVertical: r(12),
+    borderRadius: r(8),
+    backgroundColor: COLORS.primary,
+    alignItems: "center",
+  },
+  membersModalCloseButtonText: {
+    color: COLORS.white,
+    fontSize: 16,
+    fontFamily: FontWeight.SemiBold,
   },
   postsSection: {
     minHeight: 200, // Minimum height to show content
@@ -564,6 +678,9 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
   const [membersPage, setMembersPage] = useState(1);
   const [postsPage, setPostsPage] = useState(1);
   const [accumulatedPosts, setAccumulatedPosts] = useState<any[]>([]);
+  const [accumulatedMembers, setAccumulatedMembers] = useState<any[]>([]);
+  const [membersModalVisible, setMembersModalVisible] = useState(false);
+  const [isLoadingMoreMembers, setIsLoadingMoreMembers] = useState(false);
   const [isLoadingMorePosts, setIsLoadingMorePosts] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [memberMenuVisible, setMemberMenuVisible] = useState<string | null>(
@@ -613,6 +730,7 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
   );
   // Join group mutation
   const [joinGroup, { isLoading: isJoining }] = useJoinGroupMutation();
+  const [requestJoinGroup, { isLoading: isRequestingJoin }] = useRequestJoinGroupMutation();
   // Delete group mutation
   const [deleteGroup, { isLoading: isDeleting }] = useDeleteGroupMutation();
   // Like mutation
@@ -627,6 +745,12 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
     membersData?.status && membersData?.data?.members
       ? membersData.data.members
       : [];
+  const membersPagination =
+    membersData?.status && membersData?.data?.pagination
+      ? membersData.data.pagination
+      : null;
+  const displayedMembers =
+    accumulatedMembers.length > 0 ? accumulatedMembers : members;
 
   // Exit group handler
   const [leaveGroup, { isLoading: isLeaving }] = useLeaveGroupMutation();
@@ -642,6 +766,29 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
       }
     } catch (error: any) {
       Toast.error(error?.data?.message || "Failed to leave group");
+    }
+  };
+
+  const handleOpenMembersModal = () => {
+    setMembersModalVisible(true);
+    if (accumulatedMembers.length === 0) {
+      refetchMembers();
+    }
+  };
+
+  const handleCloseMembersModal = () => {
+    if (isLoadingMoreMembers) return;
+    setMembersModalVisible(false);
+  };
+
+  const handleLoadMoreMembers = () => {
+    if (
+      membersPagination &&
+      membersPagination.hasNextPage &&
+      !isLoadingMoreMembers
+    ) {
+      setIsLoadingMoreMembers(true);
+      setMembersPage((prev) => prev + 1);
     }
   };
 
@@ -666,13 +813,70 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
   // Check if current user is a member (you may need to add this logic based on your data structure)
   const isMember = group?.isMember || isCreator;
 
+  const joinRequestStatus = (group as any)?.joinRequestStatus ?? null;
+  const requiresApproval = Boolean(group?.privacy && group.privacy !== "Public");
+
+  const joinButtonState = useMemo<
+    "manage" | "member" | "pending" | "request" | "join"
+  >(() => {
+    if (isCreator) return "manage";
+    if (isMember) return "member";
+    if (joinRequestStatus === "pending") return "pending";
+    if (requiresApproval) return "request";
+    return "join";
+  }, [isCreator, isMember, joinRequestStatus, requiresApproval]);
+
+  const joinButtonLoading = joinButtonState === "request" ? isRequestingJoin : isJoining;
+  const joinButtonDisabled = joinButtonState === "pending" || joinButtonLoading;
+
+  const joinButtonLabel = useMemo(() => {
+    switch (joinButtonState) {
+      case "pending":
+        return "Request Pending";
+      case "request":
+        return joinRequestStatus === "rejected" ? "Request Again" : "Request to Join";
+      default:
+        return "Join Group";
+    }
+  }, [joinButtonState, joinRequestStatus]);
+
   // Handler for viewing a member's profile
   const handleViewProfile = (member: any) => {
     setMemberMenuVisible(null);
+    setMembersModalVisible(false);
     navigation?.navigate("UserProfile", {
       userId: member.id?.toString?.() || member.id,
       isGuest: true,
     });
+  };
+
+  const renderMemberListItem = ({ item: member }: { item: any }) => {
+    const displayName = member.displayName || member.userName || member.name || "Unknown";
+    const location = member.userAddress?.city || member.location || "Unknown location";
+    const imageUrl = member.imageUrl || member.avatar || member.profilePhoto || null;
+    const initial = (member.displayName?.charAt(0)
+      || member.userName?.charAt(0)
+      || member.name?.charAt(0)
+      || "U").toUpperCase();
+
+    return (
+      <TouchableOpacity
+        style={styles.membersModalItem}
+        onPress={() => handleViewProfile(member)}
+      >
+        <View style={styles.membersModalAvatar}>
+          {imageUrl ? (
+            <Image source={{ uri: imageUrl }} style={styles.membersModalAvatarImage} />
+          ) : (
+            <Text style={styles.membersModalAvatarText}>{initial}</Text>
+          )}
+        </View>
+        <View style={styles.membersModalDetails}>
+          <Text style={styles.membersModalName}>{displayName}</Text>
+          <Text style={styles.membersModalLocation}>{location}</Text>
+        </View>
+      </TouchableOpacity>
+    );
   };
 
   // Post handlers
@@ -768,6 +972,28 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
       ? postsData.data.pagination
       : null;
 
+  useEffect(() => {
+    if (membersData?.status) {
+      if (membersPage === 1) {
+        setAccumulatedMembers(members);
+      } else {
+        setAccumulatedMembers((prevMembers) => {
+          const existingIds = new Set(prevMembers.map((m) => m.id));
+          const newEntries = members.filter((m: any) => !existingIds.has(m.id));
+          return [...prevMembers, ...newEntries];
+        });
+      }
+    } else if (membersPage === 1 && membersData) {
+      setAccumulatedMembers([]);
+    }
+    setIsLoadingMoreMembers(false);
+  }, [membersData, members, membersPage]);
+
+  useEffect(() => {
+    setMembersPage(1);
+    setAccumulatedMembers([]);
+  }, [groupId]);
+
   // Accumulate posts when new data arrives
   useEffect(() => {
     if (postsData && posts.length > 0) {
@@ -801,6 +1027,21 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
       }
     } catch (error: any) {
       Toast.error(error?.data?.message || "Failed to join group");
+    }
+  };
+
+  const handleRequestJoinGroup = async () => {
+    if (!groupId) return;
+    try {
+      const response = await requestJoinGroup({ groupId }).unwrap();
+      if (response.status) {
+        Toast.success(response.message || "Join request submitted");
+        refetchGroup();
+      } else {
+        Toast.error(response.message || "Failed to submit join request");
+      }
+    } catch (error: any) {
+      Toast.error(error?.data?.message || "Failed to submit join request");
     }
   };
 
@@ -1056,7 +1297,7 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
         />
 
         {/* Action Button - Manage Group or Join Group */}
-        {isCreator ? (
+        {joinButtonState === "manage" ? (
           <Pressable
             style={styles.manageButton}
             onPress={() => {
@@ -1067,27 +1308,7 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
             <Image source={Edit} style={{ width: 16, height: 16 }} />
             <Text style={styles.manageButtonText}>Manage Group</Text>
           </Pressable>
-        ) : !isMember ? (
-          <Pressable
-            style={[styles.manageButton, styles.joinButton]}
-            onPress={handleJoinGroup}
-            disabled={isJoining}
-          >
-            {isJoining ? (
-              <ActivityIndicator size="small" color={COLORS.white} />
-            ) : (
-              <>
-                <Image
-                  source={Add}
-                  style={{ width: 16, height: 16, tintColor: COLORS.white }}
-                />
-                <Text style={[styles.manageButtonText, styles.joinButtonText]}>
-                  Join Group
-                </Text>
-              </>
-            )}
-          </Pressable>
-        ) : (
+        ) : joinButtonState === "member" ? (
           <Pressable
             style={[
               styles.manageButton,
@@ -1108,6 +1329,40 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
               Exit Group
             </Text>
           </Pressable>
+        ) : (
+          <Pressable
+            style={[
+              styles.manageButton,
+              styles.joinButton,
+              joinButtonDisabled && styles.joinButtonDisabled,
+            ]}
+            onPress={
+              joinButtonState === "join"
+                ? handleJoinGroup
+                : joinButtonState === "request"
+                ? handleRequestJoinGroup
+                : undefined
+            }
+            disabled={joinButtonDisabled}
+          >
+            {joinButtonLoading ? (
+              <ActivityIndicator size="small" color={COLORS.white} />
+            ) : (
+              <>
+                <Image
+                  source={Add}
+                  style={{
+                    width: 16,
+                    height: 16,
+                    tintColor: COLORS.white,
+                  }}
+                />
+                <Text style={[styles.manageButtonText, styles.joinButtonText]}>
+                  {joinButtonLabel}
+                </Text>
+              </>
+            )}
+          </Pressable>
         )}
 
         {/* Members Section */}
@@ -1120,7 +1375,7 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
           </View>
 
           <View style={styles.avatarsContainer}>
-            {members.slice(0, 3).map((member, index) => (
+            {displayedMembers.slice(0, 3).map((member, index) => (
               <Menu
                 key={member.id || index}
                 visible={
@@ -1169,7 +1424,7 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
               </View>
             )}
           </View>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={handleOpenMembersModal}>
             <Text style={styles.viewListText}>View list</Text>
           </TouchableOpacity>
         </View>
@@ -1212,6 +1467,69 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
           )}
         </View>
       </RefreshableScrollView>
+
+      <Modal
+        visible={membersModalVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={handleCloseMembersModal}
+      >
+        <View style={styles.membersModalOverlay}>
+          <View style={styles.membersModalContent}>
+            <View style={styles.membersModalHeader}>
+              <Text style={styles.membersModalTitle}>Group Members</Text>
+              <TouchableOpacity
+                style={styles.membersModalCloseButton}
+                onPress={handleCloseMembersModal}
+                disabled={isLoadingMoreMembers}
+              >
+                <Ionicons name="close" size={20} color={COLORS._5E5E5E} />
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.membersModalSubtitle}>
+              {group?.memberCount || accumulatedMembers.length} Members
+            </Text>
+            <FlatList
+              data={accumulatedMembers}
+              keyExtractor={(member, index) =>
+                member?.id?.toString?.() || `member-${index}`
+              }
+              renderItem={renderMemberListItem}
+              contentContainerStyle={styles.membersModalList}
+              showsVerticalScrollIndicator={false}
+              onEndReached={handleLoadMoreMembers}
+              onEndReachedThreshold={0.2}
+              ListEmptyComponent={
+                isLoadingMembers ? (
+                  <View style={styles.membersModalEmptyContainer}>
+                    <ActivityIndicator size="small" color={COLORS.primary} />
+                  </View>
+                ) : (
+                  <View style={styles.membersModalEmptyContainer}>
+                    <Text style={styles.membersModalEmptyText}>
+                      No members yet.
+                    </Text>
+                  </View>
+                )
+              }
+              ListFooterComponent={
+                isLoadingMoreMembers ? (
+                  <View style={styles.membersModalFooter}>
+                    <ActivityIndicator size="small" color={COLORS.primary} />
+                  </View>
+                ) : null
+              }
+            />
+            <TouchableOpacity
+              style={styles.membersModalCloseButtonFull}
+              onPress={handleCloseMembersModal}
+              disabled={isLoadingMoreMembers}
+            >
+              <Text style={styles.membersModalCloseButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       {isMember && (
         <TouchableOpacity

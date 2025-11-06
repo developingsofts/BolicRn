@@ -40,9 +40,12 @@ const BookingSuccessScreen: React.FC = () => {
 
   const handleChatWithTrainer = useCallback(() => {
     if (trainerId) {
-      navigation.navigate("Chat", { userId: trainerId });
+      navigation.navigate("Chat", {
+        partnerId: trainerId,
+        partnerName: trainerName,
+      });
     }
-  }, [navigation, trainerId]);
+  }, [navigation, trainerId, trainerName]);
 
   const handleUpdateCancel = useCallback(() => {
     // Navigate to profile/bookings section

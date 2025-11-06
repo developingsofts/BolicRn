@@ -1,92 +1,97 @@
 import { API_END_POINTS } from '../endPoints';
 import { baseApi } from './baseApi';
 import type { ApiResponse } from './types';
-
-interface ConversationResponse {
-  id: string;
-  partnerId: string;
-  partnerName: string;
-  lastMessage?: string;
-  updatedAt: string;
-  unreadCount?: number;
-}
-
-interface MessageResponse {
-  id: string;
-  conversationId: string;
-  senderId: string;
-  content: string;
-  createdAt: string;
-  read: boolean;
-  type?: string;
-}
+import type {
+  Conversation,
+  MessagesResponse,
+  ChatMessage,
+  ConversationType,
+  MessageType,
+} from '../../types';
 
 interface FetchMessagesPayload {
-  conversationId: string;
+  conversationId: string | number;
+  page?: number;
+  limit?: number;
 }
 
 interface SendMessagePayload {
-  content: string;
-  conversationId: string;
-  receiverId: string;
-  type?: string;
+  conversationId: string | number;
+  content?: string;
+  attachmentUrl?: string;
+  messageType?: MessageType;
 }
 
-interface MessageActionPayload {
-  messageId: string;
+interface MarkConversationAsReadPayload {
+  conversationId: string | number;
+  messageIds?: Array<number | string>;
+}
+
+interface MarkMessageAsReadPayload {
+  messageId: string | number;
+}
+
+interface CreateConversationPayload {
+  type?: ConversationType;
+  name?: string;
+  participantIds?: Array<number | string>;
+  initialMessage?: string;
+  attachmentUrl?: string;
+  messageType?: MessageType;
 }
 
 export const messagingApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    getConversations: builder.query<
-      ApiResponse<ConversationResponse[]>,
-      void
-    >({
+    getConversations: builder.query<ApiResponse<Conversation[]>, void>({
       query: () => ({
         url: API_END_POINTS.messages.conversations,
         method: 'GET',
       }),
       providesTags: ['Messaging'],
     }),
-    getMessages: builder.query<
-      ApiResponse<MessageResponse[]>,
-      FetchMessagesPayload
-    >({
-      query: ({ conversationId }) => ({
-        url: API_END_POINTS.messages.conversationById(conversationId),
+    getMessages: builder.query<ApiResponse<MessagesResponse>, FetchMessagesPayload>({
+      query: ({ conversationId, page, limit }) => ({
+        url: API_END_POINTS.messages.conversationMessages(conversationId),
         method: 'GET',
+        params: {
+          ...(page ? { page } : {}),
+          ...(limit ? { limit } : {}),
+        },
       }),
       providesTags: ['Messaging'],
     }),
-    sendMessage: builder.mutation<
-      ApiResponse<MessageResponse>,
-      SendMessagePayload
-    >({
-      query: (body) => ({
-        url: API_END_POINTS.messages.send,
+    sendMessage: builder.mutation<ApiResponse<ChatMessage>, SendMessagePayload>({
+      query: ({ conversationId, ...body }) => ({
+        url: API_END_POINTS.messages.sendMessage(conversationId),
         method: 'POST',
         body,
       }),
       invalidatesTags: ['Messaging'],
     }),
-    markMessageAsRead: builder.mutation<
-      ApiResponse<{ success: boolean }>,
-      MessageActionPayload
-    >({
+    markConversationAsRead: builder.mutation<ApiResponse<{ updatedCount: number }>, MarkConversationAsReadPayload>({
+      query: ({ conversationId, messageIds }) => ({
+        url: API_END_POINTS.messages.markConversationAsRead(conversationId),
+        method: 'POST',
+        body: messageIds?.length ? { messageIds } : {},
+      }),
+      invalidatesTags: ['Messaging'],
+    }),
+    markMessageAsRead: builder.mutation<ApiResponse<{ updated: number }>, MarkMessageAsReadPayload>({
       query: ({ messageId }) => ({
-        url: API_END_POINTS.messages.markAsRead(messageId),
-        method: 'PATCH',
+        url: API_END_POINTS.messages.markMessageAsRead(messageId),
+        method: 'POST',
         body: {},
       }),
       invalidatesTags: ['Messaging'],
     }),
-    deleteMessage: builder.mutation<
-      ApiResponse<{ success: boolean }>,
-      MessageActionPayload
+    createConversation: builder.mutation<
+      ApiResponse<{ conversation: Conversation; initialMessage?: ChatMessage | null }>,
+      CreateConversationPayload
     >({
-      query: ({ messageId }) => ({
-        url: API_END_POINTS.messages.delete(messageId),
-        method: 'DELETE',
+      query: (body) => ({
+        url: API_END_POINTS.messages.conversations,
+        method: 'POST',
+        body,
       }),
       invalidatesTags: ['Messaging'],
     }),
@@ -98,6 +103,7 @@ export const {
   useGetConversationsQuery,
   useGetMessagesQuery,
   useSendMessageMutation,
+  useMarkConversationAsReadMutation,
   useMarkMessageAsReadMutation,
-  useDeleteMessageMutation,
+  useCreateConversationMutation,
 } = messagingApi;

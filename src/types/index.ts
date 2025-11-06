@@ -222,6 +222,7 @@ export interface Group {
   location: string;
   privacy?: string;
   isMember?: boolean;
+  joinRequestStatus?: 'pending' | 'approved' | 'rejected' | null;
   creatorId?: number | string;
   createdAt: Date;
 }
@@ -327,6 +328,14 @@ export interface Achievement {
   target?: number;
 }
 
+export interface Note {
+  id: number;
+  userId: number;
+  text: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Notification Types
 export interface NotificationSettings {
   workoutReminders: boolean;
@@ -370,6 +379,8 @@ export interface Notification {
   data?: any;
 }
 
+export * from './chat';
+
 // Navigation Types
 export type RootStackParamList = {
   Auth: undefined;
@@ -379,7 +390,13 @@ export type RootStackParamList = {
   Groups: undefined;
   Messages: undefined;
   Profile: undefined;
-  Chat: { partnerId: string; partnerName: string };
+  Chat: {
+    conversationId?: string | number;
+    conversationName?: string | null;
+    partnerId?: string | number;
+    partnerName?: string | null;
+    initialMessage?: string;
+  };
   SelectWorkout: undefined;
   WorkoutSession: { sessionId?: string; workoutType?: string; workoutName?: string };
   CreatePost: undefined;

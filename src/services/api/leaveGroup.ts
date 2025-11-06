@@ -11,7 +11,7 @@ export const leaveGroupApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     leaveGroup: builder.mutation<ApiResponse<any>, string>({
       query: (groupId) => ({
-        url: `/groups/${groupId}/leave`,
+        url: `/group/leave/${groupId}`,
         method: 'POST',
       }),
       invalidatesTags: ['Groups'],

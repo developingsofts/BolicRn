@@ -41,6 +41,16 @@ interface GetGroupPostsPayload {
   limit?: number;
 }
 
+interface GetGroupJoinRequestsPayload {
+  groupId: string;
+  status?: string;
+}
+
+interface RespondToJoinRequestPayload {
+  requestId: string;
+  action: "approve" | "reject";
+}
+
 export const groupsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     // Get all groups (visible to everyone) with pagination
@@ -226,6 +236,43 @@ export const groupsApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Groups'],
     }),
+
+    // Request to join a group (for private/invite-only groups)
+    requestJoinGroup: builder.mutation<
+      ApiResponse<{ id: number; status: string }>,
+      { groupId: string }
+    >({
+      query: ({ groupId }) => ({
+        url: `/group/request/${groupId}`,
+        method: 'POST',
+      }),
+      invalidatesTags: ['Groups'],
+    }),
+
+    // Get join requests for a group (creator only)
+    getGroupJoinRequests: builder.query<
+      ApiResponse<any[]>,
+      GetGroupJoinRequestsPayload
+    >({
+      query: ({ groupId, status }) => ({
+        url: `/group/${groupId}/requests${status ? `?status=${status}` : ''}`,
+        method: 'GET',
+      }),
+  providesTags: ['Groups'],
+    }),
+
+    // Respond to a join request (creator only)
+    respondToJoinRequest: builder.mutation<
+      ApiResponse<any>,
+      RespondToJoinRequestPayload
+    >({
+      query: ({ requestId, action }) => ({
+        url: `/group/requests/${requestId}/respond`,
+        method: 'POST',
+        body: { action },
+      }),
+  invalidatesTags: ['Groups'],
+    }),
   }),
   overrideExisting: false,
 });
@@ -240,4 +287,7 @@ export const {
   useUpdateGroupMutation,
   useDeleteGroupMutation,
   useJoinGroupMutation,
+  useRequestJoinGroupMutation,
+  useGetGroupJoinRequestsQuery,
+  useRespondToJoinRequestMutation,
 } = groupsApi;

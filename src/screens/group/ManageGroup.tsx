@@ -20,9 +20,10 @@ import FontWeight from "../../hooks/useInterFonts";
 import { Group } from "../../types";
 import { Location, Gym, Close, Trash, Exit, Add } from "../../../assets";
 import BasicTopBar from "../../components/BasicTopBar";
-import { useCreateGroupMutation, useUpdateGroupMutation, useDeleteGroupMutation, useGetGroupMembersQuery } from '../../services/api/groupsApi';
+import { useCreateGroupMutation, useUpdateGroupMutation, useDeleteGroupMutation, useGetGroupMembersQuery, useGetGroupJoinRequestsQuery, useRespondToJoinRequestMutation } from '../../services/api/groupsApi';
 import { Toast } from '../../components/ToastManager';
 import { useAuth } from '../../contexts/AuthContext';
+import ConfirmDialog from "../../components/ConfirmDialog";
 
 interface ManageGroupProps {
   navigation: any;
@@ -71,9 +72,10 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
   group: propGroup,
   onClose,
 }) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const isEditing = route?.params?.isEditing ?? (propGroup ? true : false);
   const group = route?.params?.group || propGroup;
+  const isCreator = user?.id && group?.creatorId && Number(user.id) === Number(group.creatorId);
 
   const [groupName, setGroupName] = useState(isEditing && group ? group.name : "");
   const [groupDescription, setGroupDescription] = useState(
@@ -94,6 +96,13 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
   const [groupTypeMenuVisible, setGroupTypeMenuVisible] = useState(false);
   const [privacyMenuVisible, setPrivacyMenuVisible] = useState(false);
   const [memberMenuVisible, setMemberMenuVisible] = useState<string | null>(null);
+  const [removingMemberId, setRemovingMemberId] = useState<string | null>(null);
+  const [removeDialogVisible, setRemoveDialogVisible] = useState(false);
+  const [memberPendingRemoval, setMemberPendingRemoval] = useState<any | null>(null);
+  const [respondingRequestId, setRespondingRequestId] = useState<string | null>(null);
+  const pendingRemovalName = memberPendingRemoval
+    ? memberPendingRemoval.displayName || memberPendingRemoval.userName || memberPendingRemoval.name || "this user"
+    : "this user";
 
   // API mutations
   const [createGroup, { isLoading: isCreating }] = useCreateGroupMutation();
@@ -101,12 +110,18 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
   const [deleteGroup, { isLoading: isDeleting }] = useDeleteGroupMutation();
   
   // Fetch group members when editing
-  const { data: membersData, isLoading: isLoadingMembers } = useGetGroupMembersQuery(
+  const { data: membersData, isLoading: isLoadingMembers, refetch: refetchMembers } = useGetGroupMembersQuery(
     { groupId: group?.id?.toString() || '', page: 1, limit: 50 },
     { skip: !isEditing || !group?.id || !isAuthenticated }
   );
+  const { data: joinRequestsData, isLoading: isLoadingJoinRequests, refetch: refetchJoinRequests } = useGetGroupJoinRequestsQuery(
+    { groupId: group?.id?.toString() || '' },
+    { skip: !isEditing || !group?.id || !isAuthenticated || !isCreator }
+  );
+  const [respondToJoinRequest] = useRespondToJoinRequestMutation();
 
   const members = (membersData?.status && membersData?.data?.members) ? membersData.data.members : [];
+  const joinRequests = (joinRequestsData?.status && Array.isArray(joinRequestsData?.data)) ? joinRequestsData.data : [];
 
   const locationOptions = ["Downtown", "Uptown", "Midtown", "Suburbs"];
   const groupTypeOptions = ["Gym", "Running", "Cycling", "Swimming", "Yoga"];
@@ -202,28 +217,77 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
     ]);
   };
 
-  const handleMemberAction = (memberId: string, action: string) => {
+  const handleRemoveMember = (member: any) => {
+    if (!group?.id) {
+      Toast.error('Group not found');
+      return;
+    }
+
+    const memberId = member.id?.toString?.() || String(member.id);
+    const isSelf = user?.id && Number(user.id) === Number(member.id);
+
+    if (isSelf) {
+      Toast.error('You cannot remove yourself from your group');
+      return;
+    }
+
+    setMemberPendingRemoval(member);
+    setRemoveDialogVisible(true);
+  };
+
+  const confirmRemoveMember = async () => {
+    if (!group?.id || !memberPendingRemoval || removingMemberId) {
+      return;
+    }
+
+    const memberId = memberPendingRemoval.id?.toString?.() || String(memberPendingRemoval.id);
+    const memberIdNumber = Number(memberId);
+    if (!Number.isFinite(memberIdNumber)) {
+      Toast.error('Invalid member selected');
+      return;
+    }
+
+    try {
+      setRemovingMemberId(memberId);
+      await updateGroup({
+        groupId: group.id.toString(),
+        removeIds: [memberIdNumber],
+      }).unwrap();
+      Toast.success('Member removed successfully');
+      await refetchMembers();
+    } catch (error: any) {
+      Toast.error(error?.data?.message || 'Failed to remove member');
+    } finally {
+      setRemovingMemberId(null);
+      setRemoveDialogVisible(false);
+      setMemberPendingRemoval(null);
+    }
+  };
+
+  const cancelRemoveMember = () => {
+    if (removingMemberId) return;
+    setRemoveDialogVisible(false);
+    setMemberPendingRemoval(null);
+  };
+
+  const handleMemberAction = (member: any, action: string) => {
     setMemberMenuVisible(null);
     if (action === "remove") {
-      Alert.alert(
-        "Remove User", 
-        "Are you sure you want to remove this user from the group?", 
-        [
-          { text: "Cancel", style: "cancel" },
-          { 
-            text: "Remove", 
-            style: "destructive", 
-            onPress: () => {
-              // TODO: Implement remove member API call
-              Toast.info('Remove member feature coming soon');
-            } 
-          },
-        ]
-      );
+      handleRemoveMember(member);
     } else if (action === "profile") {
-      const member = members.find((m: any) => m.id.toString() === memberId);
-      if (member) {
-        navigation.navigate('UserProfile', { userId: member.id?.toString?.() || member.id, isGuest: true });
+      const memberId = member.id?.toString?.() || String(member.id);
+      const isSelf = user?.id && Number(user.id) === Number(member.id);
+
+      if (isSelf) {
+        if (onClose) {
+          onClose();
+        }
+        navigation?.navigate?.('Profile');
+        return;
+      }
+
+      if (memberId) {
+        navigation.navigate('UserProfile', { userId: memberId, isGuest: true });
       } else {
         Toast.error('User not found');
       }
@@ -233,6 +297,8 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
   const renderMember = ({ item: member }: { item: any }) => {
     const displayName = member.displayName || member.userName || member.name || 'Unknown';
     const location = member.userAddress?.city || member.location || 'Unknown location';
+    const memberId = member.id?.toString?.() || String(member.id);
+    const isSelf = user?.id && Number(user.id) === Number(member.id);
     return (
       <View style={styles.memberItem}>
         <View style={styles.memberInfo}>
@@ -243,31 +309,52 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
           </View>
         </View>
         <Menu
-          visible={memberMenuVisible === member.id.toString()}
+          visible={memberMenuVisible === memberId}
           contentStyle={{ backgroundColor: COLORS.white }}
           onDismiss={() => setMemberMenuVisible(null)}
           anchor={
             <TouchableOpacity
               style={styles.memberActions}
-              onPress={() => setMemberMenuVisible(member.id.toString())}
+              onPress={() => setMemberMenuVisible(memberId)}
             >
               <Ionicons name="ellipsis-vertical" size={20} color={COLORS.text} />
             </TouchableOpacity>
           }
         >
           <Menu.Item
-            onPress={() => handleMemberAction(member.id.toString(), "profile")}
+            onPress={() => handleMemberAction(member, "profile")}
             titleStyle={{ color: COLORS.app_black }}
             title="View Profile"
           />
-          <Menu.Item
-            onPress={() => handleMemberAction(member.id.toString(), "remove")}
-            title="Remove User"
-            titleStyle={{ color: COLORS._EB3434 }}
-          />
+          {!isSelf && (
+            <Menu.Item
+              onPress={() => handleMemberAction(member, "remove")}
+              title="Remove User"
+              disabled={removingMemberId === memberId}
+              titleStyle={{
+                color: COLORS._EB3434,
+                opacity: removingMemberId === memberId ? 0.5 : 1,
+              }}
+            />
+          )}
         </Menu>
       </View>
     );
+  };
+
+  const handleRespondToRequest = async (requestId: string, action: "approve" | "reject") => {
+    if (!group?.id || respondingRequestId) return;
+
+    try {
+      setRespondingRequestId(requestId);
+      const response = await respondToJoinRequest({ requestId, action }).unwrap();
+      Toast.success(response?.message || `Request ${action === 'approve' ? 'approved' : 'rejected'} successfully`);
+      await Promise.all([refetchJoinRequests(), refetchMembers()]);
+    } catch (error: any) {
+      Toast.error(error?.data?.message || `Failed to ${action} request`);
+    } finally {
+      setRespondingRequestId(null);
+    }
   };
 
   const handleClose = () => {
@@ -510,6 +597,91 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
             </View>
           )}
 
+          {isEditing && isCreator && (
+            <View style={styles.groupInfoCard}>
+              <View style={styles.membersHeader}>
+                <Text style={styles.membersTitle}>Join Requests</Text>
+                {isLoadingJoinRequests ? (
+                  <ActivityIndicator size="small" color={COLORS.primary} />
+                ) : (
+                  <Text style={styles.membersCount}>
+                    {joinRequests.length} Pending
+                  </Text>
+                )}
+              </View>
+
+              {isLoadingJoinRequests ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="small" color={COLORS.primary} />
+                  <Text style={styles.loadingText}>Loading join requests...</Text>
+                </View>
+              ) : joinRequests.length === 0 ? (
+                <View style={styles.emptyContainer}>
+                  <Text style={styles.emptyText}>No pending requests right now</Text>
+                </View>
+              ) : (
+                <FlatList
+                  data={joinRequests}
+                  scrollEnabled={false}
+                  keyExtractor={(item: any) => item.id?.toString?.() || String(item.id)}
+                  ItemSeparatorComponent={() => <View style={styles.memberSeparator} />}
+                  renderItem={({ item }) => {
+                    const requestUser = item.user || {};
+                    const displayName = requestUser.displayName || requestUser.userName || 'Unknown';
+                    const location = requestUser.userAddress?.city || requestUser.location || 'Unknown location';
+                    const avatar = requestUser.imageUrl;
+                    const requestId = item.id?.toString?.() || String(item.id);
+                    const isProcessing = respondingRequestId === requestId;
+
+                    return (
+                      <View style={styles.requestItem}>
+                        <View style={styles.memberInfo}>
+                          <View style={styles.memberAvatar}>
+                            {avatar ? (
+                              <Image source={{ uri: avatar }} style={styles.memberAvatarImage} />
+                            ) : (
+                              <Text style={styles.memberAvatarText}>
+                                {(displayName.charAt(0) || 'U').toUpperCase()}
+                              </Text>
+                            )}
+                          </View>
+                          <View style={styles.memberDetails}>
+                            <Text style={styles.memberName}>{displayName}</Text>
+                            <Text style={styles.memberLocation}>{location}</Text>
+                          </View>
+                        </View>
+                        <View style={styles.requestActions}>
+                          <TouchableOpacity
+                            style={[styles.requestButton, styles.approveButton]}
+                            onPress={() => handleRespondToRequest(requestId, 'approve')}
+                            disabled={isProcessing}
+                          >
+                            {isProcessing ? (
+                              <ActivityIndicator size="small" color={COLORS.white} />
+                            ) : (
+                              <Text style={styles.requestButtonText}>Approve</Text>
+                            )}
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[styles.requestButton, styles.rejectButton]}
+                            onPress={() => handleRespondToRequest(requestId, 'reject')}
+                            disabled={isProcessing}
+                          >
+                            {isProcessing ? (
+                              <ActivityIndicator size="small" color={COLORS.white} />
+                            ) : (
+                              <Text style={styles.requestButtonText}>Reject</Text>
+                            )}
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    );
+                  }}
+                />
+              )}
+            </View>
+          )}
+
           {/* Action Buttons */}
           {isEditing ? (
             <>
@@ -564,6 +736,15 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
           )}
         </View>
       </ScrollView>
+      <ConfirmDialog
+        visible={removeDialogVisible}
+        onClose={cancelRemoveMember}
+        onConfirm={confirmRemoveMember}
+        title="Remove member"
+        description={`Are you sure you want to remove ${pendingRemovalName} from this group?`}
+        confirmText="Remove"
+        cancelText="Cancel"
+      />
     </SafeAreaView>
   );
 };
@@ -747,6 +928,36 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: COLORS._E2E2E2,
     marginVertical: r(8),
+  },
+  requestItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: r(8),
+  },
+  requestActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: r(8),
+  },
+  requestButton: {
+    borderRadius: r(8),
+    paddingVertical: r(8),
+    paddingHorizontal: r(14),
+    minWidth: r(90),
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  approveButton: {
+    backgroundColor: COLORS.primary,
+  },
+  rejectButton: {
+    backgroundColor: COLORS._EB3434,
+  },
+  requestButtonText: {
+    color: COLORS.white,
+    fontSize: 14,
+    fontFamily: FontWeight.Medium,
   },
   deleteButton: {
     backgroundColor: COLORS.white,

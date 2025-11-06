@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   View,
   Text,
@@ -17,12 +17,16 @@ import RefreshableScrollView from '../components/RefreshableScrollView';
 import { useAuth } from "../contexts/AuthContext";
 import { COLORS, DIMENSIONS } from "../config/constants";
 import STRINGS from "../config/strings";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SafeAreaView } from "react-native-safe-area-context";
 import FontWeight from "../hooks/useInterFonts";
 import BasicTopBar from "../components/BasicTopBar";
-import { useGetPostsQuery, useDeletePostMutation, useUpdatePostMutation } from '../services/api/postsApi';
+import { useGetPostsQuery, useDeletePostMutation, useUpdatePostMutation, useGetUserPostsQuery } from '../services/api/postsApi';
 import { useToggleLikeMutation } from '../services/api/likesCommentsApi';
+import { useGetWorkoutHistoryQuery, useGetWorkoutsQuery, useGetUserAchievementsQuery, useGetWorkoutByIdQuery } from '../services/api/workoutApi';
+import { useGetPotentialMatchesQuery } from '../services/api/matchingApi';
+import { useGetNotesQuery, useCreateNoteMutation, useDeleteNoteMutation } from '../services/api/notesApi';
+import { useGetFollowersQuery } from '../services/api/followsApi';
+import type { Note as NoteEntity } from "../types";
 import { Like, CommentIcon, CommentRemove } from '../../assets';
 import CommentsModal from '../components/CommentsModal';
 import ConfirmationDialog from '../components/ConfirmationDialog';
@@ -32,7 +36,7 @@ interface HomeScreenProps {
   navigation: any;
 }
 
-interface Note {
+interface UserNoteItem {
   id: string;
   text: string;
   timestamp: Date;
@@ -44,8 +48,10 @@ interface Achievement {
   description: string;
   icon: string;
   unlocked: boolean;
-  progress: number;
-  maxProgress: number;
+  progress?: number | null;
+  maxProgress?: number | null;
+  type?: string;
+  earnedAt?: string | Date | null;
 }
 
 interface WeeklyGoal {
@@ -62,22 +68,31 @@ interface WorkoutOfTheDay {
   id: string;
   title: string;
   description: string;
-  type: "strength" | "cardio" | "flexibility" | "mixed";
+  type: string;
   duration: number;
-  difficulty: "easy" | "medium" | "hard";
+  difficulty: string;
   exercises: Array<{
     name: string;
-    sets: number;
-    reps: number;
-    weight?: number;
-    notes?: string;
+    sets?: number | null;
+    reps?: number | null;
+    durationSeconds?: number | null;
+    weight?: number | null;
+    notes?: string | null;
   }>;
   completed: boolean;
 }
 
+interface ActivityItem {
+  id: string;
+  type: "workout" | "achievement" | "post" | "connection";
+  icon: string;
+  title: string;
+  details: string;
+  timestamp: Date | null;
+}
+
 const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const { user, isAuthenticated } = useAuth();
-  const [notes, setNotes] = useState<Note[]>([]);
   const [newNote, setNewNote] = useState("");
   const [refreshing, setRefreshing] = useState(false);
   const [commentsModalVisible, setCommentsModalVisible] = useState(false);
@@ -87,6 +102,9 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const [postToDelete, setPostToDelete] = useState<string | null>(null);
   const [editingPost, setEditingPost] = useState<{ id: string; caption: string } | null>(null);
   const [editPostText, setEditPostText] = useState("");
+  const [showAllWorkoutExercises, setShowAllWorkoutExercises] = useState(false);
+  const [noteBeingDeleted, setNoteBeingDeleted] = useState<string | null>(null);
+  const [quickActionsExpanded, setQuickActionsExpanded] = useState(false);
   
   // Fetch posts for Community Highlights - only when authenticated
   const { data: postsData, isLoading: postsLoading, refetch: refetchPosts } = useGetPostsQuery(
@@ -94,6 +112,61 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     { skip: !isAuthenticated }
   );
   const communityPosts = (postsData?.status && postsData?.data?.posts) ? postsData.data.posts : [];
+
+  const {
+    data: workoutHistoryData,
+    isLoading: workoutHistoryLoading,
+    refetch: refetchWorkoutHistory,
+  } = useGetWorkoutHistoryQuery(undefined, { skip: !isAuthenticated });
+
+  const {
+    data: workoutsData,
+    isLoading: workoutsLoading,
+    refetch: refetchWorkouts,
+  } = useGetWorkoutsQuery(undefined, { skip: !isAuthenticated });
+
+  const {
+    data: achievementsData,
+    isLoading: achievementsLoading,
+    refetch: refetchAchievements,
+    error: achievementsError,
+  } = useGetUserAchievementsQuery(undefined, { skip: !isAuthenticated });
+
+  const {
+    data: potentialMatchesData,
+    isLoading: potentialMatchesLoading,
+    refetch: refetchPotentialMatches,
+  } = useGetPotentialMatchesQuery(undefined, { skip: !isAuthenticated });
+
+  const {
+    data: userPostsData,
+    isLoading: userPostsLoading,
+    refetch: refetchUserPosts,
+  } = useGetUserPostsQuery(
+    { userId: String(user?.id ?? "") },
+    { skip: !isAuthenticated || !user?.id }
+  );
+
+  const {
+    data: followersData,
+    isLoading: followersLoading,
+    isFetching: followersFetching,
+    refetch: refetchFollowers,
+  } = useGetFollowersQuery(
+    { userId: String(user?.id ?? ""), page: 1, limit: 10 },
+    { skip: !isAuthenticated || !user?.id }
+  );
+
+  const {
+    data: notesData,
+    isLoading: notesLoading,
+    isFetching: notesFetching,
+    refetch: refetchNotes,
+    error: notesError,
+  } = useGetNotesQuery(undefined, { skip: !isAuthenticated });
+
+  const [createNote, { isLoading: isCreatingNote }] = useCreateNoteMutation();
+  const [deleteNoteMutation, { isLoading: isDeletingNote }] = useDeleteNoteMutation();
 
   // Debug posts data
   useEffect(() => {
@@ -114,8 +187,29 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   
   const handleRefresh = async () => {
     setRefreshing(true);
-    await refetchPosts();
-    setRefreshing(false);
+    try {
+      const refreshers: Array<Promise<any>> = [refetchPosts()];
+
+      if (isAuthenticated) {
+        refreshers.push(
+          refetchWorkoutHistory(),
+          refetchWorkouts(),
+          refetchAchievements(),
+          refetchPotentialMatches(),
+          refetchUserPosts(),
+          refetchFollowers(),
+          refetchNotes()
+        );
+
+        if (workoutOfTheDayId) {
+          refreshers.push(refetchWorkoutDetail());
+        }
+      }
+
+      await Promise.allSettled(refreshers);
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const handleLikePost = async (postId: string) => {
@@ -202,149 +296,565 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     setPostToDelete(null);
   };
   
-  const [weeklyGoal, setWeeklyGoal] = useState<WeeklyGoal>({
-    id: "1",
-    title: "Complete 4 Workouts This Week",
-    target: 4,
-    current: 2,
-    unit: "workouts",
-    type: "workouts",
-    completed: false,
+  const workoutSessions = useMemo(() => {
+    if (!workoutHistoryData?.status) {
+      return [];
+    }
+    return workoutHistoryData.data.sessions ?? [];
+  }, [workoutHistoryData]);
+
+  const weeklyGoal = useMemo<WeeklyGoal>(() => {
+    const targetWorkouts = 4;
+    const defaultGoal: WeeklyGoal = {
+      id: "current-week",
+      title: "Complete 4 Workouts This Week",
+      target: targetWorkouts,
+      current: 0,
+      unit: "workouts",
+      type: "workouts",
+      completed: false,
+    };
+
+    if (workoutSessions.length === 0) {
+      return defaultGoal;
+    }
+
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    const day = startOfWeek.getDay();
+    const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1);
+    startOfWeek.setDate(diff);
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const completedThisWeek = workoutSessions.filter((session: any) => {
+      if (session.status !== "completed") {
+        return false;
+      }
+
+      const completedAt = session.completedAt
+        ? new Date(session.completedAt)
+        : session.updatedAt
+        ? new Date(session.updatedAt)
+        : session.startedAt
+        ? new Date(session.startedAt)
+        : null;
+
+      if (!completedAt || Number.isNaN(completedAt.getTime())) {
+        return false;
+      }
+
+      return completedAt >= startOfWeek;
+    }).length;
+
+    return {
+      ...defaultGoal,
+      current: completedThisWeek,
+      completed: completedThisWeek >= targetWorkouts,
+    };
+  }, [workoutSessions]);
+
+  const workouts = useMemo(() => {
+    if (!workoutsData?.status) {
+      return [];
+    }
+
+    const rawWorkouts = (workoutsData.data?.workouts as any[]) ?? [];
+
+    return rawWorkouts.map((workout: any) => ({
+      ...workout,
+      id: String(workout?.id ?? workout?.workoutId ?? Math.random()),
+    }));
+  }, [workoutsData]);
+
+  const workoutOfTheDayId = useMemo(() => {
+    if (workouts.length === 0) {
+      return null;
+    }
+
+    const today = new Date();
+    const index = today.getDate() % workouts.length;
+    return String(workouts[index]?.id ?? workouts[0]?.id ?? "");
+  }, [workouts]);
+
+  const {
+    data: workoutDetailData,
+    isLoading: workoutDetailLoading,
+    isFetching: workoutDetailFetching,
+    refetch: refetchWorkoutDetail,
+  } = useGetWorkoutByIdQuery(workoutOfTheDayId ?? "", {
+    skip: !workoutOfTheDayId,
   });
-  const [workoutOfTheDay, setWorkoutOfTheDay] = useState<WorkoutOfTheDay>({
-    id: "1",
-    title: "Upper Body Power",
-    description:
-      "Focus on chest, shoulders, and triceps with compound movements",
-    type: "strength",
-    duration: 45,
-    difficulty: "medium",
-    exercises: [
-      {
-        name: "Bench Press",
-        sets: 4,
-        reps: 8,
-        weight: 135,
-        notes: "Focus on form",
-      },
-      {
-        name: "Overhead Press",
-        sets: 3,
-        reps: 10,
-        weight: 95,
-        notes: "Control the movement",
-      },
-      {
-        name: "Dumbbell Rows",
-        sets: 3,
-        reps: 12,
-        weight: 45,
-        notes: "Squeeze shoulder blades",
-      },
-      {
-        name: "Tricep Dips",
-        sets: 3,
-        reps: 15,
-        notes: "Body weight or assisted",
-      },
-      { name: "Push-ups", sets: 3, reps: 20, notes: "Full range of motion" },
-    ],
-    completed: false,
-  });
-  const [achievements, setAchievements] = useState<Achievement[]>([
-    {
-      id: "1",
-      title: "First Steps",
-      description: "Complete your first workout",
-      icon: "👟",
-      unlocked: true,
-      progress: 1,
-      maxProgress: 1,
-    },
-    {
-      id: "2",
-      title: "Week Warrior",
-      description: "Workout 7 days in a row",
-      icon: "🔥",
-      unlocked: false,
-      progress: 3,
-      maxProgress: 7,
-    },
-    {
-      id: "3",
-      title: "Social Butterfly",
-      description: "Connect with 5 training partners",
-      icon: "🦋",
-      unlocked: false,
-      progress: 2,
-      maxProgress: 5,
-    },
-    {
-      id: "4",
-      title: "Strength Master",
-      description: "Complete 50 strength workouts",
-      icon: "💪",
-      unlocked: false,
-      progress: 12,
-      maxProgress: 50,
-    },
+
+  const workoutOfTheDay = useMemo<WorkoutOfTheDay | null>(() => {
+    if (!workoutOfTheDayId) {
+      return null;
+    }
+
+    const baseWorkout = workouts.find(
+      (workout: any) => String(workout?.id) === String(workoutOfTheDayId)
+    ) as any;
+
+    const detailedWorkout =
+      workoutDetailData?.status && workoutDetailData.data
+        ? (workoutDetailData.data as any)
+        : null;
+
+    const sourceWorkout = detailedWorkout ?? baseWorkout;
+
+    if (!sourceWorkout) {
+      return null;
+    }
+
+    const rawExercises =
+      ((detailedWorkout?.workoutExercises as any[]) ??
+        (sourceWorkout?.workoutExercises as any[]) ??
+        []) ?? [];
+
+    const exercises = rawExercises
+      .slice()
+      .sort((a: any, b: any) => (a?.order ?? 0) - (b?.order ?? 0))
+      .map((workoutExercise: any, index: number) => {
+        const exerciseDetails = workoutExercise?.exercise ?? workoutExercise?.exerciseDetails ?? {};
+        const fallbackName = `Exercise ${
+          (workoutExercise?.order ?? index + 1) || index + 1
+        }`;
+        const name = (exerciseDetails?.name ?? workoutExercise?.name ?? fallbackName).trim();
+
+        return {
+          name,
+          sets: workoutExercise?.sets ?? null,
+          reps: workoutExercise?.reps ?? null,
+          durationSeconds: workoutExercise?.duration ?? exerciseDetails?.duration ?? null,
+          weight: workoutExercise?.weight ?? null,
+          notes: workoutExercise?.notes ?? exerciseDetails?.description ?? null,
+        };
+      });
+
+    const durationSeconds = Number(
+      detailedWorkout?.totalDuration ?? sourceWorkout?.totalDuration ?? 0
+    );
+    const durationMinutes = durationSeconds
+      ? Math.max(1, Math.round(durationSeconds / 60))
+      : Math.max(20, exercises.length * 5);
+
+    const today = new Date();
+    const completedToday = workoutSessions.some((session: any) => {
+      if (String(session?.workoutId) !== String(sourceWorkout?.id)) {
+        return false;
+      }
+
+      if (session?.status !== "completed") {
+        return false;
+      }
+
+      const completionDate = session?.completedAt
+        ? new Date(session.completedAt)
+        : session?.updatedAt
+        ? new Date(session.updatedAt)
+        : session?.startedAt
+        ? new Date(session.startedAt)
+        : null;
+
+      if (!completionDate || Number.isNaN(completionDate.getTime())) {
+        return false;
+      }
+
+      return (
+        completionDate.getFullYear() === today.getFullYear() &&
+        completionDate.getMonth() === today.getMonth() &&
+        completionDate.getDate() === today.getDate()
+      );
+    });
+
+    return {
+      id: String(sourceWorkout?.id ?? workoutOfTheDayId),
+      title: sourceWorkout?.title ?? "Today's Featured Workout",
+      description:
+        sourceWorkout?.description ??
+        "Stay consistent and give your best effort today!",
+      type: String(sourceWorkout?.type ?? detailedWorkout?.type ?? "mixed").toLowerCase(),
+      duration: durationMinutes,
+      difficulty: String(
+        sourceWorkout?.difficulty ?? detailedWorkout?.difficulty ?? "medium"
+      ).toLowerCase(),
+      exercises,
+      completed: completedToday,
+    };
+  }, [
+    workoutOfTheDayId,
+    workouts,
+    workoutDetailData,
+    workoutSessions,
   ]);
 
   useEffect(() => {
-    loadNotes();
-  }, []);
+    setShowAllWorkoutExercises(false);
+  }, [workoutOfTheDay?.id]);
 
-  const loadNotes = async () => {
-    try {
-      const savedNotes = await AsyncStorage.getItem("userNotes");
-      if (savedNotes) {
-        const parsedNotes = JSON.parse(savedNotes).map((note: any) => ({
-          ...note,
-          timestamp: new Date(note.timestamp),
-        }));
-        setNotes(parsedNotes);
-      }
-    } catch (error) {
-      console.error("Error loading notes:", error);
+  const achievements = useMemo<Achievement[]>(() => {
+    if (!achievementsData?.status) {
+      return [];
     }
-  };
+
+    const items = (achievementsData.data as any[]) ?? [];
+
+    return items.map((achievement: any) => ({
+      id: String(
+        achievement?.id ??
+          achievement?.achivenmentId ??
+          achievement?.title ??
+          Math.random()
+      ),
+      title: achievement?.title ?? "Achievement unlocked",
+      description: achievement?.description ?? "Keep progressing!",
+      icon: achievement?.icon ?? "🏆",
+      unlocked: true,
+      progress:
+        achievement?.progress ??
+        achievement?.currentProgress ??
+        achievement?.progressValue ??
+        null,
+      maxProgress:
+        achievement?.target ??
+        achievement?.maxProgress ??
+        achievement?.goal ??
+        null,
+      type: achievement?.type ?? undefined,
+      earnedAt: achievement?.earnedAt ?? achievement?.createdAt ?? null,
+    }));
+  }, [achievementsData]);
+
+  const suggestedPartners = useMemo(() => {
+    if (!potentialMatchesData?.status) {
+      return [];
+    }
+
+    const partners = (potentialMatchesData.data as any[]) ?? [];
+
+    return partners.map((partner: any) => {
+      const name =
+        partner?.displayName ??
+        partner?.userName ??
+        partner?.email ??
+        "Fitness Partner";
+
+      const trainingTypes = Array.isArray(partner?.trainingTypes)
+        ? partner.trainingTypes
+        : [];
+
+      const location =
+        partner?.location ??
+        partner?.userAddress?.city ??
+        partner?.userAddress?.state ??
+        null;
+
+      return {
+        id: String(partner?.id ?? name),
+        name,
+        trainingTypes,
+        location,
+        experienceLevel: partner?.experienceLevel ?? null,
+        imageUrl: partner?.imageUrl ?? partner?.profilePicture ?? null,
+      };
+    });
+  }, [potentialMatchesData]);
+  
+  const recentActivities = useMemo<ActivityItem[]>(() => {
+    const activities: ActivityItem[] = [];
+
+    workoutSessions.forEach((session: any) => {
+      if (session?.status !== "completed") {
+        return;
+      }
+
+      const completionDateRaw = session?.completedAt
+        ? new Date(session.completedAt)
+        : session?.updatedAt
+        ? new Date(session.updatedAt)
+        : session?.startedAt
+        ? new Date(session.startedAt)
+        : null;
+
+      const completionDate =
+        completionDateRaw && !Number.isNaN(completionDateRaw.getTime())
+          ? completionDateRaw
+          : null;
+
+      const workout = session?.workout ?? {};
+      const workoutTitle = workout?.title ?? "Workout completed";
+
+      const durationSeconds =
+        session?.totalDuration ?? workout?.totalDuration ?? null;
+      const durationMinutes = durationSeconds
+        ? Math.max(1, Math.round(Number(durationSeconds) / 60))
+        : null;
+
+      const detailParts: string[] = [];
+      if (durationMinutes) {
+        detailParts.push(`${durationMinutes} min`);
+      }
+      if (workout?.exerciseCount) {
+        detailParts.push(`${workout.exerciseCount} exercises`);
+      }
+      if (workout?.difficulty) {
+        detailParts.push(String(workout.difficulty));
+      }
+
+      const details =
+        detailParts.join(" • ") || "Great job staying consistent!";
+
+      activities.push({
+        id: `workout-${session?.id ?? completionDate?.getTime() ?? Math.random()}`,
+        type: "workout",
+        icon: "🏋️",
+        title: workoutTitle,
+        details,
+        timestamp: completionDate,
+      });
+    });
+
+    achievements
+      .filter((achievement) => achievement.unlocked)
+      .forEach((achievement) => {
+        const earnedAtRaw = achievement.earnedAt
+          ? new Date(achievement.earnedAt)
+          : null;
+        const earnedAt =
+          earnedAtRaw && !Number.isNaN(earnedAtRaw.getTime())
+            ? earnedAtRaw
+            : null;
+
+        activities.push({
+          id: `achievement-${achievement.id}`,
+          type: "achievement",
+          icon: "🏆",
+          title: `Achievement unlocked: ${achievement.title}`,
+          details: achievement.description,
+          timestamp: earnedAt,
+        });
+      });
+
+      if (userPostsData?.status) {
+        const posts = ((userPostsData.data as any)?.posts ?? []) as any[];
+
+        if (Array.isArray(posts) && posts.length > 0) {
+          const sortedPosts = posts
+            .filter((post) => post)
+            .sort((a, b) => {
+              const dateA = a?.createdAt ? new Date(a.createdAt) : null;
+              const dateB = b?.createdAt ? new Date(b.createdAt) : null;
+              const timeA = dateA && !Number.isNaN(dateA.getTime()) ? dateA.getTime() : 0;
+              const timeB = dateB && !Number.isNaN(dateB.getTime()) ? dateB.getTime() : 0;
+              return timeB - timeA;
+            });
+
+          const workoutPosts = sortedPosts.filter(
+            (post) => post?.workout || post?.type === "workout_share"
+          );
+
+          const latestRelevantPost = workoutPosts[0] ?? sortedPosts[0];
+
+          if (latestRelevantPost) {
+            const postDateRaw = latestRelevantPost?.createdAt
+              ? new Date(latestRelevantPost.createdAt)
+              : null;
+            const postDate =
+              postDateRaw && !Number.isNaN(postDateRaw.getTime()) ? postDateRaw : null;
+
+            const workoutDetails = latestRelevantPost?.workout ?? {};
+            const isWorkoutShare = Boolean(workoutDetails?.title || workoutDetails?.totalDuration);
+
+            const baseTitle =
+              latestRelevantPost?.title ?? workoutDetails?.title ?? "Shared update";
+
+            const postDetailParts: string[] = [];
+            if (isWorkoutShare) {
+              if (workoutDetails?.totalDuration) {
+                postDetailParts.push(`${workoutDetails.totalDuration} min`);
+              }
+              if (workoutDetails?.difficulty) {
+                postDetailParts.push(String(workoutDetails.difficulty));
+              }
+            }
+            if (latestRelevantPost?.likeCount) {
+              postDetailParts.push(`${latestRelevantPost.likeCount} likes`);
+            }
+
+            if (!postDetailParts.length && latestRelevantPost?.commentCount != null) {
+              postDetailParts.push(`${latestRelevantPost.commentCount} comments`);
+            }
+
+            const postDetailsText =
+              postDetailParts.join(" • ") ||
+              (isWorkoutShare
+                ? "Shared a new workout with the community."
+                : "Shared a new update with followers.");
+
+            activities.push({
+              id: `post-${latestRelevantPost.id}`,
+              type: "post",
+              icon: isWorkoutShare ? "🔥" : "📝",
+              title: isWorkoutShare
+                ? `Workout shared: ${baseTitle}`
+                : `New post: ${baseTitle}`,
+              details: postDetailsText,
+              timestamp: postDate,
+            });
+          }
+        }
+      }
+
+      if (followersData?.status) {
+        const followerUsers = ((followersData.data as any)?.users ?? []) as any[];
+
+        if (Array.isArray(followerUsers) && followerUsers.length > 0) {
+          followerUsers
+            .slice()
+            .sort((a: any, b: any) => {
+              const dateA = a?.createdAt ? new Date(a.createdAt) : null;
+              const dateB = b?.createdAt ? new Date(b.createdAt) : null;
+              const timeA = dateA && !Number.isNaN(dateA.getTime()) ? dateA.getTime() : 0;
+              const timeB = dateB && !Number.isNaN(dateB.getTime()) ? dateB.getTime() : 0;
+              return timeB - timeA;
+            })
+            .slice(0, 3)
+            .forEach((follower: any, index: number) => {
+              const connectionName =
+                follower?.displayName ??
+                follower?.userName ??
+                follower?.email ??
+                `New connection ${index + 1}`;
+
+              const connectionDateRaw = follower?.createdAt ? new Date(follower.createdAt) : null;
+              const connectionDate =
+                connectionDateRaw && !Number.isNaN(connectionDateRaw.getTime())
+                  ? connectionDateRaw
+                  : null;
+
+              activities.push({
+                id: `connection-${follower?.id ?? connectionName}-${index}`,
+                type: "connection",
+                icon: "🤝",
+                title: `New connection: ${connectionName}`,
+                details: follower?.email
+                  ? `You connected with ${connectionName}`
+                  : "You've made a new connection.",
+                timestamp: connectionDate,
+              });
+            });
+        }
+      }
+
+    return activities
+      .sort((a, b) => {
+        const timeA = a.timestamp ? a.timestamp.getTime() : 0;
+        const timeB = b.timestamp ? b.timestamp.getTime() : 0;
+        return timeB - timeA;
+      })
+      .slice(0, 6);
+    }, [workoutSessions, achievements, userPostsData, followersData]);
+
+    const isWorkoutOfTheDayLoading =
+      workoutsLoading || workoutDetailLoading || workoutDetailFetching;
+
+    const isActivityLoading =
+      workoutHistoryLoading ||
+      achievementsLoading ||
+      userPostsLoading ||
+      followersLoading ||
+      followersFetching;
+  const notes = useMemo<UserNoteItem[]>(() => {
+    if (!notesData?.status) {
+      return [];
+    }
+
+    const rawNotes = (notesData.data ?? []) as NoteEntity[];
+
+    return rawNotes
+      .map((note) => {
+        const createdAt = note?.createdAt ? new Date(note.createdAt) : null;
+        return {
+          id: String(note.id ?? Math.random()),
+          text: note.text ?? "",
+          timestamp:
+            createdAt && !Number.isNaN(createdAt.getTime())
+              ? createdAt
+              : new Date(),
+        } as UserNoteItem;
+      })
+      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+  }, [notesData]);
+
+  const hasNotesResponse = Boolean(notesData?.status);
+  const isNotesInitialLoading = notesLoading && !hasNotesResponse;
+  const isNotesRefetching = notesFetching && hasNotesResponse;
+  const notesErrorMessage =
+    Boolean(notesError) || (notesData && notesData.status === false)
+      ? "We couldn't load your notes right now."
+      : null;
+
+  const workoutOfTheDayExercises = useMemo(() => {
+    if (!workoutOfTheDay) {
+      return {
+        visible: [],
+        hiddenCount: 0,
+        totalCount: 0,
+      };
+    }
+
+    const allExercises = workoutOfTheDay.exercises ?? [];
+    const hiddenCount = Math.max(allExercises.length - 3, 0);
+    const visible = showAllWorkoutExercises
+      ? allExercises
+      : allExercises.slice(0, 3);
+
+    return {
+      visible,
+      hiddenCount,
+      totalCount: allExercises.length,
+    };
+  }, [workoutOfTheDay, showAllWorkoutExercises]);
 
   const saveNote = async () => {
-    if (newNote.trim()) {
-      const note: Note = {
-        id: Date.now().toString(),
-        text: newNote.trim(),
-        timestamp: new Date(),
-      };
+    const text = newNote.trim();
+    if (!text) {
+      return;
+    }
 
-      const updatedNotes = [note, ...notes];
-      setNotes(updatedNotes);
+    if (!isAuthenticated) {
+      Alert.alert("Sign in required", "Please log in to save quick notes.");
+      return;
+    }
+
+    try {
+      await createNote({ text }).unwrap();
       setNewNote("");
-
-      try {
-        await AsyncStorage.setItem("userNotes", JSON.stringify(updatedNotes));
-      } catch (error) {
-        console.error("Error saving note:", error);
-      }
+    } catch (error) {
+      console.error("Error saving note:", error);
+      Alert.alert("Error", "We couldn't save your note. Please try again.");
     }
   };
 
-  const deleteNote = async (noteId: string) => {
+  const deleteNote = (noteId: string) => {
+    if (!isAuthenticated) {
+      Alert.alert("Sign in required", "Please log in to manage your notes.");
+      return;
+    }
+
     Alert.alert(STRINGS.HOME.deleteNoteTitle, STRINGS.HOME.deleteNoteMessage, [
       { text: STRINGS.HOME.cancel, style: "cancel" },
       {
         text: STRINGS.COMMON.delete,
         style: "destructive",
         onPress: async () => {
-          const updatedNotes = notes.filter((note) => note.id !== noteId);
-          setNotes(updatedNotes);
           try {
-            await AsyncStorage.setItem(
-              "userNotes",
-              JSON.stringify(updatedNotes)
-            );
+            setNoteBeingDeleted(noteId);
+            await deleteNoteMutation({ noteId }).unwrap();
           } catch (error) {
             console.error("Error deleting note:", error);
+            Alert.alert("Error", "We couldn't delete the note. Please try again.");
+          } finally {
+            setNoteBeingDeleted(null);
           }
         },
       },
@@ -352,24 +862,54 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   };
 
   const getProgressPercentage = (achievement: Achievement) => {
-    return Math.min(
-      (achievement.progress / achievement.maxProgress) * 100,
-      100
-    );
+    if (achievement.unlocked && (!achievement.maxProgress || !achievement.progress)) {
+      return 100;
+    }
+
+    if (!achievement.maxProgress || achievement.maxProgress <= 0) {
+      return achievement.unlocked ? 100 : 0;
+    }
+
+    const progressValue = achievement.progress ?? 0;
+
+    return Math.min((progressValue / achievement.maxProgress) * 100, 100);
   };
 
-  const updateWeeklyGoalProgress = () => {
-    const newProgress = Math.min(weeklyGoal.current + 1, weeklyGoal.target);
-    setWeeklyGoal((prev) => ({
-      ...prev,
-      current: newProgress,
-      completed: newProgress >= prev.target,
-    }));
-  };
+  const formatExerciseDetails = (
+    exercise: WorkoutOfTheDay["exercises"][number]
+  ) => {
+    const detailParts: string[] = [];
 
-  const completeWorkoutOfTheDay = () => {
-    setWorkoutOfTheDay((prev) => ({ ...prev, completed: true }));
-    updateWeeklyGoalProgress();
+    if (exercise.sets !== null && exercise.sets !== undefined) {
+      detailParts.push(`${exercise.sets} sets`);
+    }
+
+    if (exercise.reps !== null && exercise.reps !== undefined) {
+      detailParts.push(`${exercise.reps} reps`);
+    }
+
+    if (exercise.durationSeconds !== null && exercise.durationSeconds !== undefined) {
+      const minutes = Math.round(exercise.durationSeconds / 60);
+      if (minutes >= 1) {
+        detailParts.push(`${minutes} min`);
+      } else if (exercise.durationSeconds > 0) {
+        detailParts.push(`${exercise.durationSeconds} sec`);
+      }
+    }
+
+    if (exercise.weight !== null && exercise.weight !== undefined) {
+      detailParts.push(`@ ${exercise.weight}lbs`);
+    }
+
+    if (detailParts.length === 0) {
+      if (exercise.notes) {
+        detailParts.push(exercise.notes);
+      } else {
+        detailParts.push("Stay focused!");
+      }
+    }
+
+    return detailParts.join(" • ");
   };
 
   const startWorkoutOfTheDay = () => {
@@ -444,9 +984,18 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             <View style={styles.weeklyGoalCard}>
               <View style={styles.weeklyGoalHeader}>
                 <Text style={styles.weeklyGoalTitle}>{weeklyGoal.title}</Text>
-                <Text style={styles.weeklyGoalProgress}>
-                  {weeklyGoal.current}/{weeklyGoal.target} {weeklyGoal.unit}
-                </Text>
+                <View style={styles.weeklyGoalProgressContainer}>
+                  {workoutHistoryLoading && (
+                    <ActivityIndicator
+                      size="small"
+                      color={COLORS.primary}
+                      style={styles.weeklyGoalLoader}
+                    />
+                  )}
+                  <Text style={styles.weeklyGoalProgress}>
+                    {weeklyGoal.current}/{weeklyGoal.target} {weeklyGoal.unit}
+                  </Text>
+                </View>
               </View>
               <View style={styles.weeklyGoalBar}>
                 <View
@@ -454,7 +1003,12 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                     styles.weeklyGoalFill,
                     {
                       width: `${
-                        (weeklyGoal.current / weeklyGoal.target) * 100
+                        weeklyGoal.target
+                          ? Math.min(
+                              (weeklyGoal.current / weeklyGoal.target) * 100,
+                              100
+                            )
+                          : 0
                       }%`,
                     },
                   ]}
@@ -484,70 +1038,100 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                 })}
               </Text>
             </View>
-            <View style={styles.workoutOfTheDayCard}>
-              <View style={styles.workoutOfTheDayHeader}>
-                <Text style={styles.workoutOfTheDayTitle}>
-                  {workoutOfTheDay.title}
-                </Text>
-                <View style={styles.workoutOfTheDayMeta}>
-                  <Text style={styles.workoutOfTheDayType}>
-                    {workoutOfTheDay.type}
-                  </Text>
-                  <Text style={styles.workoutOfTheDayDuration}>
-                    {workoutOfTheDay.duration} min
-                  </Text>
-                  <Text style={styles.workoutOfTheDayDifficulty}>
-                    {workoutOfTheDay.difficulty}
-                  </Text>
-                </View>
+            {isWorkoutOfTheDayLoading ? (
+              <View style={styles.sectionLoader}>
+                <ActivityIndicator size="small" color={COLORS.primary} />
               </View>
-              <Text style={styles.workoutOfTheDayDescription}>
-                {workoutOfTheDay.description}
-              </Text>
-
-              <View style={styles.workoutOfTheDayExercises}>
-                <Text style={styles.workoutOfTheDayExercisesTitle}>
-                  Exercises ({workoutOfTheDay.exercises.length})
+            ) : !workoutOfTheDay ? (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyStateText}>
+                  No workouts available right now. Check back later or browse all workouts.
                 </Text>
-                {workoutOfTheDay.exercises
-                  .slice(0, 3)
-                  .map((exercise, index) => (
-                    <View key={index} style={styles.workoutOfTheDayExercise}>
-                      <Text style={styles.workoutOfTheDayExerciseName}>
-                        {exercise.name}
-                      </Text>
-                      <Text style={styles.workoutOfTheDayExerciseDetails}>
-                        {exercise.sets} sets × {exercise.reps} reps
-                        {exercise.weight && ` @ ${exercise.weight}lbs`}
-                      </Text>
-                    </View>
-                  ))}
-                {workoutOfTheDay.exercises.length > 3 && (
-                  <Text style={styles.workoutOfTheDayMoreExercises}>
-                    +{workoutOfTheDay.exercises.length - 3} more exercises
-                  </Text>
-                )}
+                <TouchableOpacity
+                  style={styles.emptyStateButton}
+                  onPress={() => navigation.navigate("SelectWorkout")}
+                >
+                  <Text style={styles.emptyStateButtonText}>Browse Workouts</Text>
+                </TouchableOpacity>
               </View>
-
-              <View style={styles.workoutOfTheDayActions}>
-                {!workoutOfTheDay.completed ? (
-                  <TouchableOpacity
-                    style={styles.startWorkoutButton}
-                    onPress={startWorkoutOfTheDay}
-                  >
-                    <Text style={styles.startWorkoutButtonText}>
-                      {STRINGS.HOME.startWorkout}
+            ) : (
+              <View style={styles.workoutOfTheDayCard}>
+                <View style={styles.workoutOfTheDayHeader}>
+                  <Text style={styles.workoutOfTheDayTitle}>
+                    {workoutOfTheDay.title}
+                  </Text>
+                  <View style={styles.workoutOfTheDayMeta}>
+                    <Text style={styles.workoutOfTheDayType}>
+                      {workoutOfTheDay.type}
                     </Text>
-                  </TouchableOpacity>
-                ) : (
-                  <View style={styles.workoutCompleted}>
-                    <Text style={styles.workoutCompletedText}>
-                      ✅ Completed Today
+                    <Text style={styles.workoutOfTheDayDuration}>
+                      {workoutOfTheDay.duration} min
+                    </Text>
+                    <Text style={styles.workoutOfTheDayDifficulty}>
+                      {workoutOfTheDay.difficulty}
                     </Text>
                   </View>
-                )}
+                </View>
+                <Text style={styles.workoutOfTheDayDescription}>
+                  {workoutOfTheDay.description}
+                </Text>
+
+                <View style={styles.workoutOfTheDayExercises}>
+                  <Text style={styles.workoutOfTheDayExercisesTitle}>
+                    Exercises ({workoutOfTheDayExercises.totalCount})
+                  </Text>
+                  {workoutOfTheDayExercises.totalCount === 0 ? (
+                    <Text style={styles.workoutOfTheDayExerciseDetails}>
+                      Workout details will appear once exercises are added.
+                    </Text>
+                  ) : (
+                    <>
+                      {workoutOfTheDayExercises.visible.map((exercise, index) => (
+                        <View key={`${exercise.name}-${index}`} style={styles.workoutOfTheDayExercise}>
+                          <Text style={styles.workoutOfTheDayExerciseName}>
+                            {exercise.name}
+                          </Text>
+                          <Text style={styles.workoutOfTheDayExerciseDetails}>
+                            {formatExerciseDetails(exercise)}
+                          </Text>
+                        </View>
+                      ))}
+                      {workoutOfTheDayExercises.hiddenCount > 0 && (
+                        <TouchableOpacity
+                          onPress={() => setShowAllWorkoutExercises((prev) => !prev)}
+                          style={styles.workoutOfTheDayToggle}
+                        >
+                          <Text style={styles.workoutOfTheDayMoreExercises}>
+                            {showAllWorkoutExercises
+                              ? "Show fewer exercises"
+                              : `+${workoutOfTheDayExercises.hiddenCount} more exercises`}
+                          </Text>
+                        </TouchableOpacity>
+                      )}
+                    </>
+                  )}
+                </View>
+
+                <View style={styles.workoutOfTheDayActions}>
+                  {!workoutOfTheDay.completed ? (
+                    <TouchableOpacity
+                      style={styles.startWorkoutButton}
+                      onPress={startWorkoutOfTheDay}
+                    >
+                      <Text style={styles.startWorkoutButtonText}>
+                        {STRINGS.HOME.startWorkout}
+                      </Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <View style={styles.workoutCompleted}>
+                      <Text style={styles.workoutCompletedText}>
+                        ✅ Completed Today
+                      </Text>
+                    </View>
+                  )}
+                </View>
               </View>
-            </View>
+            )}
           </View>
 
           {/* Community Highlights */}
@@ -727,50 +1311,77 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                 <Text style={styles.viewAllButton}>Find More</Text>
               </TouchableOpacity>
             </View>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={styles.friendSuggestions}
-            >
-              <View style={styles.friendSuggestionCard}>
-                <View style={styles.friendSuggestionAvatar}>
-                  <Text style={styles.friendSuggestionAvatarText}>DJ</Text>
-                </View>
-                <Text style={styles.friendSuggestionName}>David Kim</Text>
-                <Text style={styles.friendSuggestionDetails}>
-                  Strength Training • 2.3 miles away
+            {potentialMatchesLoading ? (
+              <View style={styles.sectionLoader}>
+                <ActivityIndicator size="small" color={COLORS.primary} />
+              </View>
+            ) : suggestedPartners.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyStateText}>
+                  No partner suggestions yet. Update your profile or start matching to see recommendations.
                 </Text>
-                <TouchableOpacity style={styles.friendSuggestionButton}>
-                  <Text style={styles.friendSuggestionButtonText}>Connect</Text>
+                <TouchableOpacity
+                  style={styles.emptyStateButton}
+                  onPress={() => navigation.navigate("Find")}
+                >
+                  <Text style={styles.emptyStateButtonText}>Explore Partners</Text>
                 </TouchableOpacity>
               </View>
+            ) : (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.friendSuggestions}
+              >
+                {suggestedPartners.slice(0, 6).map((partner) => {
+                  const initials = partner.name
+                    .split(" ")
+                    .map((part: string) => part.charAt(0))
+                    .join("")
+                    .toUpperCase()
+                    .substring(0, 2);
 
-              <View style={styles.friendSuggestionCard}>
-                <View style={styles.friendSuggestionAvatar}>
-                  <Text style={styles.friendSuggestionAvatarText}>EM</Text>
-                </View>
-                <Text style={styles.friendSuggestionName}>Emma Martinez</Text>
-                <Text style={styles.friendSuggestionDetails}>
-                  Cardio • 1.8 miles away
-                </Text>
-                <TouchableOpacity style={styles.friendSuggestionButton}>
-                  <Text style={styles.friendSuggestionButtonText}>Connect</Text>
-                </TouchableOpacity>
-              </View>
+                  const detailParts: string[] = [];
 
-              <View style={styles.friendSuggestionCard}>
-                <View style={styles.friendSuggestionAvatar}>
-                  <Text style={styles.friendSuggestionAvatarText}>CW</Text>
-                </View>
-                <Text style={styles.friendSuggestionName}>Chris Wilson</Text>
-                <Text style={styles.friendSuggestionDetails}>
-                  CrossFit • 3.1 miles away
-                </Text>
-                <TouchableOpacity style={styles.friendSuggestionButton}>
-                  <Text style={styles.friendSuggestionButtonText}>Connect</Text>
-                </TouchableOpacity>
-              </View>
-            </ScrollView>
+                  if (partner.trainingTypes && partner.trainingTypes.length > 0) {
+                    detailParts.push(partner.trainingTypes[0]);
+                  }
+
+                  if (partner.location) {
+                    detailParts.push(partner.location);
+                  } else if (partner.experienceLevel) {
+                    detailParts.push(partner.experienceLevel);
+                  }
+
+                  const detailText = detailParts.join(" • ") || "Ready to train";
+
+                  return (
+                    <View key={partner.id} style={styles.friendSuggestionCard}>
+                      <View style={styles.friendSuggestionAvatar}>
+                        {partner.imageUrl ? (
+                          <Image
+                            source={{ uri: partner.imageUrl }}
+                            style={styles.friendSuggestionAvatarImage}
+                          />
+                        ) : (
+                          <Text style={styles.friendSuggestionAvatarText}>
+                            {initials}
+                          </Text>
+                        )}
+                      </View>
+                      <Text style={styles.friendSuggestionName}>{partner.name}</Text>
+                      <Text style={styles.friendSuggestionDetails}>{detailText}</Text>
+                      <TouchableOpacity
+                        style={styles.friendSuggestionButton}
+                        onPress={() => navigation.navigate("Find")}
+                      >
+                        <Text style={styles.friendSuggestionButtonText}>Connect</Text>
+                      </TouchableOpacity>
+                    </View>
+                  );
+                })}
+              </ScrollView>
+            )}
           </View>
 
           {/* Quick Actions */}
@@ -820,7 +1431,41 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                   Check your progress
                 </Text>
               </TouchableOpacity>
+
+              {quickActionsExpanded && (
+                <>
+                  <TouchableOpacity
+                    style={styles.quickActionCard}
+                    onPress={() => navigation.navigate("ScheduleChat")}
+                  >
+                    <Text style={styles.quickActionIcon}>🗓️</Text>
+                    <Text style={styles.quickActionTitle}>Schedule Chat</Text>
+                    <Text style={styles.quickActionSubtitle}>
+                      Plan a session with your coach
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.quickActionCard}
+                    onPress={() => navigation.navigate("Workouts")}
+                  >
+                    <Text style={styles.quickActionIcon}>💪</Text>
+                    <Text style={styles.quickActionTitle}>Browse Workouts</Text>
+                    <Text style={styles.quickActionSubtitle}>
+                      Explore new training plans
+                    </Text>
+                  </TouchableOpacity>
+                </>
+              )}
             </View>
+            <TouchableOpacity
+              style={styles.quickActionToggle}
+              onPress={() => setQuickActionsExpanded((prev) => !prev)}
+            >
+              <Text style={styles.quickActionToggleText}>
+                {quickActionsExpanded ? "Show fewer actions" : "Show more actions"}
+              </Text>
+            </TouchableOpacity>
           </View>
 
           {/* Notes Section */}
@@ -838,17 +1483,42 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                   maxLength={200}
                 />
                 <TouchableOpacity
-                  style={styles.addNoteButton}
+                  style={[
+                    styles.addNoteButton,
+                    (isCreatingNote || !newNote.trim()) && { opacity: 0.6 },
+                  ]}
                   onPress={saveNote}
+                  disabled={isCreatingNote || !newNote.trim()}
                 >
-                  <Text style={styles.addNoteButtonText}>
-                    {STRINGS.COMMON.add}
-                  </Text>
+                  {isCreatingNote ? (
+                    <ActivityIndicator size="small" color={COLORS.white} />
+                  ) : (
+                    <Text style={styles.addNoteButtonText}>
+                      {STRINGS.COMMON.add}
+                    </Text>
+                  )}
                 </TouchableOpacity>
               </View>
 
-              {notes.length > 0 && (
+              {isNotesInitialLoading ? (
+                <View style={styles.notesLoadingContainer}>
+                  <ActivityIndicator size="small" color={COLORS.primary} />
+                </View>
+              ) : notesErrorMessage ? (
+                <Text style={styles.notesStatusText}>{notesErrorMessage}</Text>
+              ) : notes.length === 0 ? (
+                <Text style={styles.notesStatusText}>
+                  {isAuthenticated
+                    ? "No quick notes yet. Add one to track your thoughts."
+                    : "Sign in to start saving your quick notes."}
+                </Text>
+              ) : (
                 <View style={styles.notesList}>
+                  {isNotesRefetching && (
+                    <View style={styles.notesRefreshingIndicator}>
+                      <ActivityIndicator size="small" color={COLORS.primary} />
+                    </View>
+                  )}
                   {notes.slice(0, 3).map((note) => (
                     <View key={note.id} style={styles.noteItem}>
                       <Text style={styles.noteText} numberOfLines={2}>
@@ -861,8 +1531,13 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                         <TouchableOpacity
                           onPress={() => deleteNote(note.id)}
                           style={styles.deleteNoteButton}
+                          disabled={noteBeingDeleted === note.id || isDeletingNote}
                         >
-                          <Text style={styles.deleteNoteText}>🗑️</Text>
+                          {noteBeingDeleted === note.id ? (
+                            <ActivityIndicator size="small" color={COLORS.primary} />
+                          ) : (
+                            <Text style={styles.deleteNoteText}>🗑️</Text>
+                          )}
                         </TouchableOpacity>
                       </View>
                     </View>
@@ -882,81 +1557,101 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
           {/* Gamification - Achievements */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>🏆 Achievements</Text>
-            <View style={styles.achievementsGrid}>
-              {achievements.map((achievement) => (
-                <View key={achievement.id} style={styles.achievementCard}>
-                  <Text style={styles.achievementIcon}>{achievement.icon}</Text>
-                  <Text style={styles.achievementTitle}>
-                    {achievement.title}
-                  </Text>
-                  <Text style={styles.achievementDescription}>
-                    {achievement.description}
-                  </Text>
-                  <View style={styles.progressContainer}>
-                    <View style={styles.progressBar}>
-                      <View
-                        style={[
-                          styles.progressFill,
-                          {
-                            width: `${getProgressPercentage(achievement)}%`,
-                            backgroundColor: achievement.unlocked
-                              ? COLORS.success
-                              : COLORS.primary,
-                          },
-                        ]}
-                      />
+            {achievementsLoading ? (
+              <View style={styles.sectionLoader}>
+                <ActivityIndicator size="small" color={COLORS.primary} />
+              </View>
+            ) : achievements.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyStateText}>
+                  {achievementsError
+                    ? "We couldn't load your achievements right now."
+                    : "Complete workouts to unlock your first achievement!"}
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.achievementsGrid}>
+                {achievements.slice(0, 4).map((achievement) => {
+                  const progressPercentage = getProgressPercentage(achievement);
+                  const showFraction =
+                    achievement.progress !== null &&
+                    achievement.progress !== undefined &&
+                    achievement.maxProgress !== null &&
+                    achievement.maxProgress !== undefined;
+                  const progressLabel = showFraction
+                    ? `${achievement.progress}/${achievement.maxProgress}`
+                    : achievement.unlocked
+                    ? "Unlocked"
+                    : `${Math.round(progressPercentage)}%`;
+
+                  return (
+                    <View key={achievement.id} style={styles.achievementCard}>
+                      <Text style={styles.achievementIcon}>{achievement.icon}</Text>
+                      <Text style={styles.achievementTitle}>
+                        {achievement.title}
+                      </Text>
+                      <Text style={styles.achievementDescription}>
+                        {achievement.description}
+                      </Text>
+                      <View style={styles.progressContainer}>
+                        <View style={styles.progressBar}>
+                          <View
+                            style={[
+                              styles.progressFill,
+                              {
+                                width: `${progressPercentage}%`,
+                                backgroundColor: achievement.unlocked
+                                  ? COLORS.success
+                                  : COLORS.primary,
+                              },
+                            ]}
+                          />
+                        </View>
+                        <Text style={styles.progressText}>{progressLabel}</Text>
+                      </View>
+                      {achievement.unlocked && (
+                        <View style={styles.unlockedBadge}>
+                          <Text style={styles.unlockedText}>✓ Unlocked</Text>
+                        </View>
+                      )}
                     </View>
-                    <Text style={styles.progressText}>
-                      {achievement.progress}/{achievement.maxProgress}
-                    </Text>
-                  </View>
-                  {achievement.unlocked && (
-                    <View style={styles.unlockedBadge}>
-                      <Text style={styles.unlockedText}>✓ Unlocked</Text>
-                    </View>
-                  )}
-                </View>
-              ))}
-            </View>
+                  );
+                })}
+              </View>
+            )}
           </View>
 
           {/* Recent Activity */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Recent Activity</Text>
-            <View style={styles.activityList}>
-              <View style={styles.activityItem}>
-                <Text style={styles.activityIcon}>🏋️</Text>
-                <View style={styles.activityContent}>
-                  <Text style={styles.activityTitle}>Leg Day</Text>
-                  <Text style={styles.activityDetails}>
-                    1h 15m • 6 exercises • 14,320 lbs
-                  </Text>
-                </View>
-                <Text style={styles.activityTime}>Today</Text>
+            {isActivityLoading ? (
+              <View style={styles.sectionLoader}>
+                <ActivityIndicator size="small" color={COLORS.primary} />
               </View>
-
-              <View style={styles.activityItem}>
-                <Text style={styles.activityIcon}>🤝</Text>
-                <View style={styles.activityContent}>
-                  <Text style={styles.activityTitle}>New Match!</Text>
-                  <Text style={styles.activityDetails}>
-                    You matched with Alex Johnson
-                  </Text>
-                </View>
-                <Text style={styles.activityTime}>2h ago</Text>
+            ) : recentActivities.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyStateText}>
+                  Your latest workouts and achievements will appear here once you start logging sessions.
+                </Text>
               </View>
-
-              <View style={styles.activityItem}>
-                <Text style={styles.activityIcon}>🏆</Text>
-                <View style={styles.activityContent}>
-                  <Text style={styles.activityTitle}>Achievement Unlocked</Text>
-                  <Text style={styles.activityDetails}>
-                    Week Warrior - 7 day streak!
-                  </Text>
-                </View>
-                <Text style={styles.activityTime}>Yesterday</Text>
+            ) : (
+              <View style={styles.activityList}>
+                {recentActivities.map((activity) => (
+                  <View key={activity.id} style={styles.activityItem}>
+                    <Text style={styles.activityIcon}>{activity.icon}</Text>
+                    <View style={styles.activityContent}>
+                      <Text style={styles.activityTitle}>{activity.title}</Text>
+                      <Text style={styles.activityDetails}>{activity.details}</Text>
+                    </View>
+                    <Text style={styles.activityTime}>
+                      {activity.timestamp
+                        ? getTimeAgo(activity.timestamp)
+                        : "Recently"}
+                    </Text>
+                  </View>
+                ))}
               </View>
-            </View>
+            )}
           </View>
 
           {/* Create Post */}
@@ -1137,6 +1832,21 @@ const styles = StyleSheet.create({
   },
   notesList: {
     padding: DIMENSIONS.spacing.md,
+  },
+  notesLoadingContainer: {
+    padding: DIMENSIONS.spacing.md,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  notesRefreshingIndicator: {
+    alignItems: "center",
+    marginBottom: DIMENSIONS.spacing.sm,
+  },
+  notesStatusText: {
+    paddingHorizontal: DIMENSIONS.spacing.md,
+    paddingBottom: DIMENSIONS.spacing.md,
+    color: COLORS.textSecondary,
+    fontSize: 14,
   },
   noteItem: {
     marginBottom: DIMENSIONS.spacing.md,
@@ -1354,10 +2064,17 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     flex: 1,
   },
+  weeklyGoalProgressContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
   weeklyGoalProgress: {
     fontSize: 14,
     fontWeight: "600",
     color: COLORS.primary,
+  },
+  weeklyGoalLoader: {
+    marginRight: DIMENSIONS.spacing.xs,
   },
   weeklyGoalBar: {
     height: 8,
@@ -1452,6 +2169,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
+  workoutOfTheDayToggle: {
+    paddingVertical: DIMENSIONS.spacing.sm,
+  },
   workoutOfTheDayExerciseName: {
     fontSize: 14,
     fontWeight: "500",
@@ -1501,6 +2221,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.primary,
     fontWeight: "500",
+  },
+  sectionLoader: {
+    paddingVertical: DIMENSIONS.spacing.lg,
+    alignItems: "center",
+    justifyContent: "center",
   },
   socialFeed: {
     gap: DIMENSIONS.spacing.md,
@@ -1684,6 +2409,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginBottom: DIMENSIONS.spacing.sm,
+    overflow: "hidden",
+  },
+  friendSuggestionAvatarImage: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 25,
   },
   friendSuggestionAvatarText: {
     color: COLORS.surface,
@@ -1742,6 +2473,15 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     marginBottom: DIMENSIONS.spacing.xs,
     textAlign: "center",
+  },
+  quickActionToggle: {
+    marginTop: DIMENSIONS.spacing.sm,
+    alignItems: "center",
+  },
+  quickActionToggleText: {
+    color: COLORS.primary,
+    fontSize: 14,
+    fontWeight: "500",
   },
   quickActionSubtitle: {
     fontSize: 12,

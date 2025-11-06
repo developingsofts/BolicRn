@@ -143,6 +143,13 @@ export const STRINGS = {
     typing: "typing...",
     newMessage: "New Message",
     footer: "Real-time messaging coming soon!",
+    groupFallback: "Group conversation",
+    partnerFallback: "Training partner",
+    attachmentPlaceholder: "Sent an attachment",
+    noMessagesYet: "No messages yet",
+    youLabel: "You:",
+    emptyTitle: "Start the conversation",
+    emptySubtitle: "Connect with training partners to see your chats here.",
   },
 
   // Profile Screen

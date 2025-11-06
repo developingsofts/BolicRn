@@ -8,4 +8,5 @@ export * from './groupsApi';
 export * from './postsApi';
 export * from './ratingsApi';
 export * from './notificationsApi';
+export * from './notesApi';
 export * from './types';

@@ -1,128 +1,222 @@
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect, useState, useMemo, useCallback } from "react";
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   Image,
-  KeyboardAvoidingView,
   Platform,
   FlatList,
   Keyboard,
-  StatusBar,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useFocusEffect } from "@react-navigation/native";
 import { COLORS, DIMENSIONS } from "../config/constants";
 import STRINGS from "../config/strings";
 import { useAuth } from "../contexts/AuthContext";
 import FontWeight from "../hooks/useInterFonts";
-import { ArrowDown, ImageFile, Send, Like, Close } from "../../assets";
+import { ImageFile, Send, Close } from "../../assets";
 import { TextInput } from "react-native-gesture-handler";
 import { LinearGradient } from "expo-linear-gradient";
 import BasicTopBar from "../components/BasicTopBar";
+import { useChat } from "../hooks/useChat";
 
 interface ChatScreenProps {
   navigation: any;
   route: any;
 }
 
-interface Message {
+interface MessageListItem {
   id: string;
   text: string;
   isMe: boolean;
   timestamp: Date;
   showDateSeparator?: boolean;
   dateSeparator?: string;
-  isLiked?: boolean;
+  attachmentUrl?: string | null;
+  messageType?: string;
 }
 
-// Mock messages data
-const mockMessages: Message[] = [
-  {
-    id: "1",
-    text: "Hey! How are you?",
-    isMe: false,
-    timestamp: new Date("2025-02-22T10:30:00"),
-    showDateSeparator: true,
-    dateSeparator: "22/2/2025",
-    isLiked: true,
-  },
-  {
-    id: "2",
-    text: "I'm good! Thanks for asking.",
-    isMe: true,
-    timestamp: new Date("2025-02-22T10:35:00"),
-  },
-  {
-    id: "3",
-    text: "Did you finish the workout?",
-    isMe: false,
-    timestamp: new Date("2025-09-29T14:20:00"),
-    showDateSeparator: true,
-    dateSeparator: "Yesterday",
-  },
-  {
-    id: "4",
-    text: "Yes! It was tough but dsadas dasd sad sad sadsa dad dddsdadsdsadasdasdasdsdassdasdasasdasdasdsadasd worth it 💪",
-    isMe: true,
-    timestamp: new Date("2025-09-29T14:25:00"),
-  },
-  {
-    id: "5",
-    text: "Morning! Ready for today?",
-    isMe: false,
-    timestamp: new Date("2025-09-30T08:00:00"),
-    showDateSeparator: true,
-    dateSeparator: "Today",
-    isLiked: true,
-  },
-  {
-    id: "6",
-    text: "Absolutely! Let's do this 🔥",
-    isMe: true,
-    timestamp: new Date("2025-09-30T08:05:00"),
-  },
-  {
-    id: "7",
-    text: "Absolutely! Let's do this 🔥",
-    isMe: true,
-    timestamp: new Date("2025-09-30T08:05:00"),
-  },
-  {
-    id: "8",
-    text: "Absolutely! Let's do this 🔥",
-    isMe: true,
-    timestamp: new Date("2025-09-30T08:05:00"),
-  },
-  {
-    id: "9",
-    text: "Absolutely! Let's do this 🔥",
-    isMe: true,
-    timestamp: new Date("2025-09-30T08:05:00"),
-  },
-  {
-    id: "10",
-    text: "Absolutely! Let's do this 🔥",
-    isMe: true,
-    timestamp: new Date("2025-09-30T08:05:00"),
-  },
-];
+const isSameDay = (first: Date, second: Date) =>
+  first.getFullYear() === second.getFullYear() &&
+  first.getMonth() === second.getMonth() &&
+  first.getDate() === second.getDate();
+
+const formatDateSeparator = (date: Date) => {
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(today.getDate() - 1);
+
+  if (isSameDay(date, today)) {
+    return STRINGS.CHAT.dateSeparators.today;
+  }
+  if (isSameDay(date, yesterday)) {
+    return STRINGS.CHAT.dateSeparators.yesterday;
+  }
+  return date.toLocaleDateString();
+};
 
 const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
-  const { partnerId, partnerName } = route.params || {};
+  const { conversationId, conversationName, partnerName, partnerId, initialMessage } = route.params || {};
+  const resolvedConversationId =
+    conversationId !== undefined && conversationId !== null
+      ? Number(conversationId)
+      : undefined;
   const { user } = useAuth();
-  const initial = partnerName?.charAt(0);
-  const flatListRef = useRef<FlatList>(null);
+  const userIdNumeric = user?.id ? Number(user.id) : null;
+  const {
+    messages,
+    sendMessage,
+    emitTyping,
+    typingUsers,
+    markConversationAsRead,
+    isFetchingMessages,
+    createConversation,
+  } = useChat({ conversationId: resolvedConversationId });
+
+  const [messageInput, setMessageInput] = useState(initialMessage ?? "");
+  const flatListRef = useRef<FlatList<MessageListItem>>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const hasRequestedConversationRef = useRef(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
 
-  // Auto-scroll to the latest message on mount
-  useEffect(() => {
-    if (mockMessages.length > 0) {
-      setTimeout(() => {
-        flatListRef.current?.scrollToEnd({ animated: true });
-      }, 100);
+  const chatTitle = conversationName ?? partnerName ?? STRINGS.CHAT.defaultTitle;
+  const avatarInitial = chatTitle?.charAt(0)?.toUpperCase() ?? STRINGS.CHAT.defaultTitle.charAt(0);
+
+  const partnerIdNumeric = useMemo(() => {
+    if (partnerId === undefined || partnerId === null) {
+      return undefined;
     }
-  }, []);
+    const numeric = Number(partnerId);
+    return Number.isNaN(numeric) ? undefined : numeric;
+  }, [partnerId]);
+
+  useEffect(() => {
+    if (
+      resolvedConversationId !== undefined ||
+      partnerIdNumeric === undefined ||
+      hasRequestedConversationRef.current
+    ) {
+      return;
+    }
+
+    hasRequestedConversationRef.current = true;
+
+    (async () => {
+      const response = await createConversation({
+        type: "private",
+        participantIds: [partnerIdNumeric],
+        initialMessage: initialMessage ?? undefined,
+      });
+
+      if (response.status && response.data?.conversation?.id) {
+        navigation.setParams({
+          conversationId: response.data.conversation.id,
+          conversationName: response.data.conversation.name ?? conversationName ?? partnerName ?? chatTitle,
+        });
+      } else {
+        hasRequestedConversationRef.current = false;
+      }
+    })().catch(() => {
+      hasRequestedConversationRef.current = false;
+    });
+  }, [
+    resolvedConversationId,
+    partnerIdNumeric,
+    createConversation,
+    navigation,
+    conversationName,
+    partnerName,
+    chatTitle,
+    initialMessage,
+  ]);
+
+  const messageItems = useMemo(() => {
+    return messages.map((message, index, array) => {
+      const timestamp = new Date(message.createdAt);
+      const previous = index > 0 ? array[index - 1] : undefined;
+      const previousTimestamp = previous ? new Date(previous.createdAt) : undefined;
+      const showDateSeparator = !previousTimestamp || !isSameDay(timestamp, previousTimestamp);
+
+      const text = message.content?.trim().length
+        ? message.content
+        : message.attachmentUrl
+          ? STRINGS.MESSAGES.attachmentPlaceholder
+          : STRINGS.MESSAGES.noMessagesYet;
+
+      return {
+        id: message.id.toString(),
+        text,
+        isMe: userIdNumeric != null ? message.senderId === userIdNumeric : false,
+        timestamp,
+        showDateSeparator,
+        dateSeparator: showDateSeparator ? formatDateSeparator(timestamp) : undefined,
+        attachmentUrl: message.attachmentUrl ?? null,
+        messageType: message.messageType,
+      } satisfies MessageListItem;
+    });
+  }, [messages, userIdNumeric]);
+
+  useEffect(() => {
+    if (!messageItems.length) {
+      return;
+    }
+    const timeout = setTimeout(() => {
+      flatListRef.current?.scrollToEnd({ animated: true });
+    }, 150);
+    return () => clearTimeout(timeout);
+  }, [messageItems.length]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (resolvedConversationId !== undefined) {
+        void markConversationAsRead();
+      }
+      return () => {
+        emitTyping(false);
+      };
+    }, [resolvedConversationId, markConversationAsRead, emitTyping])
+  );
+
+  const handleInputChange = useCallback(
+    (value: string) => {
+      setMessageInput(value);
+      if (resolvedConversationId === undefined) {
+        return;
+      }
+      emitTyping(true);
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      typingTimeoutRef.current = setTimeout(() => {
+        emitTyping(false);
+        typingTimeoutRef.current = null;
+      }, 1500);
+    },
+    [emitTyping]
+  );
+
+  const handleSend = useCallback(async () => {
+    const trimmed = messageInput.trim();
+    if (!trimmed || resolvedConversationId === undefined) {
+      return;
+    }
+    await sendMessage({ conversationId: resolvedConversationId, content: trimmed });
+    setMessageInput("");
+    emitTyping(false);
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = null;
+    }
+  }, [messageInput, resolvedConversationId, sendMessage, emitTyping]);
+
+  useEffect(() => () => {
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    emitTyping(false);
+  }, [emitTyping]);
 
   // Handle keyboard events
   useEffect(() => {
@@ -158,12 +252,12 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
           contentStyle={{alignItems:"center"}}
             showBackButton={false}
             containerStyle={styles.header}
-            title={partnerName ? partnerName : STRINGS.CHAT.defaultTitle}
+            title={chatTitle}
             titleStyle={styles.title}
             startView={
               <View style={styles.avatarContainer}>
                 <View style={[styles.avatar]}>
-                  <Text style={styles.avatarText}>{initial}</Text>
+                  <Text style={styles.avatarText}>{avatarInitial}</Text>
                 </View>
               </View>
             }
@@ -182,7 +276,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
           >
             <FlatList
               ref={flatListRef}
-              data={mockMessages}
+              data={messageItems}
               keyExtractor={(item) => item.id}
               style={styles.flatList}
               contentContainerStyle={styles.flatListContent}
@@ -204,10 +298,32 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
               onContentSizeChange={() => {
                 flatListRef.current?.scrollToEnd({ animated: true });
               }}
-              ListFooterComponent={<View style={{ height: 20 }} />}
+              ListFooterComponent={
+                typingUsers.length > 0 ? (
+                  <View style={styles.typingContainer}>
+                    <Text style={styles.typingText}>
+                      {`${partnerName ?? STRINGS.MESSAGES.partnerFallback} ${STRINGS.MESSAGES.typing}`}
+                    </Text>
+                  </View>
+                ) : (
+                  <View style={{ height: 20 }} />
+                )
+              }
+              ListEmptyComponent={
+                isFetchingMessages ? (
+                  <View style={styles.emptyMessagesContainer}>
+                    <ActivityIndicator color={COLORS.primary} />
+                  </View>
+                ) : (
+                  <View style={styles.emptyMessagesContainer}>
+                    <Text style={styles.emptyMessagesTitle}>{STRINGS.MESSAGES.noMessages}</Text>
+                    <Text style={styles.emptyMessagesSubtitle}>{STRINGS.MESSAGES.startConversation}</Text>
+                  </View>
+                )
+              }
               renderItem={({ item }) => (
                 <View>
-                  {item.showDateSeparator && (
+                  {item.showDateSeparator && item.dateSeparator && (
                     <View style={styles.dateSeparator}>
                       <View style={styles.dateSeparatorLine} />
                       <Text style={styles.dateSeparatorText}>
@@ -216,7 +332,12 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
                       <View style={styles.dateSeparatorLine} />
                     </View>
                   )}
-                  <View style={[styles.messageRow]}>
+                  <View
+                    style={[
+                      styles.messageRow,
+                      item.isMe ? styles.myMessageRow : styles.theirMessageRow,
+                    ]}
+                  >
                     <View
                       style={[
                         styles.messageContainer,
@@ -234,9 +355,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
                         {item.text}
                       </Text>
                     </View>
-                    {!item.isMe && item.isLiked && (
-                      <Image source={Like} style={styles.likeIcon} />
-                    )}
                   </View>
                 </View>
               )}
@@ -249,6 +367,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
                   placeholder={STRINGS.CHAT.placeholder}
                   placeholderTextColor={COLORS.gradient1}
                   style={styles.textInput}
+                  value={messageInput}
+                  onChangeText={handleInputChange}
+                  onSubmitEditing={handleSend}
                 />
                 <TouchableOpacity
                   onPress={() => {
@@ -260,9 +381,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
                 </TouchableOpacity>
               </View>
               <TouchableOpacity
-                onPress={() => {
-                  // handle send message
-                }}
+                disabled={!messageInput.trim() || resolvedConversationId === undefined}
+                onPress={handleSend}
                 style={styles.sendButton}
               >
                 <Image source={Send} style={styles.sendIcon} />
@@ -425,9 +545,42 @@ const styles = StyleSheet.create({
   },
   messageRow: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-end",
     marginTop: DIMENSIONS.spacing.lg,
-    justifyContent: "space-between",
+    width: "100%",
+  },
+  myMessageRow: {
+    justifyContent: "flex-end",
+  },
+  theirMessageRow: {
+    justifyContent: "flex-start",
+  },
+
+  typingContainer: {
+    paddingHorizontal: DIMENSIONS.spacing.md,
+    paddingVertical: DIMENSIONS.spacing.sm,
+  },
+  typingText: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    fontFamily: FontWeight.Regular,
+  },
+
+  emptyMessagesContainer: {
+    alignItems: "center",
+    paddingVertical: DIMENSIONS.spacing.xl,
+  },
+  emptyMessagesTitle: {
+    fontSize: 16,
+    fontFamily: FontWeight.SemiBold,
+    color: COLORS.text,
+    marginBottom: DIMENSIONS.spacing.xs,
+  },
+  emptyMessagesSubtitle: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    textAlign: "center",
+    paddingHorizontal: DIMENSIONS.spacing.lg,
   },
 
   likeIcon: {

@@ -46,12 +46,17 @@ export const API_END_POINTS = {
   },
 
   messages: {
-    conversations: "/messages/conversations",
-    conversationById: (conversationId: string) =>
-      `/messages/conversations/${conversationId}`,
-    send: "/messages/send",
-    markAsRead: (messageId: string) => `/messages/${messageId}/read`,
-    delete: (messageId: string) => `/messages/${messageId}`,
+    conversations: "/chat/conversations",
+    conversationMessages: (conversationId: string | number) =>
+      `/chat/conversations/${conversationId}/messages`,
+    conversationMembers: (conversationId: string | number) =>
+      `/chat/conversations/${conversationId}/members`,
+    sendMessage: (conversationId: string | number) =>
+      `/chat/conversations/${conversationId}/messages`,
+    markConversationAsRead: (conversationId: string | number) =>
+      `/chat/conversations/${conversationId}/read`,
+    markMessageAsRead: (messageId: string | number) =>
+      `/chat/messages/${messageId}/read`,
   },
 
   groups: {
@@ -82,6 +87,13 @@ export const API_END_POINTS = {
     create: "/ratings",
     userRatings: (userId: string) => `/ratings/user/${userId}`,
     ratingById: (ratingId: string) => `/ratings/${ratingId}`,
+  },
+
+  notes: {
+    list: "/notes",
+    create: "/notes",
+    update: (noteId: string) => `/notes/${noteId}`,
+    delete: (noteId: string) => `/notes/${noteId}`,
   },
 
   notifications: {

@@ -159,6 +159,7 @@ export const postsApi = baseApi.injectEndpoints({
 
 export const {
   useGetPostsQuery,
+  useLazyGetPostsQuery,
   useGetUserPostsQuery,
   useCreatePostMutation,
   useDeletePostMutation,
