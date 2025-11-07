@@ -12,6 +12,15 @@ export const API_CONFIG = {
   retryAttempts: 3,
 };
 
+export const SOCKET_CONFIG = {
+  baseUrl:
+    process.env.EXPO_PUBLIC_SOCKET_URL ||
+    (API_CONFIG.baseUrl.endsWith('/api')
+      ? API_CONFIG.baseUrl.slice(0, -4)
+      : API_CONFIG.baseUrl),
+  path: process.env.EXPO_PUBLIC_SOCKET_PATH || '/socket.io',
+};
+
 // Firebase Configuration
 export const FIREBASE_CONFIG = {
   apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,

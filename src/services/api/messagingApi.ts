@@ -7,6 +7,7 @@ import type {
   ChatMessage,
   ConversationType,
   MessageType,
+  MessageReactionType,
 } from '../../types';
 
 interface FetchMessagesPayload {
@@ -29,6 +30,11 @@ interface MarkConversationAsReadPayload {
 
 interface MarkMessageAsReadPayload {
   messageId: string | number;
+}
+
+interface ToggleMessageReactionPayload {
+  messageId: string | number;
+  reactionType?: MessageReactionType;
 }
 
 interface CreateConversationPayload {
@@ -84,6 +90,17 @@ export const messagingApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Messaging'],
     }),
+    toggleMessageReaction: builder.mutation<
+      ApiResponse<{ message: ChatMessage; isActive: boolean }>,
+      ToggleMessageReactionPayload
+    >({
+      query: ({ messageId, reactionType = 'like' }) => ({
+        url: API_END_POINTS.messages.toggleMessageReaction(messageId),
+        method: 'POST',
+        body: { reactionType },
+      }),
+      invalidatesTags: ['Messaging'],
+    }),
     createConversation: builder.mutation<
       ApiResponse<{ conversation: Conversation; initialMessage?: ChatMessage | null }>,
       CreateConversationPayload
@@ -102,8 +119,10 @@ export const messagingApi = baseApi.injectEndpoints({
 export const {
   useGetConversationsQuery,
   useGetMessagesQuery,
+  useLazyGetMessagesQuery,
   useSendMessageMutation,
   useMarkConversationAsReadMutation,
   useMarkMessageAsReadMutation,
   useCreateConversationMutation,
+  useToggleMessageReactionMutation,
 } = messagingApi;

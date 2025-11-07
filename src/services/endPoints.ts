@@ -57,6 +57,8 @@ export const API_END_POINTS = {
       `/chat/conversations/${conversationId}/read`,
     markMessageAsRead: (messageId: string | number) =>
       `/chat/messages/${messageId}/read`,
+    toggleMessageReaction: (messageId: string | number) =>
+      `/chat/messages/${messageId}/reaction`,
   },
 
   groups: {

@@ -21,6 +21,18 @@ export interface MessageStatus {
 
 export type MessageType = 'text' | 'image' | 'file';
 
+export type MessageReactionType = 'like';
+
+export interface MessageReaction {
+  id: number;
+  messageId: number;
+  userId: number;
+  reactionType: MessageReactionType;
+  createdAt: string;
+  updatedAt: string;
+  user?: ChatUserSummary | null;
+}
+
 export interface ChatMessage {
   id: number;
   conversationId: number;
@@ -32,6 +44,7 @@ export interface ChatMessage {
   updatedAt: string;
   sender?: ChatUserSummary | null;
   statuses?: MessageStatus[];
+  reactions?: MessageReaction[];
 }
 
 export interface ConversationMember {
@@ -49,6 +62,7 @@ export interface Conversation {
   name?: string | null;
   type: ConversationType;
   createdBy?: number | null;
+  conversationKey?: string | null;
   createdAt: string;
   updatedAt: string;
   members?: ConversationMember[];

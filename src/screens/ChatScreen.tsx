@@ -9,6 +9,8 @@ import {
   FlatList,
   Keyboard,
   ActivityIndicator,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
@@ -16,7 +18,7 @@ import { COLORS, DIMENSIONS } from "../config/constants";
 import STRINGS from "../config/strings";
 import { useAuth } from "../contexts/AuthContext";
 import FontWeight from "../hooks/useInterFonts";
-import { ImageFile, Send, Close } from "../../assets";
+import { ImageFile, Send, Close, Like } from "../../assets";
 import { TextInput } from "react-native-gesture-handler";
 import { LinearGradient } from "expo-linear-gradient";
 import BasicTopBar from "../components/BasicTopBar";
@@ -36,6 +38,8 @@ interface MessageListItem {
   dateSeparator?: string;
   attachmentUrl?: string | null;
   messageType?: string;
+  reactionCount: number;
+  hasLiked: boolean;
 }
 
 const isSameDay = (first: Date, second: Date) =>
@@ -69,10 +73,14 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
     messages,
     sendMessage,
     emitTyping,
+    toggleMessageReaction,
     typingUsers,
     markConversationAsRead,
     isFetchingMessages,
     createConversation,
+    isLoadingOlderMessages,
+    hasMoreMessages,
+    loadOlderMessages,
   } = useChat({ conversationId: resolvedConversationId });
 
   const [messageInput, setMessageInput] = useState(initialMessage ?? "");
@@ -80,10 +88,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const hasRequestedConversationRef = useRef(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
-
-  const chatTitle = conversationName ?? partnerName ?? STRINGS.CHAT.defaultTitle;
-  const avatarInitial = chatTitle?.charAt(0)?.toUpperCase() ?? STRINGS.CHAT.defaultTitle.charAt(0);
-
   const partnerIdNumeric = useMemo(() => {
     if (partnerId === undefined || partnerId === null) {
       return undefined;
@@ -91,6 +95,14 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
     const numeric = Number(partnerId);
     return Number.isNaN(numeric) ? undefined : numeric;
   }, [partnerId]);
+  const [isPreparingConversation, setIsPreparingConversation] = useState(
+    resolvedConversationId === undefined && partnerIdNumeric !== undefined
+  );
+  const suppressAutoScrollRef = useRef(false);
+  const isUserNearBottomRef = useRef(true);
+
+  const chatTitle = conversationName ?? partnerName ?? STRINGS.CHAT.defaultTitle;
+  const avatarInitial = chatTitle?.charAt(0)?.toUpperCase() ?? STRINGS.CHAT.defaultTitle.charAt(0);
 
   useEffect(() => {
     if (
@@ -102,25 +114,30 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
     }
 
     hasRequestedConversationRef.current = true;
+    setIsPreparingConversation(true);
 
     (async () => {
-      const response = await createConversation({
-        type: "private",
-        participantIds: [partnerIdNumeric],
-        initialMessage: initialMessage ?? undefined,
-      });
-
-      if (response.status && response.data?.conversation?.id) {
-        navigation.setParams({
-          conversationId: response.data.conversation.id,
-          conversationName: response.data.conversation.name ?? conversationName ?? partnerName ?? chatTitle,
+      try {
+        const response = await createConversation({
+          type: "private",
+          participantIds: [partnerIdNumeric],
+          initialMessage: initialMessage ?? undefined,
         });
-      } else {
+
+        if (response.status && response.data?.conversation?.id) {
+          navigation.setParams({
+            conversationId: response.data.conversation.id,
+            conversationName: response.data.conversation.name ?? conversationName ?? partnerName ?? chatTitle,
+          });
+        } else {
+          hasRequestedConversationRef.current = false;
+        }
+      } catch {
         hasRequestedConversationRef.current = false;
+      } finally {
+        setIsPreparingConversation(false);
       }
-    })().catch(() => {
-      hasRequestedConversationRef.current = false;
-    });
+    })();
   }, [
     resolvedConversationId,
     partnerIdNumeric,
@@ -132,12 +149,70 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
     initialMessage,
   ]);
 
+  const shouldShowInitialLoader = isPreparingConversation || isFetchingMessages;
+
+  const scrollToBottom = useCallback(
+    (animated: boolean = true) => {
+      if (!flatListRef.current) {
+        return;
+      }
+      requestAnimationFrame(() => {
+        flatListRef.current?.scrollToEnd({ animated });
+      });
+    },
+    []
+  );
+
+  const handleLoadOlder = useCallback(() => {
+    if (!hasMoreMessages || isLoadingOlderMessages || shouldShowInitialLoader) {
+      return;
+    }
+    suppressAutoScrollRef.current = true;
+    void loadOlderMessages();
+  }, [hasMoreMessages, isLoadingOlderMessages, shouldShowInitialLoader, loadOlderMessages]);
+
+  const handleListScroll = useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+
+      if (contentOffset.y <= 40) {
+        handleLoadOlder();
+      }
+
+      const distanceFromBottom = contentSize.height - (layoutMeasurement.height + contentOffset.y);
+      isUserNearBottomRef.current = distanceFromBottom <= 40;
+    },
+    [handleLoadOlder]
+  );
+
+  useEffect(() => {
+    if (isLoadingOlderMessages) {
+      suppressAutoScrollRef.current = true;
+      return;
+    }
+
+    if (suppressAutoScrollRef.current) {
+      const timeout = setTimeout(() => {
+        suppressAutoScrollRef.current = false;
+      }, 200);
+      return () => clearTimeout(timeout);
+    }
+
+    return undefined;
+  }, [isLoadingOlderMessages]);
+
   const messageItems = useMemo(() => {
     return messages.map((message, index, array) => {
       const timestamp = new Date(message.createdAt);
       const previous = index > 0 ? array[index - 1] : undefined;
       const previousTimestamp = previous ? new Date(previous.createdAt) : undefined;
       const showDateSeparator = !previousTimestamp || !isSameDay(timestamp, previousTimestamp);
+
+      const reactions = message.reactions ?? [];
+      const reactionCount = reactions.length;
+      const hasLiked = userIdNumeric != null
+        ? reactions.some((reaction) => reaction.userId === userIdNumeric)
+        : false;
 
       const text = message.content?.trim().length
         ? message.content
@@ -154,19 +229,38 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
         dateSeparator: showDateSeparator ? formatDateSeparator(timestamp) : undefined,
         attachmentUrl: message.attachmentUrl ?? null,
         messageType: message.messageType,
+        reactionCount,
+        hasLiked,
       } satisfies MessageListItem;
     });
   }, [messages, userIdNumeric]);
 
   useEffect(() => {
-    if (!messageItems.length) {
+    if (!messageItems.length || suppressAutoScrollRef.current) {
       return;
     }
+    if (!isUserNearBottomRef.current) {
+      return;
+    }
+
+    const timeout = setTimeout(() => {
+      scrollToBottom();
+    }, 120);
+
+    return () => clearTimeout(timeout);
+  }, [messageItems.length, scrollToBottom]);
+
+  useEffect(() => {
+    if (!typingUsers.length) {
+      return;
+    }
+
     const timeout = setTimeout(() => {
       flatListRef.current?.scrollToEnd({ animated: true });
     }, 150);
+
     return () => clearTimeout(timeout);
-  }, [messageItems.length]);
+  }, [typingUsers.length]);
 
   useFocusEffect(
     useCallback(() => {
@@ -202,6 +296,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
     if (!trimmed || resolvedConversationId === undefined) {
       return;
     }
+    isUserNearBottomRef.current = true;
     await sendMessage({ conversationId: resolvedConversationId, content: trimmed });
     setMessageInput("");
     emitTyping(false);
@@ -284,6 +379,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
               scrollEnabled={true}
               directionalLockEnabled={true}
               scrollEventThrottle={16}
+              maintainVisibleContentPosition={{ minIndexForVisible: 0, autoscrollToTopThreshold: 20 }}
               removeClippedSubviews={false}
               maxToRenderPerBatch={20}
               updateCellsBatchingPeriod={30}
@@ -295,9 +391,23 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
               overScrollMode="always"
               disableScrollViewPanResponder={false}
               keyboardShouldPersistTaps="handled"
+              onScroll={handleListScroll}
               onContentSizeChange={() => {
-                flatListRef.current?.scrollToEnd({ animated: true });
+                if (suppressAutoScrollRef.current) {
+                  return;
+                }
+                if (!isUserNearBottomRef.current) {
+                  return;
+                }
+                scrollToBottom();
               }}
+              ListHeaderComponent={
+                messageItems.length > 0 && isLoadingOlderMessages ? (
+                  <View style={styles.paginationLoader}>
+                    <ActivityIndicator color={COLORS.primary} size="small" />
+                  </View>
+                ) : null
+              }
               ListFooterComponent={
                 typingUsers.length > 0 ? (
                   <View style={styles.typingContainer}>
@@ -310,7 +420,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
                 )
               }
               ListEmptyComponent={
-                isFetchingMessages ? (
+                shouldShowInitialLoader ? (
                   <View style={styles.emptyMessagesContainer}>
                     <ActivityIndicator color={COLORS.primary} />
                   </View>
@@ -340,20 +450,58 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
                   >
                     <View
                       style={[
-                        styles.messageContainer,
-                        item.isMe ? styles.myMessage : styles.theirMessage,
+                        styles.messageContent,
+                        item.isMe
+                          ? item.reactionCount > 0
+                            ? styles.myMessageContentWithReaction
+                            : styles.myMessageContent
+                          : item.reactionCount > 0
+                            ? styles.theirMessageContentWithReaction
+                            : styles.theirMessageContent,
                       ]}
                     >
-                      <Text
+                      {item.reactionCount > 0 && item.isMe ? (
+                        <View style={[styles.reactionBadge, styles.reactionBadgeMine]}>
+                          <Image source={Like} style={styles.reactionIcon} />
+                        </View>
+                      ) : null}
+                      <TouchableOpacity
+                        activeOpacity={item.isMe ? 1 : 0.85}
+                        delayLongPress={250}
+                        disabled={item.isMe}
+                        onLongPress={() => {
+                          if (!item.isMe) {
+                            toggleMessageReaction(Number(item.id));
+                          }
+                        }}
                         style={[
-                          styles.messageText,
-                          item.isMe
-                            ? styles.myMessageText
-                            : styles.theirMessageText,
+                          styles.messagePressable,
+                          item.isMe ? styles.myMessagePressable : styles.theirMessagePressable,
                         ]}
                       >
-                        {item.text}
-                      </Text>
+                        <View
+                          style={[
+                            styles.messageContainer,
+                            item.isMe ? styles.myMessage : styles.theirMessage,
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.messageText,
+                              item.isMe
+                                ? styles.myMessageText
+                                : styles.theirMessageText,
+                            ]}
+                          >
+                            {item.text}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                      {item.reactionCount > 0 && !item.isMe ? (
+                        <View style={[styles.reactionBadge, styles.reactionBadgeTheirs]}>
+                          <Image source={Like} style={styles.reactionIcon} />
+                        </View>
+                      ) : null}
                     </View>
                   </View>
                 </View>
@@ -482,11 +630,9 @@ const styles = StyleSheet.create({
   backButton: {
     fontSize: 24,
     color: COLORS.primary,
-    marginRight: DIMENSIONS.spacing.md,
   },
   messagesContainer: {
     flex: 1,
-    justifyContent: "center",
     alignItems: "center",
   },
   messagesWrapper: {
@@ -507,10 +653,17 @@ const styles = StyleSheet.create({
   flatListContent: {
     padding: DIMENSIONS.spacing.md,
     paddingBottom: 30,
+    
     flexGrow: 1,
+  },
+  paginationLoader: {
+    paddingVertical: DIMENSIONS.spacing.sm,
+    alignItems: "center",
+    justifyContent: "center",
   },
   placeholder: {
     fontSize: 16,
+    
     color: COLORS.textSecondary,
     fontStyle: "italic",
   },
@@ -536,12 +689,52 @@ const styles = StyleSheet.create({
     maxWidth: 300,
     minHeight: 33,
     paddingTop: 5.5,
-
+    
     paddingRight: 12,
     paddingBottom: 5.5,
     paddingLeft: 12,
     borderRadius: 9,
     // marginTop: DIMENSIONS.spacing.lg,
+  },
+  messageContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+  },
+  myMessageContent: {
+    alignItems: 'center',
+    alignSelf: 'flex-end',
+    justifyContent: 'flex-end',
+    width: '100%',
+  },
+  myMessageContentWithReaction: {
+    alignItems: 'center',
+    alignSelf: 'flex-end',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  theirMessageContent: {
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    justifyContent: 'flex-start',
+    width: '100%',
+  },
+  theirMessageContentWithReaction: {
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  messagePressable: {
+    maxWidth: 300,
+    flexShrink: 1,
+  },
+  myMessagePressable: {
+    alignSelf: 'flex-end',
+  },
+  theirMessagePressable: {
+    alignSelf: 'flex-start',
   },
   messageRow: {
     flexDirection: "row",
@@ -607,6 +800,22 @@ const styles = StyleSheet.create({
   },
   theirMessageText: {
     color: COLORS.text,
+  },
+  reactionBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  reactionBadgeMine: {
+    marginRight: 4,
+  },
+  reactionBadgeTheirs: {
+    marginLeft: 4,
+  },
+  reactionIcon: {
+    width: 14,
+    height: 14,
+    tintColor: COLORS.gradient1,
   },
   inputContainer: {
     backgroundColor: COLORS.gradient3,

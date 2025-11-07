@@ -1,18 +1,32 @@
 import { io, Socket } from 'socket.io-client';
-import { API_CONFIG } from '../config/constants';
+import { SOCKET_CONFIG } from '../config/constants';
 
 let socket: Socket | null = null;
 let tokenCache: string | null = null;
 
-const BASE_URL = API_CONFIG.baseUrl.replace(/\/$/, '');
+const deriveSocketUrl = (url: string): string => {
+  const trimmed = url.replace(/\/$/, '');
+
+  try {
+    const parsed = new URL(trimmed);
+    // If the API URL already points to the root, reuse it. Otherwise drop the path (e.g. /api).
+    return `${parsed.protocol}//${parsed.host}`;
+  } catch (error) {
+    // Fallback: strip a trailing /api or similar segment if present.
+    return trimmed.replace(/\/(api|v1|v2)$/i, '');
+  }
+};
+
+const SOCKET_URL = deriveSocketUrl(SOCKET_CONFIG.baseUrl);
 
 const createSocketInstance = (token: string): Socket =>
-  io(BASE_URL, {
+  io(SOCKET_URL, {
     transports: ['websocket'],
     reconnectionAttempts: 5,
     reconnectionDelay: 1000,
     autoConnect: false,
     auth: { token },
+    path: SOCKET_CONFIG.path || '/socket.io',
   });
 
 export const initializeSocket = (token: string): Socket => {
