@@ -12,6 +12,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Pressable,
 } from "react-native";
 import RefreshableScrollView from '../components/RefreshableScrollView';
 import { useAuth } from "../contexts/AuthContext";
@@ -1228,7 +1229,12 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                   const totalReactions = post.totalReactions ?? post.likeCount ?? 0;
                   
                   return (
-                    <View key={post.id} style={styles.socialPost}>
+                    <Pressable
+                      key={post.id}
+                      style={styles.socialPost}
+                      onLongPress={() => handleOpenReactionPicker(postId)}
+                      delayLongPress={250}
+                    >
                       <View style={styles.socialPostHeader}>
                         <View style={styles.socialPostAvatar}>
                           {postUser.imageUrl ? (
@@ -1351,23 +1357,26 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                         <TouchableOpacity 
                           style={styles.socialPostAction}
                         >
+                              {((reactingPostId === postId && likingPostId !== postId) ||
+                        totalReactions > 0) && (
+                        <View style={styles.socialPostReactionsRow}>
+                          {reactingPostId === postId && likingPostId !== postId ? (
+                            <ActivityIndicator size="small" color={COLORS.primary} />
+                          ) : (
+                            <ReactionSummary
+                              summary={reactionSummary}
+                              total={totalReactions}
+                              currentReaction={currentReaction}
+                              onPress={() => handleOpenReactionPicker(postId)}
+                            />
+                          )}
+                        </View>
+                      )}
                           {/* <Text style={styles.handshakeIcon}>🤝</Text> */}
                         </TouchableOpacity>
                       </View>
-                      <View style={styles.socialPostReactionsRow}>
-                        {/* <Text style={styles.reactionsLabel}>Reactions</Text> */}
-                        {reactingPostId === postId && likingPostId !== postId ? (
-                          <ActivityIndicator size="small" color={COLORS.primary} />
-                        ) : (
-                          <ReactionSummary
-                            summary={reactionSummary}
-                            total={totalReactions}
-                            currentReaction={currentReaction}
-                            onPress={() => handleOpenReactionPicker(postId)}
-                          />
-                        )}
-                      </View>
-                    </View>
+                  
+                    </Pressable>
                   );
                 })}
               </TouchableOpacity>
