@@ -161,9 +161,7 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ navigation }) => {
         )}
   </RefreshableScrollView>
 
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>{STRINGS.MESSAGES.footer}</Text>
-      </View>
+    
     </SafeAreaView>
   );
 };

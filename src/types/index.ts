@@ -227,6 +227,8 @@ export interface Group {
   createdAt: Date;
 }
 
+import type { ReactionType } from "../services/api/likesCommentsApi";
+
 export interface Post {
   id: string;
   userId: string;
@@ -284,6 +286,9 @@ export interface Post {
     description: string;
     icon: string;
   };
+  reactionSummary?: Record<ReactionType, number>;
+  totalReactions?: number;
+  currentUserReaction?: ReactionType | null;
 }
 
 // Rating Types

@@ -20,6 +20,8 @@ import STRINGS from "../config/strings";
 import { SafeAreaView } from "react-native-safe-area-context";
 import FontWeight from "../hooks/useInterFonts";
 import BasicTopBar from "../components/BasicTopBar";
+import ReactionSummary from "../components/ReactionSummary";
+import ReactionPicker from "../components/ReactionPicker";
 import { useGetPostsQuery, useDeletePostMutation, useUpdatePostMutation, useGetUserPostsQuery } from '../services/api/postsApi';
 import { useToggleLikeMutation } from '../services/api/likesCommentsApi';
 import { useGetWorkoutHistoryQuery, useGetWorkoutsQuery, useGetUserAchievementsQuery, useGetWorkoutByIdQuery } from '../services/api/workoutApi';
@@ -27,7 +29,8 @@ import { useGetPotentialMatchesQuery } from '../services/api/matchingApi';
 import { useGetNotesQuery, useCreateNoteMutation, useDeleteNoteMutation } from '../services/api/notesApi';
 import { useGetFollowersQuery } from '../services/api/followsApi';
 import type { Note as NoteEntity } from "../types";
-import { Like, CommentIcon, CommentRemove } from '../../assets';
+import type { ReactionType } from "../constants/reactions";
+import { Like, CommentRemove } from '../../assets';
 import CommentsModal from '../components/CommentsModal';
 import ConfirmationDialog from '../components/ConfirmationDialog';
 import EditPostModal from '../components/EditPostModal';
@@ -179,11 +182,13 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     }
   }, [postsData, communityPosts]);
   
-  // Like mutation
-  const [toggleLike, { isLoading: isLiking }] = useToggleLikeMutation();
+  // Post reactions
+  const [reactToPost] = useToggleLikeMutation();
   const [deletePost, { isLoading: isDeleting }] = useDeletePostMutation();
   const [updatePost, { isLoading: isUpdating }] = useUpdatePostMutation();
+  const [reactingPostId, setReactingPostId] = useState<string | null>(null);
   const [likingPostId, setLikingPostId] = useState<string | null>(null);
+  const [reactionPickerPostId, setReactionPickerPostId] = useState<string | null>(null);
   
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -212,16 +217,47 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     }
   };
 
-  const handleLikePost = async (postId: string) => {
+  const reactionPickerPost = useMemo(() => {
+    if (!reactionPickerPostId) {
+      return null;
+    }
+
+    return communityPosts.find((post: any) => String(post?.id) === String(reactionPickerPostId)) ?? null;
+  }, [communityPosts, reactionPickerPostId]);
+
+  const handleReactToPost = async (postId: string, reactionType: ReactionType) => {
     try {
-      setLikingPostId(postId);
-      await toggleLike(postId).unwrap();
+      setReactingPostId(postId);
+      await reactToPost({ postId, reactionType }).unwrap();
       // Posts will auto-refresh due to cache invalidation
     } catch (error) {
-      console.error('Failed to toggle like:', error);
+      console.error('Failed to update reaction:', error);
     } finally {
-      setLikingPostId(null);
+      setReactingPostId(null);
     }
+  };
+
+  const handleRemoveReaction = async (postId: string, currentReaction: ReactionType | null | undefined) => {
+    if (!currentReaction) {
+      return;
+    }
+
+    await handleReactToPost(postId, currentReaction);
+  };
+
+  const handleQuickLike = (postId: string) => {
+    setLikingPostId(postId);
+    handleReactToPost(postId, "like").finally(() => {
+      setLikingPostId(null);
+    });
+  };
+
+  const handleOpenReactionPicker = (postId: string) => {
+    setReactionPickerPostId(postId);
+  };
+
+  const handleCloseReactionPicker = () => {
+    setReactionPickerPostId(null);
   };
 
   const handleOpenComments = (postId: string) => {
@@ -652,20 +688,33 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             (post) => post?.workout || post?.type === "workout_share"
           );
 
-          const latestRelevantPost = workoutPosts[0] ?? sortedPosts[0];
+          const prioritizedPosts = [
+            ...workoutPosts,
+            ...sortedPosts.filter((post) => !workoutPosts.includes(post)),
+          ];
 
-          if (latestRelevantPost) {
-            const postDateRaw = latestRelevantPost?.createdAt
-              ? new Date(latestRelevantPost.createdAt)
-              : null;
+          const uniquePosts: any[] = [];
+          const seenPostIds = new Set<string>();
+
+          prioritizedPosts.forEach((post) => {
+            const postId = String(post?.id ?? "");
+            if (!postId || seenPostIds.has(postId)) {
+              return;
+            }
+            seenPostIds.add(postId);
+            uniquePosts.push(post);
+          });
+
+          uniquePosts.slice(0, 3).forEach((relevantPost) => {
+            const postDateRaw = relevantPost?.createdAt ? new Date(relevantPost.createdAt) : null;
             const postDate =
               postDateRaw && !Number.isNaN(postDateRaw.getTime()) ? postDateRaw : null;
 
-            const workoutDetails = latestRelevantPost?.workout ?? {};
+            const workoutDetails = relevantPost?.workout ?? {};
             const isWorkoutShare = Boolean(workoutDetails?.title || workoutDetails?.totalDuration);
 
             const baseTitle =
-              latestRelevantPost?.title ?? workoutDetails?.title ?? "Shared update";
+              relevantPost?.title ?? workoutDetails?.title ?? "Shared update";
 
             const postDetailParts: string[] = [];
             if (isWorkoutShare) {
@@ -676,12 +725,12 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                 postDetailParts.push(String(workoutDetails.difficulty));
               }
             }
-            if (latestRelevantPost?.likeCount) {
-              postDetailParts.push(`${latestRelevantPost.likeCount} likes`);
+            if (relevantPost?.likeCount) {
+              postDetailParts.push(`${relevantPost.likeCount} likes`);
             }
 
-            if (!postDetailParts.length && latestRelevantPost?.commentCount != null) {
-              postDetailParts.push(`${latestRelevantPost.commentCount} comments`);
+            if (!postDetailParts.length && relevantPost?.commentCount != null) {
+              postDetailParts.push(`${relevantPost.commentCount} comments`);
             }
 
             const postDetailsText =
@@ -691,7 +740,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                 : "Shared a new update with followers.");
 
             activities.push({
-              id: `post-${latestRelevantPost.id}`,
+              id: `post-${relevantPost.id}`,
               type: "post",
               icon: isWorkoutShare ? "🔥" : "📝",
               title: isWorkoutShare
@@ -700,7 +749,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
               details: postDetailsText,
               timestamp: postDate,
             });
-          }
+          });
         }
       }
 
@@ -1173,6 +1222,10 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                     ? userName.split(' ').map((n: string) => n[0]).join('').toUpperCase().substring(0, 2)
                     : 'AU';
                   const timeAgo = getTimeAgo(new Date(post.createdAt));
+                  const postId = post.id?.toString?.() ?? String(post.id);
+                  const currentReaction = (post.currentUserReaction ?? null) as ReactionType | null;
+                  const reactionSummary = (post.reactionSummary ?? undefined) as Record<ReactionType, number> | undefined;
+                  const totalReactions = post.totalReactions ?? post.likeCount ?? 0;
                   
                   return (
                     <View key={post.id} style={styles.socialPost}>
@@ -1197,20 +1250,20 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                           <View>
                             <TouchableOpacity 
                               style={styles.socialPostMenu}
-                              onPress={() => handlePostMenuPress(post.id.toString())}
+                              onPress={() => handlePostMenuPress(postId)}
                             >
                               <Text style={styles.socialPostMenuText}>⋯</Text>
                             </TouchableOpacity>
-                            {openPostMenuId === post.id.toString() && (
+                            {openPostMenuId === postId && (
                               <View style={styles.postMenuDropdown}>
                                 <TouchableOpacity 
-                                  onPress={() => handleEditPostPress(post.id.toString(), post.title || '')}
+                                  onPress={() => handleEditPostPress(postId, post.title || '')}
                                   style={styles.postMenuOption}
                                 >
                                   <Text style={styles.postMenuOptionText}>Edit</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity 
-                                  onPress={() => handleDeletePostPress(post.id.toString())}
+                                  onPress={() => handleDeletePostPress(postId)}
                                   style={styles.postMenuOption}
                                 >
                                   <Text style={styles.postMenuOptionText}>Delete</Text>
@@ -1256,20 +1309,25 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                         />
                       )}
                       <View style={styles.socialPostActions}>
-                        <TouchableOpacity 
+                        <TouchableOpacity
                           style={styles.socialPostAction}
-                          onPress={() => handleLikePost(post.id.toString())}
-                          disabled={likingPostId === post.id.toString()}
+                          onPress={() => handleQuickLike(postId)}
+                          disabled={likingPostId === postId}
                         >
-                          {likingPostId === post.id.toString() ? (
+                          {likingPostId === postId ? (
                             <ActivityIndicator size="small" color={COLORS.primary} />
                           ) : (
                             <>
-                              <Image 
-                                source={Like} 
+                              <Image
+                                source={Like}
                                 style={[
                                   styles.socialPostActionIcon,
-                                  { tintColor: post.isLikedByUser ? COLORS.gradient1 : '#888888' }
+                                  {
+                                    tintColor:
+                                      currentReaction === "like"
+                                        ? COLORS.gradient1
+                                        : "#888888",
+                                  },
                                 ]}
                               />
                               <Text style={styles.socialPostActionText}>
@@ -1280,7 +1338,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                         </TouchableOpacity>
                         <TouchableOpacity 
                           style={styles.socialPostAction}
-                          onPress={() => handleOpenComments(post.id.toString())}
+                          onPress={() => handleOpenComments(postId)}
                         >
                           <Image 
                             source={CommentRemove} 
@@ -1293,8 +1351,21 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                         <TouchableOpacity 
                           style={styles.socialPostAction}
                         >
-                          <Text style={styles.handshakeIcon}>🤝</Text>
+                          {/* <Text style={styles.handshakeIcon}>🤝</Text> */}
                         </TouchableOpacity>
+                      </View>
+                      <View style={styles.socialPostReactionsRow}>
+                        {/* <Text style={styles.reactionsLabel}>Reactions</Text> */}
+                        {reactingPostId === postId && likingPostId !== postId ? (
+                          <ActivityIndicator size="small" color={COLORS.primary} />
+                        ) : (
+                          <ReactionSummary
+                            summary={reactionSummary}
+                            total={totalReactions}
+                            currentReaction={currentReaction}
+                            onPress={() => handleOpenReactionPicker(postId)}
+                          />
+                        )}
                       </View>
                     </View>
                   );
@@ -1668,6 +1739,28 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         </View>
   </RefreshableScrollView>
 
+      <ReactionPicker
+        visible={Boolean(reactionPickerPostId)}
+        currentReaction={(reactionPickerPost?.currentUserReaction ?? null) as ReactionType | null}
+        onSelect={(reaction) => {
+          if (!reactionPickerPostId) {
+            return;
+          }
+          handleReactToPost(reactionPickerPostId, reaction);
+        }}
+        onClose={handleCloseReactionPicker}
+        onRemoveReaction={() => {
+          const activePostId = reactionPickerPostId ?? (reactionPickerPost?.id ? String(reactionPickerPost.id) : null);
+          const activeReaction = (reactionPickerPost?.currentUserReaction ?? null) as ReactionType | null;
+
+          if (!activePostId || !activeReaction) {
+            return;
+          }
+
+          handleRemoveReaction(activePostId, activeReaction);
+        }}
+      />
+
       {/* Comments Modal */}
       {selectedPostId && (
         <CommentsModal
@@ -1991,7 +2084,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     padding: DIMENSIONS.spacing.md,
-    borderBottomWidth: 1,
+    // borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
   activityIcon: {
@@ -2351,6 +2444,21 @@ const styles = StyleSheet.create({
     paddingTop: DIMENSIONS.spacing.sm,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
+  },
+  socialPostReactionWrapper: {
+    justifyContent: "center",
+    paddingVertical: DIMENSIONS.spacing.xs,
+  },
+  socialPostReactionsRow: {
+    marginTop: DIMENSIONS.spacing.xs,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: DIMENSIONS.spacing.sm,
+  },
+  reactionsLabel: {
+    fontFamily: FontWeight.Medium,
+    fontSize: 13,
+    color: COLORS.textSecondary,
   },
   socialPostAction: {
     flexDirection: "row",

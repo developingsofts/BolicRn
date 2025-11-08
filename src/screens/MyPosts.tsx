@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, Modal, KeyboardAvoidingView, Platform, TextInput, ActivityIndicator } from 'react-native';
 import RefreshableScrollView from '../components/RefreshableScrollView';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BasicTopBar from '../components/BasicTopBar';
-import { Like, CommentIcon, CommentRemove } from '../../assets';
+import ReactionSummary from '../components/ReactionSummary';
+import ReactionPicker from '../components/ReactionPicker';
+import { Like, CommentIcon } from '../../assets';
 import { COLORS, DIMENSIONS } from '../config/constants';
 import FontWeight from '../hooks/useInterFonts';
 import { useAuth } from '../contexts/AuthContext';
@@ -11,6 +13,7 @@ import { useGetUserPostsQuery, useDeletePostMutation, useUpdatePostMutation } fr
 import { useToggleLikeMutation } from '../services/api/likesCommentsApi';
 import CommentsModal from '../components/CommentsModal';
 import ConfirmationDialog from '../components/ConfirmationDialog';
+import type { ReactionType } from '../constants/reactions';
 
 
 const MyPosts: React.FC = ({ navigation, route }: any) => {
@@ -30,8 +33,10 @@ const MyPosts: React.FC = ({ navigation, route }: any) => {
   const { data: postsData, refetch: refetchPosts, isLoading } = useGetUserPostsQuery({ userId }, { skip: !userId });
   const [deletePost] = useDeletePostMutation();
   const [updatePost, { isLoading: isUpdating }] = useUpdatePostMutation();
-  const [toggleLike, { isLoading: isLiking }] = useToggleLikeMutation();
+  const [reactToPost] = useToggleLikeMutation();
+  const [reactingPostId, setReactingPostId] = useState<string | null>(null);
   const [likingPostId, setLikingPostId] = useState<string | null>(null);
+  const [reactionPickerPostId, setReactionPickerPostId] = useState<string | null>(null);
   const posts = postsData && postsData.status && 'data' in postsData ? postsData.data.posts : [];
 
   const handleRefresh = async () => {
@@ -95,16 +100,47 @@ const MyPosts: React.FC = ({ navigation, route }: any) => {
     setPostToDelete(null);
   };
 
-  const handleLikePost = async (postId: string) => {
+  const reactionPickerPost = useMemo(() => {
+    if (!reactionPickerPostId) {
+      return null;
+    }
+
+    return posts.find((post: any) => String(post?.id) === String(reactionPickerPostId)) ?? null;
+  }, [posts, reactionPickerPostId]);
+
+  const handleReactToPost = async (postId: string, reactionType: ReactionType) => {
     try {
-      setLikingPostId(postId);
-      await toggleLike(postId).unwrap();
+      setReactingPostId(postId);
+      await reactToPost({ postId, reactionType }).unwrap();
       refetchPosts();
     } catch (error) {
-      console.error('Failed to toggle like:', error);
+      console.error('Failed to update reaction:', error);
     } finally {
-      setLikingPostId(null);
+      setReactingPostId(null);
     }
+  };
+
+  const handleRemoveReaction = async (postId: string, currentReaction: ReactionType | null | undefined) => {
+    if (!currentReaction) {
+      return;
+    }
+
+    await handleReactToPost(postId, currentReaction);
+  };
+
+  const handleQuickLike = (postId: string) => {
+    setLikingPostId(postId);
+    handleReactToPost(postId, 'like').finally(() => {
+      setLikingPostId(null);
+    });
+  };
+
+  const handleOpenReactionPicker = (postId: string) => {
+    setReactionPickerPostId(postId);
+  };
+
+  const handleCloseReactionPicker = () => {
+    setReactionPickerPostId(null);
   };
 
   const handleOpenComments = (postId: string) => {
@@ -156,8 +192,14 @@ const MyPosts: React.FC = ({ navigation, route }: any) => {
           ) : posts.length === 0 ? (
             <Text style={{ textAlign: 'center', color: COLORS._5E5E5E, marginTop: 32 }}>No posts yet.</Text>
           ) : (
-            posts.map((post: any) => (
-              <View key={post.id} style={styles.postCard}>
+            posts.map((post: any) => {
+              const postId = post.id?.toString?.() ?? String(post.id);
+              const currentReaction = (post.currentUserReaction ?? null) as ReactionType | null;
+              const reactionSummary = (post.reactionSummary ?? undefined) as Record<ReactionType, number> | undefined;
+              const totalReactions = post.totalReactions ?? post.likeCount ?? 0;
+
+              return (
+                <View key={post.id} style={styles.postCard}>
                 <View style={styles.postHeader}>
                   <View style={styles.avatarContainer}>
                     {post.user?.imageUrl ? (
@@ -174,20 +216,20 @@ const MyPosts: React.FC = ({ navigation, route }: any) => {
                     <View>
                       <TouchableOpacity
                         style={styles.postMenuButton}
-                        onPress={() => handlePostMenuPress(post.id.toString())}
+                        onPress={() => handlePostMenuPress(postId)}
                       >
                         <Text style={styles.postMenuDots}>⋯</Text>
                       </TouchableOpacity>
-                      {openPostMenuId === post.id.toString() && (
+                      {openPostMenuId === postId && (
                         <View style={styles.postMenuDropdown}>
                           <TouchableOpacity
-                            onPress={() => handleEditPostPress(post.id.toString(), post.title || '')}
+                            onPress={() => handleEditPostPress(postId, post.title || '')}
                             style={styles.postMenuOption}
                           >
                             <Text style={styles.postMenuOptionText}>Edit</Text>
                           </TouchableOpacity>
                           <TouchableOpacity
-                            onPress={() => handleDeletePostPress(post.id.toString())}
+                            onPress={() => handleDeletePostPress(postId)}
                             style={styles.postMenuOption}
                           >
                             <Text style={styles.postMenuOptionText}>Delete</Text>
@@ -231,27 +273,81 @@ const MyPosts: React.FC = ({ navigation, route }: any) => {
                 <View style={styles.postMetaRow}>
                   <Text style={styles.postTimestampLeft}>{post.createdAt ? new Date(post.createdAt).toLocaleDateString() : ''}</Text>
                   <View style={styles.postMetaIconsRight}>
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       style={styles.postMetaItem}
-                      onPress={() => handleLikePost(post.id.toString())}
+                      onPress={() => handleQuickLike(postId)}
+                      disabled={likingPostId === postId}
                     >
-                      <Image source={Like} style={styles.postMetaIconImage} />
-                      <Text style={styles.postMetaText}>{post.likeCount || 0}</Text>
+                      {likingPostId === postId ? (
+                        <ActivityIndicator size="small" color={COLORS.primary} />
+                      ) : (
+                        <>
+                          <Image
+                            source={Like}
+                            style={[
+                              styles.postMetaIconImage,
+                              {
+                                tintColor:
+                                  currentReaction === 'like'
+                                    ? COLORS.gradient1
+                                    : '#888888',
+                              },
+                            ]}
+                          />
+                          <Text style={styles.postMetaText}>{post.likeCount || 0}</Text>
+                        </>
+                      )}
                     </TouchableOpacity>
                     <TouchableOpacity 
                       style={styles.postMetaItem}
-                      onPress={() => handleOpenComments(post.id.toString())}
+                      onPress={() => handleOpenComments(postId)}
                     >
                       <Image source={CommentIcon} style={styles.postMetaIconImage} />
                       <Text style={styles.postMetaText}>{post.commentCount || 0}</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
-              </View>
-            ))
+                <View style={styles.postReactionsRow}>
+                  <Text style={styles.postReactionsLabel}>Reactions</Text>
+                  {reactingPostId === postId && likingPostId !== postId ? (
+                    <ActivityIndicator size="small" color={COLORS.primary} />
+                  ) : (
+                    <ReactionSummary
+                      summary={reactionSummary}
+                      total={totalReactions}
+                      currentReaction={currentReaction}
+                      onPress={() => handleOpenReactionPicker(postId)}
+                    />
+                  )}
+                </View>
+                </View>
+              );
+            })
           )}
         </View>
       </RefreshableScrollView>
+
+      <ReactionPicker
+        visible={Boolean(reactionPickerPostId)}
+        currentReaction={(reactionPickerPost?.currentUserReaction ?? null) as ReactionType | null}
+        onSelect={(reaction) => {
+          if (!reactionPickerPostId) {
+            return;
+          }
+          handleReactToPost(reactionPickerPostId, reaction);
+        }}
+        onClose={handleCloseReactionPicker}
+        onRemoveReaction={() => {
+          const activePostId = reactionPickerPostId ?? (reactionPickerPost?.id ? String(reactionPickerPost.id) : null);
+          const activeReaction = (reactionPickerPost?.currentUserReaction ?? null) as ReactionType | null;
+
+          if (!activePostId || !activeReaction) {
+            return;
+          }
+
+          handleRemoveReaction(activePostId, activeReaction);
+        }}
+      />
 
       <ConfirmationDialog
         visible={showDeletePostDialog}
@@ -462,6 +558,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 20,
+  },
+  postReactionWrapper: {
+    justifyContent: 'center',
+  },
+  postReactionsRow: {
+    marginTop: DIMENSIONS.spacing.xs,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: DIMENSIONS.spacing.sm,
+  },
+  postReactionsLabel: {
+    fontFamily: FontWeight.Medium,
+    fontSize: 13,
+    color: COLORS.textSecondary,
   },
   postMetaItem: {
     flexDirection: 'row',

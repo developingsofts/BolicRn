@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -99,7 +99,8 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
   const [removingMemberId, setRemovingMemberId] = useState<string | null>(null);
   const [removeDialogVisible, setRemoveDialogVisible] = useState(false);
   const [memberPendingRemoval, setMemberPendingRemoval] = useState<any | null>(null);
-  const [respondingRequestId, setRespondingRequestId] = useState<string | null>(null);
+  const [respondingRequest, setRespondingRequest] = useState<{ id: string; action: "approve" | "reject" } | null>(null);
+  const [handledRequestIds, setHandledRequestIds] = useState<string[]>([]);
   const pendingRemovalName = memberPendingRemoval
     ? memberPendingRemoval.displayName || memberPendingRemoval.userName || memberPendingRemoval.name || "this user"
     : "this user";
@@ -122,6 +123,31 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
 
   const members = (membersData?.status && membersData?.data?.members) ? membersData.data.members : [];
   const joinRequests = (joinRequestsData?.status && Array.isArray(joinRequestsData?.data)) ? joinRequestsData.data : [];
+
+  const getRequestId = (request: any): string =>
+    request?.id?.toString?.() || String(request?.id ?? "");
+
+  useEffect(() => {
+    if (!Array.isArray(joinRequests)) {
+      return;
+    }
+
+    setHandledRequestIds((prev) =>
+      prev.filter((id) =>
+        joinRequests.some((request: any) => getRequestId(request) === id)
+      )
+    );
+  }, [joinRequests]);
+
+  const visibleJoinRequests = useMemo(
+    () =>
+      Array.isArray(joinRequests)
+        ? joinRequests.filter(
+            (request: any) => !handledRequestIds.includes(getRequestId(request))
+          )
+        : [],
+    [joinRequests, handledRequestIds]
+  );
 
   const locationOptions = ["Downtown", "Uptown", "Midtown", "Suburbs"];
   const groupTypeOptions = ["Gym", "Running", "Cycling", "Swimming", "Yoga"];
@@ -343,17 +369,24 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
   };
 
   const handleRespondToRequest = async (requestId: string, action: "approve" | "reject") => {
-    if (!group?.id || respondingRequestId) return;
+    if (!group?.id || respondingRequest) return;
 
     try {
-      setRespondingRequestId(requestId);
+      setRespondingRequest({ id: requestId, action });
       const response = await respondToJoinRequest({ requestId, action }).unwrap();
-      Toast.success(response?.message || `Request ${action === 'approve' ? 'approved' : 'rejected'} successfully`);
+      Toast.success(
+        response?.message || `Request ${action === "approve" ? "approved" : "rejected"} successfully`
+      );
+
+      setHandledRequestIds((prev) =>
+        prev.includes(requestId) ? prev : [...prev, requestId]
+      );
+
       await Promise.all([refetchJoinRequests(), refetchMembers()]);
     } catch (error: any) {
       Toast.error(error?.data?.message || `Failed to ${action} request`);
     } finally {
-      setRespondingRequestId(null);
+      setRespondingRequest(null);
     }
   };
 
@@ -605,7 +638,7 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
                   <ActivityIndicator size="small" color={COLORS.primary} />
                 ) : (
                   <Text style={styles.membersCount}>
-                    {joinRequests.length} Pending
+                    {visibleJoinRequests.length} Pending
                   </Text>
                 )}
               </View>
@@ -615,13 +648,13 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
                   <ActivityIndicator size="small" color={COLORS.primary} />
                   <Text style={styles.loadingText}>Loading join requests...</Text>
                 </View>
-              ) : joinRequests.length === 0 ? (
+              ) : visibleJoinRequests.length === 0 ? (
                 <View style={styles.emptyContainer}>
                   <Text style={styles.emptyText}>No pending requests right now</Text>
                 </View>
               ) : (
                 <FlatList
-                  data={joinRequests}
+                  data={visibleJoinRequests}
                   scrollEnabled={false}
                   keyExtractor={(item: any) => item.id?.toString?.() || String(item.id)}
                   ItemSeparatorComponent={() => <View style={styles.memberSeparator} />}
@@ -631,7 +664,9 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
                     const location = requestUser.userAddress?.city || requestUser.location || 'Unknown location';
                     const avatar = requestUser.imageUrl;
                     const requestId = item.id?.toString?.() || String(item.id);
-                    const isProcessing = respondingRequestId === requestId;
+                    const isProcessing = respondingRequest?.id === requestId;
+                    const approveLoading = isProcessing && respondingRequest?.action === "approve";
+                    const rejectLoading = isProcessing && respondingRequest?.action === "reject";
 
                     return (
                       <View style={styles.requestItem}>
@@ -656,7 +691,7 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
                             onPress={() => handleRespondToRequest(requestId, 'approve')}
                             disabled={isProcessing}
                           >
-                            {isProcessing ? (
+                            {approveLoading ? (
                               <ActivityIndicator size="small" color={COLORS.white} />
                             ) : (
                               <Text style={styles.requestButtonText}>Approve</Text>
@@ -667,7 +702,7 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
                             onPress={() => handleRespondToRequest(requestId, 'reject')}
                             disabled={isProcessing}
                           >
-                            {isProcessing ? (
+                            {rejectLoading ? (
                               <ActivityIndicator size="small" color={COLORS.white} />
                             ) : (
                               <Text style={styles.requestButtonText}>Reject</Text>

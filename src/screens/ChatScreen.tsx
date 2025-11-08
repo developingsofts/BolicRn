@@ -100,6 +100,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
   );
   const suppressAutoScrollRef = useRef(false);
   const isUserNearBottomRef = useRef(true);
+  const isUserScrollingRef = useRef(false);
+  const lastScrollOffsetRef = useRef(0);
 
   const chatTitle = conversationName ?? partnerName ?? STRINGS.CHAT.defaultTitle;
   const avatarInitial = chatTitle?.charAt(0)?.toUpperCase() ?? STRINGS.CHAT.defaultTitle.charAt(0);
@@ -171,15 +173,29 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
     void loadOlderMessages();
   }, [hasMoreMessages, isLoadingOlderMessages, shouldShowInitialLoader, loadOlderMessages]);
 
+  const handleScrollBeginDrag = useCallback(() => {
+    isUserScrollingRef.current = true;
+  }, []);
+
+  const handleScrollEndDrag = useCallback(() => {
+    isUserScrollingRef.current = false;
+  }, []);
+
   const handleListScroll = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
       const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
 
-      if (contentOffset.y <= 40) {
+      const offsetY = contentOffset.y;
+      const previousOffset = lastScrollOffsetRef.current;
+      const isScrollingUp = offsetY < previousOffset - 8;
+
+      if (isUserScrollingRef.current && isScrollingUp && offsetY <= 40) {
         handleLoadOlder();
       }
 
-      const distanceFromBottom = contentSize.height - (layoutMeasurement.height + contentOffset.y);
+      lastScrollOffsetRef.current = offsetY;
+
+      const distanceFromBottom = contentSize.height - (layoutMeasurement.height + offsetY);
       isUserNearBottomRef.current = distanceFromBottom <= 40;
     },
     [handleLoadOlder]
@@ -391,6 +407,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
               overScrollMode="always"
               disableScrollViewPanResponder={false}
               keyboardShouldPersistTaps="handled"
+              onScrollBeginDrag={handleScrollBeginDrag}
+              onScrollEndDrag={handleScrollEndDrag}
+              onMomentumScrollEnd={handleScrollEndDrag}
               onScroll={handleListScroll}
               onContentSizeChange={() => {
                 if (suppressAutoScrollRef.current) {

@@ -55,6 +55,8 @@ import { Toast } from "../../components/ToastManager";
 import CommentsModal from "../../components/CommentsModal";
 import EditPostModal from "../../components/EditPostModal";
 import { useFocusEffect } from "@react-navigation/native";
+import type { FetchBaseQueryError } from "@reduxjs/toolkit/query";
+import type { SerializedError } from "@reduxjs/toolkit";
 
 interface GroupDetailsProps {
   navigation?: any;
@@ -357,6 +359,12 @@ const baseStyles = StyleSheet.create({
     fontSize: 14,
     fontFamily: FontWeight.Medium,
     color: COLORS._5E5E5E,
+  },
+  membersEmptyCardText: {
+    fontSize: 14,
+    fontFamily: FontWeight.Medium,
+    color: COLORS._5E5E5E,
+    marginTop: r(8),
   },
   membersModalFooter: {
     paddingVertical: r(16),
@@ -714,6 +722,8 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
   const {
     data: membersData,
     isLoading: isLoadingMembers,
+    isError: isMembersError,
+    error: membersError,
     refetch: refetchMembers,
   } = useGetGroupMembersQuery(
     { groupId: groupId!, page: membersPage, limit: 20 },
@@ -751,6 +761,75 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
       : null;
   const displayedMembers =
     accumulatedMembers.length > 0 ? accumulatedMembers : members;
+
+  const membersCountDisplay = useMemo(() => {
+    if (group?.memberCount !== undefined && group?.memberCount !== null) {
+      const numericCount = Number(group.memberCount);
+      if (!Number.isNaN(numericCount)) {
+        return numericCount;
+      }
+    }
+
+    if (accumulatedMembers.length > 0) {
+      return accumulatedMembers.length;
+    }
+
+    return members.length;
+  }, [group?.memberCount, accumulatedMembers, members]);
+
+  const membersErrorDetails = useMemo(() => {
+    if (!isMembersError) {
+      return { status: null as number | null, message: null as string | null };
+    }
+
+    const fetchError = membersError as FetchBaseQueryError | undefined;
+
+    if (fetchError && typeof fetchError === "object" && "status" in fetchError) {
+      const statusValue = fetchError.status;
+      const status = typeof statusValue === "number" ? statusValue : null;
+
+      const data = fetchError.data as { message?: string } | string | undefined;
+      if (typeof data === "string") {
+        return { status, message: data };
+      }
+
+      if (data && typeof data.message === "string") {
+        return { status, message: data.message };
+      }
+
+      return { status, message: null };
+    }
+
+    const serialized = membersError as SerializedError | undefined;
+    if (serialized?.message) {
+      return { status: null, message: serialized.message };
+    }
+
+    return { status: null as number | null, message: null as string | null };
+  }, [isMembersError, membersError]);
+
+  const { status: membersErrorStatus, message: membersErrorMessage } = membersErrorDetails;
+
+  const membersListEmptyMessage = useMemo(() => {
+    const cleanedMessage =
+      membersErrorMessage && membersErrorMessage.trim().length > 0
+        ? membersErrorMessage.trim()
+        : null;
+
+    if (membersErrorStatus === 404) {
+      return cleanedMessage || "No members yet. Invite someone to join!";
+    }
+
+    if (cleanedMessage) {
+      return cleanedMessage;
+    }
+
+    if (isMembersError) {
+      return "We couldn't load the members list. Pull to refresh and try again.";
+    }
+
+    return "No members yet. Invite someone to join!";
+  }, [isMembersError, membersErrorMessage, membersErrorStatus]);
 
   // Exit group handler
   const [leaveGroup, { isLoading: isLeaving }] = useLeaveGroupMutation();
@@ -883,7 +962,7 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
   const handleLikePost = async (postId: string) => {
     try {
       setLikingPostId(postId);
-      await toggleLike(postId).unwrap();
+      await toggleLike({ postId }).unwrap();
       // Posts will auto-refresh due to cache invalidation
     } catch (error) {
       console.error("Failed to toggle like:", error);
@@ -988,6 +1067,15 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
     }
     setIsLoadingMoreMembers(false);
   }, [membersData, members, membersPage]);
+
+  useEffect(() => {
+    if (isMembersError) {
+      setIsLoadingMoreMembers(false);
+      if (membersPage === 1) {
+        setAccumulatedMembers([]);
+      }
+    }
+  }, [isMembersError, membersPage]);
 
   useEffect(() => {
     setMembersPage(1);
@@ -1370,7 +1458,7 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
           <View style={styles.membersHeader}>
             <Text style={styles.membersTitle}>Members</Text>
             <Text style={styles.membersCount}>
-              {group?.memberCount || 0} Members
+              {membersCountDisplay} Members
             </Text>
           </View>
 
@@ -1410,7 +1498,7 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
                 />
               </Menu>
             ))}
-            {group?.memberCount && group.memberCount > 3 && (
+            {membersCountDisplay > 3 && (
               <View
                 style={[
                   styles.memberAvatar,
@@ -1419,14 +1507,20 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
                 ]}
               >
                 <Text style={styles.memberCountText}>
-                  +{group?.memberCount ? group.memberCount - 3 : 0}
+                  +{Math.max(membersCountDisplay - 3, 0)}
                 </Text>
               </View>
             )}
           </View>
-          <TouchableOpacity onPress={handleOpenMembersModal}>
-            <Text style={styles.viewListText}>View list</Text>
-          </TouchableOpacity>
+          {membersCountDisplay === 0 ? (
+            <Text style={styles.membersEmptyCardText}>
+              {membersListEmptyMessage}
+            </Text>
+          ) : (
+            <TouchableOpacity onPress={handleOpenMembersModal}>
+              <Text style={styles.viewListText}>View list</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Recent Posts Section */}
@@ -1487,7 +1581,7 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
               </TouchableOpacity>
             </View>
             <Text style={styles.membersModalSubtitle}>
-              {group?.memberCount || accumulatedMembers.length} Members
+              {membersCountDisplay} Members
             </Text>
             <FlatList
               data={accumulatedMembers}
@@ -1507,7 +1601,7 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
                 ) : (
                   <View style={styles.membersModalEmptyContainer}>
                     <Text style={styles.membersModalEmptyText}>
-                      No members yet.
+                      {membersListEmptyMessage}
                     </Text>
                   </View>
                 )

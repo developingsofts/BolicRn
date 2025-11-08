@@ -46,7 +46,78 @@ const baseQueryWithErrorHandling: BaseQueryFn<
   });
 
   const startTime = Date.now();
-  const result = await baseQuery(args, api, extraOptions);
+  let result = await baseQuery(args, api, extraOptions);
+  const coerceEmptyMembers404 = () => {
+    if (!result || !("error" in result) || !result.error) {
+      return null;
+    }
+
+    const error = result.error as FetchBaseQueryError & {
+      data?: { message?: string; status?: boolean; statusCode?: number } | string;
+    };
+
+    if (error.status !== 404) {
+      return null;
+    }
+
+    if (typeof url !== "string" || !url.includes("/group/members/")) {
+      return null;
+    }
+
+    let page = 1;
+    let limit = 20;
+
+    try {
+      const normalizedUrl = url.startsWith("http")
+        ? url
+        : `${API_CONFIG.baseUrl.replace(/\/$/, "")}${url}`;
+      const parsed = new URL(normalizedUrl);
+      const pageParam = parsed.searchParams.get("page");
+      const limitParam = parsed.searchParams.get("limit");
+
+      if (pageParam) {
+        const parsedPage = Number(pageParam);
+        if (!Number.isNaN(parsedPage)) {
+          page = parsedPage;
+        }
+      }
+
+      if (limitParam) {
+        const parsedLimit = Number(limitParam);
+        if (!Number.isNaN(parsedLimit)) {
+          limit = parsedLimit;
+        }
+      }
+    } catch (parseError) {
+      console.warn("Failed to parse members URL for pagination defaults", parseError);
+    }
+
+    const message =
+      typeof error.data === "string"
+        ? error.data
+        : error.data?.message || "No members found in this group";
+
+    return {
+      status: true,
+      statusCode: 200,
+      message,
+      data: {
+        members: [],
+        pagination: {
+          page,
+          limit,
+          total: 0,
+          totalPages: 0,
+          hasNextPage: false,
+        },
+      },
+    };
+  };
+
+  const coercedMembersResponse = coerceEmptyMembers404();
+  if (coercedMembersResponse) {
+    result = { data: coercedMembersResponse } as typeof result;
+  }
   const duration = Date.now() - startTime;
 
   // Log response details
@@ -71,6 +142,36 @@ const baseQueryWithErrorHandling: BaseQueryFn<
 
   // Placeholder for future global error handling / token refresh flow
   // if (result.error && result.error.status === 401) { ... }
+
+  const normalizeParsingError = () => {
+    const error = result.error as FetchBaseQueryError & {
+      originalStatus?: number;
+      data?: unknown;
+    };
+
+    if (!error || error.status !== 'PARSING_ERROR') {
+      return null;
+    }
+
+    const fallbackStatus =
+      typeof error.originalStatus === 'number' ? error.originalStatus : 502;
+
+    const rawPayload = typeof error.data === 'string' ? error.data : null;
+
+    return {
+      status: fallbackStatus,
+      data: {
+        message: 'The server response could not be parsed. Please verify the backend service is running and reachable.',
+        code: 'UPSTREAM_UNAVAILABLE',
+        raw: rawPayload,
+      },
+    } satisfies FetchBaseQueryError;
+  };
+
+  const normalizedParsingError = normalizeParsingError();
+  if (normalizedParsingError) {
+    return { error: normalizedParsingError };
+  }
 
   return result;
 };

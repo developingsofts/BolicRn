@@ -53,7 +53,7 @@ export const messagingApi = baseApi.injectEndpoints({
         url: API_END_POINTS.messages.conversations,
         method: 'GET',
       }),
-      providesTags: ['Messaging'],
+  providesTags: ['Messaging'],
     }),
     getMessages: builder.query<ApiResponse<MessagesResponse>, FetchMessagesPayload>({
       query: ({ conversationId, page, limit }) => ({
@@ -72,7 +72,6 @@ export const messagingApi = baseApi.injectEndpoints({
         method: 'POST',
         body,
       }),
-      invalidatesTags: ['Messaging'],
     }),
     markConversationAsRead: builder.mutation<ApiResponse<{ updatedCount: number }>, MarkConversationAsReadPayload>({
       query: ({ conversationId, messageIds }) => ({
@@ -80,7 +79,6 @@ export const messagingApi = baseApi.injectEndpoints({
         method: 'POST',
         body: messageIds?.length ? { messageIds } : {},
       }),
-      invalidatesTags: ['Messaging'],
     }),
     markMessageAsRead: builder.mutation<ApiResponse<{ updated: number }>, MarkMessageAsReadPayload>({
       query: ({ messageId }) => ({
@@ -88,7 +86,6 @@ export const messagingApi = baseApi.injectEndpoints({
         method: 'POST',
         body: {},
       }),
-      invalidatesTags: ['Messaging'],
     }),
     toggleMessageReaction: builder.mutation<
       ApiResponse<{ message: ChatMessage; isActive: boolean }>,
@@ -99,7 +96,6 @@ export const messagingApi = baseApi.injectEndpoints({
         method: 'POST',
         body: { reactionType },
       }),
-      invalidatesTags: ['Messaging'],
     }),
     createConversation: builder.mutation<
       ApiResponse<{ conversation: Conversation; initialMessage?: ChatMessage | null }>,
@@ -110,7 +106,6 @@ export const messagingApi = baseApi.injectEndpoints({
         method: 'POST',
         body,
       }),
-      invalidatesTags: ['Messaging'],
     }),
   }),
   overrideExisting: false,

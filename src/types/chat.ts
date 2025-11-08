@@ -45,6 +45,9 @@ export interface ChatMessage {
   sender?: ChatUserSummary | null;
   statuses?: MessageStatus[];
   reactions?: MessageReaction[];
+  clientGeneratedId?: string | null;
+  isOptimistic?: boolean;
+  sendFailed?: boolean;
 }
 
 export interface ConversationMember {

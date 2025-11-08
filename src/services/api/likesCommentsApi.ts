@@ -1,9 +1,24 @@
 import { baseApi } from './baseApi';
 import type { ApiResponse } from './types';
 
-interface LikeResponse {
-  liked: boolean;
-  likeCount: number;
+export const REACTION_TYPES = [
+  'like',
+  'love',
+  'celebrate',
+  'insightful',
+  'support',
+] as const;
+
+export type ReactionType = (typeof REACTION_TYPES)[number];
+
+interface ReactionSummary {
+  reactionSummary: Record<ReactionType, number>;
+  totalReactions: number;
+  currentReaction: ReactionType | null;
+}
+
+interface ReactionResponse extends ReactionSummary {
+  reacted: boolean;
 }
 
 interface LikeUserInfo {
@@ -67,18 +82,21 @@ interface UpdateCommentPayload {
 
 export const likesCommentsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    // Toggle like on a post
-    toggleLike: builder.mutation<ApiResponse<LikeResponse>, string>({
-      query: (postId) => ({
+    // React to a post
+    reactToPost: builder.mutation<ApiResponse<ReactionResponse>, { postId: string; reactionType?: ReactionType }>({
+      query: ({ postId, reactionType }) => ({
         url: `/post/${postId}/like`,
         method: 'POST',
+        body: {
+          reactionType,
+        },
       }),
       invalidatesTags: ['Posts'],
     }),
 
-    // Get likes for a post
-    getPostLikes: builder.query<
-      ApiResponse<GetLikesResponse>,
+    // Get reactions for a post
+    getPostReactions: builder.query<
+      ApiResponse<GetLikesResponse & { reactionSummary: Record<ReactionType, number> }>,
       { postId: string; page?: number; limit?: number }
     >({
       query: ({ postId, page = 1, limit = 20 }) => ({
@@ -88,8 +106,8 @@ export const likesCommentsApi = baseApi.injectEndpoints({
       providesTags: ['Posts'],
     }),
 
-    // Check if user liked a post
-    checkUserLiked: builder.query<ApiResponse<{ liked: boolean }>, string>({
+    // Check the current user's reaction to a post
+    checkUserReaction: builder.query<ApiResponse<{ reacted: boolean; currentReaction: ReactionType | null }>, string>({
       query: (postId) => ({
         url: `/post/${postId}/liked`,
         method: 'GET',
@@ -141,12 +159,26 @@ export const likesCommentsApi = baseApi.injectEndpoints({
   }),
 });
 
-export const {
-  useToggleLikeMutation,
-  useGetPostLikesQuery,
-  useCheckUserLikedQuery,
+const {
+  useReactToPostMutation,
+  useGetPostReactionsQuery,
+  useCheckUserReactionQuery,
   useCreateCommentMutation,
   useGetPostCommentsQuery,
   useUpdateCommentMutation,
   useDeleteCommentMutation,
 } = likesCommentsApi;
+
+export {
+  useReactToPostMutation,
+  useGetPostReactionsQuery,
+  useCheckUserReactionQuery,
+  useCreateCommentMutation,
+  useGetPostCommentsQuery,
+  useUpdateCommentMutation,
+  useDeleteCommentMutation,
+};
+
+export const useToggleLikeMutation = useReactToPostMutation;
+export const useGetPostLikesQuery = useGetPostReactionsQuery;
+export const useCheckUserLikedQuery = useCheckUserReactionQuery;
