@@ -29,7 +29,7 @@ const ReactionPicker: React.FC<ReactionPickerProps> = ({
         <View style={styles.container}>
           <Text style={styles.heading}>React to post</Text>
           <View style={styles.reactionRow}>
-            {REACTION_OPTIONS.map((option) => {
+            {REACTION_OPTIONS.filter((option) => option.type !== "like").map((option) => {
               const isSelected = currentReaction === option.type;
               return (
                 <TouchableOpacity

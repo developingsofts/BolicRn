@@ -307,7 +307,7 @@ const MyPosts: React.FC = ({ navigation, route }: any) => {
                     </TouchableOpacity>
                   </View>
                 </View>
-                <View style={styles.postReactionsRow}>
+                {/* <View style={styles.postReactionsRow}>
                   <Text style={styles.postReactionsLabel}>Reactions</Text>
                   {reactingPostId === postId && likingPostId !== postId ? (
                     <ActivityIndicator size="small" color={COLORS.primary} />
@@ -319,7 +319,7 @@ const MyPosts: React.FC = ({ navigation, route }: any) => {
                       onPress={() => handleOpenReactionPicker(postId)}
                     />
                   )}
-                </View>
+                </View> */}
                 </View>
               );
             })

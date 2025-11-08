@@ -1226,7 +1226,21 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                   const postId = post.id?.toString?.() ?? String(post.id);
                   const currentReaction = (post.currentUserReaction ?? null) as ReactionType | null;
                   const reactionSummary = (post.reactionSummary ?? undefined) as Record<ReactionType, number> | undefined;
-                  const totalReactions = post.totalReactions ?? post.likeCount ?? 0;
+                  const nonLikeReactionTotal = reactionSummary
+                    ? Object.entries(reactionSummary).reduce((acc, [type, count]) => {
+                        if (type === "like") {
+                          return acc;
+                        }
+                        const safeCount = typeof count === "number" ? count : 0;
+                        return acc + safeCount;
+                      }, 0)
+                    : 0;
+                  const userHasNonLikeReaction =
+                    currentReaction != null && currentReaction !== "like";
+                  const shouldShowReactions =
+                    (reactingPostId === postId && likingPostId !== postId) ||
+                    nonLikeReactionTotal > 0 ||
+                    userHasNonLikeReaction;
                   
                   return (
                     <Pressable
@@ -1357,25 +1371,22 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                         <TouchableOpacity 
                           style={styles.socialPostAction}
                         >
-                              {((reactingPostId === postId && likingPostId !== postId) ||
-                        totalReactions > 0) && (
+                          {/* <Text style={styles.handshakeIcon}>🤝</Text> */}
+                        </TouchableOpacity>
+                      </View>
+                      {shouldShowReactions && (
                         <View style={styles.socialPostReactionsRow}>
                           {reactingPostId === postId && likingPostId !== postId ? (
                             <ActivityIndicator size="small" color={COLORS.primary} />
                           ) : (
                             <ReactionSummary
                               summary={reactionSummary}
-                              total={totalReactions}
                               currentReaction={currentReaction}
                               onPress={() => handleOpenReactionPicker(postId)}
                             />
                           )}
                         </View>
                       )}
-                          {/* <Text style={styles.handshakeIcon}>🤝</Text> */}
-                        </TouchableOpacity>
-                      </View>
-                  
                     </Pressable>
                   );
                 })}

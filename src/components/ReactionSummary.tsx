@@ -6,23 +6,26 @@ import FontWeight from "../hooks/useInterFonts";
 
 interface ReactionSummaryProps {
   summary?: Record<ReactionType, number>;
-  total?: number;
   currentReaction?: ReactionType | null;
   onPress?: () => void;
 }
 
 const ReactionSummary: React.FC<ReactionSummaryProps> = ({
   summary,
-  total,
   currentReaction,
   onPress,
 }) => {
+  const displayReactionOptions = useMemo(
+    () => REACTION_OPTIONS.filter((option) => option.type !== "like"),
+    []
+  );
+
   const baseSummary = useMemo(() => {
-    return REACTION_OPTIONS.reduce((acc, option) => {
+    return displayReactionOptions.reduce((acc, option) => {
       acc[option.type] = 0;
       return acc;
-    }, {} as Record<ReactionType, number>);
-  }, []);
+    }, {} as Partial<Record<ReactionType, number>>);
+  }, [displayReactionOptions]);
 
   const activeSummary = useMemo(() => {
     if (!summary) {
@@ -31,13 +34,19 @@ const ReactionSummary: React.FC<ReactionSummaryProps> = ({
     return {
       ...baseSummary,
       ...summary,
-    };
+    } as Partial<Record<ReactionType, number>>;
   }, [baseSummary, summary]);
 
-  const totalReactions = total ?? Object.values(activeSummary).reduce<number>((acc, count) => acc + count, 0);
+  const totalReactions = useMemo(() => {
+    return displayReactionOptions.reduce<number>((acc, option) => {
+      const count = activeSummary[option.type] ?? 0;
+      return acc + (typeof count === "number" ? count : 0);
+    }, 0);
+  }, [activeSummary, displayReactionOptions]);
 
   const topReactions = useMemo(() => {
-    const entries = REACTION_OPTIONS.map(({ type }) => ({
+    const entries = displayReactionOptions
+      .map(({ type }) => ({
       type,
       count: activeSummary[type] ?? 0,
     }))
@@ -45,12 +54,16 @@ const ReactionSummary: React.FC<ReactionSummaryProps> = ({
       .sort((a, b) => b.count - a.count)
       .slice(0, 3);
 
-    if (entries.length === 0 && currentReaction) {
+    if (
+      entries.length === 0 &&
+      currentReaction &&
+      currentReaction !== "like"
+    ) {
       entries.push({ type: currentReaction, count: 1 });
     }
 
     return entries;
-  }, [activeSummary, currentReaction]);
+  }, [activeSummary, currentReaction, displayReactionOptions]);
 
   return (
     <TouchableOpacity
@@ -64,17 +77,20 @@ const ReactionSummary: React.FC<ReactionSummaryProps> = ({
             const { emoji } = getReactionDisplay(type);
             const isUserReaction = currentReaction === type;
             return (
-              <View key={type} style={[styles.reactionIcon, isUserReaction && styles.userReactionIcon]}>
+              <View
+                key={type}
+                style={[styles.reactionIcon, isUserReaction && styles.userReactionIcon]}
+              >
                 <Text style={styles.reactionEmoji}>{emoji}</Text>
               </View>
             );
           })
         ) : (
-          <Text style={styles.placeholderText}>React</Text>
+          <Text style={styles.placeholderText}></Text>
         )}
       </View>
       <Text style={styles.totalText}>
-        {totalReactions > 0 ? `${totalReactions} ${totalReactions === 1 ? '' : 's'}` : '0'}
+        {totalReactions > 0 ? `${totalReactions} ${totalReactions === 1 ? '' : 's'}` : ''}
       </Text>
     </TouchableOpacity>
   );
