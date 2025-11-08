@@ -74,7 +74,7 @@ const ReactionSummary: React.FC<ReactionSummaryProps> = ({
         )}
       </View>
       <Text style={styles.totalText}>
-        {totalReactions > 0 ? `${totalReactions} reaction${totalReactions === 1 ? '' : 's'}` : '0 reactions'}
+        {totalReactions > 0 ? `${totalReactions} ${totalReactions === 1 ? '' : 's'}` : '0'}
       </Text>
     </TouchableOpacity>
   );
@@ -98,21 +98,17 @@ const styles = StyleSheet.create({
     gap: DIMENSIONS.spacing.xs,
   },
   reactionIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: COLORS.surface,
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    // shadowColor: "#000",
+    // shadowOffset: { width: 0, height: 1 },
+    // shadowOpacity: 0.1,
+    // shadowRadius: 2,
+    // elevation: 2,
   },
   userReactionIcon: {
-    borderWidth: 2,
-    borderColor: COLORS.primary,
+    // borderWidth: 2,
+    // borderColor: COLORS.primary,
   },
   reactionEmoji: {
     fontSize: 18,
