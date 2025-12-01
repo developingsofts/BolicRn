@@ -20,9 +20,16 @@ import FontWeight from "../../hooks/useInterFonts";
 import { Group } from "../../types";
 import { Location, Gym, Close, Trash, Exit, Add } from "../../../assets";
 import BasicTopBar from "../../components/BasicTopBar";
-import { useCreateGroupMutation, useUpdateGroupMutation, useDeleteGroupMutation, useGetGroupMembersQuery, useGetGroupJoinRequestsQuery, useRespondToJoinRequestMutation } from '../../services/api/groupsApi';
-import { Toast } from '../../components/ToastManager';
-import { useAuth } from '../../contexts/AuthContext';
+import {
+  useCreateGroupMutation,
+  useUpdateGroupMutation,
+  useDeleteGroupMutation,
+  useGetGroupMembersQuery,
+  useGetGroupJoinRequestsQuery,
+  useRespondToJoinRequestMutation,
+} from "../../services/api/groupsApi";
+import { Toast } from "../../components/ToastManager";
+import { useAuth } from "../../contexts/AuthContext";
 import ConfirmDialog from "../../components/ConfirmDialog";
 
 interface ManageGroupProps {
@@ -46,11 +53,14 @@ interface Member {
 
 const MemberAvatar = ({ member, styles }: { member: any; styles: any }) => {
   const [imageError, setImageError] = React.useState(false);
-  const imageUrl = member.imageUrl || member.avatar || member.profilePhoto || null;
-  const initial = (member.displayName?.charAt(0)
-    || member.userName?.charAt(0)
-    || member.name?.charAt(0)
-    || 'U').toUpperCase();
+  const imageUrl =
+    member.imageUrl || member.avatar || member.profilePhoto || null;
+  const initial = (
+    member.displayName?.charAt(0) ||
+    member.userName?.charAt(0) ||
+    member.name?.charAt(0) ||
+    "U"
+  ).toUpperCase();
   return (
     <View style={styles.memberAvatar}>
       {imageUrl && !imageError ? (
@@ -75,9 +85,12 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
   const { isAuthenticated, user } = useAuth();
   const isEditing = route?.params?.isEditing ?? (propGroup ? true : false);
   const group = route?.params?.group || propGroup;
-  const isCreator = user?.id && group?.creatorId && Number(user.id) === Number(group.creatorId);
+  const isCreator =
+    user?.id && group?.creatorId && Number(user.id) === Number(group.creatorId);
 
-  const [groupName, setGroupName] = useState(isEditing && group ? group.name : "");
+  const [groupName, setGroupName] = useState(
+    isEditing && group ? group.name : ""
+  );
   const [groupDescription, setGroupDescription] = useState(
     isEditing && group ? group.description : ""
   );
@@ -85,59 +98,91 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
     isEditing && group ? group.location : "Downtown"
   );
   const [groupType, setGroupType] = useState(
-    isEditing && group ? (group.type || "Gym") : "Gym"
+    isEditing && group ? group.type || "Gym" : "Gym"
   );
   const [privacy, setPrivacy] = useState(
-    isEditing && group ? (group.privacy || "Public") : "Public"
+    isEditing && group ? group.privacy || "Public" : "Public"
   );
   const [selectedMemberIds, setSelectedMemberIds] = useState<number[]>([]);
 
   const [locationMenuVisible, setLocationMenuVisible] = useState(false);
   const [groupTypeMenuVisible, setGroupTypeMenuVisible] = useState(false);
   const [privacyMenuVisible, setPrivacyMenuVisible] = useState(false);
-  const [memberMenuVisible, setMemberMenuVisible] = useState<string | null>(null);
+  const [memberMenuVisible, setMemberMenuVisible] = useState<string | null>(
+    null
+  );
   const [removingMemberId, setRemovingMemberId] = useState<string | null>(null);
   const [removeDialogVisible, setRemoveDialogVisible] = useState(false);
-  const [memberPendingRemoval, setMemberPendingRemoval] = useState<any | null>(null);
-  const [respondingRequest, setRespondingRequest] = useState<{ id: string; action: "approve" | "reject" } | null>(null);
+  const [memberPendingRemoval, setMemberPendingRemoval] = useState<any | null>(
+    null
+  );
+  const [respondingRequest, setRespondingRequest] = useState<{
+    id: string;
+    action: "approve" | "reject";
+  } | null>(null);
   const [handledRequestIds, setHandledRequestIds] = useState<string[]>([]);
   const pendingRemovalName = memberPendingRemoval
-    ? memberPendingRemoval.displayName || memberPendingRemoval.userName || memberPendingRemoval.name || "this user"
+    ? memberPendingRemoval.displayName ||
+      memberPendingRemoval.userName ||
+      memberPendingRemoval.name ||
+      "this user"
     : "this user";
 
   // API mutations
   const [createGroup, { isLoading: isCreating }] = useCreateGroupMutation();
   const [updateGroup, { isLoading: isUpdating }] = useUpdateGroupMutation();
   const [deleteGroup, { isLoading: isDeleting }] = useDeleteGroupMutation();
-  
+
   // Fetch group members when editing
-  const { data: membersData, isLoading: isLoadingMembers, refetch: refetchMembers } = useGetGroupMembersQuery(
-    { groupId: group?.id?.toString() || '', page: 1, limit: 50 },
+  const {
+    data: membersData,
+    isLoading: isLoadingMembers,
+    refetch: refetchMembers,
+  } = useGetGroupMembersQuery(
+    { groupId: group?.id?.toString() || "", page: 1, limit: 50 },
     { skip: !isEditing || !group?.id || !isAuthenticated }
   );
-  const { data: joinRequestsData, isLoading: isLoadingJoinRequests, refetch: refetchJoinRequests } = useGetGroupJoinRequestsQuery(
-    { groupId: group?.id?.toString() || '' },
+  const {
+    data: joinRequestsData,
+    isLoading: isLoadingJoinRequests,
+    refetch: refetchJoinRequests,
+  } = useGetGroupJoinRequestsQuery(
+    { groupId: group?.id?.toString() || "" },
     { skip: !isEditing || !group?.id || !isAuthenticated || !isCreator }
   );
   const [respondToJoinRequest] = useRespondToJoinRequestMutation();
 
-  const members = (membersData?.status && membersData?.data?.members) ? membersData.data.members : [];
-  const joinRequests = (joinRequestsData?.status && Array.isArray(joinRequestsData?.data)) ? joinRequestsData.data : [];
+  const members =
+    membersData?.status && membersData?.data?.members
+      ? membersData.data.members
+      : [];
+  const joinRequests =
+    joinRequestsData?.status && Array.isArray(joinRequestsData?.data)
+      ? joinRequestsData.data
+      : [];
 
   const getRequestId = (request: any): string =>
     request?.id?.toString?.() || String(request?.id ?? "");
 
+  const currentRequestIds = useMemo(() => {
+    if (!Array.isArray(joinRequests)) return [];
+    return joinRequests.map((request: any) => getRequestId(request));
+  }, [joinRequests]);
+  
   useEffect(() => {
-    if (!Array.isArray(joinRequests)) {
+    if (currentRequestIds.length === 0) {
       return;
     }
 
-    setHandledRequestIds((prev) =>
-      prev.filter((id) =>
-        joinRequests.some((request: any) => getRequestId(request) === id)
-      )
-    );
-  }, [joinRequests]);
+    setHandledRequestIds((prev) => {
+      // Only update if there are actual changes
+      const filtered = prev.filter((id) => currentRequestIds.includes(id));
+      if (filtered.length === prev.length) {
+        return prev; // Return same reference if no changes
+      }
+      return filtered;
+    });
+  }, [currentRequestIds]);
 
   const visibleJoinRequests = useMemo(
     () =>
@@ -176,7 +221,7 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
           privacy: privacy,
         }).unwrap();
 
-        Toast.success('Group updated successfully!');
+        Toast.success("Group updated successfully!");
       } else {
         // Create new group
         await createGroup({
@@ -188,7 +233,7 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
           memberIds: selectedMemberIds,
         }).unwrap();
 
-        Toast.success('Group created successfully!');
+        Toast.success("Group created successfully!");
       }
 
       // Navigate back or close modal
@@ -198,7 +243,7 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
         navigation.goBack();
       }
     } catch (error: any) {
-      Toast.error(error?.data?.message || 'Failed to save group');
+      Toast.error(error?.data?.message || "Failed to save group");
     }
   };
 
@@ -213,18 +258,18 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
           style: "destructive",
           onPress: async () => {
             if (!group) return;
-            
+
             try {
               await deleteGroup({ groupId: group.id.toString() }).unwrap();
-              Toast.success('Group deleted successfully');
-              
+              Toast.success("Group deleted successfully");
+
               if (onClose) {
                 onClose();
               } else {
                 navigation.goBack();
               }
             } catch (error: any) {
-              Toast.error(error?.data?.message || 'Failed to delete group');
+              Toast.error(error?.data?.message || "Failed to delete group");
             }
           },
         },
@@ -245,7 +290,7 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
 
   const handleRemoveMember = (member: any) => {
     if (!group?.id) {
-      Toast.error('Group not found');
+      Toast.error("Group not found");
       return;
     }
 
@@ -253,7 +298,7 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
     const isSelf = user?.id && Number(user.id) === Number(member.id);
 
     if (isSelf) {
-      Toast.error('You cannot remove yourself from your group');
+      Toast.error("You cannot remove yourself from your group");
       return;
     }
 
@@ -266,10 +311,11 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
       return;
     }
 
-    const memberId = memberPendingRemoval.id?.toString?.() || String(memberPendingRemoval.id);
+    const memberId =
+      memberPendingRemoval.id?.toString?.() || String(memberPendingRemoval.id);
     const memberIdNumber = Number(memberId);
     if (!Number.isFinite(memberIdNumber)) {
-      Toast.error('Invalid member selected');
+      Toast.error("Invalid member selected");
       return;
     }
 
@@ -279,10 +325,10 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
         groupId: group.id.toString(),
         removeIds: [memberIdNumber],
       }).unwrap();
-      Toast.success('Member removed successfully');
+      Toast.success("Member removed successfully");
       await refetchMembers();
     } catch (error: any) {
-      Toast.error(error?.data?.message || 'Failed to remove member');
+      Toast.error(error?.data?.message || "Failed to remove member");
     } finally {
       setRemovingMemberId(null);
       setRemoveDialogVisible(false);
@@ -308,21 +354,23 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
         if (onClose) {
           onClose();
         }
-        navigation?.navigate?.('Profile');
+        navigation?.navigate?.("Profile");
         return;
       }
 
       if (memberId) {
-        navigation.navigate('UserProfile', { userId: memberId, isGuest: true });
+        navigation.navigate("UserProfile", { userId: memberId, isGuest: true });
       } else {
-        Toast.error('User not found');
+        Toast.error("User not found");
       }
     }
   };
 
   const renderMember = ({ item: member }: { item: any }) => {
-    const displayName = member.displayName || member.userName || member.name || 'Unknown';
-    const location = member.userAddress?.city || member.location || 'Unknown location';
+    const displayName =
+      member.displayName || member.userName || member.name || "Unknown";
+    const location =
+      member.userAddress?.city || member.location || "Unknown location";
     const memberId = member.id?.toString?.() || String(member.id);
     const isSelf = user?.id && Number(user.id) === Number(member.id);
     return (
@@ -343,7 +391,11 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
               style={styles.memberActions}
               onPress={() => setMemberMenuVisible(memberId)}
             >
-              <Ionicons name="ellipsis-vertical" size={20} color={COLORS.text} />
+              <Ionicons
+                name="ellipsis-vertical"
+                size={20}
+                color={COLORS.text}
+              />
             </TouchableOpacity>
           }
         >
@@ -368,14 +420,23 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
     );
   };
 
-  const handleRespondToRequest = async (requestId: string, action: "approve" | "reject") => {
+  const handleRespondToRequest = async (
+    requestId: string,
+    action: "approve" | "reject"
+  ) => {
     if (!group?.id || respondingRequest) return;
 
     try {
       setRespondingRequest({ id: requestId, action });
-      const response = await respondToJoinRequest({ requestId, action }).unwrap();
+      const response = await respondToJoinRequest({
+        requestId,
+        action,
+      }).unwrap();
       Toast.success(
-        response?.message || `Request ${action === "approve" ? "approved" : "rejected"} successfully`
+        response?.message ||
+          `Request ${
+            action === "approve" ? "approved" : "rejected"
+          } successfully`
       );
 
       setHandledRequestIds((prev) =>
@@ -411,10 +472,7 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
           title={isEditing ? "Manage Group" : "Add Group"}
           titleStyle={styles.heroTitle}
           endView={
-            <TouchableOpacity
-              onPress={handleClose}
-              style={styles.closeButton}
-            >
+            <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
               <Image
                 source={Close}
                 style={{ width: 24, height: 24 }}
@@ -614,7 +672,9 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
                 </View>
               ) : members.length === 0 ? (
                 <View style={styles.emptyContainer}>
-                  <Text style={styles.emptyText}>No members in this group yet</Text>
+                  <Text style={styles.emptyText}>
+                    No members in this group yet
+                  </Text>
                 </View>
               ) : (
                 <FlatList
@@ -646,66 +706,101 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
               {isLoadingJoinRequests ? (
                 <View style={styles.loadingContainer}>
                   <ActivityIndicator size="small" color={COLORS.primary} />
-                  <Text style={styles.loadingText}>Loading join requests...</Text>
+                  <Text style={styles.loadingText}>
+                    Loading join requests...
+                  </Text>
                 </View>
               ) : visibleJoinRequests.length === 0 ? (
                 <View style={styles.emptyContainer}>
-                  <Text style={styles.emptyText}>No pending requests right now</Text>
+                  <Text style={styles.emptyText}>
+                    No pending requests right now
+                  </Text>
                 </View>
               ) : (
                 <FlatList
                   data={visibleJoinRequests}
                   scrollEnabled={false}
-                  keyExtractor={(item: any) => item.id?.toString?.() || String(item.id)}
-                  ItemSeparatorComponent={() => <View style={styles.memberSeparator} />}
+                  keyExtractor={(item: any) =>
+                    item.id?.toString?.() || String(item.id)
+                  }
+                  ItemSeparatorComponent={() => (
+                    <View style={styles.memberSeparator} />
+                  )}
                   renderItem={({ item }) => {
                     const requestUser = item.user || {};
-                    const displayName = requestUser.displayName || requestUser.userName || 'Unknown';
-                    const location = requestUser.userAddress?.city || requestUser.location || 'Unknown location';
+                    const displayName =
+                      requestUser.displayName ||
+                      requestUser.userName ||
+                      "Unknown";
+                    const location =
+                      requestUser.userAddress?.city ||
+                      requestUser.location ||
+                      "Unknown location";
                     const avatar = requestUser.imageUrl;
                     const requestId = item.id?.toString?.() || String(item.id);
                     const isProcessing = respondingRequest?.id === requestId;
-                    const approveLoading = isProcessing && respondingRequest?.action === "approve";
-                    const rejectLoading = isProcessing && respondingRequest?.action === "reject";
+                    const approveLoading =
+                      isProcessing && respondingRequest?.action === "approve";
+                    const rejectLoading =
+                      isProcessing && respondingRequest?.action === "reject";
 
                     return (
                       <View style={styles.requestItem}>
                         <View style={styles.memberInfo}>
                           <View style={styles.memberAvatar}>
                             {avatar ? (
-                              <Image source={{ uri: avatar }} style={styles.memberAvatarImage} />
+                              <Image
+                                source={{ uri: avatar }}
+                                style={styles.memberAvatarImage}
+                              />
                             ) : (
                               <Text style={styles.memberAvatarText}>
-                                {(displayName.charAt(0) || 'U').toUpperCase()}
+                                {(displayName.charAt(0) || "U").toUpperCase()}
                               </Text>
                             )}
                           </View>
                           <View style={styles.memberDetails}>
                             <Text style={styles.memberName}>{displayName}</Text>
-                            <Text style={styles.memberLocation}>{location}</Text>
+                            <Text style={styles.memberLocation}>
+                              {location}
+                            </Text>
                           </View>
                         </View>
                         <View style={styles.requestActions}>
                           <TouchableOpacity
                             style={[styles.requestButton, styles.approveButton]}
-                            onPress={() => handleRespondToRequest(requestId, 'approve')}
+                            onPress={() =>
+                              handleRespondToRequest(requestId, "approve")
+                            }
                             disabled={isProcessing}
                           >
                             {approveLoading ? (
-                              <ActivityIndicator size="small" color={COLORS.white} />
+                              <ActivityIndicator
+                                size="small"
+                                color={COLORS.white}
+                              />
                             ) : (
-                              <Text style={styles.requestButtonText}>Approve</Text>
+                              <Text style={styles.requestButtonText}>
+                                Approve
+                              </Text>
                             )}
                           </TouchableOpacity>
                           <TouchableOpacity
                             style={[styles.requestButton, styles.rejectButton]}
-                            onPress={() => handleRespondToRequest(requestId, 'reject')}
+                            onPress={() =>
+                              handleRespondToRequest(requestId, "reject")
+                            }
                             disabled={isProcessing}
                           >
                             {rejectLoading ? (
-                              <ActivityIndicator size="small" color={COLORS.white} />
+                              <ActivityIndicator
+                                size="small"
+                                color={COLORS.white}
+                              />
                             ) : (
-                              <Text style={styles.requestButtonText}>Reject</Text>
+                              <Text style={styles.requestButtonText}>
+                                Reject
+                              </Text>
                             )}
                           </TouchableOpacity>
                         </View>
@@ -721,7 +816,10 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
           {isEditing ? (
             <>
               <TouchableOpacity
-                style={[styles.deleteButton, isDeleting && styles.buttonDisabled]}
+                style={[
+                  styles.deleteButton,
+                  isDeleting && styles.buttonDisabled,
+                ]}
                 onPress={handleDeleteGroup}
                 disabled={isDeleting || isUpdating}
               >
@@ -736,7 +834,10 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.deleteButton, isUpdating && styles.buttonDisabled]}
+                style={[
+                  styles.deleteButton,
+                  isUpdating && styles.buttonDisabled,
+                ]}
                 onPress={handleExitGroup}
                 disabled={isDeleting || isUpdating}
               >
@@ -744,8 +845,11 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
                 <Text style={styles.deleteButtonText}>Exit Group</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity 
-                style={[styles.createButton, isUpdating && styles.buttonDisabled]} 
+              <TouchableOpacity
+                style={[
+                  styles.createButton,
+                  isUpdating && styles.buttonDisabled,
+                ]}
                 onPress={handleSave}
                 disabled={isDeleting || isUpdating}
               >
@@ -757,8 +861,8 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
               </TouchableOpacity>
             </>
           ) : (
-            <TouchableOpacity 
-              style={[styles.createButton, isCreating && styles.buttonDisabled]} 
+            <TouchableOpacity
+              style={[styles.createButton, isCreating && styles.buttonDisabled]}
               onPress={handleSave}
               disabled={isCreating}
             >
@@ -931,7 +1035,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginRight: r(12),
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   memberAvatarImage: {
     width: 40,
@@ -1035,8 +1139,8 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     padding: r(20),
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   loadingText: {
     marginTop: r(8),
@@ -1046,13 +1150,13 @@ const styles = StyleSheet.create({
   },
   emptyContainer: {
     padding: r(30),
-    alignItems: 'center',
+    alignItems: "center",
   },
   emptyText: {
     fontSize: 14,
     color: COLORS._5E5E5E,
     fontFamily: FontWeight.Regular,
-    textAlign: 'center',
+    textAlign: "center",
   },
   fab: {
     position: "absolute",

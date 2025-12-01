@@ -7,7 +7,8 @@ export const APP_CONFIG = {
 
 // API Configuration
 export const API_CONFIG = {
-  baseUrl: process.env.EXPO_PUBLIC_API_URL || 'https://api.bolicbuddy.com',
+  // baseUrl: process.env.EXPO_PUBLIC_API_URL || 'https://api.bolicbuddy.com',
+  baseUrl: 'http://13.62.87.191:4000/api',
   timeout: 10000,
   retryAttempts: 3,
 };

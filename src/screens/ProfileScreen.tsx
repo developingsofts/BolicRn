@@ -138,56 +138,6 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
     }
   };
   
-  const activityPosts = [
-    {
-      id: "1",
-      content:
-        "Great morning run! Feeling energized for the day. Who else got their workout in?",
-      timeAgo: "1d ago",
-      likes: 341,
-      comments: 4,
-    },
-    {
-      id: "2",
-      content:
-        "Great morning run! Feeling energized for the day. Who else got their workout in?",
-      timeAgo: "2d ago",
-      likes: 7,
-      comments: 2,
-    },
-  ];
-
-  const workoutHistory = [
-    {
-      id: "1",
-      type: "post",
-      content:
-        "Great morning run! Feeling energized for the day. Who else got their workout in?",
-      timeAgo: "1d ago",
-      likes: 241,
-      comments: 4,
-    },
-    {
-      id: "2",
-      type: "workout",
-      title: "Upper Body Power",
-      category: "Strength",
-      duration: "45 mins",
-      difficulty: "Medium",
-      completedDate: "Yesterday",
-      status: "completed",
-    },
-    {
-      id: "3",
-      type: "workout",
-      title: "Morning Cardio",
-      category: "Cardio",
-      duration: "30 mins",
-      difficulty: "Easy",
-      completedDate: "2 days ago",
-      status: "completed",
-    },
-  ];
   const [activeTab, setActiveTab] = useState<TabType>("activity");
   const [activeSubTab, setActiveSubTab] = useState<
     "posts" | "workouts" | "connections"
@@ -542,7 +492,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
                 <View style={styles.progressBarContainer}>
                   <View style={[styles.progressBarFill, { width: "60%" }]} />
                 </View>
-              </View>
+              </View> 
               {/* Streak Stats */}
               <View style={styles.streakStatsContainer}>
                 <View style={styles.streakStatItem}>

@@ -14,7 +14,7 @@ import {
   ScrollView,
   Pressable,
 } from "react-native";
-import RefreshableScrollView from '../components/RefreshableScrollView';
+import RefreshableScrollView from "../components/RefreshableScrollView";
 import { useAuth } from "../contexts/AuthContext";
 import { COLORS, DIMENSIONS } from "../config/constants";
 import STRINGS from "../config/strings";
@@ -23,18 +23,33 @@ import FontWeight from "../hooks/useInterFonts";
 import BasicTopBar from "../components/BasicTopBar";
 import ReactionSummary from "../components/ReactionSummary";
 import ReactionPicker from "../components/ReactionPicker";
-import { useGetPostsQuery, useDeletePostMutation, useUpdatePostMutation, useGetUserPostsQuery } from '../services/api/postsApi';
-import { useToggleLikeMutation } from '../services/api/likesCommentsApi';
-import { useGetWorkoutHistoryQuery, useGetWorkoutsQuery, useGetUserAchievementsQuery, useGetWorkoutByIdQuery } from '../services/api/workoutApi';
-import { useGetPotentialMatchesQuery } from '../services/api/matchingApi';
-import { useGetNotesQuery, useCreateNoteMutation, useDeleteNoteMutation } from '../services/api/notesApi';
-import { useGetFollowersQuery } from '../services/api/followsApi';
+import {
+  useGetPostsQuery,
+  useDeletePostMutation,
+  useUpdatePostMutation,
+  useGetUserPostsQuery,
+} from "../services/api/postsApi";
+import { useToggleLikeMutation } from "../services/api/likesCommentsApi";
+import {
+  useGetWorkoutHistoryQuery,
+  useGetWorkoutsQuery,
+  useGetUserAchievementsQuery,
+  useGetWorkoutByIdQuery,
+} from "../services/api/workoutApi";
+import { useGetPotentialMatchesQuery } from "../services/api/matchingApi";
+import {
+  useGetNotesQuery,
+  useCreateNoteMutation,
+  useDeleteNoteMutation,
+} from "../services/api/notesApi";
+import { useGetFollowersQuery } from "../services/api/followsApi";
 import type { Note as NoteEntity } from "../types";
 import type { ReactionType } from "../constants/reactions";
-import { Like, CommentRemove } from '../../assets';
-import CommentsModal from '../components/CommentsModal';
-import ConfirmationDialog from '../components/ConfirmationDialog';
-import EditPostModal from '../components/EditPostModal';
+import { Like, CommentRemove } from "../../assets";
+import CommentsModal from "../components/CommentsModal";
+import ConfirmationDialog from "../components/ConfirmationDialog";
+import EditPostModal from "../components/EditPostModal";
+import { r } from "../designing/responsiveDesigns";
 
 interface HomeScreenProps {
   navigation: any;
@@ -46,7 +61,7 @@ interface UserNoteItem {
   timestamp: Date;
 }
 
-interface Achievement {
+export interface Achievement {
   id: string;
   title: string;
   description: string;
@@ -104,18 +119,23 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const [openPostMenuId, setOpenPostMenuId] = useState<string | null>(null);
   const [showDeletePostDialog, setShowDeletePostDialog] = useState(false);
   const [postToDelete, setPostToDelete] = useState<string | null>(null);
-  const [editingPost, setEditingPost] = useState<{ id: string; caption: string } | null>(null);
+  const [editingPost, setEditingPost] = useState<{
+    id: string;
+    caption: string;
+  } | null>(null);
   const [editPostText, setEditPostText] = useState("");
   const [showAllWorkoutExercises, setShowAllWorkoutExercises] = useState(false);
   const [noteBeingDeleted, setNoteBeingDeleted] = useState<string | null>(null);
   const [quickActionsExpanded, setQuickActionsExpanded] = useState(false);
-  
+
   // Fetch posts for Community Highlights - only when authenticated
-  const { data: postsData, isLoading: postsLoading, refetch: refetchPosts } = useGetPostsQuery(
-    { page: 1, limit: 5 },
-    { skip: !isAuthenticated }
-  );
-  const communityPosts = (postsData?.status && postsData?.data?.posts) ? postsData.data.posts : [];
+  const {
+    data: postsData,
+    isLoading: postsLoading,
+    refetch: refetchPosts,
+  } = useGetPostsQuery({ page: 1, limit: 5 }, { skip: !isAuthenticated });
+  const communityPosts =
+    postsData?.status && postsData?.data?.posts ? postsData.data.posts : [];
 
   const {
     data: workoutHistoryData,
@@ -134,7 +154,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     isLoading: achievementsLoading,
     refetch: refetchAchievements,
     error: achievementsError,
-  } = useGetUserAchievementsQuery(undefined, { skip: !isAuthenticated });
+  } = useGetUserAchievementsQuery({ userId: undefined }, { skip: !isAuthenticated });
 
   const {
     data: potentialMatchesData,
@@ -170,27 +190,30 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   } = useGetNotesQuery(undefined, { skip: !isAuthenticated });
 
   const [createNote, { isLoading: isCreatingNote }] = useCreateNoteMutation();
-  const [deleteNoteMutation, { isLoading: isDeletingNote }] = useDeleteNoteMutation();
+  const [deleteNoteMutation, { isLoading: isDeletingNote }] =
+    useDeleteNoteMutation();
 
   // Debug posts data
   useEffect(() => {
-    console.log('Posts data:', postsData);
-    console.log('Community posts:', communityPosts);
+    console.log("Posts data:", postsData);
+    console.log("Community posts:", communityPosts);
     if (communityPosts.length > 0) {
-      console.log('First post:', communityPosts[0]);
-      console.log('First post workout:', communityPosts[0]?.workout);
-      console.log('First post achievement:', communityPosts[0]?.achievement);
+      console.log("First post:", communityPosts[0]);
+      console.log("First post workout:", communityPosts[0]?.workout);
+      console.log("First post achievement:", communityPosts[0]?.achievement);
     }
   }, [postsData, communityPosts]);
-  
+
   // Post reactions
   const [reactToPost] = useToggleLikeMutation();
   const [deletePost, { isLoading: isDeleting }] = useDeletePostMutation();
   const [updatePost, { isLoading: isUpdating }] = useUpdatePostMutation();
   const [reactingPostId, setReactingPostId] = useState<string | null>(null);
   const [likingPostId, setLikingPostId] = useState<string | null>(null);
-  const [reactionPickerPostId, setReactionPickerPostId] = useState<string | null>(null);
-  
+  const [reactionPickerPostId, setReactionPickerPostId] = useState<
+    string | null
+  >(null);
+
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
@@ -223,22 +246,32 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
       return null;
     }
 
-    return communityPosts.find((post: any) => String(post?.id) === String(reactionPickerPostId)) ?? null;
+    return (
+      communityPosts.find(
+        (post: any) => String(post?.id) === String(reactionPickerPostId)
+      ) ?? null
+    );
   }, [communityPosts, reactionPickerPostId]);
 
-  const handleReactToPost = async (postId: string, reactionType: ReactionType) => {
+  const handleReactToPost = async (
+    postId: string,
+    reactionType: ReactionType
+  ) => {
     try {
       setReactingPostId(postId);
       await reactToPost({ postId, reactionType }).unwrap();
       // Posts will auto-refresh due to cache invalidation
     } catch (error) {
-      console.error('Failed to update reaction:', error);
+      console.error("Failed to update reaction:", error);
     } finally {
       setReactingPostId(null);
     }
   };
 
-  const handleRemoveReaction = async (postId: string, currentReaction: ReactionType | null | undefined) => {
+  const handleRemoveReaction = async (
+    postId: string,
+    currentReaction: ReactionType | null | undefined
+  ) => {
     if (!currentReaction) {
       return;
     }
@@ -296,14 +329,14 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         postId: editingPost.id,
         title: editPostText.trim(),
       }).unwrap();
-      
+
       setEditingPost(null);
       setEditPostText("");
       refetchPosts();
-      Alert.alert('Success', 'Post updated successfully!');
+      Alert.alert("Success", "Post updated successfully!");
     } catch (error) {
-      console.error('Failed to update post:', error);
-      Alert.alert('Error', 'Failed to update post. Please try again.');
+      console.error("Failed to update post:", error);
+      Alert.alert("Error", "Failed to update post. Please try again.");
     }
   };
 
@@ -314,15 +347,15 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
   const confirmDeletePost = async () => {
     if (!postToDelete) return;
-    
+
     try {
       await deletePost({ postId: postToDelete }).unwrap();
       refetchPosts();
       setShowDeletePostDialog(false);
       setPostToDelete(null);
     } catch (error) {
-      console.error('Failed to delete post:', error);
-      Alert.alert('Error', 'Failed to delete post.');
+      console.error("Failed to delete post:", error);
+      Alert.alert("Error", "Failed to delete post.");
       setShowDeletePostDialog(false);
       setPostToDelete(null);
     }
@@ -332,7 +365,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     setShowDeletePostDialog(false);
     setPostToDelete(null);
   };
-  
+
   const workoutSessions = useMemo(() => {
     if (!workoutHistoryData?.status) {
       return [];
@@ -444,24 +477,29 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
     const rawExercises =
       ((detailedWorkout?.workoutExercises as any[]) ??
-        (sourceWorkout?.workoutExercises as any[]) ??
-        []) ?? [];
+        (sourceWorkout?.workoutExercises as any[]) ?? []) ?? [];
 
     const exercises = rawExercises
       .slice()
       .sort((a: any, b: any) => (a?.order ?? 0) - (b?.order ?? 0))
       .map((workoutExercise: any, index: number) => {
-        const exerciseDetails = workoutExercise?.exercise ?? workoutExercise?.exerciseDetails ?? {};
+        const exerciseDetails =
+          workoutExercise?.exercise ?? workoutExercise?.exerciseDetails ?? {};
         const fallbackName = `Exercise ${
           (workoutExercise?.order ?? index + 1) || index + 1
         }`;
-        const name = (exerciseDetails?.name ?? workoutExercise?.name ?? fallbackName).trim();
+        const name = (
+          exerciseDetails?.name ??
+          workoutExercise?.name ??
+          fallbackName
+        ).trim();
 
         return {
           name,
           sets: workoutExercise?.sets ?? null,
           reps: workoutExercise?.reps ?? null,
-          durationSeconds: workoutExercise?.duration ?? exerciseDetails?.duration ?? null,
+          durationSeconds:
+            workoutExercise?.duration ?? exerciseDetails?.duration ?? null,
           weight: workoutExercise?.weight ?? null,
           notes: workoutExercise?.notes ?? exerciseDetails?.description ?? null,
         };
@@ -509,7 +547,9 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
       description:
         sourceWorkout?.description ??
         "Stay consistent and give your best effort today!",
-      type: String(sourceWorkout?.type ?? detailedWorkout?.type ?? "mixed").toLowerCase(),
+      type: String(
+        sourceWorkout?.type ?? detailedWorkout?.type ?? "mixed"
+      ).toLowerCase(),
       duration: durationMinutes,
       difficulty: String(
         sourceWorkout?.difficulty ?? detailedWorkout?.difficulty ?? "medium"
@@ -517,12 +557,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
       exercises,
       completed: completedToday,
     };
-  }, [
-    workoutOfTheDayId,
-    workouts,
-    workoutDetailData,
-    workoutSessions,
-  ]);
+  }, [workoutOfTheDayId, workouts, workoutDetailData, workoutSessions]);
 
   useEffect(() => {
     setShowAllWorkoutExercises(false);
@@ -595,7 +630,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
       };
     });
   }, [potentialMatchesData]);
-  
+
   const recentActivities = useMemo<ActivityItem[]>(() => {
     const activities: ActivityItem[] = [];
 
@@ -641,7 +676,9 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         detailParts.join(" • ") || "Great job staying consistent!";
 
       activities.push({
-        id: `workout-${session?.id ?? completionDate?.getTime() ?? Math.random()}`,
+        id: `workout-${
+          session?.id ?? completionDate?.getTime() ?? Math.random()
+        }`,
         type: "workout",
         icon: "🏋️",
         title: workoutTitle,
@@ -671,129 +708,141 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         });
       });
 
-      if (userPostsData?.status) {
-        const posts = ((userPostsData.data as any)?.posts ?? []) as any[];
+    if (userPostsData?.status) {
+      const posts = ((userPostsData.data as any)?.posts ?? []) as any[];
 
-        if (Array.isArray(posts) && posts.length > 0) {
-          const sortedPosts = posts
-            .filter((post) => post)
-            .sort((a, b) => {
-              const dateA = a?.createdAt ? new Date(a.createdAt) : null;
-              const dateB = b?.createdAt ? new Date(b.createdAt) : null;
-              const timeA = dateA && !Number.isNaN(dateA.getTime()) ? dateA.getTime() : 0;
-              const timeB = dateB && !Number.isNaN(dateB.getTime()) ? dateB.getTime() : 0;
-              return timeB - timeA;
-            });
+      if (Array.isArray(posts) && posts.length > 0) {
+        const sortedPosts = posts
+          .filter((post) => post)
+          .sort((a, b) => {
+            const dateA = a?.createdAt ? new Date(a.createdAt) : null;
+            const dateB = b?.createdAt ? new Date(b.createdAt) : null;
+            const timeA =
+              dateA && !Number.isNaN(dateA.getTime()) ? dateA.getTime() : 0;
+            const timeB =
+              dateB && !Number.isNaN(dateB.getTime()) ? dateB.getTime() : 0;
+            return timeB - timeA;
+          });
 
-          const workoutPosts = sortedPosts.filter(
-            (post) => post?.workout || post?.type === "workout_share"
+        const workoutPosts = sortedPosts.filter(
+          (post) => post?.workout || post?.type === "workout_share"
+        );
+
+        const prioritizedPosts = [
+          ...workoutPosts,
+          ...sortedPosts.filter((post) => !workoutPosts.includes(post)),
+        ];
+
+        const uniquePosts: any[] = [];
+        const seenPostIds = new Set<string>();
+
+        prioritizedPosts.forEach((post) => {
+          const postId = String(post?.id ?? "");
+          if (!postId || seenPostIds.has(postId)) {
+            return;
+          }
+          seenPostIds.add(postId);
+          uniquePosts.push(post);
+        });
+
+        uniquePosts.slice(0, 3).forEach((relevantPost) => {
+          const postDateRaw = relevantPost?.createdAt
+            ? new Date(relevantPost.createdAt)
+            : null;
+          const postDate =
+            postDateRaw && !Number.isNaN(postDateRaw.getTime())
+              ? postDateRaw
+              : null;
+
+          const workoutDetails = relevantPost?.workout ?? {};
+          const isWorkoutShare = Boolean(
+            workoutDetails?.title || workoutDetails?.totalDuration
           );
 
-          const prioritizedPosts = [
-            ...workoutPosts,
-            ...sortedPosts.filter((post) => !workoutPosts.includes(post)),
-          ];
+          const baseTitle =
+            relevantPost?.title ?? workoutDetails?.title ?? "Shared update";
 
-          const uniquePosts: any[] = [];
-          const seenPostIds = new Set<string>();
-
-          prioritizedPosts.forEach((post) => {
-            const postId = String(post?.id ?? "");
-            if (!postId || seenPostIds.has(postId)) {
-              return;
+          const postDetailParts: string[] = [];
+          if (isWorkoutShare) {
+            if (workoutDetails?.totalDuration) {
+              postDetailParts.push(`${workoutDetails.totalDuration} min`);
             }
-            seenPostIds.add(postId);
-            uniquePosts.push(post);
+            if (workoutDetails?.difficulty) {
+              postDetailParts.push(String(workoutDetails.difficulty));
+            }
+          }
+          if (relevantPost?.likeCount) {
+            postDetailParts.push(`${relevantPost.likeCount} likes`);
+          }
+
+          if (!postDetailParts.length && relevantPost?.commentCount != null) {
+            postDetailParts.push(`${relevantPost.commentCount} comments`);
+          }
+
+          const postDetailsText =
+            postDetailParts.join(" • ") ||
+            (isWorkoutShare
+              ? "Shared a new workout with the community."
+              : "Shared a new update with followers.");
+
+          activities.push({
+            id: `post-${relevantPost.id}`,
+            type: "post",
+            icon: isWorkoutShare ? "🔥" : "📝",
+            title: isWorkoutShare
+              ? `Workout shared: ${baseTitle}`
+              : `New post: ${baseTitle}`,
+            details: postDetailsText,
+            timestamp: postDate,
           });
+        });
+      }
+    }
 
-          uniquePosts.slice(0, 3).forEach((relevantPost) => {
-            const postDateRaw = relevantPost?.createdAt ? new Date(relevantPost.createdAt) : null;
-            const postDate =
-              postDateRaw && !Number.isNaN(postDateRaw.getTime()) ? postDateRaw : null;
+    if (followersData?.status) {
+      const followerUsers = ((followersData.data as any)?.users ?? []) as any[];
 
-            const workoutDetails = relevantPost?.workout ?? {};
-            const isWorkoutShare = Boolean(workoutDetails?.title || workoutDetails?.totalDuration);
+      if (Array.isArray(followerUsers) && followerUsers.length > 0) {
+        followerUsers
+          .slice()
+          .sort((a: any, b: any) => {
+            const dateA = a?.createdAt ? new Date(a.createdAt) : null;
+            const dateB = b?.createdAt ? new Date(b.createdAt) : null;
+            const timeA =
+              dateA && !Number.isNaN(dateA.getTime()) ? dateA.getTime() : 0;
+            const timeB =
+              dateB && !Number.isNaN(dateB.getTime()) ? dateB.getTime() : 0;
+            return timeB - timeA;
+          })
+          .slice(0, 3)
+          .forEach((follower: any, index: number) => {
+            const connectionName =
+              follower?.displayName ??
+              follower?.userName ??
+              follower?.email ??
+              `New connection ${index + 1}`;
 
-            const baseTitle =
-              relevantPost?.title ?? workoutDetails?.title ?? "Shared update";
-
-            const postDetailParts: string[] = [];
-            if (isWorkoutShare) {
-              if (workoutDetails?.totalDuration) {
-                postDetailParts.push(`${workoutDetails.totalDuration} min`);
-              }
-              if (workoutDetails?.difficulty) {
-                postDetailParts.push(String(workoutDetails.difficulty));
-              }
-            }
-            if (relevantPost?.likeCount) {
-              postDetailParts.push(`${relevantPost.likeCount} likes`);
-            }
-
-            if (!postDetailParts.length && relevantPost?.commentCount != null) {
-              postDetailParts.push(`${relevantPost.commentCount} comments`);
-            }
-
-            const postDetailsText =
-              postDetailParts.join(" • ") ||
-              (isWorkoutShare
-                ? "Shared a new workout with the community."
-                : "Shared a new update with followers.");
+            const connectionDateRaw = follower?.createdAt
+              ? new Date(follower.createdAt)
+              : null;
+            const connectionDate =
+              connectionDateRaw && !Number.isNaN(connectionDateRaw.getTime())
+                ? connectionDateRaw
+                : null;
 
             activities.push({
-              id: `post-${relevantPost.id}`,
-              type: "post",
-              icon: isWorkoutShare ? "🔥" : "📝",
-              title: isWorkoutShare
-                ? `Workout shared: ${baseTitle}`
-                : `New post: ${baseTitle}`,
-              details: postDetailsText,
-              timestamp: postDate,
+              id: `connection-${follower?.id ?? connectionName}-${index}`,
+              type: "connection",
+              icon: "🤝",
+              title: `New connection: ${connectionName}`,
+              details: follower?.email
+                ? `You connected with ${connectionName}`
+                : "You've made a new connection.",
+              timestamp: connectionDate,
             });
           });
-        }
       }
-
-      if (followersData?.status) {
-        const followerUsers = ((followersData.data as any)?.users ?? []) as any[];
-
-        if (Array.isArray(followerUsers) && followerUsers.length > 0) {
-          followerUsers
-            .slice()
-            .sort((a: any, b: any) => {
-              const dateA = a?.createdAt ? new Date(a.createdAt) : null;
-              const dateB = b?.createdAt ? new Date(b.createdAt) : null;
-              const timeA = dateA && !Number.isNaN(dateA.getTime()) ? dateA.getTime() : 0;
-              const timeB = dateB && !Number.isNaN(dateB.getTime()) ? dateB.getTime() : 0;
-              return timeB - timeA;
-            })
-            .slice(0, 3)
-            .forEach((follower: any, index: number) => {
-              const connectionName =
-                follower?.displayName ??
-                follower?.userName ??
-                follower?.email ??
-                `New connection ${index + 1}`;
-
-              const connectionDateRaw = follower?.createdAt ? new Date(follower.createdAt) : null;
-              const connectionDate =
-                connectionDateRaw && !Number.isNaN(connectionDateRaw.getTime())
-                  ? connectionDateRaw
-                  : null;
-
-              activities.push({
-                id: `connection-${follower?.id ?? connectionName}-${index}`,
-                type: "connection",
-                icon: "🤝",
-                title: `New connection: ${connectionName}`,
-                details: follower?.email
-                  ? `You connected with ${connectionName}`
-                  : "You've made a new connection.",
-                timestamp: connectionDate,
-              });
-            });
-        }
-      }
+    }
 
     return activities
       .sort((a, b) => {
@@ -802,17 +851,17 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         return timeB - timeA;
       })
       .slice(0, 6);
-    }, [workoutSessions, achievements, userPostsData, followersData]);
+  }, [workoutSessions, achievements, userPostsData, followersData]);
 
-    const isWorkoutOfTheDayLoading =
-      workoutsLoading || workoutDetailLoading || workoutDetailFetching;
+  const isWorkoutOfTheDayLoading =
+    workoutsLoading || workoutDetailLoading || workoutDetailFetching;
 
-    const isActivityLoading =
-      workoutHistoryLoading ||
-      achievementsLoading ||
-      userPostsLoading ||
-      followersLoading ||
-      followersFetching;
+  const isActivityLoading =
+    workoutHistoryLoading ||
+    achievementsLoading ||
+    userPostsLoading ||
+    followersLoading ||
+    followersFetching;
   const notes = useMemo<UserNoteItem[]>(() => {
     if (!notesData?.status) {
       return [];
@@ -902,7 +951,10 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             await deleteNoteMutation({ noteId }).unwrap();
           } catch (error) {
             console.error("Error deleting note:", error);
-            Alert.alert("Error", "We couldn't delete the note. Please try again.");
+            Alert.alert(
+              "Error",
+              "We couldn't delete the note. Please try again."
+            );
           } finally {
             setNoteBeingDeleted(null);
           }
@@ -912,7 +964,10 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   };
 
   const getProgressPercentage = (achievement: Achievement) => {
-    if (achievement.unlocked && (!achievement.maxProgress || !achievement.progress)) {
+    if (
+      achievement.unlocked &&
+      (!achievement.maxProgress || !achievement.progress)
+    ) {
       return 100;
     }
 
@@ -938,7 +993,10 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
       detailParts.push(`${exercise.reps} reps`);
     }
 
-    if (exercise.durationSeconds !== null && exercise.durationSeconds !== undefined) {
+    if (
+      exercise.durationSeconds !== null &&
+      exercise.durationSeconds !== undefined
+    ) {
       const minutes = Math.round(exercise.durationSeconds / 60);
       if (minutes >= 1) {
         detailParts.push(`${minutes} min`);
@@ -968,22 +1026,22 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
   const getTimeAgo = (date: Date) => {
     const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
-    
+
     let interval = seconds / 31536000;
     if (interval > 1) return Math.floor(interval) + "y ago";
-    
+
     interval = seconds / 2592000;
     if (interval > 1) return Math.floor(interval) + "mo ago";
-    
+
     interval = seconds / 86400;
     if (interval > 1) return Math.floor(interval) + "d ago";
-    
+
     interval = seconds / 3600;
     if (interval > 1) return Math.floor(interval) + "h ago";
-    
+
     interval = seconds / 60;
     if (interval > 1) return Math.floor(interval) + "m ago";
-    
+
     return "Just now";
   };
 
@@ -1009,8 +1067,8 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
               onPress={() => navigation.navigate("Profile")}
             >
               {user?.imageUrl ? (
-                <Image 
-                  source={{ uri: user.imageUrl }} 
+                <Image
+                  source={{ uri: user.imageUrl }}
                   style={styles.profileButtonImage}
                 />
               ) : (
@@ -1095,13 +1153,16 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             ) : !workoutOfTheDay ? (
               <View style={styles.emptyState}>
                 <Text style={styles.emptyStateText}>
-                  No workouts available right now. Check back later or browse all workouts.
+                  No workouts available right now. Check back later or browse
+                  all workouts.
                 </Text>
                 <TouchableOpacity
                   style={styles.emptyStateButton}
                   onPress={() => navigation.navigate("SelectWorkout")}
                 >
-                  <Text style={styles.emptyStateButtonText}>Browse Workouts</Text>
+                  <Text style={styles.emptyStateButtonText}>
+                    Browse Workouts
+                  </Text>
                 </TouchableOpacity>
               </View>
             ) : (
@@ -1136,19 +1197,26 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                     </Text>
                   ) : (
                     <>
-                      {workoutOfTheDayExercises.visible.map((exercise, index) => (
-                        <View key={`${exercise.name}-${index}`} style={styles.workoutOfTheDayExercise}>
-                          <Text style={styles.workoutOfTheDayExerciseName}>
-                            {exercise.name}
-                          </Text>
-                          <Text style={styles.workoutOfTheDayExerciseDetails}>
-                            {formatExerciseDetails(exercise)}
-                          </Text>
-                        </View>
-                      ))}
+                      {workoutOfTheDayExercises.visible.map(
+                        (exercise, index) => (
+                          <View
+                            key={`${exercise.name}-${index}`}
+                            style={styles.workoutOfTheDayExercise}
+                          >
+                            <Text style={styles.workoutOfTheDayExerciseName}>
+                              {exercise.name}
+                            </Text>
+                            <Text style={styles.workoutOfTheDayExerciseDetails}>
+                              {formatExerciseDetails(exercise)}
+                            </Text>
+                          </View>
+                        )
+                      )}
                       {workoutOfTheDayExercises.hiddenCount > 0 && (
                         <TouchableOpacity
-                          onPress={() => setShowAllWorkoutExercises((prev) => !prev)}
+                          onPress={() =>
+                            setShowAllWorkoutExercises((prev) => !prev)
+                          }
                           style={styles.workoutOfTheDayToggle}
                         >
                           <Text style={styles.workoutOfTheDayMoreExercises}>
@@ -1192,48 +1260,73 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                 <Text style={styles.viewAllButton}>{STRINGS.HOME.viewAll}</Text>
               </TouchableOpacity>
             </View>
-            
+
             {postsLoading ? (
-              <View style={{ padding: 20, alignItems: 'center' }}>
+              <View style={{ padding: 20, alignItems: "center" }}>
                 <ActivityIndicator size="small" color={COLORS.primary} />
               </View>
             ) : communityPosts.length === 0 ? (
               <View style={styles.emptyState}>
-                <Text style={styles.emptyStateText}>No posts yet. Be the first to share!</Text>
-                <TouchableOpacity 
+                <Text style={styles.emptyStateText}>
+                  No posts yet. Be the first to share!
+                </Text>
+                <TouchableOpacity
                   style={styles.emptyStateButton}
-                  onPress={() => navigation.navigate('CreatePost')}
+                  onPress={() => navigation.navigate("CreatePost")}
                 >
                   <Text style={styles.emptyStateButtonText}>Create Post</Text>
                 </TouchableOpacity>
               </View>
             ) : (
-              <TouchableOpacity 
-                activeOpacity={1} 
+              <TouchableOpacity
+                activeOpacity={1}
                 onPress={() => setOpenPostMenuId(null)}
                 style={styles.socialFeed}
               >
                 {communityPosts.slice(0, 3).map((post: any) => {
-                  console.log('Rendering post:', post?.id, 'workout:', post?.workout, 'achievement:', post?.achievement);
-                  
+                  console.log(
+                    "Rendering post:",
+                    post?.id,
+                    "workout:",
+                    post?.workout,
+                    "achievement:",
+                    post?.achievement
+                  );
+
                   const postUser = post.user || {};
                   // Use displayName, userName, or email as fallback
-                  const userName = postUser.displayName || postUser.userName || postUser.email || 'Anonymous User';
-                  const initials = userName !== 'Anonymous User'
-                    ? userName.split(' ').map((n: string) => n[0]).join('').toUpperCase().substring(0, 2)
-                    : 'AU';
+                  const userName =
+                    postUser.displayName ||
+                    postUser.userName ||
+                    postUser.email ||
+                    "Anonymous User";
+                  const initials =
+                    userName !== "Anonymous User"
+                      ? userName
+                          .split(" ")
+                          .map((n: string) => n[0])
+                          .join("")
+                          .toUpperCase()
+                          .substring(0, 2)
+                      : "AU";
                   const timeAgo = getTimeAgo(new Date(post.createdAt));
                   const postId = post.id?.toString?.() ?? String(post.id);
-                  const currentReaction = (post.currentUserReaction ?? null) as ReactionType | null;
-                  const reactionSummary = (post.reactionSummary ?? undefined) as Record<ReactionType, number> | undefined;
+                  const currentReaction = (post.currentUserReaction ??
+                    null) as ReactionType | null;
+                  const reactionSummary = (post.reactionSummary ??
+                    undefined) as Record<ReactionType, number> | undefined;
                   const nonLikeReactionTotal = reactionSummary
-                    ? Object.entries(reactionSummary).reduce((acc, [type, count]) => {
-                        if (type === "like") {
-                          return acc;
-                        }
-                        const safeCount = typeof count === "number" ? count : 0;
-                        return acc + safeCount;
-                      }, 0)
+                    ? Object.entries(reactionSummary).reduce(
+                        (acc, [type, count]) => {
+                          if (type === "like") {
+                            return acc;
+                          }
+                          const safeCount =
+                            typeof count === "number" ? count : 0;
+                          return acc + safeCount;
+                        },
+                        0
+                      )
                     : 0;
                   const userHasNonLikeReaction =
                     currentReaction != null && currentReaction !== "like";
@@ -1241,7 +1334,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                     (reactingPostId === postId && likingPostId !== postId) ||
                     nonLikeReactionTotal > 0 ||
                     userHasNonLikeReaction;
-                  
+
                   return (
                     <Pressable
                       key={post.id}
@@ -1252,23 +1345,23 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                       <View style={styles.socialPostHeader}>
                         <View style={styles.socialPostAvatar}>
                           {postUser.imageUrl ? (
-                            <Image 
-                              source={{ uri: postUser.imageUrl }} 
+                            <Image
+                              source={{ uri: postUser.imageUrl }}
                               style={styles.socialPostAvatarImage}
                             />
                           ) : (
-                            <Text style={styles.socialPostAvatarText}>{initials}</Text>
+                            <Text style={styles.socialPostAvatarText}>
+                              {initials}
+                            </Text>
                           )}
                         </View>
                         <View style={styles.socialPostInfo}>
-                          <Text style={styles.socialPostName}>
-                            {userName}
-                          </Text>
+                          <Text style={styles.socialPostName}>{userName}</Text>
                           <Text style={styles.socialPostTime}>{timeAgo}</Text>
                         </View>
                         {user?.id === post.userId && (
                           <View>
-                            <TouchableOpacity 
+                            <TouchableOpacity
                               style={styles.socialPostMenu}
                               onPress={() => handlePostMenuPress(postId)}
                             >
@@ -1276,54 +1369,70 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                             </TouchableOpacity>
                             {openPostMenuId === postId && (
                               <View style={styles.postMenuDropdown}>
-                                <TouchableOpacity 
-                                  onPress={() => handleEditPostPress(postId, post.title || '')}
+                                <TouchableOpacity
+                                  onPress={() =>
+                                    handleEditPostPress(
+                                      postId,
+                                      post.title || ""
+                                    )
+                                  }
                                   style={styles.postMenuOption}
                                 >
-                                  <Text style={styles.postMenuOptionText}>Edit</Text>
+                                  <Text style={styles.postMenuOptionText}>
+                                    Edit
+                                  </Text>
                                 </TouchableOpacity>
-                                <TouchableOpacity 
+                                <TouchableOpacity
                                   onPress={() => handleDeletePostPress(postId)}
                                   style={styles.postMenuOption}
                                 >
-                                  <Text style={styles.postMenuOptionText}>Delete</Text>
+                                  <Text style={styles.postMenuOptionText}>
+                                    Delete
+                                  </Text>
                                 </TouchableOpacity>
                               </View>
                             )}
                           </View>
                         )}
                       </View>
-                      <Text style={styles.socialPostContent}>
-                        {post.title}
-                      </Text>
-                      
+                      <Text style={styles.socialPostContent}>{post.title}</Text>
+
                       {/* Workout Information */}
                       {post.workout && (
                         <View style={styles.postWorkoutBadge}>
                           <Text style={styles.postWorkoutIcon}>💪</Text>
                           <View style={styles.postWorkoutInfo}>
-                            <Text style={styles.postWorkoutTitle}>{post.workout.title}</Text>
+                            <Text style={styles.postWorkoutTitle}>
+                              {post.workout.title}
+                            </Text>
                             <Text style={styles.postWorkoutDetails}>
-                              {post.workout.totalDuration} min • {post.workout.difficulty}
+                              {post.workout.totalDuration} min •{" "}
+                              {post.workout.difficulty}
                             </Text>
                           </View>
                         </View>
                       )}
-                      
+
                       {/* Achievement Information */}
                       {post.achievement && (
                         <View style={styles.postAchievementBadge}>
-                          <Text style={styles.postAchievementIcon}>{post.achievement.icon || '🏆'}</Text>
+                          <Text style={styles.postAchievementIcon}>
+                            {post.achievement.icon || "🏆"}
+                          </Text>
                           <View style={styles.postAchievementInfo}>
-                            <Text style={styles.postAchievementTitle}>{post.achievement.title}</Text>
-                            <Text style={styles.postAchievementDescription}>{post.achievement.description}</Text>
+                            <Text style={styles.postAchievementTitle}>
+                              {post.achievement.title}
+                            </Text>
+                            <Text style={styles.postAchievementDescription}>
+                              {post.achievement.description}
+                            </Text>
                           </View>
                         </View>
                       )}
-                      
+
                       {post.mediaUrl && (
-                        <Image 
-                          source={{ uri: post.mediaUrl }} 
+                        <Image
+                          source={{ uri: post.mediaUrl }}
                           style={styles.socialPostImage}
                           resizeMode="cover"
                         />
@@ -1335,7 +1444,10 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                           disabled={likingPostId === postId}
                         >
                           {likingPostId === postId ? (
-                            <ActivityIndicator size="small" color={COLORS.primary} />
+                            <ActivityIndicator
+                              size="small"
+                              color={COLORS.primary}
+                            />
                           ) : (
                             <>
                               <Image
@@ -1356,28 +1468,30 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                             </>
                           )}
                         </TouchableOpacity>
-                        <TouchableOpacity 
+                        <TouchableOpacity
                           style={styles.socialPostAction}
                           onPress={() => handleOpenComments(postId)}
                         >
-                          <Image 
-                            source={CommentRemove} 
-                            style={[styles.socialPostActionIcon,]}
+                          <Image
+                            source={CommentRemove}
+                            style={[styles.socialPostActionIcon]}
                           />
                           <Text style={styles.socialPostActionText}>
                             {post.commentCount || 0}
                           </Text>
                         </TouchableOpacity>
-                        <TouchableOpacity 
-                          style={styles.socialPostAction}
-                        >
+                        <TouchableOpacity style={styles.socialPostAction}>
                           {/* <Text style={styles.handshakeIcon}>🤝</Text> */}
                         </TouchableOpacity>
                       </View>
                       {shouldShowReactions && (
                         <View style={styles.socialPostReactionsRow}>
-                          {reactingPostId === postId && likingPostId !== postId ? (
-                            <ActivityIndicator size="small" color={COLORS.primary} />
+                          {reactingPostId === postId &&
+                          likingPostId !== postId ? (
+                            <ActivityIndicator
+                              size="small"
+                              color={COLORS.primary}
+                            />
                           ) : (
                             <ReactionSummary
                               summary={reactionSummary}
@@ -1409,13 +1523,16 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             ) : suggestedPartners.length === 0 ? (
               <View style={styles.emptyState}>
                 <Text style={styles.emptyStateText}>
-                  No partner suggestions yet. Update your profile or start matching to see recommendations.
+                  No partner suggestions yet. Update your profile or start
+                  matching to see recommendations.
                 </Text>
                 <TouchableOpacity
                   style={styles.emptyStateButton}
                   onPress={() => navigation.navigate("Find")}
                 >
-                  <Text style={styles.emptyStateButtonText}>Explore Partners</Text>
+                  <Text style={styles.emptyStateButtonText}>
+                    Explore Partners
+                  </Text>
                 </TouchableOpacity>
               </View>
             ) : (
@@ -1423,6 +1540,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 style={styles.friendSuggestions}
+                contentContainerStyle={{ paddingRight: r(30) }} // Add this line
               >
                 {suggestedPartners.slice(0, 6).map((partner) => {
                   const initials = partner.name
@@ -1434,7 +1552,10 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
                   const detailParts: string[] = [];
 
-                  if (partner.trainingTypes && partner.trainingTypes.length > 0) {
+                  if (
+                    partner.trainingTypes &&
+                    partner.trainingTypes.length > 0
+                  ) {
                     detailParts.push(partner.trainingTypes[0]);
                   }
 
@@ -1444,8 +1565,9 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                     detailParts.push(partner.experienceLevel);
                   }
 
-                  const detailText = detailParts.join(" • ") || "Ready to train";
-
+                  const detailText =
+                    detailParts.join(" • ") || "Ready to train";
+                    {console.log("Rendering suggested partner:", partner);}
                   return (
                     <View key={partner.id} style={styles.friendSuggestionCard}>
                       <View style={styles.friendSuggestionAvatar}>
@@ -1460,13 +1582,19 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                           </Text>
                         )}
                       </View>
-                      <Text style={styles.friendSuggestionName}>{partner.name}</Text>
-                      <Text style={styles.friendSuggestionDetails}>{detailText}</Text>
+                      <Text style={styles.friendSuggestionName}>
+                        {partner.name}
+                      </Text>
+                      <Text style={styles.friendSuggestionDetails}>
+                        {detailText}
+                      </Text>
                       <TouchableOpacity
                         style={styles.friendSuggestionButton}
                         onPress={() => navigation.navigate("Find")}
                       >
-                        <Text style={styles.friendSuggestionButtonText}>Connect</Text>
+                        <Text style={styles.friendSuggestionButtonText}>
+                          Connect
+                        </Text>
                       </TouchableOpacity>
                     </View>
                   );
@@ -1477,7 +1605,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
           {/* Quick Actions */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Quick Actions</Text>
+            <Text style={styles.sectionTitleWithSideText}>Quick Actions</Text>
             <View style={styles.quickActionsGrid}>
               <TouchableOpacity
                 style={styles.quickActionCard}
@@ -1554,14 +1682,18 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
               onPress={() => setQuickActionsExpanded((prev) => !prev)}
             >
               <Text style={styles.quickActionToggleText}>
-                {quickActionsExpanded ? "Show fewer actions" : "Show more actions"}
+                {quickActionsExpanded
+                  ? "Show fewer actions"
+                  : "Show more actions"}
               </Text>
             </TouchableOpacity>
           </View>
 
           {/* Notes Section */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{STRINGS.HOME.quickNotes}</Text>
+            <Text style={styles.sectionTitleWithSideText}>
+              {STRINGS.HOME.quickNotes}
+            </Text>
             <View style={styles.notesCard}>
               <View style={styles.notesInputContainer}>
                 <TextInput
@@ -1622,10 +1754,15 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                         <TouchableOpacity
                           onPress={() => deleteNote(note.id)}
                           style={styles.deleteNoteButton}
-                          disabled={noteBeingDeleted === note.id || isDeletingNote}
+                          disabled={
+                            noteBeingDeleted === note.id || isDeletingNote
+                          }
                         >
                           {noteBeingDeleted === note.id ? (
-                            <ActivityIndicator size="small" color={COLORS.primary} />
+                            <ActivityIndicator
+                              size="small"
+                              color={COLORS.primary}
+                            />
                           ) : (
                             <Text style={styles.deleteNoteText}>🗑️</Text>
                           )}
@@ -1647,7 +1784,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
           {/* Gamification - Achievements */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>🏆 Achievements</Text>
+            <Text style={styles.sectionTitleWithSideText}>🏆 Achievements</Text>
             {achievementsLoading ? (
               <View style={styles.sectionLoader}>
                 <ActivityIndicator size="small" color={COLORS.primary} />
@@ -1677,7 +1814,9 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
                   return (
                     <View key={achievement.id} style={styles.achievementCard}>
-                      <Text style={styles.achievementIcon}>{achievement.icon}</Text>
+                      <Text style={styles.achievementIcon}>
+                        {achievement.icon}
+                      </Text>
                       <Text style={styles.achievementTitle}>
                         {achievement.title}
                       </Text>
@@ -1714,7 +1853,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
           {/* Recent Activity */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Recent Activity</Text>
+            <Text style={styles.sectionTitleWithSideText}>Recent Activity</Text>
             {isActivityLoading ? (
               <View style={styles.sectionLoader}>
                 <ActivityIndicator size="small" color={COLORS.primary} />
@@ -1722,7 +1861,8 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             ) : recentActivities.length === 0 ? (
               <View style={styles.emptyState}>
                 <Text style={styles.emptyStateText}>
-                  Your latest workouts and achievements will appear here once you start logging sessions.
+                  Your latest workouts and achievements will appear here once
+                  you start logging sessions.
                 </Text>
               </View>
             ) : (
@@ -1732,7 +1872,9 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                     <Text style={styles.activityIcon}>{activity.icon}</Text>
                     <View style={styles.activityContent}>
                       <Text style={styles.activityTitle}>{activity.title}</Text>
-                      <Text style={styles.activityDetails}>{activity.details}</Text>
+                      <Text style={styles.activityDetails}>
+                        {activity.details}
+                      </Text>
                     </View>
                     <Text style={styles.activityTime}>
                       {activity.timestamp
@@ -1757,11 +1899,14 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             </TouchableOpacity>
           </View>
         </View>
-  </RefreshableScrollView>
+      </RefreshableScrollView>
 
       <ReactionPicker
         visible={Boolean(reactionPickerPostId)}
-        currentReaction={(reactionPickerPost?.currentUserReaction ?? null) as ReactionType | null}
+        currentReaction={
+          (reactionPickerPost?.currentUserReaction ??
+            null) as ReactionType | null
+        }
         onSelect={(reaction) => {
           if (!reactionPickerPostId) {
             return;
@@ -1770,8 +1915,11 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         }}
         onClose={handleCloseReactionPicker}
         onRemoveReaction={() => {
-          const activePostId = reactionPickerPostId ?? (reactionPickerPost?.id ? String(reactionPickerPost.id) : null);
-          const activeReaction = (reactionPickerPost?.currentUserReaction ?? null) as ReactionType | null;
+          const activePostId =
+            reactionPickerPostId ??
+            (reactionPickerPost?.id ? String(reactionPickerPost.id) : null);
+          const activeReaction = (reactionPickerPost?.currentUserReaction ??
+            null) as ReactionType | null;
 
           if (!activePostId || !activeReaction) {
             return;
@@ -1856,12 +2004,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderWidth: 1,
     borderColor: COLORS.border,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   profileButtonImage: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
   },
   profileButtonText: {
     fontSize: 20,
@@ -1875,6 +2023,13 @@ const styles = StyleSheet.create({
     paddingTop: 20,
   },
   sectionTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: COLORS.text,
+    // marginBottom: DIMENSIONS.spacing.md,
+  },
+
+  sectionTitleWithSideText: {
     fontSize: 20,
     fontWeight: "bold",
     color: COLORS.text,
@@ -2363,7 +2518,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginRight: DIMENSIONS.spacing.md,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   socialPostAvatarImage: {
     width: 40,
@@ -2376,7 +2531,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   socialPostImage: {
-    width: '100%',
+    width: "100%",
     height: 200,
     borderRadius: DIMENSIONS.borderRadius,
     marginTop: DIMENSIONS.spacing.sm,
@@ -2386,7 +2541,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surface,
     borderRadius: DIMENSIONS.borderRadius,
     padding: DIMENSIONS.spacing.xl,
-    alignItems: 'center',
+    alignItems: "center",
     borderWidth: 1,
     borderColor: COLORS.border,
   },
@@ -2394,7 +2549,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.textSecondary,
     marginBottom: DIMENSIONS.spacing.md,
-    textAlign: 'center',
+    textAlign: "center",
   },
   emptyStateButton: {
     backgroundColor: COLORS.primary,
@@ -2405,7 +2560,7 @@ const styles = StyleSheet.create({
   emptyStateButtonText: {
     color: COLORS.white,
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   socialPostInfo: {
     flex: 1,
@@ -2426,17 +2581,17 @@ const styles = StyleSheet.create({
   socialPostMenuText: {
     fontSize: 18,
     color: COLORS.textSecondary,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   postMenuDropdown: {
-    position: 'absolute',
+    position: "absolute",
     top: 35,
     right: 0,
     backgroundColor: COLORS.surface,
     borderRadius: 8,
     paddingVertical: DIMENSIONS.spacing.xs,
     minWidth: 120,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
@@ -2449,8 +2604,8 @@ const styles = StyleSheet.create({
   },
   postMenuOptionText: {
     fontSize: 14,
-    color: '#FF3B30',
-    fontWeight: '500',
+    color: "#FF3B30",
+    fontWeight: "500",
   },
   socialPostContent: {
     fontSize: 14,
@@ -2641,8 +2796,8 @@ const styles = StyleSheet.create({
     marginRight: DIMENSIONS.spacing.sm,
   },
   workoutBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: COLORS._D2E7FF,
     borderRadius: 12,
     padding: DIMENSIONS.spacing.md,
@@ -2667,16 +2822,16 @@ const styles = StyleSheet.create({
     color: COLORS._616888,
   },
   achievementBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: COLORS._FFF5E9,
     borderRadius: 12,
     padding: DIMENSIONS.spacing.md,
     marginTop: DIMENSIONS.spacing.sm,
   },
   postWorkoutBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: COLORS._D2E7FF,
     borderRadius: 12,
     padding: DIMENSIONS.spacing.md,
@@ -2701,8 +2856,8 @@ const styles = StyleSheet.create({
     color: COLORS._616888,
   },
   postAchievementBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: COLORS._FFF5E9,
     borderRadius: 12,
     padding: DIMENSIONS.spacing.md,
@@ -2726,8 +2881,6 @@ const styles = StyleSheet.create({
     fontFamily: FontWeight.Regular,
     color: COLORS._616888,
   },
-
-
 });
 
 export default HomeScreen;

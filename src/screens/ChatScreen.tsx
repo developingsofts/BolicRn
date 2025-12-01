@@ -1,4 +1,10 @@
-import React, { useRef, useEffect, useState, useMemo, useCallback } from "react";
+import React, {
+  useRef,
+  useEffect,
+  useState,
+  useMemo,
+  useCallback,
+} from "react";
 import {
   View,
   Text,
@@ -62,7 +68,13 @@ const formatDateSeparator = (date: Date) => {
 };
 
 const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
-  const { conversationId, conversationName, partnerName, partnerId, initialMessage } = route.params || {};
+  const {
+    conversationId,
+    conversationName,
+    partnerName,
+    partnerId,
+    initialMessage,
+  } = route.params || {};
   const resolvedConversationId =
     conversationId !== undefined && conversationId !== null
       ? Number(conversationId)
@@ -79,6 +91,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
     isFetchingMessages,
     createConversation,
     isLoadingOlderMessages,
+    isSocketConnected,
     hasMoreMessages,
     loadOlderMessages,
   } = useChat({ conversationId: resolvedConversationId });
@@ -103,8 +116,14 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
   const isUserScrollingRef = useRef(false);
   const lastScrollOffsetRef = useRef(0);
 
-  const chatTitle = conversationName ?? partnerName ?? STRINGS.CHAT.defaultTitle;
-  const avatarInitial = chatTitle?.charAt(0)?.toUpperCase() ?? STRINGS.CHAT.defaultTitle.charAt(0);
+  const chatTitle =
+    conversationName ?? partnerName ?? STRINGS.CHAT.defaultTitle;
+  const avatarInitial =
+    chatTitle?.charAt(0)?.toUpperCase() ?? STRINGS.CHAT.defaultTitle.charAt(0);
+
+  useEffect(() => {
+    console.log("Socket connected:", isSocketConnected);
+  }, [isSocketConnected]);
 
   useEffect(() => {
     if (
@@ -129,7 +148,11 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
         if (response.status && response.data?.conversation?.id) {
           navigation.setParams({
             conversationId: response.data.conversation.id,
-            conversationName: response.data.conversation.name ?? conversationName ?? partnerName ?? chatTitle,
+            conversationName:
+              response.data.conversation.name ??
+              conversationName ??
+              partnerName ??
+              chatTitle,
           });
         } else {
           hasRequestedConversationRef.current = false;
@@ -153,17 +176,14 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
 
   const shouldShowInitialLoader = isPreparingConversation || isFetchingMessages;
 
-  const scrollToBottom = useCallback(
-    (animated: boolean = true) => {
-      if (!flatListRef.current) {
-        return;
-      }
-      requestAnimationFrame(() => {
-        flatListRef.current?.scrollToEnd({ animated });
-      });
-    },
-    []
-  );
+  const scrollToBottom = useCallback((animated: boolean = true) => {
+    if (!flatListRef.current) {
+      return;
+    }
+    requestAnimationFrame(() => {
+      flatListRef.current?.scrollToEnd({ animated });
+    });
+  }, []);
 
   const handleLoadOlder = useCallback(() => {
     if (!hasMoreMessages || isLoadingOlderMessages || shouldShowInitialLoader) {
@@ -171,7 +191,12 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
     }
     suppressAutoScrollRef.current = true;
     void loadOlderMessages();
-  }, [hasMoreMessages, isLoadingOlderMessages, shouldShowInitialLoader, loadOlderMessages]);
+  }, [
+    hasMoreMessages,
+    isLoadingOlderMessages,
+    shouldShowInitialLoader,
+    loadOlderMessages,
+  ]);
 
   const handleScrollBeginDrag = useCallback(() => {
     isUserScrollingRef.current = true;
@@ -183,7 +208,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
 
   const handleListScroll = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-      const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+      const { contentOffset, contentSize, layoutMeasurement } =
+        event.nativeEvent;
 
       const offsetY = contentOffset.y;
       const previousOffset = lastScrollOffsetRef.current;
@@ -195,7 +221,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
 
       lastScrollOffsetRef.current = offsetY;
 
-      const distanceFromBottom = contentSize.height - (layoutMeasurement.height + offsetY);
+      const distanceFromBottom =
+        contentSize.height - (layoutMeasurement.height + offsetY);
       isUserNearBottomRef.current = distanceFromBottom <= 40;
     },
     [handleLoadOlder]
@@ -221,28 +248,35 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
     return messages.map((message, index, array) => {
       const timestamp = new Date(message.createdAt);
       const previous = index > 0 ? array[index - 1] : undefined;
-      const previousTimestamp = previous ? new Date(previous.createdAt) : undefined;
-      const showDateSeparator = !previousTimestamp || !isSameDay(timestamp, previousTimestamp);
+      const previousTimestamp = previous
+        ? new Date(previous.createdAt)
+        : undefined;
+      const showDateSeparator =
+        !previousTimestamp || !isSameDay(timestamp, previousTimestamp);
 
       const reactions = message.reactions ?? [];
       const reactionCount = reactions.length;
-      const hasLiked = userIdNumeric != null
-        ? reactions.some((reaction) => reaction.userId === userIdNumeric)
-        : false;
+      const hasLiked =
+        userIdNumeric != null
+          ? reactions.some((reaction) => reaction.userId === userIdNumeric)
+          : false;
 
       const text = message.content?.trim().length
         ? message.content
         : message.attachmentUrl
-          ? STRINGS.MESSAGES.attachmentPlaceholder
-          : STRINGS.MESSAGES.noMessagesYet;
+        ? STRINGS.MESSAGES.attachmentPlaceholder
+        : STRINGS.MESSAGES.noMessagesYet;
 
       return {
         id: message.id.toString(),
         text,
-        isMe: userIdNumeric != null ? message.senderId === userIdNumeric : false,
+        isMe:
+          userIdNumeric != null ? message.senderId === userIdNumeric : false,
         timestamp,
         showDateSeparator,
-        dateSeparator: showDateSeparator ? formatDateSeparator(timestamp) : undefined,
+        dateSeparator: showDateSeparator
+          ? formatDateSeparator(timestamp)
+          : undefined,
         attachmentUrl: message.attachmentUrl ?? null,
         messageType: message.messageType,
         reactionCount,
@@ -309,11 +343,15 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
 
   const handleSend = useCallback(async () => {
     const trimmed = messageInput.trim();
+    console.log("Sending message:", trimmed, resolvedConversationId);
     if (!trimmed || resolvedConversationId === undefined) {
       return;
     }
     isUserNearBottomRef.current = true;
-    await sendMessage({ conversationId: resolvedConversationId, content: trimmed });
+    await sendMessage({
+      conversationId: resolvedConversationId,
+      content: trimmed,
+    });
     setMessageInput("");
     emitTyping(false);
     if (typingTimeoutRef.current) {
@@ -322,12 +360,15 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
     }
   }, [messageInput, resolvedConversationId, sendMessage, emitTyping]);
 
-  useEffect(() => () => {
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
-    }
-    emitTyping(false);
-  }, [emitTyping]);
+  useEffect(
+    () => () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      emitTyping(false);
+    },
+    [emitTyping]
+  );
 
   // Handle keyboard events
   useEffect(() => {
@@ -360,7 +401,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
       <SafeAreaView edges={["left", "right"]} style={styles.container}>
         <View style={styles.mainContent}>
           <BasicTopBar
-          contentStyle={{alignItems:"center"}}
+            contentStyle={{ alignItems: "center" }}
             showBackButton={false}
             containerStyle={styles.header}
             title={chatTitle}
@@ -395,7 +436,10 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
               scrollEnabled={true}
               directionalLockEnabled={true}
               scrollEventThrottle={16}
-              maintainVisibleContentPosition={{ minIndexForVisible: 0, autoscrollToTopThreshold: 20 }}
+              maintainVisibleContentPosition={{
+                minIndexForVisible: 0,
+                autoscrollToTopThreshold: 20,
+              }}
               removeClippedSubviews={false}
               maxToRenderPerBatch={20}
               updateCellsBatchingPeriod={30}
@@ -431,7 +475,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
                 typingUsers.length > 0 ? (
                   <View style={styles.typingContainer}>
                     <Text style={styles.typingText}>
-                      {`${partnerName ?? STRINGS.MESSAGES.partnerFallback} ${STRINGS.MESSAGES.typing}`}
+                      {`${partnerName ?? STRINGS.MESSAGES.partnerFallback} ${
+                        STRINGS.MESSAGES.typing
+                      }`}
                     </Text>
                   </View>
                 ) : (
@@ -445,8 +491,12 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
                   </View>
                 ) : (
                   <View style={styles.emptyMessagesContainer}>
-                    <Text style={styles.emptyMessagesTitle}>{STRINGS.MESSAGES.noMessages}</Text>
-                    <Text style={styles.emptyMessagesSubtitle}>{STRINGS.MESSAGES.startConversation}</Text>
+                    <Text style={styles.emptyMessagesTitle}>
+                      {STRINGS.MESSAGES.noMessages}
+                    </Text>
+                    <Text style={styles.emptyMessagesSubtitle}>
+                      {STRINGS.MESSAGES.startConversation}
+                    </Text>
                   </View>
                 )
               }
@@ -475,12 +525,17 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
                             ? styles.myMessageContentWithReaction
                             : styles.myMessageContent
                           : item.reactionCount > 0
-                            ? styles.theirMessageContentWithReaction
-                            : styles.theirMessageContent,
+                          ? styles.theirMessageContentWithReaction
+                          : styles.theirMessageContent,
                       ]}
                     >
                       {item.reactionCount > 0 && item.isMe ? (
-                        <View style={[styles.reactionBadge, styles.reactionBadgeMine]}>
+                        <View
+                          style={[
+                            styles.reactionBadge,
+                            styles.reactionBadgeMine,
+                          ]}
+                        >
                           <Image source={Like} style={styles.reactionIcon} />
                         </View>
                       ) : null}
@@ -495,7 +550,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
                         }}
                         style={[
                           styles.messagePressable,
-                          item.isMe ? styles.myMessagePressable : styles.theirMessagePressable,
+                          item.isMe
+                            ? styles.myMessagePressable
+                            : styles.theirMessagePressable,
                         ]}
                       >
                         <View
@@ -517,7 +574,12 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
                         </View>
                       </TouchableOpacity>
                       {item.reactionCount > 0 && !item.isMe ? (
-                        <View style={[styles.reactionBadge, styles.reactionBadgeTheirs]}>
+                        <View
+                          style={[
+                            styles.reactionBadge,
+                            styles.reactionBadgeTheirs,
+                          ]}
+                        >
                           <Image source={Like} style={styles.reactionIcon} />
                         </View>
                       ) : null}
@@ -548,7 +610,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
                 </TouchableOpacity>
               </View>
               <TouchableOpacity
-                disabled={!messageInput.trim() || resolvedConversationId === undefined}
+                disabled={
+                  !messageInput.trim() || resolvedConversationId === undefined
+                }
                 onPress={handleSend}
                 style={styles.sendButton}
               >
@@ -604,7 +668,6 @@ const styles = StyleSheet.create({
     textAlign: "left",
     justifyContent: "center",
     alignContent: "center",
-      
   },
   subtitle: {
     fontSize: 16,
@@ -672,7 +735,7 @@ const styles = StyleSheet.create({
   flatListContent: {
     padding: DIMENSIONS.spacing.md,
     paddingBottom: 30,
-    
+
     flexGrow: 1,
   },
   paginationLoader: {
@@ -682,7 +745,7 @@ const styles = StyleSheet.create({
   },
   placeholder: {
     fontSize: 16,
-    
+
     color: COLORS.textSecondary,
     fontStyle: "italic",
   },
@@ -708,7 +771,7 @@ const styles = StyleSheet.create({
     maxWidth: 300,
     minHeight: 33,
     paddingTop: 5.5,
-    
+
     paddingRight: 12,
     paddingBottom: 5.5,
     paddingLeft: 12,
@@ -717,43 +780,43 @@ const styles = StyleSheet.create({
   },
   messageContent: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: '100%',
+    flexDirection: "row",
+    alignItems: "center",
+    width: "100%",
   },
   myMessageContent: {
-    alignItems: 'center',
-    alignSelf: 'flex-end',
-    justifyContent: 'flex-end',
-    width: '100%',
+    alignItems: "center",
+    alignSelf: "flex-end",
+    justifyContent: "flex-end",
+    width: "100%",
   },
   myMessageContentWithReaction: {
-    alignItems: 'center',
-    alignSelf: 'flex-end',
-    justifyContent: 'space-between',
-    width: '100%',
+    alignItems: "center",
+    alignSelf: "flex-end",
+    justifyContent: "space-between",
+    width: "100%",
   },
   theirMessageContent: {
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    justifyContent: 'flex-start',
-    width: '100%',
+    alignItems: "center",
+    alignSelf: "flex-start",
+    justifyContent: "flex-start",
+    width: "100%",
   },
   theirMessageContentWithReaction: {
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    justifyContent: 'space-between',
-    width: '100%',
+    alignItems: "center",
+    alignSelf: "flex-start",
+    justifyContent: "space-between",
+    width: "100%",
   },
   messagePressable: {
     maxWidth: 300,
     flexShrink: 1,
   },
   myMessagePressable: {
-    alignSelf: 'flex-end',
+    alignSelf: "flex-end",
   },
   theirMessagePressable: {
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
   },
   messageRow: {
     flexDirection: "row",
@@ -821,9 +884,9 @@ const styles = StyleSheet.create({
     color: COLORS.text,
   },
   reactionBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
   },
   reactionBadgeMine: {
     marginRight: 4,

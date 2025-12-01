@@ -1,8 +1,19 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
-import { COLORS, DIMENSIONS } from '../config/constants';
-import FontWeight from '../hooks/useInterFonts';
-import { Ionicons } from '@expo/vector-icons';
+import React, { useState } from "react";
+import { Alert } from "react-native";
+import { useCreateTrainingPriceMutation } from "../services/api/pricesApi";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
+import { COLORS, DIMENSIONS } from "../config/constants";
+import FontWeight from "../hooks/useInterFonts";
+import { Ionicons } from "@expo/vector-icons";
 
 interface TrainerSetupStep1Props {
   onNext: () => void;
@@ -11,51 +22,89 @@ interface TrainerSetupStep1Props {
 const TrainerSetupStep1: React.FC<TrainerSetupStep1Props> = ({ onNext }) => {
   const [sessions, setSessions] = useState([
     {
-      id: '1',
-      name: 'Single Session',
-      description: 'One-on-one personalized training session.',
-      price: '$75/hr',
-    },
-    {
-      id: '2',
-      name: '5-Session Pack',
-      description: 'Save 10% with a bundle of 5 sessions.',
-      price: '$67.5/hr',
+      id: Date.now().toString(),
+      name: "",
+      description: "",
+      price: "",
     },
   ]);
+  const [createTrainingPrice, { isLoading }] = useCreateTrainingPriceMutation();
 
   const handleAddSession = () => {
     const newSession = {
       id: Date.now().toString(),
-      name: '',
-      description: '',
-      price: '',
+      name: "",
+      description: "",
+      price: "",
     };
     setSessions([...sessions, newSession]);
   };
 
   const updateSession = (id: string, field: string, value: string) => {
-    setSessions(sessions.map(session => 
-      session.id === id ? { ...session, [field]: value } : session
-    ));
+    setSessions(
+      sessions.map((session) =>
+        session.id === id ? { ...session, [field]: value } : session
+      )
+    );
   };
 
   const removeSession = (id: string) => {
     if (sessions.length > 1) {
-      setSessions(sessions.filter(session => session.id !== id));
+      setSessions(sessions.filter((session) => session.id !== id));
+    }
+  };
+
+  // Handler for Next: validate and call API
+  const handleNextStep = async () => {
+    // Validate sessions
+    const validSessions = sessions.filter(
+      (s) =>
+        s.name.trim() &&
+        s.description.trim() &&
+        s.price &&
+        !isNaN(Number(s.price))
+    );
+    if (validSessions.length === 0) {
+      Alert.alert(
+        "Please add at least one valid session with name, description, and price."
+      );
+      return;
+    }
+    try {
+      
+      await createTrainingPrice(
+        validSessions.map((s) => ({
+          session_name: s.name,
+          description: s.description,
+          price: s.price.toString(),
+        }))
+      ).unwrap();
+      onNext();
+    } catch (e: any) {
+      Alert.alert(
+        "Failed to create sessions",
+        e?.data?.message || "Please try again."
+      );
     }
   };
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      // behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={80}
-    >
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        <TouchableOpacity style={styles.addSessionBtn} onPress={handleAddSession}>
+    <KeyboardAvoidingView style={{ flex: 1 }} keyboardVerticalOffset={80}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+      >
+        <TouchableOpacity
+          style={styles.addSessionBtn}
+          onPress={handleAddSession}
+        >
           <Text style={styles.addSessionText}>Add New Session</Text>
-          <Ionicons name="add" size={20} color={"#383838"} style={{ marginRight: 8 }} />
+          <Ionicons
+            name="add"
+            size={20}
+            color={"#383838"}
+            style={{ marginRight: 8 }}
+          />
         </TouchableOpacity>
         <View style={{ marginBottom: 16 }}>
           <Text style={styles.sectionTitle}>Set Your Rates</Text>
@@ -67,7 +116,7 @@ const TrainerSetupStep1: React.FC<TrainerSetupStep1Props> = ({ onNext }) => {
           <View key={session.id} style={styles.sessionCard}>
             <View style={styles.sessionHeader}>
               <Text style={styles.sessionTitle}>Session {index + 1}</Text>
-              {sessions.length > 1 && (
+              {sessions.length > 1 && index !== 0 && (
                 <TouchableOpacity
                   style={styles.removeBtn}
                   onPress={() => removeSession(session.id)}
@@ -81,7 +130,7 @@ const TrainerSetupStep1: React.FC<TrainerSetupStep1Props> = ({ onNext }) => {
               <TextInput
                 style={styles.inputField}
                 value={session.name}
-                onChangeText={text => updateSession(session.id, 'name', text)}
+                onChangeText={(text) => updateSession(session.id, "name", text)}
                 placeholder="Session name"
                 placeholderTextColor={COLORS.textSecondary}
               />
@@ -91,7 +140,9 @@ const TrainerSetupStep1: React.FC<TrainerSetupStep1Props> = ({ onNext }) => {
               <TextInput
                 style={[styles.inputField, { height: 48 }]}
                 value={session.description}
-                onChangeText={text => updateSession(session.id, 'description', text)}
+                onChangeText={(text) =>
+                  updateSession(session.id, "description", text)
+                }
                 placeholder="Description"
                 placeholderTextColor={COLORS.textSecondary}
                 multiline
@@ -102,7 +153,9 @@ const TrainerSetupStep1: React.FC<TrainerSetupStep1Props> = ({ onNext }) => {
               <TextInput
                 style={styles.inputField}
                 value={session.price}
-                onChangeText={text => updateSession(session.id, 'price', text)}
+                onChangeText={(text) =>
+                  updateSession(session.id, "price", text)
+                }
                 placeholder="$ per hour"
                 placeholderTextColor={COLORS.textSecondary}
                 keyboardType="numeric"
@@ -111,8 +164,14 @@ const TrainerSetupStep1: React.FC<TrainerSetupStep1Props> = ({ onNext }) => {
           </View>
         ))}
 
-        <TouchableOpacity style={styles.nextBtn} onPress={onNext}>
-          <Text style={styles.nextBtnText}>Next</Text>
+        <TouchableOpacity
+          style={styles.nextBtn}
+          onPress={handleNextStep}
+          disabled={isLoading}
+        >
+          <Text style={styles.nextBtnText}>
+            {isLoading ? "Saving..." : "Next"}
+          </Text>
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -129,16 +188,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   addSessionBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     borderRadius: 4,
     paddingVertical: 14,
     paddingHorizontal: 0,
-    boxShadow: '0px 0px 12px 0px #76767626',
+    boxShadow: "0px 0px 12px 0px #76767626",
     marginBottom: 24,
     gap: 8,
     backgroundColor: COLORS.white,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   addSessionText: {
     color: "#383838",
@@ -169,9 +228,9 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   sessionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 16,
   },
   sessionTitle: {
@@ -199,12 +258,12 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   inputField: {
-    backgroundColor: '#F5F5F5',
+    backgroundColor: "#F5F5F5",
     borderRadius: 8,
     paddingVertical: 10,
     paddingHorizontal: 12,
     minHeight: 36,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   inputText: {
     fontSize: 15,
@@ -215,7 +274,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     borderRadius: 10,
     paddingVertical: 16,
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: 10,
     marginBottom: 30,
   },

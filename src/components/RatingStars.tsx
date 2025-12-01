@@ -1,10 +1,11 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { COLORS, DIMENSIONS } from '../config/constants';
+import React from "react";
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { COLORS, DIMENSIONS } from "../config/constants";
+import { r } from "../designing/responsiveDesigns";
 
 interface RatingStarsProps {
   rating: number;
-  size?: 'small' | 'medium' | 'large';
+  size?: "small" | "medium" | "large";
   onRatingChange?: (rating: number) => void;
   readonly?: boolean;
   showRating?: boolean;
@@ -12,23 +13,26 @@ interface RatingStarsProps {
 
 const RatingStars: React.FC<RatingStarsProps> = ({
   rating,
-  size = 'medium',
+  size = "medium",
   onRatingChange,
   readonly = false,
   showRating = true,
 }) => {
   const stars = [1, 2, 3, 4, 5];
-  
+
   const getStarSize = () => {
     switch (size) {
-      case 'small': return 16;
-      case 'large': return 24;
-      default: return 20;
+      case "small":
+        return 16;
+      case "large":
+        return 24;
+      default:
+        return 20;
     }
   };
 
   const getStarColor = (starNumber: number) => {
-    return starNumber <= rating ? '#FFD700' : COLORS.border;
+    return starNumber <= rating ? "#FFD700" : COLORS.border;
   };
 
   const handleStarPress = (starNumber: number) => {
@@ -37,7 +41,7 @@ const RatingStars: React.FC<RatingStarsProps> = ({
     }
   };
 
-  return (
+return (
     <View style={styles.container}>
       <View style={styles.starsContainer}>
         {stars.map((star) => (
@@ -45,28 +49,33 @@ const RatingStars: React.FC<RatingStarsProps> = ({
             key={star}
             style={[
               styles.starButton,
-              { width: getStarSize(), height: getStarSize() }
+              { width: getStarSize() + 2, height: getStarSize() + 4 },
             ]}
             onPress={() => handleStarPress(star)}
             disabled={readonly}
           >
-            <Text style={[
-              styles.star,
-              { 
-                fontSize: getStarSize(),
-                color: getStarColor(star)
-              }
-            ]}>
+            <Text
+              style={[
+                styles.star,
+                {
+                  fontSize: getStarSize(),
+                  color: getStarColor(star),
+                  lineHeight: getStarSize() + 4,
+                },
+              ]}
+            >
               ★
             </Text>
           </TouchableOpacity>
         ))}
       </View>
       {showRating && (
-        <Text style={[
-          styles.ratingText,
-          { fontSize: size === 'small' ? 12 : size === 'large' ? 16 : 14 }
-        ]}>
+        <Text
+          style={[
+            styles.ratingText,
+            { fontSize: size === "small" ? 12 : size === "large" ? 16 : 14 },
+          ]}
+        >
           {rating.toFixed(1)}
         </Text>
       )}
@@ -76,24 +85,24 @@ const RatingStars: React.FC<RatingStarsProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   starsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginRight: DIMENSIONS.spacing.xs,
   },
   starButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   star: {
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   ratingText: {
     color: COLORS.textSecondary,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });
 

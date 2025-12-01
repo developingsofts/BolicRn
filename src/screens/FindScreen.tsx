@@ -1,5 +1,12 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
+  ActivityIndicator,
+} from "react-native";
 import RefreshableScrollView from "../components/RefreshableScrollView";
 import { Menu, Button, Chip } from "react-native-paper";
 import { COLORS, DIMENSIONS } from "../config/constants";
@@ -12,11 +19,18 @@ import SwipeableCard, {
 import RatingModal from "../components/RatingModal";
 import { SafeAreaView } from "react-native-safe-area-context";
 import BasicTopBar from "../components/BasicTopBar";
-import { useGetPotentialMatchesQuery } from "../services/api/matchingApi";
+import { matchingApi, useGetPotentialMatchesQuery } from "../services/api/matchingApi";
+import { useFollowUserMutation, useGetFollowingQuery, useUnfollowUserMutation } from "../services/api/followsApi";
 
 // Helper to map API user to SwipeableItem
 function mapToSwipeableItem(item: any): SwipeableItem {
-  console.log('mapToSwipeableItem item:', item.name, item.imageUrl, item.profilePicture);
+  console.log(
+    "mapToSwipeableItem item:",
+    item,
+    item.name,
+    item.imageUrl,
+    item.profilePicture
+  );
   if (item.role === "user") {
     return {
       id: item.id,
@@ -71,6 +85,9 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation }) => {
   } | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
+  const [followUser] = useFollowUserMutation();
+  const [unfollowUser] = useUnfollowUserMutation();
+
   const {
     data: potentialData,
     refetch,
@@ -78,31 +95,59 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation }) => {
     isFetching,
     error,
   } = useGetPotentialMatchesQuery();
- 
-  const partnersData = potentialData?.status === true ? potentialData.data.filter((item: any) => item.role === "user") : [];
-  const trainersData = potentialData?.status === true ? potentialData.data.filter((item: any) => item.role === "trainer") : [];
- 
-const getCurrentData = () => {
-  if (!potentialData || potentialData.status !== true) return [];
-  let data = potentialData.data.filter((item: any) => item && item.id && item.role); // Filter out invalid items
-  if (activeTab === "partners") {
-    data = data.filter((item: any) => item.role === "user");
-  } else {
-    data = data.filter((item: any) => item.role === "trainer");
-  }
-  if (selectedFilters.includes("All") || selectedFilters.length === 0) {
-    return data;
-  }
-  return data.filter((item: any) => {
-    const type =
-      activeTab === "partners"
-        ? item.trainingTypes?.join(", ")
-        : item.specialty || item.trainingTypes?.join(", ");
-    return selectedFilters.some((filter) =>
-      type?.toLowerCase().includes(filter.toLowerCase())
-    );
-  });
-};
+
+  const partnersData =
+    potentialData?.status === true
+      ? potentialData.data.filter((item: any) => item.role === "user")
+      : [];
+  const trainersData =
+    potentialData?.status === true
+      ? potentialData.data.filter((item: any) => item.role === "trainer")
+      : [];
+
+  const getCurrentData = () => {
+    if (!potentialData || potentialData.status !== true) return [];
+    let data = potentialData.data.filter(
+      (item: any) => item && item.id && item.role
+    ); // Filter out invalid items
+    if (activeTab === "partners") {
+      data = data.filter((item: any) => item.role === "user");
+    } else {
+      data = data.filter((item: any) => item.role === "trainer");
+    }
+    if (selectedFilters.includes("All") || selectedFilters.length === 0) {
+      return data;
+    }
+    return data.filter((item: any) => {
+      const type =
+        activeTab === "partners"
+          ? item.trainingTypes?.join(", ")
+          : item.specialty || item.trainingTypes?.join(", ");
+      return selectedFilters.some((filter) =>
+        type?.toLowerCase().includes(filter.toLowerCase())
+      );
+    });
+  };
+
+  const handleFollow = async () => {
+    const targetUserId = currentItem?.id 
+    if (!targetUserId) return;
+    try {
+      await followUser({ followUserId: targetUserId });
+    } catch (error) {
+      console.error("Follow error:", error);
+    }
+  };
+
+   const handleUnfollow = async () => {
+    const targetUserId = currentItem?.id 
+    if (!targetUserId) return;
+    try {
+      await unfollowUser({ unfollowUserId: targetUserId });
+    } catch (error) {
+      console.error('Unfollow error:', error);
+    }
+  };
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -279,9 +324,9 @@ const getCurrentData = () => {
   //   setCurrentIndex((prev) => Math.min(prev + 1, currentData.length - 1));
   // };
   const handleSwipeLeft = (item: SwipeableItem) => {
-  const currentData = getCurrentData();
-  setCurrentIndex((prev) => Math.min(prev + 1, currentData.length - 1));
-};
+    const currentData = getCurrentData();
+    setCurrentIndex((prev) => Math.min(prev + 1, currentData.length - 1));
+  };
 
   const handleSwipeRight = (item: SwipeableItem) => {
     const message =
@@ -366,22 +411,6 @@ const getCurrentData = () => {
     setCurrentIndex(0);
   };
 
-  // const getCurrentData = () => {
-  //   const data = activeTab === "partners" ? mockPartners : mockTrainers;
-  //   if (selectedFilters.includes("All") || selectedFilters.length === 0) {
-  //     return data;
-  //   }
-  //   return data.filter((item) => {
-  //     const type =
-  //       activeTab === "partners"
-  //         ? (item as TrainingPartner).type
-  //         : (item as Trainer).specialty;
-  //     return selectedFilters.some((filter) =>
-  //       type.toLowerCase().includes(filter.toLowerCase())
-  //     );
-  //   });
-  // };
-
   const currentData = getCurrentData();
   const currentItem = currentData[currentIndex];
   const hasMoreCards = currentIndex < currentData.length - 1;
@@ -405,7 +434,7 @@ const getCurrentData = () => {
             bottomView={
               <View style={styles.tabContainerWrapper}>
                 <View style={styles.tabContainer}>
-                  { (
+                  {
                     <TouchableOpacity
                       style={[
                         styles.tabButton,
@@ -427,8 +456,8 @@ const getCurrentData = () => {
                         {STRINGS.FIND.partners}
                       </Text>
                     </TouchableOpacity>
-                  )}
-                  { (
+                  }
+                  {
                     <TouchableOpacity
                       style={[
                         styles.tabButton,
@@ -450,7 +479,7 @@ const getCurrentData = () => {
                         {STRINGS.FIND.trainers}
                       </Text>
                     </TouchableOpacity>
-                  )}
+                  }
                 </View>
               </View>
             }
@@ -460,9 +489,18 @@ const getCurrentData = () => {
         {/* Cards Section */}
         <View style={styles.cardsSection}>
           {isLoading ? (
-            <View style={{ padding: 20, alignItems: 'center', justifyContent: 'center', flex: 1 }}>
+            <View
+              style={{
+                padding: 20,
+                alignItems: "center",
+                justifyContent: "center",
+                flex: 1,
+              }}
+            >
               <ActivityIndicator size="large" color={COLORS.primary} />
-              <Text style={{ marginTop: 10, color: COLORS.textSecondary }}>Finding matches...</Text>
+              <Text style={{ marginTop: 10, color: COLORS.textSecondary }}>
+                Finding matches...
+              </Text>
             </View>
           ) : currentItem && currentItem.id ? (
             <SwipeableCard
@@ -477,7 +515,10 @@ const getCurrentData = () => {
               onSwipeRight={handleSwipeRight}
               onSkip={handleSwipeLeft}
               isFirst={true}
+              isFollowing={currentItem.isFollowing}
               navigation={navigation}
+              onFollow={handleFollow}
+              onUnfollow={handleUnfollow}
             />
           ) : (
             <View style={styles.noMoreCards}>

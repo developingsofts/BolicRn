@@ -196,6 +196,9 @@ export const baseApi = createApi({
     'SelectedTrainingTypes',
     'Achievements',
     'Notes',
+    "TrainerPricing",
+    "TrainerAvailability",
+    "TrainerSetup"
   ],
   endpoints: () => ({}),
 });

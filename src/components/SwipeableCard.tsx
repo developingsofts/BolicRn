@@ -10,7 +10,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
-import { COLORS } from '../config/constants';
+import { COLORS, DIMENSIONS } from '../config/constants';
 import RatingStars from './RatingStars';
 import FontWeight from '../hooks/useInterFonts';
 
@@ -334,7 +334,7 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
                   activeOpacity={0.7}
                   disabled={!isTrainer && followLoading}
                 >
-                  <Text style={styles.primaryButtonText}>
+                  <Text style={isFollowing ? styles.outlineButtonText : styles.primaryButtonText}>
                     {isTrainer
                       ? 'Book Session'
                       : followLoading

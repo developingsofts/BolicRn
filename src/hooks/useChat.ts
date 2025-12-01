@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { Socket } from 'socket.io-client';
-import { useAuth } from '../contexts/AuthContext';
-import { initializeSocket } from '../services/socketClient';
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { Socket } from "socket.io-client";
+import { useAuth } from "../contexts/AuthContext";
+import { initializeSocket } from "../services/socketClient";
 import {
   messagingApi,
   useCreateConversationMutation,
@@ -10,12 +10,9 @@ import {
   useMarkConversationAsReadMutation,
   useSendMessageMutation,
   useToggleMessageReactionMutation,
-} from '../services/api/messagingApi';
-import { useAppDispatch } from '../store/hooks';
-import type {
-  ApiResponse,
-  ApiSuccessResponse,
-} from '../services/api/types';
+} from "../services/api/messagingApi";
+import { useAppDispatch } from "../store/hooks";
+import type { ApiResponse, ApiSuccessResponse } from "../services/api/types";
 import type {
   ChatMessage,
   Conversation,
@@ -25,19 +22,26 @@ import type {
   MessageDeliveryStatus,
   MessageStatus,
   MessageReactionType,
-} from '../types';
+} from "../types";
 
-const isSuccessResponse = <T,>(response?: ApiResponse<T>): response is ApiSuccessResponse<T> =>
-  Boolean(response && response.status);
+const isSuccessResponse = <T>(
+  response?: ApiResponse<T>
+): response is ApiSuccessResponse<T> => Boolean(response && response.status);
 
 const DEFAULT_MESSAGES_PAGE_SIZE = 30;
 
 const sortMessagesByDate = (messages: ChatMessage[]) =>
   messages
     .slice()
-    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    .sort(
+      (a, b) =>
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    );
 
-const mergeMessageCollections = (existing: ChatMessage[], incoming: ChatMessage[]) => {
+const mergeMessageCollections = (
+  existing: ChatMessage[],
+  incoming: ChatMessage[]
+) => {
   if (!existing.length) {
     return sortMessagesByDate(incoming);
   }
@@ -59,9 +63,10 @@ const mergeMessageCollections = (existing: ChatMessage[], incoming: ChatMessage[
   return sortMessagesByDate(Array.from(mergedMap.values()));
 };
 
-const generateTemporaryMessageId = () => -Math.floor(Date.now() + Math.random() * 1000);
+const generateTemporaryMessageId = () =>
+  -Math.floor(Date.now() + Math.random() * 1000);
 
-const normalizeMessageContent = (value?: string | null) => value?.trim() ?? '';
+const normalizeMessageContent = (value?: string | null) => value?.trim() ?? "";
 
 const mergeMessageIntoCollection = (
   collection: ChatMessage[],
@@ -145,32 +150,57 @@ interface MessageReadPayload {
   messageIds?: number[];
 }
 
-export const useChat = ({ conversationId, autoJoin = true }: UseChatOptions = {}) => {
+export const useChat = ({
+  conversationId,
+  autoJoin = true,
+}: UseChatOptions = {}) => {
   const { token, user } = useAuth();
-  const userIdNumeric = useMemo(() => (user?.id ? Number(user.id) : null), [user?.id]);
+  const userIdNumeric = useMemo(
+    () => (user?.id ? Number(user.id) : null),
+    [user?.id]
+  );
   const numericConversationId = useMemo(
-    () => (conversationId !== undefined && conversationId !== null ? Number(conversationId) : undefined),
+    () =>
+      conversationId !== undefined && conversationId !== null
+        ? Number(conversationId)
+        : undefined,
     [conversationId]
   );
   const cachedConversation = useMemo(
-    () => (numericConversationId !== undefined ? conversationMessageCache.get(numericConversationId) : undefined),
+    () =>
+      numericConversationId !== undefined
+        ? conversationMessageCache.get(numericConversationId)
+        : undefined,
     [numericConversationId]
   );
 
   const dispatch = useAppDispatch();
   const socketRef = useRef<Socket | null>(null);
   const [isSocketConnected, setIsSocketConnected] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>(cachedConversation?.messages ?? []);
+  const [messages, setMessages] = useState<ChatMessage[]>(
+    cachedConversation?.messages ?? []
+  );
   const messagesRef = useRef<ChatMessage[]>(cachedConversation?.messages ?? []);
-  const pendingMessagesRef = useRef<Map<number, PendingMessageMetadata>>(new Map());
+  const pendingMessagesRef = useRef<Map<number, PendingMessageMetadata>>(
+    new Map()
+  );
   const lastMarkedMessageIdRef = useRef<Map<number, number>>(new Map());
-  const [conversationItems, setConversationItems] = useState<ConversationListItem[]>([]);
+  const [conversationItems, setConversationItems] = useState<
+    ConversationListItem[]
+  >([]);
   const [typingUsers, setTypingUsers] = useState<number[]>([]);
   const [chatError, setChatError] = useState<string | null>(null);
-  const [currentMessagesPage, setCurrentMessagesPage] = useState(cachedConversation?.currentPage ?? 0);
-  const [, setTotalMessagePages] = useState<number | null>(cachedConversation?.totalPages ?? null);
-  const [hasMoreMessages, setHasMoreMessages] = useState(cachedConversation?.hasMore ?? false);
-  const [isLoadingInitialMessages, setIsLoadingInitialMessages] = useState(false);
+  const [currentMessagesPage, setCurrentMessagesPage] = useState(
+    cachedConversation?.currentPage ?? 0
+  );
+  const [, setTotalMessagePages] = useState<number | null>(
+    cachedConversation?.totalPages ?? null
+  );
+  const [hasMoreMessages, setHasMoreMessages] = useState(
+    cachedConversation?.hasMore ?? false
+  );
+  const [isLoadingInitialMessages, setIsLoadingInitialMessages] =
+    useState(false);
   const [isLoadingOlderMessages, setIsLoadingOlderMessages] = useState(false);
 
   const [fetchMessagesTrigger] = useLazyGetMessagesQuery();
@@ -195,12 +225,13 @@ export const useChat = ({ conversationId, autoJoin = true }: UseChatOptions = {}
         }).unwrap();
 
         if (!isSuccessResponse(result)) {
-          throw new Error(result?.message ?? 'Failed to fetch messages');
+          throw new Error(result?.message ?? "Failed to fetch messages");
         }
 
         const fetchedMessages = result.data?.messages ?? [];
         const sortedFetched = [...fetchedMessages].sort(
-          (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          (a, b) =>
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
         );
 
         let updatedMessages: ChatMessage[] = [];
@@ -219,7 +250,8 @@ export const useChat = ({ conversationId, autoJoin = true }: UseChatOptions = {}
           ];
 
           updatedMessages = merged.sort(
-            (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+            (a, b) =>
+              new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
           );
 
           return updatedMessages;
@@ -233,7 +265,10 @@ export const useChat = ({ conversationId, autoJoin = true }: UseChatOptions = {}
         const reportedCurrentPage = paginationInfo?.currentPage ?? page;
         const reportedTotalPages = (() => {
           if (paginationInfo?.totalPages != null) {
-            return Math.max(paginationInfo.totalPages, paginationInfo.totalPages > 0 ? 1 : paginationInfo.totalPages);
+            return Math.max(
+              paginationInfo.totalPages,
+              paginationInfo.totalPages > 0 ? 1 : paginationInfo.totalPages
+            );
           }
 
           if (paginationInfo?.totalItems != null) {
@@ -269,7 +304,7 @@ export const useChat = ({ conversationId, autoJoin = true }: UseChatOptions = {}
           });
         }
       } catch (error) {
-        console.error('Failed to fetch messages', error);
+        console.error("Failed to fetch messages", error);
         if (page <= 1 && !append) {
           setMessages([]);
           setCurrentMessagesPage(0);
@@ -324,7 +359,9 @@ export const useChat = ({ conversationId, autoJoin = true }: UseChatOptions = {}
         conversationMessageCache.set(targetConversationId, {
           ...existingCache,
           messages: existingCache.messages.map((message) =>
-            message.id === updatedMessage.id ? { ...message, ...updatedMessage } : message
+            message.id === updatedMessage.id
+              ? { ...message, ...updatedMessage }
+              : message
           ),
         });
       }
@@ -354,7 +391,8 @@ export const useChat = ({ conversationId, autoJoin = true }: UseChatOptions = {}
           }
 
           const latestMessage =
-            conversationItem.latestMessage && conversationItem.latestMessage.id === updatedMessage.id
+            conversationItem.latestMessage &&
+            conversationItem.latestMessage.id === updatedMessage.id
               ? updatedMessage
               : conversationItem.latestMessage;
 
@@ -388,7 +426,8 @@ export const useChat = ({ conversationId, autoJoin = true }: UseChatOptions = {}
         return;
       }
 
-      const isFromSelf = userIdNumeric != null && incoming.senderId === userIdNumeric;
+      const isFromSelf =
+        userIdNumeric != null && incoming.senderId === userIdNumeric;
       let matchedTempId: number | undefined;
 
       if (isFromSelf && !skipPendingResolution) {
@@ -406,7 +445,9 @@ export const useChat = ({ conversationId, autoJoin = true }: UseChatOptions = {}
         }
       }
 
-      const existingCache = conversationMessageCache.get(incomingConversationId);
+      const existingCache = conversationMessageCache.get(
+        incomingConversationId
+      );
       const baseMessages =
         existingCache?.messages && existingCache.messages.length
           ? existingCache.messages
@@ -418,7 +459,11 @@ export const useChat = ({ conversationId, autoJoin = true }: UseChatOptions = {}
         ? { ...incoming, isOptimistic: false, sendFailed: false }
         : incoming;
 
-      const mergedMessages = mergeMessageIntoCollection(baseMessages, normalizedMessage, matchedTempId);
+      const mergedMessages = mergeMessageIntoCollection(
+        baseMessages,
+        normalizedMessage,
+        matchedTempId
+      );
 
       const fallbackCurrentPage =
         existingCache?.currentPage ??
@@ -430,7 +475,9 @@ export const useChat = ({ conversationId, autoJoin = true }: UseChatOptions = {}
 
       const fallbackHasMore =
         existingCache?.hasMore ??
-        (incomingConversationId === (numericConversationId ?? -1) ? hasMoreMessages : false);
+        (incomingConversationId === (numericConversationId ?? -1)
+          ? hasMoreMessages
+          : false);
 
       conversationMessageCache.set(incomingConversationId, {
         messages: mergedMessages,
@@ -441,7 +488,7 @@ export const useChat = ({ conversationId, autoJoin = true }: UseChatOptions = {}
 
       dispatch(
         messagingApi.util.updateQueryData(
-          'getMessages',
+          "getMessages",
           {
             conversationId: incomingConversationId,
             page: 1,
@@ -467,14 +514,21 @@ export const useChat = ({ conversationId, autoJoin = true }: UseChatOptions = {}
             const existingDraftMessages = draft.data?.messages ?? [];
             const sanitizedDraftMessages =
               matchedTempId != null
-                ? existingDraftMessages.filter((message) => message.id !== matchedTempId)
+                ? existingDraftMessages.filter(
+                    (message) => message.id !== matchedTempId
+                  )
                 : existingDraftMessages;
 
-            const mergedDraftMessages = mergeMessageCollections(sanitizedDraftMessages, [normalizedMessage]);
+            const mergedDraftMessages = mergeMessageCollections(
+              sanitizedDraftMessages,
+              [normalizedMessage]
+            );
 
             const trimmedMessages =
               mergedDraftMessages.length > DEFAULT_MESSAGES_PAGE_SIZE
-                ? mergedDraftMessages.slice(mergedDraftMessages.length - DEFAULT_MESSAGES_PAGE_SIZE)
+                ? mergedDraftMessages.slice(
+                    mergedDraftMessages.length - DEFAULT_MESSAGES_PAGE_SIZE
+                  )
                 : mergedDraftMessages;
 
             draft.data.messages = trimmedMessages;
@@ -488,7 +542,10 @@ export const useChat = ({ conversationId, autoJoin = true }: UseChatOptions = {}
               );
               draft.data.pagination.totalPages = Math.max(
                 1,
-                Math.ceil((draft.data.pagination.totalItems ?? trimmedMessages.length) / DEFAULT_MESSAGES_PAGE_SIZE)
+                Math.ceil(
+                  (draft.data.pagination.totalItems ?? trimmedMessages.length) /
+                    DEFAULT_MESSAGES_PAGE_SIZE
+                )
               );
             } else {
               draft.data.pagination = {
@@ -507,17 +564,22 @@ export const useChat = ({ conversationId, autoJoin = true }: UseChatOptions = {}
       }
 
       setConversationItems((prev) => {
-        const index = prev.findIndex((item) => Number(item.id) === incomingConversationId);
+        const index = prev.findIndex(
+          (item) => Number(item.id) === incomingConversationId
+        );
 
         if (index === -1) {
           if (!isFromSelf && socketRef.current) {
-            socketRef.current.emit('join_conversation', { conversationId: incomingConversationId });
+            socketRef.current.emit("join_conversation", {
+              conversationId: incomingConversationId,
+            });
           }
           return prev;
         }
 
         const existing = prev[index];
-        const latestMatches = existing.latestMessage?.id === normalizedMessage.id;
+        const latestMatches =
+          existing.latestMessage?.id === normalizedMessage.id;
         const shouldIncrementUnread =
           !isFromSelf &&
           incomingConversationId !== (numericConversationId ?? -1) &&
@@ -525,7 +587,8 @@ export const useChat = ({ conversationId, autoJoin = true }: UseChatOptions = {}
 
         const updatedUnreadCount = shouldIncrementUnread
           ? (existing.unreadCount ?? 0) + 1
-          : incomingConversationId === (numericConversationId ?? -1) || isFromSelf
+          : incomingConversationId === (numericConversationId ?? -1) ||
+            isFromSelf
           ? 0
           : existing.unreadCount ?? 0;
 
@@ -535,23 +598,35 @@ export const useChat = ({ conversationId, autoJoin = true }: UseChatOptions = {}
           unreadCount: updatedUnreadCount,
           updatedAt: normalizedMessage.createdAt ?? existing.updatedAt,
           messages: existing.messages
-            ? mergeMessageIntoCollection(existing.messages, normalizedMessage, matchedTempId)
+            ? mergeMessageIntoCollection(
+                existing.messages,
+                normalizedMessage,
+                matchedTempId
+              )
             : existing.messages,
         };
 
         const next = [...prev];
         next[index] = updatedConversation;
 
-        return next
-          .slice()
-          .sort((a, b) => {
-            const aTime = new Date(a.latestMessage?.createdAt ?? a.updatedAt ?? 0).getTime();
-            const bTime = new Date(b.latestMessage?.createdAt ?? b.updatedAt ?? 0).getTime();
-            return bTime - aTime;
-          });
+        return next.slice().sort((a, b) => {
+          const aTime = new Date(
+            a.latestMessage?.createdAt ?? a.updatedAt ?? 0
+          ).getTime();
+          const bTime = new Date(
+            b.latestMessage?.createdAt ?? b.updatedAt ?? 0
+          ).getTime();
+          return bTime - aTime;
+        });
       });
     },
-    [currentMessagesPage, dispatch, hasMoreMessages, numericConversationId, userIdNumeric]
+    [
+      currentMessagesPage,
+      dispatch,
+      hasMoreMessages,
+      numericConversationId,
+      userIdNumeric,
+    ]
   );
 
   const markMessageAsFailed = useCallback(
@@ -567,7 +642,9 @@ export const useChat = ({ conversationId, autoJoin = true }: UseChatOptions = {}
           : [];
 
       const updatedMessages = baseMessages.map((message) =>
-        message.id === tempId ? { ...message, isOptimistic: false, sendFailed: true } : message
+        message.id === tempId
+          ? { ...message, isOptimistic: false, sendFailed: true }
+          : message
       );
 
       const fallbackCurrentPage =
@@ -580,7 +657,9 @@ export const useChat = ({ conversationId, autoJoin = true }: UseChatOptions = {}
 
       const fallbackHasMore =
         existingCache?.hasMore ??
-        (conversationId === (numericConversationId ?? -1) ? hasMoreMessages : false);
+        (conversationId === (numericConversationId ?? -1)
+          ? hasMoreMessages
+          : false);
 
       conversationMessageCache.set(conversationId, {
         messages: updatedMessages,
@@ -591,19 +670,25 @@ export const useChat = ({ conversationId, autoJoin = true }: UseChatOptions = {}
 
       dispatch(
         messagingApi.util.updateQueryData(
-          'getMessages',
+          "getMessages",
           {
             conversationId,
             page: 1,
             limit: DEFAULT_MESSAGES_PAGE_SIZE,
           },
           (draft) => {
-            if (!draft || draft.status === false || !draft.data?.messages?.length) {
+            if (
+              !draft ||
+              draft.status === false ||
+              !draft.data?.messages?.length
+            ) {
               return;
             }
 
             draft.data.messages = draft.data.messages.map((message) =>
-              message.id === tempId ? { ...message, isOptimistic: false, sendFailed: true } : message
+              message.id === tempId
+                ? { ...message, isOptimistic: false, sendFailed: true }
+                : message
             );
           }
         )
@@ -620,8 +705,13 @@ export const useChat = ({ conversationId, autoJoin = true }: UseChatOptions = {}
           }
 
           const updatedLatest =
-            conversationItem.latestMessage && conversationItem.latestMessage.id === tempId
-              ? { ...conversationItem.latestMessage, isOptimistic: false, sendFailed: true }
+            conversationItem.latestMessage &&
+            conversationItem.latestMessage.id === tempId
+              ? {
+                  ...conversationItem.latestMessage,
+                  isOptimistic: false,
+                  sendFailed: true,
+                }
               : conversationItem.latestMessage;
 
           return {
@@ -629,7 +719,9 @@ export const useChat = ({ conversationId, autoJoin = true }: UseChatOptions = {}
             latestMessage: updatedLatest,
             messages: conversationItem.messages
               ? conversationItem.messages.map((message) =>
-                  message.id === tempId ? { ...message, isOptimistic: false, sendFailed: true } : message
+                  message.id === tempId
+                    ? { ...message, isOptimistic: false, sendFailed: true }
+                    : message
                 )
               : conversationItem.messages,
           };
@@ -651,7 +743,10 @@ export const useChat = ({ conversationId, autoJoin = true }: UseChatOptions = {}
         return;
       }
 
-      const latestMessage = (incoming as ConversationListItem).latestMessage ?? incoming.messages?.[0] ?? null;
+      const latestMessage =
+        (incoming as ConversationListItem).latestMessage ??
+        incoming.messages?.[0] ??
+        null;
 
       const unreadCount = (() => {
         if (!latestMessage || userIdNumeric == null) {
@@ -659,7 +754,10 @@ export const useChat = ({ conversationId, autoJoin = true }: UseChatOptions = {}
         }
 
         const statuses = latestMessage.statuses ?? [];
-        return statuses.filter((status) => status.userId === userIdNumeric && status.status !== 'read').length;
+        return statuses.filter(
+          (status) =>
+            status.userId === userIdNumeric && status.status !== "read"
+        ).length;
       })();
 
       const updatedConversation: ConversationListItem = {
@@ -670,7 +768,9 @@ export const useChat = ({ conversationId, autoJoin = true }: UseChatOptions = {}
 
       setConversationItems((prev) => {
         const next = [...prev];
-        const index = next.findIndex((item) => Number(item.id) === normalizedId);
+        const index = next.findIndex(
+          (item) => Number(item.id) === normalizedId
+        );
 
         if (index === -1) {
           next.unshift(updatedConversation);
@@ -679,7 +779,10 @@ export const useChat = ({ conversationId, autoJoin = true }: UseChatOptions = {}
           next[index] = {
             ...existing,
             ...updatedConversation,
-            latestMessage: updatedConversation.latestMessage ?? existing.latestMessage ?? null,
+            latestMessage:
+              updatedConversation.latestMessage ??
+              existing.latestMessage ??
+              null,
             messages: updatedConversation.messages ?? existing.messages,
             members: updatedConversation.members ?? existing.members,
             unreadCount: updatedConversation.unreadCount,
@@ -687,43 +790,53 @@ export const useChat = ({ conversationId, autoJoin = true }: UseChatOptions = {}
           } as ConversationListItem;
         }
 
-        return next
-          .slice()
-          .sort((a, b) => {
-            const aTime = new Date(a.latestMessage?.createdAt ?? a.updatedAt ?? 0).getTime();
-            const bTime = new Date(b.latestMessage?.createdAt ?? b.updatedAt ?? 0).getTime();
-            return bTime - aTime;
-          });
+        return next.slice().sort((a, b) => {
+          const aTime = new Date(
+            a.latestMessage?.createdAt ?? a.updatedAt ?? 0
+          ).getTime();
+          const bTime = new Date(
+            b.latestMessage?.createdAt ?? b.updatedAt ?? 0
+          ).getTime();
+          return bTime - aTime;
+        });
       });
 
       if (socketRef.current) {
-        socketRef.current.emit('join_conversation', { conversationId: normalizedId });
+        socketRef.current.emit("join_conversation", {
+          conversationId: normalizedId,
+        });
       }
 
       dispatch(
-        messagingApi.util.updateQueryData('getConversations', undefined, (draft) => {
-          const target = draft as any;
+        messagingApi.util.updateQueryData(
+          "getConversations",
+          undefined,
+          (draft) => {
+            const target = draft as any;
 
-          if (!target || target.status === false) {
-            return;
+            if (!target || target.status === false) {
+              return;
+            }
+
+            if (!Array.isArray(target.data)) {
+              target.data = [];
+            }
+
+            const payload = { ...(incoming as any) };
+            const existingIndex = target.data.findIndex(
+              (item: any) => Number(item.id) === normalizedId
+            );
+
+            if (existingIndex === -1) {
+              target.data.unshift(payload);
+            } else {
+              target.data[existingIndex] = {
+                ...target.data[existingIndex],
+                ...payload,
+              };
+            }
           }
-
-          if (!Array.isArray(target.data)) {
-            target.data = [];
-          }
-
-          const payload = { ...(incoming as any) };
-          const existingIndex = target.data.findIndex((item: any) => Number(item.id) === normalizedId);
-
-          if (existingIndex === -1) {
-            target.data.unshift(payload);
-          } else {
-            target.data[existingIndex] = {
-              ...target.data[existingIndex],
-              ...payload,
-            };
-          }
-        })
+        )
       );
     },
     [dispatch, userIdNumeric]
@@ -750,21 +863,23 @@ export const useChat = ({ conversationId, autoJoin = true }: UseChatOptions = {}
       return [];
     }
 
-    return (conversationsResponse.data ?? []).map((conversation: Conversation) => {
-      const latestMessage = conversation.messages?.[0] ?? null;
-      const unreadCount = latestMessage?.statuses?.filter((status) => {
-        if (userIdNumeric == null) {
-          return false;
-        }
-        return status.userId === userIdNumeric && status.status !== 'read';
-      }).length;
+    return (conversationsResponse.data ?? []).map(
+      (conversation: Conversation) => {
+        const latestMessage = conversation.messages?.[0] ?? null;
+        const unreadCount = latestMessage?.statuses?.filter((status) => {
+          if (userIdNumeric == null) {
+            return false;
+          }
+          return status.userId === userIdNumeric && status.status !== "read";
+        }).length;
 
-      return {
-        ...conversation,
-        latestMessage: latestMessage ?? null,
-        unreadCount: unreadCount ?? 0,
-      } as ConversationListItem;
-    });
+        return {
+          ...conversation,
+          latestMessage: latestMessage ?? null,
+          unreadCount: unreadCount ?? 0,
+        } as ConversationListItem;
+      }
+    );
   }, [conversationsResponse, userIdNumeric]);
 
   useEffect(() => {
@@ -780,16 +895,18 @@ export const useChat = ({ conversationId, autoJoin = true }: UseChatOptions = {}
       return;
     }
 
-  const instance = initializeSocket(token);
-  socketRef.current = instance;
+    const instance = initializeSocket(token);
+    socketRef.current = instance;
 
-  setIsSocketConnected(instance.connected);
+    setIsSocketConnected(instance.connected);
 
     const handleConnect = () => {
       setIsSocketConnected(true);
-      instance.emit('load_conversations');
+      instance.emit("load_conversations");
       if (autoJoin && numericConversationId !== undefined) {
-        instance.emit('join_conversation', { conversationId: numericConversationId });
+        instance.emit("join_conversation", {
+          conversationId: numericConversationId,
+        });
       }
     };
 
@@ -798,7 +915,7 @@ export const useChat = ({ conversationId, autoJoin = true }: UseChatOptions = {}
     };
 
     const handleError = (payload: { message?: string }) => {
-      setChatError(payload?.message ?? 'Chat connection error');
+      setChatError(payload?.message ?? "Chat connection error");
     };
 
     const handleNewMessage = (incoming: ChatMessage) => {
@@ -811,7 +928,7 @@ export const useChat = ({ conversationId, autoJoin = true }: UseChatOptions = {}
         userIdNumeric != null &&
         incoming.senderId !== userIdNumeric
       ) {
-        instance.emit('mark_as_read', {
+        instance.emit("mark_as_read", {
           conversationId: incomingConversationId,
           messageIds: [incoming.id],
         });
@@ -825,7 +942,10 @@ export const useChat = ({ conversationId, autoJoin = true }: UseChatOptions = {}
       userId: statusUserId,
     }: MessageStatusPayload) => {
       const normalizedConversationId = Number(payloadConversationId);
-      if (Number.isNaN(normalizedConversationId) || normalizedConversationId !== (numericConversationId ?? -1)) {
+      if (
+        Number.isNaN(normalizedConversationId) ||
+        normalizedConversationId !== (numericConversationId ?? -1)
+      ) {
         return;
       }
       setMessages((prev) =>
@@ -851,11 +971,13 @@ export const useChat = ({ conversationId, autoJoin = true }: UseChatOptions = {}
           }
 
           const updatedLatest =
-            conversationItem.latestMessage && conversationItem.latestMessage.id === messageId
+            conversationItem.latestMessage &&
+            conversationItem.latestMessage.id === messageId
               ? {
                   ...conversationItem.latestMessage,
-                  statuses: (conversationItem.latestMessage.statuses ?? []).map((item) =>
-                    item.userId === statusUserId ? { ...item, status } : item
+                  statuses: (conversationItem.latestMessage.statuses ?? []).map(
+                    (item) =>
+                      item.userId === statusUserId ? { ...item, status } : item
                   ),
                 }
               : conversationItem.latestMessage;
@@ -868,9 +990,16 @@ export const useChat = ({ conversationId, autoJoin = true }: UseChatOptions = {}
       );
     };
 
-    const handleMessageRead = ({ conversationId: payloadConversationId, messageIds, userId: statusUserId }: MessageReadPayload) => {
+    const handleMessageRead = ({
+      conversationId: payloadConversationId,
+      messageIds,
+      userId: statusUserId,
+    }: MessageReadPayload) => {
       const normalizedConversationId = Number(payloadConversationId);
-      if (Number.isNaN(normalizedConversationId) || normalizedConversationId !== (numericConversationId ?? -1)) {
+      if (
+        Number.isNaN(normalizedConversationId) ||
+        normalizedConversationId !== (numericConversationId ?? -1)
+      ) {
         return;
       }
       const ensuredMessageIds = messageIds ?? [];
@@ -884,7 +1013,9 @@ export const useChat = ({ conversationId, autoJoin = true }: UseChatOptions = {}
           }
           const statuses = message.statuses ?? [];
           const updatedStatuses = statuses.map((item) =>
-            item.userId === statusUserId ? { ...item, status: 'read' as MessageDeliveryStatus } : item
+            item.userId === statusUserId
+              ? { ...item, status: "read" as MessageDeliveryStatus }
+              : item
           );
           return {
             ...message,
@@ -900,11 +1031,16 @@ export const useChat = ({ conversationId, autoJoin = true }: UseChatOptions = {}
           }
 
           const updatedLatest =
-            conversationItem.latestMessage && conversationItem.latestMessage.id && ensuredMessageIds.includes(conversationItem.latestMessage.id)
+            conversationItem.latestMessage &&
+            conversationItem.latestMessage.id &&
+            ensuredMessageIds.includes(conversationItem.latestMessage.id)
               ? {
                   ...conversationItem.latestMessage,
-                  statuses: (conversationItem.latestMessage.statuses ?? []).map((item) =>
-                    item.userId === statusUserId ? { ...item, status: 'read' as MessageDeliveryStatus } : item
+                  statuses: (conversationItem.latestMessage.statuses ?? []).map(
+                    (item) =>
+                      item.userId === statusUserId
+                        ? { ...item, status: "read" as MessageDeliveryStatus }
+                        : item
                   ),
                 }
               : conversationItem.latestMessage;
@@ -921,7 +1057,11 @@ export const useChat = ({ conversationId, autoJoin = true }: UseChatOptions = {}
       applyUpdatedMessage(updated);
     };
 
-    const handleTyping = ({ conversationId: payloadConversationId, userId: typingUserId, isTyping }: TypingPayload) => {
+    const handleTyping = ({
+      conversationId: payloadConversationId,
+      userId: typingUserId,
+      isTyping,
+    }: TypingPayload) => {
       const normalizedConversationId = Number(payloadConversationId);
       if (
         Number.isNaN(normalizedConversationId) ||
@@ -940,28 +1080,36 @@ export const useChat = ({ conversationId, autoJoin = true }: UseChatOptions = {}
       });
     };
 
-    instance.on('connect', handleConnect);
-    instance.on('disconnect', handleDisconnect);
-    instance.on('chat_error', handleError);
-    instance.on('new_message', handleNewMessage);
-    instance.on('message_status', handleMessageStatus);
-    instance.on('message_read', handleMessageRead);
-  instance.on('message_reaction', handleMessageReaction);
-  instance.on('typing', handleTyping);
-  instance.on('conversation_upserted', handleConversationUpsert);
+    instance.on("connect", handleConnect);
+    instance.on("disconnect", handleDisconnect);
+    instance.on("chat_error", handleError);
+    instance.on("new_message", handleNewMessage);
+    instance.on("message_status", handleMessageStatus);
+    instance.on("message_read", handleMessageRead);
+    instance.on("message_reaction", handleMessageReaction);
+    instance.on("typing", handleTyping);
+    instance.on("conversation_upserted", handleConversationUpsert);
 
     return () => {
-      instance.off('connect', handleConnect);
-      instance.off('disconnect', handleDisconnect);
-      instance.off('chat_error', handleError);
-      instance.off('new_message', handleNewMessage);
-      instance.off('message_status', handleMessageStatus);
-      instance.off('message_read', handleMessageRead);
-  instance.off('message_reaction', handleMessageReaction);
-  instance.off('typing', handleTyping);
-  instance.off('conversation_upserted', handleConversationUpsert);
+      instance.off("connect", handleConnect);
+      instance.off("disconnect", handleDisconnect);
+      instance.off("chat_error", handleError);
+      instance.off("new_message", handleNewMessage);
+      instance.off("message_status", handleMessageStatus);
+      instance.off("message_read", handleMessageRead);
+      instance.off("message_reaction", handleMessageReaction);
+      instance.off("typing", handleTyping);
+      instance.off("conversation_upserted", handleConversationUpsert);
     };
-  }, [token, autoJoin, numericConversationId, userIdNumeric, applyUpdatedMessage, handleConversationUpsert, integrateMessage]);
+  }, [
+    token,
+    autoJoin,
+    numericConversationId,
+    userIdNumeric,
+    applyUpdatedMessage,
+    handleConversationUpsert,
+    integrateMessage,
+  ]);
 
   useEffect(() => {
     if (!token || numericConversationId === undefined) {
@@ -1007,7 +1155,10 @@ export const useChat = ({ conversationId, autoJoin = true }: UseChatOptions = {}
           return conversationItem;
         }
 
-        const latestMessage = messages[messages.length - 1] ?? conversationItem.latestMessage ?? null;
+        const latestMessage =
+          messages[messages.length - 1] ??
+          conversationItem.latestMessage ??
+          null;
 
         return {
           ...conversationItem,
@@ -1020,11 +1171,17 @@ export const useChat = ({ conversationId, autoJoin = true }: UseChatOptions = {}
   }, [messages, numericConversationId]);
 
   useEffect(() => {
-    if (!socketRef.current || numericConversationId === undefined || !autoJoin) {
+    if (
+      !socketRef.current ||
+      numericConversationId === undefined ||
+      !autoJoin
+    ) {
       return;
     }
 
-    socketRef.current.emit('join_conversation', { conversationId: numericConversationId });
+    socketRef.current.emit("join_conversation", {
+      conversationId: numericConversationId,
+    });
   }, [numericConversationId, autoJoin]);
 
   const refreshConversationsHandler = useCallback(async () => {
@@ -1032,7 +1189,7 @@ export const useChat = ({ conversationId, autoJoin = true }: UseChatOptions = {}
       return;
     }
     await refetchConversations();
-    socketRef.current?.emit('load_conversations');
+    socketRef.current?.emit("load_conversations");
   }, [refetchConversations, token]);
 
   const refreshMessagesHandler = useCallback(async () => {
@@ -1043,7 +1200,12 @@ export const useChat = ({ conversationId, autoJoin = true }: UseChatOptions = {}
   }, [fetchMessagesPage, numericConversationId, token]);
 
   const sendMessage = useCallback(
-    async ({ conversationId: targetConversationId, content, attachmentUrl, messageType = 'text' }: SendMessageArgs) => {
+    async ({
+      conversationId: targetConversationId,
+      content,
+      attachmentUrl,
+      messageType = "text",
+    }: SendMessageArgs) => {
       const payloadConversationId = Number(targetConversationId);
 
       if (Number.isNaN(payloadConversationId) || payloadConversationId <= 0) {
@@ -1095,7 +1257,7 @@ export const useChat = ({ conversationId, autoJoin = true }: UseChatOptions = {}
       const socketIsActive = socket?.connected ?? false;
 
       if (socket && socketIsActive) {
-        socket.emit('send_message', {
+        socket.emit("send_message", {
           conversationId: payloadConversationId,
           content: normalizedContent ? normalizedContent : null,
           attachmentUrl: attachmentUrl ?? null,
@@ -1123,11 +1285,11 @@ export const useChat = ({ conversationId, autoJoin = true }: UseChatOptions = {}
           );
         } else {
           markMessageAsFailed(payloadConversationId, tempId);
-          setChatError(response?.message ?? 'Failed to send message');
+          setChatError(response?.message ?? "Failed to send message");
         }
       } catch (error: any) {
         markMessageAsFailed(payloadConversationId, tempId);
-        setChatError(error?.data?.message ?? 'Failed to send message');
+        setChatError(error?.data?.message ?? "Failed to send message");
       }
     },
     [integrateMessage, markMessageAsFailed, sendMessageMutation, userIdNumeric]
@@ -1138,7 +1300,7 @@ export const useChat = ({ conversationId, autoJoin = true }: UseChatOptions = {}
       if (!socketRef.current || numericConversationId === undefined) {
         return;
       }
-      socketRef.current.emit('typing', {
+      socketRef.current.emit("typing", {
         conversationId: numericConversationId,
         isTyping,
       });
@@ -1147,7 +1309,10 @@ export const useChat = ({ conversationId, autoJoin = true }: UseChatOptions = {}
   );
 
   const toggleMessageReaction = useCallback(
-    async (messageId: number | string, reactionType: MessageReactionType = 'like') => {
+    async (
+      messageId: number | string,
+      reactionType: MessageReactionType = "like"
+    ) => {
       const numericMessageId = Number(messageId);
       if (Number.isNaN(numericMessageId)) {
         return;
@@ -1157,7 +1322,7 @@ export const useChat = ({ conversationId, autoJoin = true }: UseChatOptions = {}
       const socketIsActive = socket?.connected ?? false;
 
       if (socket && socketIsActive) {
-        socket.emit('toggle_reaction', {
+        socket.emit("toggle_reaction", {
           messageId: numericMessageId,
           reactionType,
         });
@@ -1200,11 +1365,13 @@ export const useChat = ({ conversationId, autoJoin = true }: UseChatOptions = {}
           )
           .filter((message) => {
             const statuses = message.statuses ?? [];
-            const selfStatus = statuses.find((status) => status.userId === userIdNumeric);
+            const selfStatus = statuses.find(
+              (status) => status.userId === userIdNumeric
+            );
             if (!selfStatus) {
               return true;
             }
-            return selfStatus.status !== 'read';
+            return selfStatus.status !== "read";
           })
           .map((message) => message.id);
 
@@ -1222,14 +1389,15 @@ export const useChat = ({ conversationId, autoJoin = true }: UseChatOptions = {}
         return;
       }
 
-      const lastMarkedId = lastMarkedMessageIdRef.current.get(numericConversationId) ?? 0;
+      const lastMarkedId =
+        lastMarkedMessageIdRef.current.get(numericConversationId) ?? 0;
       const newIds = targetIds.filter((id) => id > lastMarkedId);
 
       if (!newIds.length) {
         return;
       }
 
-      socketRef.current?.emit('mark_as_read', {
+      socketRef.current?.emit("mark_as_read", {
         conversationId: numericConversationId,
         messageIds: newIds,
       });
@@ -1249,11 +1417,17 @@ export const useChat = ({ conversationId, autoJoin = true }: UseChatOptions = {}
         const updatedStatuses = statuses.map((status) => {
           if (status.userId === userIdNumeric) {
             hasSelfStatus = true;
-            if (status.status !== 'read' || status.updatedAt !== markTimestamp) {
-              mutated = mutated || status.status !== 'read' || status.updatedAt !== markTimestamp;
+            if (
+              status.status !== "read" ||
+              status.updatedAt !== markTimestamp
+            ) {
+              mutated =
+                mutated ||
+                status.status !== "read" ||
+                status.updatedAt !== markTimestamp;
               return {
                 ...status,
-                status: 'read' as MessageDeliveryStatus,
+                status: "read" as MessageDeliveryStatus,
                 updatedAt: markTimestamp,
               } satisfies MessageStatus;
             }
@@ -1267,7 +1441,7 @@ export const useChat = ({ conversationId, autoJoin = true }: UseChatOptions = {}
             id: -1,
             messageId: Number(message.id),
             userId: userIdNumeric,
-            status: 'read',
+            status: "read",
             createdAt: markTimestamp,
             updatedAt: markTimestamp,
           });
@@ -1286,7 +1460,9 @@ export const useChat = ({ conversationId, autoJoin = true }: UseChatOptions = {}
       setMessages((prev) => prev.map(applyReadStatusToMessage));
 
       if (numericConversationId !== undefined) {
-        const existingCache = conversationMessageCache.get(numericConversationId);
+        const existingCache = conversationMessageCache.get(
+          numericConversationId
+        );
         if (existingCache) {
           conversationMessageCache.set(numericConversationId, {
             ...existingCache,
@@ -1302,7 +1478,8 @@ export const useChat = ({ conversationId, autoJoin = true }: UseChatOptions = {}
           }
 
           const updatedLatest =
-            conversationItem.latestMessage && newIdSet.has(Number(conversationItem.latestMessage.id))
+            conversationItem.latestMessage &&
+            newIdSet.has(Number(conversationItem.latestMessage.id))
               ? applyReadStatusToMessage(conversationItem.latestMessage)
               : conversationItem.latestMessage;
 
@@ -1320,31 +1497,50 @@ export const useChat = ({ conversationId, autoJoin = true }: UseChatOptions = {}
       );
 
       dispatch(
-        messagingApi.util.updateQueryData('getConversations', undefined, (draft) => {
-          const target = draft as any;
-          if (!target || target.status === false || !Array.isArray(target.data)) {
-            return;
-          }
+        messagingApi.util.updateQueryData(
+          "getConversations",
+          undefined,
+          (draft) => {
+            const target = draft as any;
+            if (
+              !target ||
+              target.status === false ||
+              !Array.isArray(target.data)
+            ) {
+              return;
+            }
 
-          const conversation = target.data.find((item: any) => Number(item.id) === numericConversationId);
-          if (!conversation) {
-            return;
-          }
-
-          conversation.unreadCount = 0;
-
-          if (conversation.latestMessage && newIdSet.has(Number(conversation.latestMessage.id))) {
-            conversation.latestMessage = applyReadStatusToMessage(conversation.latestMessage as ChatMessage);
-          }
-
-          if (Array.isArray(conversation.messages) && conversation.messages.length) {
-            conversation.messages = conversation.messages.map((message: any) =>
-              newIdSet.has(Number(message.id))
-                ? applyReadStatusToMessage(message as ChatMessage)
-                : message
+            const conversation = target.data.find(
+              (item: any) => Number(item.id) === numericConversationId
             );
+            if (!conversation) {
+              return;
+            }
+
+            conversation.unreadCount = 0;
+
+            if (
+              conversation.latestMessage &&
+              newIdSet.has(Number(conversation.latestMessage.id))
+            ) {
+              conversation.latestMessage = applyReadStatusToMessage(
+                conversation.latestMessage as ChatMessage
+              );
+            }
+
+            if (
+              Array.isArray(conversation.messages) &&
+              conversation.messages.length
+            ) {
+              conversation.messages = conversation.messages.map(
+                (message: any) =>
+                  newIdSet.has(Number(message.id))
+                    ? applyReadStatusToMessage(message as ChatMessage)
+                    : message
+              );
+            }
           }
-        })
+        )
       );
 
       try {
@@ -1359,9 +1555,13 @@ export const useChat = ({ conversationId, autoJoin = true }: UseChatOptions = {}
       } catch {
         // ignore failures to allow retry on next invocation
       }
-
     },
-    [dispatch, markConversationAsReadMutation, numericConversationId, userIdNumeric]
+    [
+      dispatch,
+      markConversationAsReadMutation,
+      numericConversationId,
+      userIdNumeric,
+    ]
   );
 
   const createConversation = useCallback(
@@ -1371,7 +1571,9 @@ export const useChat = ({ conversationId, autoJoin = true }: UseChatOptions = {}
         handleConversationUpsert(response.data.conversation);
         const createdId = Number(response.data.conversation.id);
         if (!Number.isNaN(createdId) && socketRef.current) {
-          socketRef.current.emit('join_conversation', { conversationId: createdId });
+          socketRef.current.emit("join_conversation", {
+            conversationId: createdId,
+          });
         }
       }
       return response;
@@ -1382,7 +1584,7 @@ export const useChat = ({ conversationId, autoJoin = true }: UseChatOptions = {}
   return {
     socket: socketRef.current,
     isSocketConnected,
-  conversations: conversationItems,
+    conversations: conversationItems,
     isFetchingConversations,
     refreshConversations: refreshConversationsHandler,
     messages,
@@ -1393,7 +1595,7 @@ export const useChat = ({ conversationId, autoJoin = true }: UseChatOptions = {}
     refreshMessages: refreshMessagesHandler,
     sendMessage,
     emitTyping,
-  toggleMessageReaction,
+    toggleMessageReaction,
     typingUsers,
     markConversationAsRead,
     createConversation,

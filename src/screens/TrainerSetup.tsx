@@ -36,8 +36,8 @@ const TrainerSetup: React.FC = ({ navigation }: any) => {
     const nextStep = step + 1;
     setStep(nextStep);
     // Persist current step as progress
-    if (user?.trainerOnboardingStep !== step) {
-      await updateMyProfile({ trainerOnboardingStep: step });
+    if (user?.trainerOnboardingStep !== nextStep) {
+      await updateMyProfile({ trainerOnboardingStep: nextStep });
     }
   };
   const handleSaveDraft = async () => {
@@ -64,6 +64,15 @@ const TrainerSetup: React.FC = ({ navigation }: any) => {
     };
   }, []);
 
+
+  const handleBack = () => {
+    if (step > 1) {
+      setStep(step - 1);
+    } else {
+      navigation.goBack();
+    }
+  };
+
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: COLORS.background }}
@@ -71,7 +80,7 @@ const TrainerSetup: React.FC = ({ navigation }: any) => {
     >
       <SafeAreaView edges={[]} style={{ flex: 1 }}>
         <BasicTopBar
-          onBackPress={() => navigation.goBack()}
+          onBackPress={() => handleBack()}
           title="Trainer Setup"
           subtitle="Manage your sessions and charges"
           containerStyle={{

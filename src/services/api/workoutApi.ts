@@ -2,6 +2,7 @@ import { API_END_POINTS } from '../endPoints';
 import type { Workout, Exercise, UserWorkoutSession, UserExerciseProgress, UserWorkout, Achievement } from '../../types';
 import { baseApi } from './baseApi';
 import type { ApiResponse } from './types';
+import { use } from 'react';
 
 interface StartWorkoutPayload {
   workoutId: string;
@@ -181,9 +182,9 @@ export const workoutApi = baseApi.injectEndpoints({
     }),
 
     // Get user achievements
-    getUserAchievements: builder.query<ApiResponse<Achievement[]>, void>({
-      query: () => ({
-        url: API_END_POINTS.users.achievements('me'),
+    getUserAchievements: builder.query<ApiResponse<Achievement[]>, { userId?: string }>({
+      query: (body) => ({
+        url: API_END_POINTS.users.achievements(body.userId??'me'),
         method: 'GET',
       }),
       providesTags: ['Achievements'],

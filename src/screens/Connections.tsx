@@ -1,51 +1,102 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import BasicTopBar from '../components/BasicTopBar';
-import { COLORS, DIMENSIONS } from '../config/constants';
-import FontWeight from '../hooks/useInterFonts';
-import { useAuth } from '../contexts/AuthContext';
-
-const connections = [
-  {
-    id: '1',
-    name: 'Mike',
-    location: 'Downtown Gym',
-    initial: 'M',
-  },
-  {
-    id: '2',
-    name: 'Emma',
-    location: 'Central Park',
-    initial: 'E',
-  },
-  {
-    id: '3',
-    name: 'Aiden',
-    location: 'Times Square',
-    initial: 'A',
-  },
-  {
-    id: '4',
-    name: 'Clara',
-    location: 'Statue of Liberty',
-    initial: 'C',
-  },
-];
+import React, { use, useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  RefreshControl,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import BasicTopBar from "../components/BasicTopBar";
+import { COLORS, DIMENSIONS } from "../config/constants";
+import FontWeight from "../hooks/useInterFonts";
+import { useAuth } from "../contexts/AuthContext";
+import { useGetFollowingQuery } from "../services/api/followsApi";
 
 const Connections: React.FC = ({ navigation, route }: any) => {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const userId = route?.params?.userId || user?.id;
-  const isOwnProfile = !route?.params?.userId || route?.params?.userId === user?.id;
+  const isOwnProfile =
+    !route?.params?.userId || route?.params?.userId === user?.id;
+    
   const handleAddNew = () => {
     // TODO: Implement add new connection logic
-    alert('Add new connection feature coming soon!');
+    alert("Add new connection feature coming soon!");
   };
 
-  const handleMessage = (id: string) => {
-    const connection = connections.find((c) => c.id === id);
+  // Pagination state
+  const [page, setPage] = useState(1);
+  const [allFollowing, setAllFollowing] = useState<any[]>([]);
+  const [hasMore, setHasMore] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const {
+    data: followingData,
+    isLoading: followingLoading,
+    isFetching: followingFetching,
+    refetch: refetchFollowing,
+    error: followingError,
+  } = useGetFollowingQuery(
+    {
+      userId: userId?.toString?.(),
+      page,
+      limit: 20,
+    },
+    { skip: !isAuthenticated }
+  );
+
+  // Append new users to allFollowing on data change
+  useEffect(() => {
+    if (followingData?.status) {
+      // API returns users under data.users
+      const items = (followingData.data?.users as any[]) ?? [];
+      if (page === 1) {
+        setAllFollowing(items);
+      } else {
+        setAllFollowing((prev) => {
+          // Avoid duplicates
+          const existingIds = new Set(prev.map((u) => u.id || u._id));
+          const newItems = items.filter((u) => !existingIds.has(u.id || u._id));
+          return [...prev, ...newItems];
+        });
+      }
+      setHasMore(items.length === 20); // If less than limit, no more pages
+      setRefreshing(false);
+    }
+  }, [followingData, page]);
+
+  // Pull-to-refresh handler
+  const handleRefresh = () => {
+    setRefreshing(true);
+    setPage(1);
+    setAllFollowing([]);
+    // refetchFollowing(); // Not needed, useGetFollowingQuery will refetch on page change
+  };
+
+  // Memoize following users for rendering
+  const following = React.useMemo(() => {
+    if (!Array.isArray(allFollowing)) return [];
+    return allFollowing.map((user: any) => ({
+      id: String(user?.id ?? user?._id ?? Math.random()),
+      name: user?.displayName || user?.name || 'Unknown',
+      location: user?.location || '',
+      initial: (user?.displayName || user?.name || '?').charAt(0).toUpperCase(),
+    }));
+  }, [allFollowing]);
+
+  const handleLoadMore = () => {
+    if (hasMore && !followingFetching) {
+      setPage((prev) => prev + 1);
+    }
+  };
+
+  const handleMessage = (connection: any) => {
     if (connection) {
-      alert(`Opening chat with ${connection.name}...`);
+      navigation.navigate("Chat", {
+        partnerId: connection.id.toString(),
+        partnerName: connection.name,
+      });
     }
   };
 
@@ -54,37 +105,92 @@ const Connections: React.FC = ({ navigation, route }: any) => {
       <BasicTopBar
         onBackPress={() => navigation.goBack()}
         title={isOwnProfile ? "Connections" : "User Connections"}
-        subtitle={isOwnProfile ? "View / Add Connections" : "View user connections"}
-        containerStyle={{ paddingTop: DIMENSIONS.spacing.xxl, paddingBottom: DIMENSIONS.spacing.lg }}
+        subtitle={
+          isOwnProfile ? "View / Add Connections" : "View user connections"
+        }
+        containerStyle={{
+          paddingTop: DIMENSIONS.spacing.xxl,
+          paddingBottom: DIMENSIONS.spacing.lg,
+        }}
       />
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={[COLORS.primary]}
+          />
+        }
+      >
         {isOwnProfile && (
           <TouchableOpacity style={styles.addButton} onPress={handleAddNew}>
             <Text style={styles.addButtonText}>Add New</Text>
           </TouchableOpacity>
         )}
-        <View style={styles.connectionList}>
-          {connections.map((connection) => (
-            <View key={connection.id} style={styles.card}>
-              <View style={styles.cardRow}>
-                <View style={styles.avatar}>
-                  <Text style={styles.avatarText}>{connection.initial}</Text>
+        {/* Achievements-style grid/list with loading, error, empty states */}
+        {followingLoading && page === 1 ? (
+          <View style={{ padding: 20, alignItems: 'center' }}>
+            <Text>Loading connections...</Text>
+          </View>
+        ) : followingError ? (
+          <View style={{ padding: 20, alignItems: 'center' }}>
+            <Text style={{ color: COLORS.error }}>Failed to load connections.</Text>
+          </View>
+        ) : following.length === 0 ? (
+          <View style={{ padding: 20, alignItems: 'center' }}>
+            <Text>No connections yet.</Text>
+          </View>
+        ) : (
+          <>
+            <View style={styles.connectionList}>
+              {following.map((connection) => (
+                <View key={connection.id} style={styles.card}>
+                  <View style={styles.cardRow}>
+                    <View style={styles.avatar}>
+                      <Text style={styles.avatarText}>{connection.initial}</Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.name}>{connection.name}</Text>
+                      <Text style={styles.location}>{connection.location}</Text>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.messageButton}
+                      onPress={() => handleMessage(connection)}
+                    >
+                      <Text style={styles.messageButtonText}>Message</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.name}>{connection.name}</Text>
-                  <Text style={styles.location}>{connection.location}</Text>
-                </View>
-                <TouchableOpacity style={styles.messageButton} onPress={() => handleMessage(connection.id)}>
-                  <Text style={styles.messageButtonText}>Message</Text>
-                </TouchableOpacity>
-              </View>
+              ))}
             </View>
-          ))}
-        </View>
+            {hasMore && (
+              <TouchableOpacity
+                style={{
+                  marginTop: 20,
+                  alignSelf: 'center',
+                  backgroundColor: COLORS.primary,
+                  paddingHorizontal: 32,
+                  paddingVertical: 12,
+                  borderRadius: 8,
+                }}
+                onPress={handleLoadMore}
+                disabled={followingFetching}
+              >
+                <Text style={{ color: COLORS.white, fontWeight: '600' }}>
+                  {followingFetching ? 'Loading...' : 'Load More'}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </>
+        )}
       </ScrollView>
     </SafeAreaView>
+        
   );
 };
+
 
 const styles = StyleSheet.create({
   container: {
@@ -100,11 +206,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: DIMENSIONS.spacing.lg,
   },
   addButton: {
-    width: '100%',
+    width: "100%",
     backgroundColor: COLORS.primary,
     paddingVertical: 18,
     borderRadius: 4,
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 20,
     marginTop: 10,
     shadowColor: COLORS.primary,
@@ -136,16 +242,16 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   cardRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   avatar: {
     width: 44,
     height: 44,
     borderRadius: 22,
     backgroundColor: COLORS._D2E7FF,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginRight: 16,
   },
   avatarText: {
@@ -170,9 +276,9 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#00000033',
+    borderColor: "#00000033",
     backgroundColor: COLORS.white,
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
     shadowColor: COLORS.black,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,

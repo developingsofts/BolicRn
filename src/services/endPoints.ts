@@ -8,11 +8,24 @@ export const API_END_POINTS = {
     resetPassword: "/auth/reset-password",
   },
 
+  trainingPrice: {
+    create: "/training-price/create",
+    update: "/training-price/update",
+    list: "/training-price/list",
+    delete: "/training-price/delete",
+  },
+
   users: {
     profile: (userId: string) => `/users/${userId}/profile`,
     stats: (userId: string) => `/users/${userId}/stats`,
     achievements: (userId: string) => `/users/${userId}/achievements`,
     ratings: (userId: string) => `/users/${userId}/ratings`,
+  },
+  trainerAvailability: {
+    create: "/trainer-availability-slot/create",
+    update: "/trainer-availability-slot/update",
+    list: "/trainer-availability-slot/list",
+    delete: "/trainer-availability-slot/delete",
   },
 
   workouts: {

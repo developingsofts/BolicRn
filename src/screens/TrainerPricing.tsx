@@ -1,10 +1,33 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import BasicTopBar from '../components/BasicTopBar';
-import { COLORS, DIMENSIONS } from '../config/constants';
-import { Ionicons } from '@expo/vector-icons';
-import ConfirmDialog from '../components/ConfirmDialog';
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  StyleSheet,
+  Alert,
+  Modal,
+  Platform,
+  ToastAndroid,
+  RefreshControl,
+} from "react-native";
+// Pull to refresh state and handler
+
+import { SafeAreaView } from "react-native-safe-area-context";
+import BasicTopBar from "../components/BasicTopBar";
+import { COLORS, DIMENSIONS } from "../config/constants";
+import { Ionicons } from "@expo/vector-icons";
+import ConfirmDialog from "../components/ConfirmDialog";
+import TrainerSetupStep1 from "../components/TrainerSetupStep1";
+import {
+  useGetTrainingPricesQuery,
+  useDeleteTrainingPricesMutation,
+  useCreateTrainingPriceMutation,
+  useUpdateTrainingPriceMutation,
+} from "../services/api/pricesApi";
+import { useAuth } from "../contexts/AuthContext";
+import { TextInput } from "react-native-gesture-handler";
+import FontWeight from "../hooks/useInterFonts";
 
 interface Package {
   id: string;
@@ -13,103 +36,326 @@ interface Package {
   price: number;
 }
 
-const initialPackages: Package[] = [
-  {
-    id: '1',
-    title: 'Single Session',
-    description: 'One-on-one personalized training session.',
-    price: 75,
-  },
-  {
-    id: '2',
-    title: '5 - Session Pack',
-    description: 'Save 10% with a bundle of 5 sessions.',
-    price: 67.5,
-  },
-  {
-    id: '3',
-    title: '10 - Session Pack',
-    description: 'Best value! Save 20% with 10 sessions.',
-    price: 60,
-  },
-];
+// No initialPackages, will fetch from API
 
 const TrainerPricing: React.FC<{ navigation: any }> = ({ navigation }) => {
-  const [packages, setPackages] = useState<Package[]>(initialPackages);
+  const { user } = useAuth();
+
+  // Replace with actual trainerId from auth/user context if needed
+  const trainerId = user?.id || "";
+  const [packages, setPackages] = useState<Package[]>([]);
+  const {
+    data: pricesData,
+    refetch: refetchPrices,
+    isLoading: loading,
+  } = useGetTrainingPricesQuery({ trainerId }, { skip: !trainerId });
+  const [deletePrices] = useDeleteTrainingPricesMutation();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const sessions =
+    pricesData && pricesData.status && "data" in pricesData
+      ? pricesData.data
+      : [];
 
-  const handleDelete = (id: string) => {
-    setDeleteId(id);
-    setShowDeleteDialog(true);
-  };
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalMode, setModalMode] = useState<"create" | "edit">("create");
+  const [editingSession, setEditingSession] = useState<any>(null);
+  const [createTrainingPrice] = useCreateTrainingPriceMutation();
+  const [updateTrainingPrice] = useUpdateTrainingPriceMutation();
 
-  const handleDeleteConfirm = () => {
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = async () => {
+    setRefreshing(true);
+    refetchPrices();
+    setRefreshing(false);
+  };    
+
+  useEffect(() => {
+    // Type guard for ApiResponse<TrainingPriceSession[]>
+    const mapped = sessions.map((s: any) => ({
+      id: s.id || s._id,
+      title: s.session_name || s.title || "",
+      description: s.description || "",
+      price: s.price || 0,
+    }));
+    setPackages(mapped);
+  }, [pricesData]);
+
+  // Only one handleDeleteConfirm
+  const handleDeleteConfirm = async () => {
     if (deleteId) {
-      setPackages(packages.filter((pkg) => pkg.id !== deleteId));
+      try {
+        await deletePrices({ ids: [deleteId] }).unwrap();
+        setPackages(packages.filter((pkg) => pkg.id !== deleteId));
+      } catch (e) {
+        Alert.alert("Failed to delete session");
+      }
     }
     setShowDeleteDialog(false);
     setDeleteId(null);
-    // Optionally show a toast or alert here
-    // Alert.alert('Package deleted successfully!');
   };
 
-  const handleEdit = (id: string) => {
-    Alert.alert(`Editing package ${id}`);
+  // Remove duplicate modal logic and handlers below this point
+
+  const openAddSession = () => {
+    setModalMode("create");
+    setEditingSession(null);
+    setModalVisible(true);
   };
 
-  const handleAddNew = () => {
-    Alert.alert('Add new session functionality coming soon!');
+  const openEditSession = (session: any) => {
+    setModalMode("edit");
+    setEditingSession(session);
+    setModalVisible(true);
   };
 
+  const closeModal = () => {
+    setModalVisible(false);
+    setEditingSession(null);
+  };
+
+  // Modal form state for create/edit
+  const [modalForm, setModalForm] = useState<any>({
+    session_name: "",
+    description: "",
+    price: "",
+  });
+
+  useEffect(() => {
+    if (modalVisible) {
+      if (modalMode === "edit" && editingSession) {
+        setModalForm({
+          session_name:
+            editingSession.session_name || editingSession.title || "",
+          description: editingSession.description || "",
+          price: editingSession.price ? String(editingSession.price) : "",
+        });
+      } else {
+        setModalForm({ session_name: "", description: "", price: "" });
+      }
+    }
+  }, [modalVisible, modalMode, editingSession]);
+
+  const handleModalSubmit = async () => {
+    try {
+      if (modalMode === "create") {
+        await createTrainingPrice([
+          {
+            session_name: modalForm.session_name,
+            description: modalForm.description,
+            price: modalForm.price,
+          },
+        ]).unwrap();
+      } else if (modalMode === "edit" && editingSession) {
+        await updateTrainingPrice({
+          id: editingSession.id,
+          session_name: modalForm.session_name,
+          description: modalForm.description,
+          price: modalForm.price,
+        }).unwrap();
+      }
+      closeModal();
+    } catch (e: any) {
+      Alert.alert("Error", e?.data?.message || "Failed to save session");
+    }
+  };
   return (
     <SafeAreaView edges={[]} style={styles.container}>
       <BasicTopBar
         onBackPress={() => navigation.goBack()}
         title="Pricing & Packages"
         subtitle="View and manage your pricing and packages"
-        containerStyle={{ paddingTop: DIMENSIONS.spacing.xxl, paddingBottom: DIMENSIONS.spacing.lg }}
+        containerStyle={{
+          paddingTop: DIMENSIONS.spacing.xxl,
+          paddingBottom: DIMENSIONS.spacing.lg,
+        }}
       />
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={COLORS.primary}
+          />
+        }
+      >
         <View style={styles.packagesList}>
-          {packages.map((pkg) => (
-            <View key={pkg.id} style={styles.card}>
-              <View style={styles.cardContent}>
-                <View style={styles.cardHeader}>
-                  <View style={styles.cardInfo}>
-                    <Text style={styles.cardTitle}>{pkg.title}</Text>
-                    <Text style={styles.cardDesc}>{pkg.description}</Text>
-                  </View>
-                  <View style={styles.cardPriceBox}>
-                    <Text style={styles.cardPrice}>${pkg.price}</Text>
-                    <Text style={styles.cardPerHour}>/hour</Text>
+          {loading ? (
+            <Text style={{ textAlign: "center", marginVertical: 24 }}>
+              Loading...
+            </Text>
+          ) : packages.length === 0 ? (
+            <Text style={{ textAlign: "center", marginVertical: 24 }}>
+              No sessions found.
+            </Text>
+          ) : (
+            <>
+              {packages.map((pkg) => (
+                <View key={pkg.id} style={styles.card}>
+                  <View style={styles.cardContent}>
+                    <View style={styles.cardHeader}>
+                      <View style={styles.cardInfo}>
+                        <Text style={styles.cardTitle}>{pkg.title}</Text>
+                        <Text style={styles.cardDesc}>{pkg.description}</Text>
+                      </View>
+                      <View style={styles.cardPriceBox}>
+                        <Text style={styles.cardPrice}>
+                          ${pkg.price}
+                          <Text style={styles.cardPerHour}>/hour</Text>
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={styles.cardActions}>
+                      <TouchableOpacity
+                        style={[styles.actionBtn, styles.deleteBtn]}
+                        onPress={() => {
+                          setDeleteId(pkg.id);
+                          setShowDeleteDialog(true);
+                        }}
+                      >
+                        <Text style={styles.deleteText}>Delete</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.actionBtn, styles.editBtn]}
+                        onPress={() => openEditSession(pkg)}
+                      >
+                        <Text style={styles.editText}>Edit</Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
                 </View>
-                <View style={styles.cardActions}>
-                  <TouchableOpacity style={[styles.actionBtn, styles.deleteBtn]} onPress={() => handleDelete(pkg.id)}>
-                    <Text style={styles.deleteText}>Delete</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={[styles.actionBtn, styles.editBtn]} onPress={() => handleEdit(pkg.id)}>
-                    <Text style={styles.editText}>Edit</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </View>
-          ))}
-          <TouchableOpacity style={styles.addBtn} onPress={handleAddNew}>
+              ))}
+            </>
+          )}
+          <TouchableOpacity style={styles.addBtn} onPress={openAddSession}>
             <Text style={styles.addBtnText}>Add New Session</Text>
-            <Ionicons name="add" size={22} color={"#191919"} style={{ marginLeft: 8 }} />
+            <Ionicons
+              name="add"
+              size={22}
+              color={"#191919"}
+              style={{ marginLeft: 8 }}
+            />
           </TouchableOpacity>
         </View>
       </ScrollView>
+      <Modal
+        visible={modalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={closeModal}
+      >
+        <View
+          style={{
+            backgroundColor: "rgba(0,0,0,0.3)",
+            flex: 1,
+            justifyContent: "flex-end",
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: "#fff",
+              paddingTop: 16,
+              paddingHorizontal: 20,
+              paddingBottom: 32,
+              borderTopLeftRadius: 24,
+              borderTopRightRadius: 24,
+              width: "100%",
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: -2 },
+              shadowOpacity: 0.15,
+              shadowRadius: 12,
+              elevation: 10,
+            }}
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: 12,
+              }}
+            >
+              <Text
+                style={{
+                  fontWeight: "bold",
+                  fontSize: 20,
+                  textAlign: "center",
+                  flex: 1,
+                }}
+              >
+                {modalMode === "edit" ? "Edit Session" : "Create Session"}
+              </Text>
+              <TouchableOpacity
+                onPress={closeModal}
+                style={{ marginLeft: 8, padding: 4 }}
+              >
+                <Ionicons name="close" size={24} color="#222" />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.sessionCard}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Session name</Text>
+                <TextInput
+                  style={styles.inputField}
+                  value={modalForm.session_name}
+                  onChangeText={(text) =>
+                    setModalForm((f: any) => ({ ...f, session_name: text }))
+                  }
+                  placeholder="Session name"
+                  placeholderTextColor={COLORS.textSecondary}
+                />
+              </View>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Description</Text>
+                <TextInput
+                  style={[styles.inputField, { height: 48 }]}
+                  value={modalForm.description}
+                  onChangeText={(text) =>
+                    setModalForm((f: any) => ({ ...f, description: text }))
+                  }
+                  placeholder="Description"
+                  placeholderTextColor={COLORS.textSecondary}
+                  multiline
+                />
+              </View>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Price per hour</Text>
+                <TextInput
+                  style={styles.inputField}
+                  value={modalForm.price}
+                  onChangeText={(text) =>
+                    setModalForm((f: any) => ({ ...f, price: text }))
+                  }
+                  placeholder="$ per hour"
+                  placeholderTextColor={COLORS.textSecondary}
+                  keyboardType="numeric"
+                />
+              </View>
+            </View>
+            <TouchableOpacity
+              style={{
+                backgroundColor: COLORS.primary,
+                borderRadius: 8,
+                padding: 14,
+                alignItems: "center",
+                marginTop: 18,
+              }}
+              onPress={handleModalSubmit}
+            >
+              <Text style={{ color: "#fff", fontWeight: "bold", fontSize: 16 }}>
+                {modalMode === "edit" ? "Update" : "Create"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
       <ConfirmDialog
         visible={showDeleteDialog}
         onClose={() => setShowDeleteDialog(false)}
         onConfirm={handleDeleteConfirm}
         title="Delete Session"
-        description={
-          `Once session is deleted, your upcoming applications for the session will be cancelled and users will be notified.`
-        }
+        description={`Once session is deleted, your upcoming applications for the session will be cancelled and users will be notified.`}
         confirmText="Delete"
         cancelText="Cancel"
       />
@@ -126,15 +372,15 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   packagesList: {
-    width: '100%',
+    width: "100%",
     maxWidth: 500,
-    alignSelf: 'center',
+    alignSelf: "center",
   },
   card: {
     backgroundColor: COLORS.surface,
     borderRadius: 16,
     marginBottom: 18,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 6,
@@ -144,9 +390,9 @@ const styles = StyleSheet.create({
     padding: 18,
   },
   cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
     marginBottom: 12,
   },
   cardInfo: {
@@ -155,7 +401,7 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: COLORS.text,
     marginBottom: 4,
   },
@@ -164,21 +410,25 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
   },
   cardPriceBox: {
-    alignItems: 'flex-end',
-    minWidth: 80,
+     flexDirection: "row",
+     alignItems: "flex-end",
+     minWidth: 80,
   },
   cardPrice: {
-    fontSize: 28,
-    fontWeight: 'bold',
+    fontSize: 20,
+    fontFamily: FontWeight.Bold,
     color: COLORS.primary,
+    fontWeight: 'bold',
   },
   cardPerHour: {
-    fontSize: 13,
+    fontSize: 14,
+    fontFamily: FontWeight.Bold,
     color: COLORS.primary,
-    marginTop: 2,
+    fontWeight: 'bold',
+    marginTop: 0,
   },
   cardActions: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 12,
     marginTop: 8,
   },
@@ -186,30 +436,30 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: 8,
     paddingVertical: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   deleteBtn: {
     backgroundColor: COLORS.white,
-    boxShadow: '0px 0px 12px 0px #76767626',
+    boxShadow: "0px 0px 12px 0px #76767626",
   },
   editBtn: {
     backgroundColor: COLORS.primary,
   },
   deleteText: {
-    color: '#EB3434',
-    fontWeight: '600',
+    color: "#EB3434",
+    fontWeight: "600",
     fontSize: 14,
   },
   editText: {
     color: COLORS.white,
-    fontWeight: '600',
+    fontWeight: "600",
     fontSize: 14,
   },
   addBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     borderRadius: 10,
     backgroundColor: COLORS.white,
     paddingVertical: 18,
@@ -217,8 +467,48 @@ const styles = StyleSheet.create({
   },
   addBtnText: {
     color: "#383838",
-    fontWeight: '600',
+    fontWeight: "600",
     fontSize: 16,
+  },
+  label: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    marginBottom: 2,
+  },
+  sessionCard: {
+    backgroundColor: COLORS.card,
+    borderRadius: 14,
+    padding: 20,
+    marginBottom: 18,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    shadowColor: COLORS.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  sessionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  sessionTitle: {
+    fontSize: 16,
+    fontFamily: FontWeight.SemiBold,
+    color: COLORS.text,
+  },
+  inputGroup: {
+    marginBottom: 12,
+  },
+  inputField: {
+    backgroundColor: "#F5F5F5",
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    minHeight: 36,
+    justifyContent: "center",
   },
 });
 
