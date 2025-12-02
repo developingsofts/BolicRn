@@ -9,7 +9,7 @@ export interface AvailabilitySlot {
 }
 
 export interface TrainerAvailability {
-  id?: string | number;
+  id?: string;
   slots: AvailabilitySlot[];
 }
 
@@ -45,11 +45,11 @@ export const availabilityApi = baseApi.injectEndpoints({
       }),
       providesTags: ["TrainerAvailability", "TrainerSetup"],
     }),
-    deleteAvailability: builder.mutation<any, { ids: (string | number)[] }>({
-      query: (body) => ({
+    deleteAvailability: builder.mutation<any, { id: string }>({
+      query: ({ id }) => ({
         url: API_END_POINTS.trainerAvailability.delete,
         method: "POST",
-        body,
+        body: { ids : [id] },
       }),
       invalidatesTags: ["TrainerAvailability", "TrainerSetup"],
     }),

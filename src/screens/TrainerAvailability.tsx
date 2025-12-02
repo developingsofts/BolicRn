@@ -13,15 +13,19 @@ import {
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { SafeAreaView } from "react-native-safe-area-context";
 import BasicTopBar from "../components/BasicTopBar";
-import { COLORS, DIMENSIONS } from "../config/constants";
+import { COLORS, DIMENSIONS, toUtc, toLocalTime } from "../config/constants";
 import { useUser } from "../store/hooks";
-import { useGetAvailabilityQuery } from "../services/api/availabilityApi";
+import {
+  useGetAvailabilityQuery,
+  useUpdateAvailabilityMutation,
+  useDeleteAvailabilityMutation,
+} from "../services/api/availabilityApi";
 import { Close } from "../../assets";
+import { useAuth } from "../contexts/AuthContext";
 
 interface DayAvailability {
-  startTime: string;
-  endTime: string;
-  isOff: boolean;
+  start_time: string;
+  end_time: string;
 }
 
 interface WeekAvailability {
@@ -35,11 +39,11 @@ const daysOfWeek = [
   "Thursday",
   "Friday",
   "Saturday",
-  "Sunday"
+  "Sunday",
 ];
 
 const TrainerAvailability: React.FC<{ navigation: any }> = ({ navigation }) => {
-  const user = useUser();
+  const { user } = useAuth();
   const [availability, setAvailability] = useState<WeekAvailability>({});
   const [initialAvailability, setInitialAvailability] =
     useState<WeekAvailability>({});
@@ -48,6 +52,9 @@ const TrainerAvailability: React.FC<{ navigation: any }> = ({ navigation }) => {
     mode: "start" | "end";
   } | null>(null);
   const [pickerValue, setPickerValue] = useState(new Date());
+  const [updateAvailability, { isLoading: isUpdating }] =
+    useUpdateAvailabilityMutation();
+  const [deleteAvailability] = useDeleteAvailabilityMutation();
 
   // Fetch slots from API
   const { data, isLoading, isFetching } = useGetAvailabilityQuery(
@@ -59,7 +66,7 @@ const TrainerAvailability: React.FC<{ navigation: any }> = ({ navigation }) => {
   useEffect(() => {
     const week: WeekAvailability = {};
     daysOfWeek.forEach((day) => {
-      week[day] = { startTime: "", endTime: "", isOff: false };
+      week[day] = { start_time: "", end_time: "" };
     });
     if (
       data &&
@@ -70,14 +77,21 @@ const TrainerAvailability: React.FC<{ navigation: any }> = ({ navigation }) => {
       const slots = data.data[0]?.slots || [];
       slots.forEach((slot) => {
         const day = slot.day;
+        // Treat as off if both start_time and end_time are 'OFF' or empty
+        const isOff =
+          (slot && slot.start_time === "OFF" && slot.end_time === "OFF") ||
+          (slot.start_time === "" && slot.end_time === "");
         if (day && week[day] !== undefined) {
-          if (slot.start_time === "OFF" && slot.end_time === "OFF") {
-            week[day] = { startTime: "OFF", endTime: "OFF", isOff: true };
+          if (isOff) {
+            week[day] = { start_time: "", end_time: "" };
           } else {
+            // Convert UTC times to local timezone
+            const localStartTime = slot.start_time ? toLocalTime(slot.start_time) : "";
+            const localEndTime = slot.end_time ? toLocalTime(slot.end_time) : "";
+            console.log('[useEffect] slot:', slot, 'localStartTime:', localStartTime, 'localEndTime:', localEndTime);
             week[day] = {
-              startTime: slot.start_time || "",
-              endTime: slot.end_time || "",
-              isOff: false,
+              start_time: localStartTime,
+              end_time: localEndTime,
             };
           }
         }
@@ -85,34 +99,38 @@ const TrainerAvailability: React.FC<{ navigation: any }> = ({ navigation }) => {
     }
     // Fallback to 09:00 AM/05:00 PM in 12-hour format if missing
     daysOfWeek.forEach((day) => {
+      // Defensive: ensure week[day] is always defined
+      const dayObj = week[day] || { start_time: "", end_time: "" };
       // Only fallback if value is missing or OFF
-      if (!week[day].startTime || week[day].startTime === "OFF") {
-        week[day].startTime = week[day].isOff ? "OFF" : "09:00 AM";
+      if (!dayObj.start_time || dayObj.start_time === "OFF") {
+        dayObj.start_time =
+          !dayObj.start_time && !dayObj.end_time ? "" : "09:00 AM";
       } else if (
-        !week[day].isOff &&
-        !week[day].startTime.includes("AM") &&
-        !week[day].startTime.includes("PM")
+        dayObj.start_time &&
+        !dayObj.start_time.includes("AM") &&
+        !dayObj.start_time.includes("PM")
       ) {
-        // If value is 21:00 or similar, but should be 09:00 AM fallback only if value is 09:00 or 9:00
-        if (week[day].startTime === "09:00" || week[day].startTime === "9:00") {
-          week[day].startTime = "09:00 AM";
+        if (dayObj.start_time === "09:00" || dayObj.start_time === "9:00") {
+          dayObj.start_time = "09:00 AM";
         } else {
-          week[day].startTime = to12Hour(week[day].startTime);
+          dayObj.start_time = to12Hour(dayObj.start_time);
         }
       }
-      if (!week[day].endTime || week[day].endTime === "OFF") {
-        week[day].endTime = week[day].isOff ? "OFF" : "05:00 PM";
+      if (!dayObj.end_time || dayObj.end_time === "OFF") {
+        dayObj.end_time =
+          !dayObj.start_time && !dayObj.end_time ? "" : "05:00 PM";
       } else if (
-        !week[day].isOff &&
-        !week[day].endTime.includes("AM") &&
-        !week[day].endTime.includes("PM")
+        dayObj.end_time &&
+        !dayObj.end_time.includes("AM") &&
+        !dayObj.end_time.includes("PM")
       ) {
-        if (week[day].endTime === "17:00" || week[day].endTime === "5:00") {
-          week[day].endTime = "05:00 PM";
+        if (dayObj.end_time === "17:00" || dayObj.end_time === "5:00") {
+          dayObj.end_time = "05:00 PM";
         } else {
-          week[day].endTime = to12Hour(week[day].endTime);
+          dayObj.end_time = to12Hour(dayObj.end_time);
         }
       }
+      week[day] = dayObj;
     });
     setAvailability(week);
     setInitialAvailability(week);
@@ -130,7 +148,6 @@ const TrainerAvailability: React.FC<{ navigation: any }> = ({ navigation }) => {
     return `${hour.toString().padStart(2, "0")}:${min} ${ampm}`;
   }
 
-
   // Helper to format time as 12-hour (AM/PM)
   const formatTime = (date: Date) => {
     // Always pad hour with zero if less than 10, and ensure AM/PM is uppercase
@@ -140,20 +157,35 @@ const TrainerAvailability: React.FC<{ navigation: any }> = ({ navigation }) => {
         minute: "2-digit",
         hour12: true,
       })
-      .split(' ');
-    let [hour, minute] = time.split(':');
-    if (hour.length === 1) hour = '0' + hour;
-    return `${hour}:${minute} ${ampm ? ampm.toUpperCase() : ''}`.trim();
+      .split(" ");
+    let [hour, minute] = time.split(":");
+    if (hour.length === 1) hour = "0" + hour;
+    return `${hour}:${minute} ${ampm ? ampm.toUpperCase() : ""}`.trim();
   };
 
   const openPicker = (day: string, mode: "start" | "end") => {
-    const timeStr =
-      mode === "start"
-        ? availability[day].startTime
-        : availability[day].endTime;
-    let [h, m] = timeStr.split(":");
+    const dayObj = availability[day] || { start_time: "", end_time: "" };
+    const timeStr = mode === "start" ? dayObj.start_time : dayObj.end_time;
+
+    let h = 9,
+      m = 0;
+    if (timeStr) {
+      // Accept both 09:00 AM and 09:00, and handle Unicode/extra whitespace in AM/PM
+      // Remove all non-breaking spaces and normalize whitespace
+      const cleaned = timeStr.replace(/[\u202F\u00A0\s]+/g, " ").trim();
+      const match = cleaned.match(/(\d{1,2}):(\d{2}) ?([AP]M)?/i);
+      if (match) {
+        h = parseInt(match[1], 10);
+        m = parseInt(match[2], 10);
+        if (match[3]) {
+          const ampm = match[3].toUpperCase();
+          if (ampm === "PM" && h < 12) h += 12;
+          if (ampm === "AM" && h === 12) h = 0;
+        }
+      }
+    }
     const date = new Date();
-    date.setHours(Number(h) || 9, Number(m) || 0, 0, 0);
+    date.setHours(h, m, 0, 0);
     setPickerValue(date);
     setPicker({ day, mode });
   };
@@ -171,7 +203,7 @@ const TrainerAvailability: React.FC<{ navigation: any }> = ({ navigation }) => {
         ...prev,
         [picker.day]: {
           ...prev[picker.day],
-          [picker.mode === "start" ? "startTime" : "endTime"]: newTime,
+          [picker.mode === "start" ? "start_time" : "end_time"]: newTime,
         },
       }));
     }
@@ -180,37 +212,97 @@ const TrainerAvailability: React.FC<{ navigation: any }> = ({ navigation }) => {
 
   const handleToggleOff = (day: string) => {
     setAvailability((prev) => {
-      const isCurrentlyOff = prev[day].isOff;
+      const dayObj = prev[day] || { start_time: "", end_time: "" };
+      const isCurrentlyOff = !dayObj.start_time && !dayObj.end_time;
       if (isCurrentlyOff) {
         // Restore to default times
         return {
           ...prev,
           [day]: {
-            startTime: "09:00 AM",
-            endTime: "05:00 PM",
-            isOff: false,
+            start_time: "09:00 AM",
+            end_time: "05:00 PM",
           },
         };
       } else {
         return {
           ...prev,
           [day]: {
-            startTime: "OFF",
-            endTime: "OFF",
-            isOff: true,
+            start_time: "",
+            end_time: "",
           },
         };
       }
     });
   };
 
-  const handleDiscard = () => {
-    setAvailability(initialAvailability);
-    Alert.alert("Changes discarded");
+  const handleDiscard = async () => {
+    // Prepare slots: convert local times to UTC before sending
+    const slots = daysOfWeek.map((day) => {
+      const startUtc = toUtc("09:00 AM");
+      const endUtc = toUtc("05:00 PM");
+      console.log('[handleDiscard] day:', day, 'startUtc:', startUtc, 'endUtc:', endUtc);
+      return {
+        day,
+        start_time: startUtc,
+        end_time: endUtc,
+      };
+    });
+    try {
+      if (data && data.status && data.data && data.data.length > 0) {
+        await updateAvailability({
+          id: data.data[0]?.id ?? "",
+          slots,
+        }).unwrap();
+        // Reset UI to default (show local times to user)
+        const week: WeekAvailability = {};
+        daysOfWeek.forEach((day) => {
+          week[day] = { start_time: "09:00 AM", end_time: "05:00 PM" };
+        });
+        setAvailability(week);
+        setInitialAvailability(week);
+      }
+
+      Alert.alert("Success", "Changes discarded and reset to default");
+    } catch (e) {
+      Alert.alert("Error", "Failed to reset availability.");
+    }
   };
 
-  const handleUpdate = () => {
-    Alert.alert("Availability updated successfully!");
+  const handleUpdate = async () => {
+    if (!user?.id) return;
+    // Convert availability state to slots array, converting local times to UTC
+    const slots = daysOfWeek.map((day) => {
+      const dayObj = availability[day] || { start_time: "", end_time: "" };
+      const { start_time, end_time } = dayObj;
+      const isOff = !start_time && !end_time;
+      
+      const startUtc = isOff ? "" : toUtc(start_time);
+      const endUtc = isOff ? "" : toUtc(end_time);
+      console.log('[handleUpdate] day:', day, 'localStart:', start_time, 'startUtc:', startUtc, 'localEnd:', end_time, 'endUtc:', endUtc);
+      
+      return {
+        day,
+        start_time: startUtc,
+        end_time: endUtc,
+      };
+    });
+    try {
+      if (
+        data &&
+        data.status &&
+        Array.isArray(data.data) &&
+        data.data.length > 0
+      ) {
+        await updateAvailability({
+          id: data.data[0]?.id ?? "",
+          slots,
+        }).unwrap();
+      }
+
+      Alert.alert("Success", "Availability updated successfully!");
+    } catch (e) {
+      Alert.alert("Error", "Failed to update availability.");
+    }
   };
 
   return (
@@ -238,22 +330,38 @@ const TrainerAvailability: React.FC<{ navigation: any }> = ({ navigation }) => {
                 <Text style={styles.dayText}>{day}</Text>
                 <View style={styles.timeRow}>
                   {/* Start time with cross icon overlay */}
-                  <View style={{ flexDirection: 'row', alignItems: 'center', position: 'relative' }}>
-                    {availability[day].isOff ? (
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      position: "relative",
+                    }}
+                  >
+                    {!(availability[day] && availability[day].start_time) &&
+                    !(availability[day] && availability[day].end_time) ? (
                       <React.Fragment>
-                        <View style={styles.offCircle}>
-                          <Text style={styles.offTextCircle}>OFF</Text>
-                        </View>
+                        <TouchableOpacity onPress={() => handleToggleOff(day)}>
+                          <View style={styles.offCircle}>
+                            <Text style={styles.offTextCircle}>OFF</Text>
+                          </View>
+                        </TouchableOpacity>
                         <Text style={styles.dash}>-</Text>
-                        <View style={styles.offCircle}>
-                          <Text style={styles.offTextCircle}>OFF</Text>
-                        </View>
+                        <TouchableOpacity onPress={() => handleToggleOff(day)}>
+                          <View style={styles.offCircle}>
+                            <Text style={styles.offTextCircle}>OFF</Text>
+                          </View>
+                        </TouchableOpacity>
                       </React.Fragment>
                     ) : (
                       <React.Fragment>
-                        <View style={{ position: 'relative' }}>
+                        <View style={{ position: "relative" }}>
                           <TouchableOpacity
-                            style={{ position: 'absolute', left: -10, top: -10, zIndex: 2 }}
+                            style={{
+                              position: "absolute",
+                              left: -10,
+                              top: -10,
+                              zIndex: 2,
+                            }}
                             onPress={() => handleToggleOff(day)}
                           >
                             <Image
@@ -276,7 +384,9 @@ const TrainerAvailability: React.FC<{ navigation: any }> = ({ navigation }) => {
                             onPress={() => openPicker(day, "start")}
                           >
                             <Text style={styles.timeText}>
-                              {availability[day].startTime}
+                              {(availability[day] &&
+                                availability[day].start_time) ||
+                                ""}
                             </Text>
                           </TouchableOpacity>
                         </View>
@@ -292,7 +402,9 @@ const TrainerAvailability: React.FC<{ navigation: any }> = ({ navigation }) => {
                           onPress={() => openPicker(day, "end")}
                         >
                           <Text style={styles.timeText}>
-                            {availability[day].endTime}
+                            {(availability[day] &&
+                              availability[day].end_time) ||
+                              ""}
                           </Text>
                         </TouchableOpacity>
                       </React.Fragment>
@@ -325,8 +437,11 @@ const TrainerAvailability: React.FC<{ navigation: any }> = ({ navigation }) => {
             <TouchableOpacity
               style={[styles.actionBtn, styles.updateBtn]}
               onPress={handleUpdate}
+              disabled={isUpdating}
             >
-              <Text style={styles.updateText}>Update</Text>
+              <Text style={styles.updateText}>
+                {isUpdating ? "Updating..." : "Update"}
+              </Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -336,21 +451,21 @@ const TrainerAvailability: React.FC<{ navigation: any }> = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-    offCircle: {
-      backgroundColor: '#E6E6E6',
-      borderRadius: 32,
-      paddingHorizontal: 18,
-      paddingVertical: 9,
-      alignItems: 'center',
-      justifyContent: 'center',
-      minWidth: 60,
-    },
-    offTextCircle: {
-      color: '#C77A7A',
-      fontWeight: '600',
-      fontSize: 18,
-      textAlign: 'center',
-    },
+  offCircle: {
+    backgroundColor: "#E6E6E6",
+    borderRadius: 32,
+    paddingHorizontal: 18,
+    paddingVertical: 9,
+    alignItems: "center",
+    justifyContent: "center",
+    minWidth: 60,
+  },
+  offTextCircle: {
+    color: "#C77A7A",
+    fontWeight: "600",
+    fontSize: 18,
+    textAlign: "center",
+  },
   offTimeBox: {
     backgroundColor: "#E6E6E6",
     borderRadius: 20,
