@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,10 +8,11 @@ import {
   Image,
 } from "react-native";
 import { Calendar, DateData } from "react-native-calendars";
-import { COLORS, DIMENSIONS } from "../config/constants";
+import { COLORS, DIMENSIONS, toLocalTime } from "../config/constants";
 import FontWeight from "../hooks/useInterFonts";
 import { r } from "../designing/responsiveDesigns";
 import { LeftArrow } from "../../assets";
+import { useGetAvailabilityQuery } from "../services/api/availabilityApi";
 
 interface DaySlots {
   date: string;
@@ -34,7 +35,7 @@ interface DateTimeSelectorProps {
   packageTitle?: string;
   price?: number;
   trainerId?: string;
-
+  description?: string;
   // Session details
   sessionTitle?: string;
   sessionDescription?: string;
@@ -43,10 +44,13 @@ interface DateTimeSelectorProps {
 
   // Button props
   buttonText: string;
-  onButtonPress: (selectedDate: string, selectedTime: string) => void;
+  onButtonPress: (selectedDate: string, selectedTime: string, selectedSlots?: { date: string; time: string }[]) => void;
 
   // Custom slot generation (optional)
   customDaySlots?: DaySlots[];
+  
+  // Multiple slot selection
+  allowMultipleSlots?: boolean;
 }
 
 const DateTimeSelector: React.FC<DateTimeSelectorProps> = ({
@@ -58,6 +62,7 @@ const DateTimeSelector: React.FC<DateTimeSelectorProps> = ({
   packageTitle,
   price,
   trainerId,
+  description,
   sessionTitle = "Single Session",
   sessionDescription = "One-on-one personalized training session.",
   sessionPriceDesc = "$75/hr x 4 hours",
@@ -65,25 +70,50 @@ const DateTimeSelector: React.FC<DateTimeSelectorProps> = ({
   buttonText,
   onButtonPress,
   customDaySlots,
+  allowMultipleSlots = true,
 }) => {
+  // Get today's date for calendar min date
+  const today = new Date().toISOString().split("T")[0];
+
+  // Helper function to normalize day names to full names
+  const normalizeDayName = (day: string): string => {
+    const fullDays = {
+      "Sun": "Sunday",
+      "Mon": "Monday",
+      "Tue": "Tuesday",
+      "Wed": "Wednesday",
+      "Thu": "Thursday",
+      "Fri": "Friday",
+      "Sat": "Saturday",
+      "Sunday": "Sunday",
+      "Monday": "Monday",
+      "Tuesday": "Tuesday",
+      "Wednesday": "Wednesday",
+      "Thursday": "Thursday",
+      "Friday": "Friday",
+      "Saturday": "Saturday",
+    } as { [key: string]: string };
+    return fullDays[day] || day;
+  };
+
   // Generate day slots for next 3 days (default behavior)
   const generateDefaultDaySlots = (): DaySlots[] => {
-    const today = new Date();
+    const todayDate = new Date();
     const slots: DaySlots[] = [];
 
-    for (let i = 3; i < 6; i++) {
-      const date = new Date(today);
-      date.setDate(today.getDate() + i);
+    for (let i = 0; i < 3; i++) {
+      const date = new Date(todayDate);
+      date.setDate(todayDate.getDate() + i);
 
       const dateStr = date.toISOString().split("T")[0];
       const displayDate = date.getDate().toString().padStart(2, "0");
-      const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+      const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
       const day = days[date.getDay()];
 
       let timeSlots: string[] = [];
-      if (i === 3) {
+      if (i === 0) {
         timeSlots = ["9:00 AM", "10:00 AM", "11:00 AM", "12:00 PM", "1:00 PM"];
-      } else if (i === 4) {
+      } else if (i === 1) {
         timeSlots = ["2:00 PM", "3:00 PM", "4:00 PM", "5:00 PM", "6:00 PM"];
       } else {
         timeSlots = ["7:00 PM", "8:00 PM", "9:00 PM", "10:00 PM", "11:00 PM"];
@@ -100,35 +130,283 @@ const DateTimeSelector: React.FC<DateTimeSelectorProps> = ({
     return slots;
   };
 
-  const daySlots = customDaySlots || generateDefaultDaySlots();
-  const [selectedDate, setSelectedDate] = useState<string>(daySlots[0].date);
-  const [selectedTime, setSelectedTime] = useState<string>(
-    daySlots[0].slots[0]
+  // Function to generate slots based on a reference date (selected date + 2 more days)
+  // But only show dates within the same month
+  const generateSlotsFromDate = (referenceDate: string): DaySlots[] => {
+    const refDate = new Date(referenceDate);
+    const refMonth = refDate.getMonth();
+    const refYear = refDate.getFullYear();
+    const slots: DaySlots[] = [];
+    const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+    for (let i = 0; i < 3; i++) {
+      const date = new Date(refDate);
+      date.setDate(refDate.getDate() + i);
+
+      // Stop if we've moved to a different month
+      if (date.getMonth() !== refMonth || date.getFullYear() !== refYear) {
+        break;
+      }
+
+      const dateStr = date.toISOString().split("T")[0];
+      const displayDate = date.getDate().toString().padStart(2, "0");
+      const dayName = daysOfWeek[date.getDay()];
+
+      // Get hourly slots from API data for this day
+      let timeSlots: string[] = [];
+      
+      if (slotsByDay[dayName] && slotsByDay[dayName].start_time && slotsByDay[dayName].end_time) {
+        // Generate hourly slots from API availability
+        timeSlots = generateHourlySlots(slotsByDay[dayName].start_time, slotsByDay[dayName].end_time);
+      } else {
+        // Fallback to default slots if no API data
+        if (i === 0) {
+          timeSlots = ["9:00 AM", "10:00 AM", "11:00 AM", "12:00 PM", "1:00 PM"];
+        } else if (i === 1) {
+          timeSlots = ["2:00 PM", "3:00 PM", "4:00 PM", "5:00 PM", "6:00 PM"];
+        } else {
+          timeSlots = ["7:00 PM", "8:00 PM", "9:00 PM", "10:00 PM", "11:00 PM"];
+        }
+      }
+
+      slots.push({
+        date: dateStr,
+        displayDate,
+        day: dayName,
+        slots: timeSlots,
+      });
+    }
+
+    return slots;
+  };
+
+  const initialDaySlots = customDaySlots || generateDefaultDaySlots();
+  
+  // Find today's slots or default to first available
+  const todaySlot = initialDaySlots.find(slot => slot.date === today);
+  const defaultDate = today; // Always default to current/today's date
+  const defaultTime = todaySlot ? todaySlot.slots[0] : initialDaySlots[0]?.slots[0] || "09:00 AM";
+  
+  const [calendarSelectedDate, setCalendarSelectedDate] = useState<string>(defaultDate);
+  const [selectedDate, setSelectedDate] = useState<string>(defaultDate);
+  const [selectedTime, setSelectedTime] = useState<string>(defaultTime);
+  const [selectedSlots, setSelectedSlots] = useState<{ date: string; time: string }[]>([
+    { date: defaultDate, time: defaultTime }
+  ]);
+  const [slotsByDay, setSlotsByDay] = useState<{ [key: string]: { start_time: string; end_time: string } }>({
+    Sunday: { start_time: "09:00 AM", end_time: "05:00 PM" },
+    Monday: { start_time: "09:00 AM", end_time: "05:00 PM" },
+    Tuesday: { start_time: "09:00 AM", end_time: "05:00 PM" },
+    Wednesday: { start_time: "09:00 AM", end_time: "05:00 PM" },
+    Thursday: { start_time: "09:00 AM", end_time: "05:00 PM" },
+    Friday: { start_time: "09:00 AM", end_time: "05:00 PM" },
+    Saturday: { start_time: "09:00 AM", end_time: "05:00 PM" },
+  });
+  const [isInitialMount, setIsInitialMount] = useState(true);
+
+  // Fetch availability slots from API
+  const { data: availabilityData, isLoading: isLoadingAvailability } = useGetAvailabilityQuery(
+    trainerId ? { trainerId } : { trainerId: "" },
+    { skip: !trainerId }
   );
 
-  // Get today's date for calendar min date
-  const today = new Date().toISOString().split("T")[0];
+  // Helper function to convert 12-hour time to minutes
+  const timeToMinutes = (timeStr: string): number => {
+    const match = timeStr.match(/(\d{1,2}):(\d{2})\s?(AM|PM)/i);
+    if (!match) return 0;
+    let hours = parseInt(match[1], 10);
+    const minutes = parseInt(match[2], 10);
+    const ampm = match[3].toUpperCase();
+    if (ampm === "PM" && hours !== 12) hours += 12;
+    if (ampm === "AM" && hours === 12) hours = 0;
+    return hours * 60 + minutes;
+  };
+
+  // Helper function to convert minutes to 12-hour time
+  const minutesToTime = (mins: number): string => {
+    const hours = Math.floor(mins / 60);
+    const minutes = mins % 60;
+    const ampm = hours >= 12 ? "PM" : "AM";
+    const displayHours = hours % 12 || 12;
+    return `${displayHours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")} ${ampm}`;
+  };
+
+  // Generate hourly slots from start and end time
+  const generateHourlySlots = (startTime: string, endTime: string): string[] => {
+    const slots: string[] = [];
+    const startMins = timeToMinutes(startTime);
+    const endMins = timeToMinutes(endTime);
+    
+    console.log(`[generateHourlySlots] Start: ${startTime} (${startMins}), End: ${endTime} (${endMins})`);
+    
+    for (let mins = startMins; mins < endMins; mins += 60) {
+      slots.push(minutesToTime(mins));
+    }
+    
+    console.log(`[generateHourlySlots] Generated slots:`, slots);
+    return slots;
+  };
+
+  // Convert API availability to time slots
+  useEffect(() => {
+    if (availabilityData && availabilityData.status && availabilityData.data) {
+      console.log("[DateTimeSelector] Availability Data:", availabilityData.data);
+      
+      // Get available slots from API
+      const slots = availabilityData.data[0]?.slots || [];
+      console.log("[DateTimeSelector] Available Slots from API:", slots);
+      
+      // Map slots by day
+      const daySlots: { [key: string]: { start_time: string; end_time: string } } = {};
+      const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+      
+      // Initialize all days with default times
+      daysOfWeek.forEach((day) => {
+        daySlots[day] = { start_time: "09:00 AM", end_time: "05:00 PM" };
+      });
+      
+      // Override with API data if available
+      slots.forEach((slot) => {
+        if (slot.day && slot.start_time && slot.end_time) {
+          // Normalize day name to full name
+          const normalizedDay = normalizeDayName(slot.day);
+          // Convert UTC times to local timezone for display
+          const localStart = toLocalTime(slot.start_time);
+          const localEnd = toLocalTime(slot.end_time);
+          console.log(`[DateTimeSelector] Day: ${slot.day} (normalized: ${normalizedDay}), UTC: ${slot.start_time}-${slot.end_time}, Local: ${localStart}-${localEnd}`);
+          daySlots[normalizedDay] = { start_time: localStart, end_time: localEnd };
+        }
+      });
+      console.log("[DateTimeSelector] Slots by Day (with defaults):", daySlots);
+      setSlotsByDay(daySlots);
+    } else if (availabilityData && !availabilityData.status) {
+      // If API returns but with no data, set default times for all days
+      console.log("[DateTimeSelector] No availability data, using defaults");
+      const daySlots: { [key: string]: { start_time: string; end_time: string } } = {};
+      const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+      daysOfWeek.forEach((day) => {
+        daySlots[day] = { start_time: "09:00 AM", end_time: "05:00 PM" };
+      });
+      setSlotsByDay(daySlots);
+    }
+  }, [availabilityData]);
+
+  // Generate display slots based on calendar-selected date (only changes when calendar is clicked)
+  const displayedSlots = generateSlotsFromDate(calendarSelectedDate);
+
+  // Auto-select first slot only on initial mount
+  useEffect(() => {
+    if (displayedSlots && displayedSlots.length > 0 && displayedSlots[0].slots.length > 0) {
+      // Only auto-select if it's the initial mount
+      if (isInitialMount) {
+        const firstDate = displayedSlots[0].date;
+        const firstSlot = displayedSlots[0].slots[0];
+        console.log("[DateTimeSelector] Initial mount - Auto-selecting first slot:", firstSlot, "on date:", firstDate);
+        setSelectedDate(firstDate);
+        setSelectedTime(firstSlot);
+        setSelectedSlots([{ date: firstDate, time: firstSlot }]);
+        setIsInitialMount(false);
+      }
+    }
+  }, [isInitialMount]);
 
   // Create marked dates for calendar
   const markedDates = {
-    [selectedDate]: {
+    [calendarSelectedDate]: {
       selected: true,
       selectedColor: COLORS.primary,
     },
   };
 
-  const handleDateSelect = (date: string, firstSlot: string) => {
+  const handleCalendarDateSelect = (date: string) => {
+    setCalendarSelectedDate(date);
+    
+    // Find the first slot for this date
+    const refDate = new Date(date);
+    const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const dayName = daysOfWeek[refDate.getDay()];
+    
+    // Generate slots for the selected date
+    let firstTimeSlot = "09:00 AM";
+    if (slotsByDay[dayName] && slotsByDay[dayName].start_time && slotsByDay[dayName].end_time) {
+      const slots = generateHourlySlots(slotsByDay[dayName].start_time, slotsByDay[dayName].end_time);
+      firstTimeSlot = slots.length > 0 ? slots[0] : "09:00 AM";
+    }
+    
+    // Update selected date and time with first slot, clear previous slots
     setSelectedDate(date);
-    setSelectedTime(firstSlot);
+    setSelectedTime(firstTimeSlot);
+    setSelectedSlots([{ date, time: firstTimeSlot }]);
+    
+    console.log("[handleCalendarDateSelect] Calendar date selected:", date, "First time:", firstTimeSlot);
+  };
+
+  const handleTimeSlotSelect = (date: string, time: string) => {
+    console.log("[handleTimeSlotSelect] Selected date:", date, "Time:", time);
+    
+    if (allowMultipleSlots) {
+      // Multiple slot selection mode
+      const slotKey = `${date}-${time}`;
+      const isAlreadySelected = selectedSlots.some(slot => slot.date === date && slot.time === time);
+      
+      // Check if this is a different date than the first selected slot
+      const firstSelectedDate = selectedSlots[0]?.date;
+      const isDifferentDate = date !== firstSelectedDate;
+      
+      if (isAlreadySelected) {
+        // Remove the slot if already selected
+        const filtered = selectedSlots.filter(slot => !(slot.date === date && slot.time === time));
+        setSelectedSlots(filtered.length > 0 ? filtered : [{ date, time }]);
+        setSelectedDate(filtered.length > 0 ? filtered[0].date : date);
+        setSelectedTime(filtered.length > 0 ? filtered[0].time : time);
+        console.log("[handleTimeSlotSelect] Removed slot:", slotKey);
+      } else if (isDifferentDate) {
+        // If selecting a slot from a different date, clear previous slots and start fresh
+        setSelectedSlots([{ date, time }]);
+        setSelectedDate(date);
+        setSelectedTime(time);
+        console.log("[handleTimeSlotSelect] Switched to different date, cleared previous slots. New slot:", slotKey);
+      } else {
+        // Add the slot (same date)
+        setSelectedSlots([...selectedSlots, { date, time }]);
+        setSelectedDate(date);
+        setSelectedTime(time);
+        console.log("[handleTimeSlotSelect] Added slot:", slotKey);
+      }
+    } else {
+      // Single slot selection mode (default)
+      setSelectedDate(date);
+      setSelectedTime(time);
+      setSelectedSlots([{ date, time }]);
+    }
   };
 
   const handleContinue = () => {
-    onButtonPress(selectedDate, selectedTime);
+    if (allowMultipleSlots) {
+      // Pass all selected slots along with the first slot's date/time for backward compatibility
+      onButtonPress(selectedSlots[0]?.date || selectedDate, selectedSlots[0]?.time || selectedTime, selectedSlots);
+    } else {
+      onButtonPress(selectedDate, selectedTime);
+    }
   };
 
   const handleFirstAvailable = () => {
-    setSelectedDate(daySlots[0].date);
-    setSelectedTime(daySlots[0].slots[0]);
+    if (displayedSlots && displayedSlots.length > 0 && displayedSlots[0].slots.length > 0) {
+      const firstDate = displayedSlots[0].date;
+      const firstTime = displayedSlots[0].slots[0];
+      
+      setCalendarSelectedDate(firstDate);
+      setSelectedDate(firstDate);
+      setSelectedTime(firstTime);
+      
+      if (allowMultipleSlots) {
+        setSelectedSlots([{ date: firstDate, time: firstTime }]);
+      } else {
+        setSelectedSlots([{ date: firstDate, time: firstTime }]);
+      }
+      
+      console.log("[handleFirstAvailable] Selected first available:", firstDate, firstTime);
+    }
   };
 
   const renderCalendar = () => {
@@ -139,36 +417,40 @@ const DateTimeSelector: React.FC<DateTimeSelectorProps> = ({
     });
 
     return (
-      <View style={styles.calendarCard}>
+      <View style={styles.calendar}>
         <Text style={styles.calendarTitle}>{monthName}</Text>
-        <Calendar
-          current={selectedDate}
-          minDate={today}
-          onDayPress={(day: DateData) => {
-            setSelectedDate(day.dateString);
-          }}
-          markedDates={markedDates}
-          theme={{
-            backgroundColor: COLORS.white,
-            calendarBackground: COLORS.white,
-            textSectionTitleColor: COLORS._5E5E5E,
-            selectedDayBackgroundColor: COLORS.primary,
-            selectedDayTextColor: COLORS.white,
-            todayTextColor: COLORS.primary,
-            dayTextColor: COLORS.app_black,
-            textDisabledColor: COLORS._D9D9D9,
-            dotColor: COLORS.primary,
-            selectedDotColor: COLORS.white,
-            arrowColor: COLORS.primary,
-            monthTextColor: COLORS.app_black,
-            textDayFontFamily: FontWeight.Regular,
-            textMonthFontFamily: FontWeight.SemiBold,
-            textDayHeaderFontFamily: FontWeight.Medium,
-            textDayFontSize: 14,
-            textMonthFontSize: 16,
-            textDayHeaderFontSize: 12,
-          }}
-        />
+        <View style={styles.calendarCard}>
+          <Calendar
+            current={calendarSelectedDate}
+            minDate={today}
+            onDayPress={(day: DateData) => {
+              handleCalendarDateSelect(day.dateString);
+            }}
+            markedDates={markedDates}
+            hideArrows={true}
+            customHeaderTitle={"N/A"}
+            theme={{
+              backgroundColor: COLORS.white,
+              calendarBackground: COLORS.white,
+              textSectionTitleColor: COLORS._5E5E5E,
+              selectedDayBackgroundColor: COLORS.primary,
+              selectedDayTextColor: COLORS.white,
+              todayTextColor: COLORS.primary,
+              dayTextColor: COLORS.app_black,
+              textDisabledColor: COLORS._D9D9D9,
+              dotColor: COLORS.primary,
+              selectedDotColor: COLORS.white,
+              monthTextColor: COLORS.app_black,
+              textDayFontFamily: FontWeight.Regular,
+              textMonthFontFamily: FontWeight.SemiBold,
+              textDayHeaderFontFamily: FontWeight.Medium,
+              textDayFontSize: 14,
+              textMonthFontSize: 16,
+              textDayHeaderFontSize: 12,
+            }}
+            disableMonthChange
+          />
+        </View>
       </View>
     );
   };
@@ -188,14 +470,16 @@ const DateTimeSelector: React.FC<DateTimeSelectorProps> = ({
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.slotsScrollContent}
         >
-          {daySlots.map((daySlot, dayIndex) => {
+          {displayedSlots.map((daySlot, dayIndex) => {
             const isSelectedDay = selectedDate === daySlot.date;
 
             return (
               <View key={dayIndex} style={styles.dayColumn}>
-                {/* Date Header */}
+                {/* Date Header - Shows info, clicking updates selected time only */}
                 <TouchableOpacity
-                  onPress={() => handleDateSelect(daySlot.date, daySlot.slots[0])}
+                  onPress={() =>
+                    handleTimeSlotSelect(daySlot.date, daySlot.slots[0])
+                  }
                   style={[
                     styles.dateButton,
                     isSelectedDay && styles.dateButtonSelected,
@@ -221,15 +505,15 @@ const DateTimeSelector: React.FC<DateTimeSelectorProps> = ({
 
                 {/* Time Slots */}
                 {daySlot.slots.map((slot, slotIndex) => {
-                  const isSelected =
-                    isSelectedDay && selectedTime === slot;
+                  const isSelected = allowMultipleSlots 
+                    ? selectedSlots.some(s => s.date === daySlot.date && s.time === slot)
+                    : (selectedDate === daySlot.date && selectedTime === slot);
 
                   return (
                     <TouchableOpacity
                       key={slotIndex}
                       onPress={() => {
-                        setSelectedDate(daySlot.date);
-                        setSelectedTime(slot);
+                        handleTimeSlotSelect(daySlot.date, slot);
                       }}
                       style={[
                         styles.timeSlot,
@@ -268,7 +552,7 @@ const DateTimeSelector: React.FC<DateTimeSelectorProps> = ({
         <Text style={styles.sessionDesc}>{sessionDescription}</Text>
         <View style={styles.sessionDetailsRow}>
           <Text style={styles.sessionPriceDesc}>{sessionPriceDesc}</Text>
-          <Text style={styles.sessionPrice}>{sessionPrice}</Text>
+          <Text style={styles.sessionPrice}>${sessionPrice}</Text>
         </View>
       </View>
       <TouchableOpacity
@@ -293,11 +577,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: DIMENSIONS.spacing.lg,
     paddingBottom: DIMENSIONS.spacing.xxl,
   },
+  calendar :{
+    marginTop: DIMENSIONS.spacing.lg,
+
+  },
   calendarCard: {
     backgroundColor: COLORS.white,
     borderRadius: 12,
     padding: DIMENSIONS.spacing.lg,
-    marginTop: DIMENSIONS.spacing.lg,
     marginBottom: DIMENSIONS.spacing.lg,
     shadowColor: "#000",
     shadowOffset: {
@@ -410,7 +697,7 @@ const styles = StyleSheet.create({
   },
   sessionTitle: {
     fontSize: 17,
-    fontWeight: '600',
+    fontWeight: "600",
     color: COLORS.text,
     marginBottom: 6,
   },
@@ -420,9 +707,9 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   sessionDetailsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   sessionPriceDesc: {
     fontSize: 14,
@@ -430,7 +717,7 @@ const styles = StyleSheet.create({
   },
   sessionPrice: {
     fontSize: 22,
-    fontWeight: '700',
+    fontWeight: "700",
     color: COLORS.primary,
   },
   continueButton: {

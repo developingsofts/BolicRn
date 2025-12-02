@@ -21,7 +21,11 @@ export const availabilityApi = baseApi.injectEndpoints({
         method: "POST",
         body,
       }),
-      invalidatesTags: ["TrainerAvailability", "TrainerSetup"],
+      invalidatesTags: [
+        "TrainerAvailability",
+        "TrainerSetup",
+        "SelectDateTime",
+      ],
     }),
     updateAvailability: builder.mutation<
       any,
@@ -32,7 +36,11 @@ export const availabilityApi = baseApi.injectEndpoints({
         method: "POST",
         body,
       }),
-      invalidatesTags: ["TrainerAvailability", "TrainerSetup"],
+      invalidatesTags: [
+        "TrainerAvailability",
+        "TrainerSetup",
+        "SelectDateTime",
+      ],
     }),
     getAvailability: builder.query<
       ApiResponse<TrainerAvailability[]>,
@@ -43,15 +51,19 @@ export const availabilityApi = baseApi.injectEndpoints({
         method: "POST",
         body,
       }),
-      providesTags: ["TrainerAvailability", "TrainerSetup"],
+      providesTags: ["TrainerAvailability", "TrainerSetup", "SelectDateTime"],
     }),
     deleteAvailability: builder.mutation<any, { id: string }>({
       query: ({ id }) => ({
         url: API_END_POINTS.trainerAvailability.delete,
         method: "POST",
-        body: { ids : [id] },
+        body: { ids: [id] },
       }),
-      invalidatesTags: ["TrainerAvailability", "TrainerSetup"],
+      invalidatesTags: [
+        "TrainerAvailability",
+        "TrainerSetup",
+        "SelectDateTime",
+      ],
     }),
   }),
   overrideExisting: false,

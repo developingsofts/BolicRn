@@ -74,6 +74,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
     partnerName,
     partnerId,
     initialMessage,
+    from,
   } = route.params || {};
   const resolvedConversationId =
     conversationId !== undefined && conversationId !== null
@@ -414,7 +415,18 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
               </View>
             }
             endView={
-              <TouchableOpacity onPress={() => navigation.goBack()}>
+              <TouchableOpacity
+                onPress={() => {
+                  if (from == "bookingSuccess") {
+                    navigation.reset({
+                      index: 0,
+                      routes: [{ name: "Main" }],
+                    });
+                  } else {
+                    navigation.goBack();
+                  }
+                }}
+              >
                 <Image source={Close} style={styles.headerIcon} />
               </TouchableOpacity>
             }

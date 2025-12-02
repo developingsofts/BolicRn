@@ -24,7 +24,7 @@ export const pricesApi = baseApi.injectEndpoints({
           body,
         };
       },
-      invalidatesTags: ['TrainerPricing'],
+      invalidatesTags: ['TrainerPricing','BookTrainer'],
     }),
     updateTrainingPrice: builder.mutation<any, { id: string; price?: string | string; session_name?: string; description?: string }>({
       query: (body) => ({
@@ -32,18 +32,18 @@ export const pricesApi = baseApi.injectEndpoints({
         method: 'POST',
         body: [body],
       }),
-      invalidatesTags: ['TrainerPricing'],
+      invalidatesTags: ['TrainerPricing','BookTrainer'],
     }),
     getTrainingPrices: builder.query<
       ApiResponse<TrainingPriceSession[]>,
-      { trainerId: string }
+    { trainerId: string }
     >({
       query: ({ trainerId }) => ({
         url: API_END_POINTS.trainingPrice.list,
         method: 'POST',
         body: { trainerId },
       }),
-      providesTags: ['TrainerPricing'],
+      providesTags: ['TrainerPricing','BookTrainer'],
     }),
     deleteTrainingPrices: builder.mutation<any, { id: string } | { ids: string[] }>({
       query: (body) => {
@@ -59,7 +59,7 @@ export const pricesApi = baseApi.injectEndpoints({
           body: { ids },
         };
       },
-      invalidatesTags: ['TrainerPricing'],
+      invalidatesTags: ['TrainerPricing','BookTrainer'],
     }),
   }),
   overrideExisting: false,

@@ -30,6 +30,8 @@ export interface User {
   workExperience?: string;
   introVideo?: string; // URL or file path to intro video
   isFollowing?: boolean;
+  booking_request?:BookingData[]
+  today_schedule?:BookingData[]
 }
 
 export interface UserProfile {
@@ -227,6 +229,7 @@ export interface Group {
   createdAt: Date;
 }
 
+import { BookingData } from "../services/api/bookingApi";
 import type { ReactionType } from "../services/api/likesCommentsApi";
 
 export interface Post {

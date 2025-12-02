@@ -1,24 +1,32 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import type { BaseQueryFn, FetchArgs, FetchBaseQueryError } from '@reduxjs/toolkit/query';
-import { API_CONFIG } from '../../config/constants';
-import { storageService } from '../storage';
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import type {
+  BaseQueryFn,
+  FetchArgs,
+  FetchBaseQueryError,
+} from "@reduxjs/toolkit/query";
+import { API_CONFIG } from "../../config/constants";
+import { storageService } from "../storage";
 
 const baseQuery = fetchBaseQuery({
   baseUrl: API_CONFIG.baseUrl,
   prepareHeaders: async (headers, { endpoint }) => {
     const token = await storageService.getAuthToken();
     if (token) {
-      headers.set('Authorization', `Bearer ${token}`);
+      headers.set("Authorization", `Bearer ${token}`);
     }
-    
+
     // Don't set Content-Type for FormData endpoints - let the browser handle it
-    const formDataEndpoints = ['updateMyProfileWithImage', 'createPost', 'updatePost'];
+    const formDataEndpoints = [
+      "updateMyProfileWithImage",
+      "createPost",
+      "updatePost",
+    ];
     if (!formDataEndpoints.includes(endpoint as string)) {
-      if (!headers.has('Content-Type')) {
-        headers.set('Content-Type', 'application/json');
+      if (!headers.has("Content-Type")) {
+        headers.set("Content-Type", "application/json");
       }
     }
-    
+
     return headers;
   },
 });
@@ -30,17 +38,20 @@ const baseQueryWithErrorHandling: BaseQueryFn<
   FetchBaseQueryError
 > = async (args, api, extraOptions) => {
   // Log request details
-  const url = typeof args === 'string' ? args : args.url;
-  const method = typeof args === 'string' ? 'GET' : args.method || 'GET';
-  const body = typeof args === 'string' ? undefined : (args as FetchArgs).body;
+  const url = typeof args === "string" ? args : args.url;
+  const method = typeof args === "string" ? "GET" : args.method || "GET";
+  const body = typeof args === "string" ? undefined : (args as FetchArgs).body;
 
-  console.log('🌐 API Request:', {
+  console.log("🌐 API Request:", {
     url: `${API_CONFIG.baseUrl}${url}`,
     method,
-    body: body instanceof FormData 
-      ? '[FormData]' 
-      : body 
-        ? (typeof body === 'string' ? body : JSON.stringify(body, null, 2)) 
+    body:
+      body instanceof FormData
+        ? "[FormData]"
+        : body
+        ? typeof body === "string"
+          ? body
+          : JSON.stringify(body, null, 2)
         : undefined,
     timestamp: new Date().toISOString(),
   });
@@ -53,7 +64,9 @@ const baseQueryWithErrorHandling: BaseQueryFn<
     }
 
     const error = result.error as FetchBaseQueryError & {
-      data?: { message?: string; status?: boolean; statusCode?: number } | string;
+      data?:
+        | { message?: string; status?: boolean; statusCode?: number }
+        | string;
     };
 
     if (error.status !== 404) {
@@ -89,7 +102,10 @@ const baseQueryWithErrorHandling: BaseQueryFn<
         }
       }
     } catch (parseError) {
-      console.warn("Failed to parse members URL for pagination defaults", parseError);
+      console.warn(
+        "Failed to parse members URL for pagination defaults",
+        parseError
+      );
     }
 
     const message =
@@ -122,7 +138,7 @@ const baseQueryWithErrorHandling: BaseQueryFn<
 
   // Log response details
   if (result.error) {
-    console.error('❌ API Error:', {
+    console.error("❌ API Error:", {
       url: `${API_CONFIG.baseUrl}${url}`,
       method,
       status: result.error.status,
@@ -131,7 +147,7 @@ const baseQueryWithErrorHandling: BaseQueryFn<
       timestamp: new Date().toISOString(),
     });
   } else {
-    console.log('✅ API Response:', {
+    console.log("✅ API Response:", {
       url: `${API_CONFIG.baseUrl}${url}`,
       method,
       data: result.data,
@@ -149,20 +165,21 @@ const baseQueryWithErrorHandling: BaseQueryFn<
       data?: unknown;
     };
 
-    if (!error || error.status !== 'PARSING_ERROR') {
+    if (!error || error.status !== "PARSING_ERROR") {
       return null;
     }
 
     const fallbackStatus =
-      typeof error.originalStatus === 'number' ? error.originalStatus : 502;
+      typeof error.originalStatus === "number" ? error.originalStatus : 502;
 
-    const rawPayload = typeof error.data === 'string' ? error.data : null;
+    const rawPayload = typeof error.data === "string" ? error.data : null;
 
     return {
       status: fallbackStatus,
       data: {
-        message: 'The server response could not be parsed. Please verify the backend service is running and reachable.',
-        code: 'UPSTREAM_UNAVAILABLE',
+        message:
+          "The server response could not be parsed. Please verify the backend service is running and reachable.",
+        code: "UPSTREAM_UNAVAILABLE",
         raw: rawPayload,
       },
     } satisfies FetchBaseQueryError;
@@ -177,28 +194,32 @@ const baseQueryWithErrorHandling: BaseQueryFn<
 };
 
 export const baseApi = createApi({
-  reducerPath: 'api',
+  reducerPath: "api",
   baseQuery: baseQueryWithErrorHandling,
   tagTypes: [
-    'Auth',
-    'User',
-    'Workout',
-    'Exercise',
-    'WorkoutSession',
-    'UserWorkout',
-    'Matching',
-    'Messaging',
-    'Groups',
-    'Posts',
-    'Ratings',
-    'Notifications',
-    'TrainingTypes',
-    'SelectedTrainingTypes',
-    'Achievements',
-    'Notes',
+    "Auth",
+    "User",
+    "Workout",
+    "Exercise",
+    "WorkoutSession",
+    "UserWorkout",
+    "Matching",
+    "Messaging",
+    "Groups",
+    "Posts",
+    "Ratings",
+    "Notifications",
+    "TrainingTypes",
+    "SelectedTrainingTypes",
+    "Achievements",
+    "Notes",
     "TrainerPricing",
     "TrainerAvailability",
-    "TrainerSetup"
+    "TrainerSetup",
+    "MyBookings",
+    "ScheduledSessions",
+    "BookTrainer",
+    "SelectDateTime"
   ],
   endpoints: () => ({}),
 });

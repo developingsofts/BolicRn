@@ -1,11 +1,5 @@
 import React from "react";
-import {
-  View,
-  StyleSheet,
-  Image,
-  TouchableOpacity,
-  Text,
-} from "react-native";
+import { View, StyleSheet, Image, TouchableOpacity, Text } from "react-native";
 import DateTimeSelector from "../components/DateTimeSelector";
 import BasicTopBar from "../components/BasicTopBar";
 import { COLORS, DIMENSIONS } from "../config/constants";
@@ -16,10 +10,13 @@ interface SelectDateTimeScreenProps {
   navigation: any;
   route?: {
     params?: {
+      priceId?: string;
       trainerId?: string;
       trainerName?: string;
-      packageTitle?: string;
+      packageName?: string;
       price?: number;
+      description?: string;
+      trainerAddress?: string;
     };
   };
 }
@@ -29,20 +26,29 @@ const SelectDateTimeScreen: React.FC<SelectDateTimeScreenProps> = ({
   route,
 }) => {
   const trainerName = route?.params?.trainerName || "Alex";
-  const packageTitle = route?.params?.packageTitle || "Training Session";
+  const packageName = route?.params?.packageName || "Training Session";
   const price = route?.params?.price || 0;
+  const priceId = route?.params?.priceId || '';
   const trainerId = route?.params?.trainerId;
+  const description = route?.params?.description || "";
+  const trainerAddress = route?.params?.trainerAddress || "";
 
-  const handleContinue = (selectedDate: string, selectedTime: string) => {
+  const handleContinue = (selectedDate: string, selectedTime: string, selectedSlots?: { date: string; time: string }[]) => {
     console.log("Selected:", selectedDate, selectedTime);
+    console.log("All Selected Slots:", selectedSlots);
+    
     // Navigate to confirmation screen
-    navigation.navigate('BookingConfirmation', {
+    navigation.navigate("BookingConfirmation", {
+      priceId,
       trainerId,
       trainerName,
-      packageTitle,
+      packageName,
       price,
+      description,
+      trainerAddress,
       date: selectedDate,
       time: selectedTime,
+      selectedSlots: selectedSlots || [{ date: selectedDate, time: selectedTime }],
     });
   };
 
@@ -70,6 +76,10 @@ const SelectDateTimeScreen: React.FC<SelectDateTimeScreenProps> = ({
       <DateTimeSelector
         navigation={navigation}
         buttonText="Continue"
+        trainerId={trainerId}
+        sessionPrice={price.toString()}
+        sessionTitle={packageName}
+        sessionDescription={description}
         onButtonPress={handleContinue}
       />
     </View>

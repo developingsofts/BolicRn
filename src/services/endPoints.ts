@@ -89,6 +89,13 @@ export const API_END_POINTS = {
     add: "/selected-training-type/add",
     update: "/selected-training-type/update",
   },
+  bookings: {
+    create: "/booking/create",
+    update: "/booking/update",
+    delete: "/booking/delete",
+    userBookings: "/booking/user",
+    trainerBookings: "/booking/trainer",
+  },
   posts: {
     list: (page: number = 1, limit: number = 20) =>
       `/posts?page=${page}&limit=${limit}`,

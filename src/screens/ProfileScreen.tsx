@@ -184,61 +184,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
     return isGuest ? "No bio available" : STRINGS.PROFILE.bio;
   })();
 
-  const achievements: Achievement[] = [
-    {
-      id: "1",
-      title: "First Steps",
-      description: "Complete your first workout",
-      icon: "👟",
-      completed: true,
-      progress: 10,
-      maxProgress: 10,
-    },
-    {
-      id: "2",
-      title: "Week Warrior",
-      description: "Workout 7 Days in a Row",
-      icon: "⚡",
-      completed: true,
-      progress: 10,
-      maxProgress: 10,
-    },
-    {
-      id: "3",
-      title: "Week Warrior",
-      description: "Workout 7 Days in a Row",
-      icon: "⚡",
-      completed: false,
-      progress: 3,
-      maxProgress: 7,
-    },
-    {
-      id: "4",
-      title: "Week Warrior",
-      description: "Workout 7 Days in a Row",
-      icon: "⚡",
-      completed: false,
-      progress: 4,
-      maxProgress: 7,
-    },
-  ];
 
-  const connections: Connection[] = [
-    {
-      id: "1",
-      name: "Mike",
-      location: "Downtown Gym",
-      initial: "M",
-      color: COLORS.primary,
-    },
-    {
-      id: "2",
-      name: "Emma",
-      location: "Central Park",
-      initial: "E",
-      color: COLORS.secondary,
-    },
-  ];
     const bookingsData = [
     {
       id: "1",

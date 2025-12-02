@@ -317,6 +317,7 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
                       navigation?.navigate?.('BookTrainer', {
                         trainerId: String(partner.id),
                         trainerName: partner.name,
+                        trainerAddress: partner.location || '',
                       });
                       return;
                     }
@@ -334,7 +335,7 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
                   activeOpacity={0.7}
                   disabled={!isTrainer && followLoading}
                 >
-                  <Text style={isFollowing ? styles.outlineButtonText : styles.primaryButtonText}>
+                  <Text style={isTrainer || !isFollowing ? styles.primaryButtonText : styles.outlineButtonText}>
                     {isTrainer
                       ? 'Book Session'
                       : followLoading
@@ -565,6 +566,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     color: '#383838',
+  },
+  blueButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: COLORS.white,
   },
   primaryButton: {
     flex: 1,

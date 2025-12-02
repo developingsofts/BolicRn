@@ -19,8 +19,15 @@ import SwipeableCard, {
 import RatingModal from "../components/RatingModal";
 import { SafeAreaView } from "react-native-safe-area-context";
 import BasicTopBar from "../components/BasicTopBar";
-import { matchingApi, useGetPotentialMatchesQuery } from "../services/api/matchingApi";
-import { useFollowUserMutation, useGetFollowingQuery, useUnfollowUserMutation } from "../services/api/followsApi";
+import {
+  matchingApi,
+  useGetPotentialMatchesQuery,
+} from "../services/api/matchingApi";
+import {
+  useFollowUserMutation,
+  useGetFollowingQuery,
+  useUnfollowUserMutation,
+} from "../services/api/followsApi";
 
 // Helper to map API user to SwipeableItem
 function mapToSwipeableItem(item: any): SwipeableItem {
@@ -130,7 +137,7 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation }) => {
   };
 
   const handleFollow = async () => {
-    const targetUserId = currentItem?.id 
+    const targetUserId = currentItem?.id;
     if (!targetUserId) return;
     try {
       await followUser({ followUserId: targetUserId });
@@ -139,13 +146,13 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation }) => {
     }
   };
 
-   const handleUnfollow = async () => {
-    const targetUserId = currentItem?.id 
+  const handleUnfollow = async () => {
+    const targetUserId = currentItem?.id;
     if (!targetUserId) return;
     try {
       await unfollowUser({ unfollowUserId: targetUserId });
     } catch (error) {
-      console.error('Unfollow error:', error);
+      console.error("Unfollow error:", error);
     }
   };
 
@@ -366,11 +373,16 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation }) => {
                 partnerName: item.name,
               });
             } else {
+              navigation?.navigate?.("BookTrainer", {
+                trainerId: String(item.id),
+                trainerName: item.name,
+                trainerAddress: item.location || "",
+              });
               // Handle trainer booking
-              Alert.alert(
-                STRINGS.FIND.alerts.bookingTitle,
-                `${STRINGS.FIND.alerts.bookingMessage} ${item.name}`
-              );
+              // Alert.alert(
+              //   STRINGS.FIND.alerts.bookingTitle,
+              //   `${STRINGS.FIND.alerts.bookingMessage} ${item.name}`
+              // );
             }
           },
         },

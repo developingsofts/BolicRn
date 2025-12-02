@@ -43,6 +43,7 @@ const BookingSuccessScreen: React.FC = () => {
       navigation.navigate("Chat", {
         partnerId: trainerId,
         partnerName: trainerName,
+        from : "bookingSuccess",
       });
     }
   }, [navigation, trainerId, trainerName]);

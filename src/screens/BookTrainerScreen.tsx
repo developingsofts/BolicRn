@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -6,6 +6,8 @@ import {
   TouchableOpacity,
   ScrollView,
   Image,
+  ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -13,6 +15,8 @@ import { COLORS, DIMENSIONS } from "../config/constants";
 import { LeftArrow } from "../../assets";
 import FontWeight from "../hooks/useInterFonts";
 import BasicTopBar from "../components/BasicTopBar";
+import { useGetTrainingPricesQuery } from "../services/api/pricesApi";
+import { useAuth } from "../contexts/AuthContext";
 
 interface BookTrainerScreenProps {
   navigation: any;
@@ -20,53 +24,75 @@ interface BookTrainerScreenProps {
     params?: {
       trainerId?: string;
       trainerName?: string;
+      trainerAddress?: string;
     };
   };
 }
 
 interface SessionPackage {
-  title: string;
+  id: number | string;
+  session_name: string;
   description: string;
-  price: number;
-  sessions?: number;
-  savings?: string;
+  price: string | number;
 }
-
-const sessionPackages: SessionPackage[] = [
-  {
-    title: "Single Session",
-    description: "One-on-one personalized training session.",
-    price: 75,
-  },
-  {
-    title: "5 - Session Pack",
-    description: "Save 10% with a bundle of 5 sessions.",
-    price: 337,
-    sessions: 5,
-    savings: "10%",
-  },
-  {
-    title: "10 - Session Pack",
-    description: "Best value with maximum savings.",
-    price: 600,
-    sessions: 10,
-    savings: "20%",
-  },
-];
 
 const BookTrainerScreen: React.FC<BookTrainerScreenProps> = ({
   navigation,
   route,
 }) => {
-  const trainerName = route?.params?.trainerName || "Alex";
+  const { user } = useAuth();
+  const [refreshing, setRefreshing] = useState(false);
+  const trainerName = route?.params?.trainerName || "Trainer";
   const trainerId = route?.params?.trainerId;
+  const trainerAddress = route?.params?.trainerAddress || "";
 
-  const handleBookSession = (packageTitle: string, price: number) => {
+  // Fetch training prices for the trainer
+  const {
+    data: pricesData,
+    isLoading: isPricesLoading,
+    refetch,
+  } = useGetTrainingPricesQuery(
+    { trainerId: trainerId || "" },
+    { skip: !trainerId }
+  );
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await refetch();
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  // Extract session packages from API response with proper type checking
+  // Handle both ApiResponse wrapper structure and direct array responses
+  const sessions =
+    pricesData && pricesData.status && "data" in pricesData
+      ? pricesData.data
+      : [];
+
+  const sessionPackages: SessionPackage[] = sessions.map((s: any) => ({
+    id: s.id || s._id,
+    session_name: s.session_name || s.title || "",
+    description: s.description || "",
+    price: s.price || 0,
+  }));
+
+  const handleBookSession = (
+    priceId: string,
+    packageName: string,
+    price: string | number,
+    description: string
+  ) => {
     navigation.navigate("SelectDateTime", {
       trainerId,
       trainerName,
-      packageTitle,
+      priceId,
+      packageName,
       price,
+      description,
+      trainerAddress,
     });
   };
 
@@ -74,26 +100,81 @@ const BookTrainerScreen: React.FC<BookTrainerScreenProps> = ({
     <TouchableOpacity
       key={index}
       style={styles.packageCard}
-      onPress={() => handleBookSession(pkg.title, pkg.price)}
+      onPress={() =>
+        handleBookSession(
+          pkg.id.toString(),
+          pkg.session_name,
+          pkg.price,
+          pkg.description
+        )
+      }
       activeOpacity={0.7}
     >
       <View style={styles.packageHeader}>
-        <Text style={styles.packageTitle}>{pkg.title}</Text>
-        {/* {pkg.savings && (
-          <View style={styles.savingsBadge}>
-            <Text style={styles.savingsText}>Save {pkg.savings}</Text>
-          </View>
-        )} */}
+        <Text style={styles.packageTitle}>{pkg.session_name}</Text>
       </View>
       <Text style={styles.packageDescription}>{pkg.description}</Text>
       <View style={styles.packagePricing}>
-        <Text style={styles.packagePrice}>${pkg.price}</Text>
-        {/* {pkg.sessions && (
-          <Text style={styles.packageSessions}>({pkg.sessions} sessions)</Text>
-        )} */}
+        <Text style={styles.packagePrice}>${pkg.price}/hr</Text>
       </View>
     </TouchableOpacity>
   );
+
+  if (isPricesLoading) {
+    return (
+      <View style={styles.container}>
+        <BasicTopBar
+          containerStyle={styles.topBar}
+          onBackPress={() => navigation.goBack()}
+          backButtonIcon={
+            <Image
+              source={LeftArrow}
+              style={styles.backIcon}
+              resizeMode="contain"
+            />
+          }
+          title="Book a Session"
+          subtitle={`with ${trainerName}`}
+          titleStyle={styles.topBarTitle}
+          subtitleStyle={styles.topBarSubtitle}
+        />
+        <View
+          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+        >
+          <ActivityIndicator size="large" color={COLORS.primary} />
+        </View>
+      </View>
+    );
+  }
+
+  if (!sessionPackages || sessionPackages.length === 0) {
+    return (
+      <View style={styles.container}>
+        <BasicTopBar
+          containerStyle={styles.topBar}
+          onBackPress={() => navigation.goBack()}
+          backButtonIcon={
+            <Image
+              source={LeftArrow}
+              style={styles.backIcon}
+              resizeMode="contain"
+            />
+          }
+          title="Book a Session"
+          subtitle={`with ${trainerName}`}
+          titleStyle={styles.topBarTitle}
+          subtitleStyle={styles.topBarSubtitle}
+        />
+        <View
+          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+        >
+          <Text style={{ fontSize: 16, color: COLORS.textSecondary }}>
+            No packages available
+          </Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -116,6 +197,15 @@ const BookTrainerScreen: React.FC<BookTrainerScreenProps> = ({
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={COLORS.primary}
+            title="Pull to refresh"
+            titleColor={COLORS.textSecondary}
+          />
+        }
       >
         <View style={styles.packagesContainer}>
           {sessionPackages.map((pkg, index) => renderPackageCard(pkg, index))}
@@ -164,12 +254,12 @@ const styles = StyleSheet.create({
   packageCard: {
     backgroundColor: COLORS.white,
     borderRadius: 8,
-    padding: DIMENSIONS.spacing.lg,
+    padding: DIMENSIONS.spacing.md,
     marginBottom: DIMENSIONS.spacing.sm,
     boxShadow: "0px 0px 8px 0px #6B6B6B26",
     elevation: 4,
     borderWidth: 1,
-    gap: DIMENSIONS.spacing.sm, 
+    gap: DIMENSIONS.spacing.sm,
     borderColor: COLORS.border,
   },
   packageHeader: {
