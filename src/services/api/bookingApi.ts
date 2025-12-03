@@ -28,7 +28,7 @@ export interface BookingData {
   date: string; // ISO format: "2025-12-10T00:00:00.000Z"
   time: string; // e.g., "10:00AM"
   price: PriceInfo;
-  status: "upcomming" | "completed" | "cancelled";
+  status: "upcomming" | "completed" | "canceled";
 }
 
 export interface CreateBookingRequest {
@@ -36,19 +36,20 @@ export interface CreateBookingRequest {
   price_id: string | number;
   date: string; // e.g., "12/10/2025"
   time: string; // e.g., "10:00AM"
-  status: "upcomming" | "completed" | "cancelled";
+  status: "upcomming" | "completed" | "canceled";
 }
 
 export interface UpdateBookingRequest {
   id: number | string;
-  price_id?: string | number;
+  price_id?: string;
   date?: string;
   time?: string;
-  status?: "upcomming" | "completed" | "cancelled";
+  status?: "upcomming" | "completed" | "canceled";
 }
 
 export interface DeleteBookingRequest {
   id: number | string;
+  status?: "canceled";
 }
 
 export interface PaginationInfo {
@@ -59,14 +60,14 @@ export interface PaginationInfo {
 
 export interface UserBookingsRequest {
   user_id: number | string;
-  status?: "upcomming" | "completed" | "cancelled";
+  status?: "upcomming" | "completed" | "canceled";
   page?: number;
   limit?: number;
 }
 
 export interface TrainerBookingsRequest {
   trainer_id: number | string;
-  status?: "upcomming" | "completed" | "cancelled";
+  status?: "upcomming" | "completed" | "canceled";
   page?: number;
   limit?: number;
 }
@@ -84,7 +85,7 @@ export const bookingApi = baseApi.injectEndpoints({
         method: "POST",
         body,
       }),
-      invalidatesTags: ["MyBookings"],
+      invalidatesTags: ["MyBookings","UserProfile"],
     }),
 
     updateBooking: builder.mutation<ApiResponse<BookingData>, UpdateBookingRequest>({
@@ -93,16 +94,16 @@ export const bookingApi = baseApi.injectEndpoints({
         method: "POST",
         body,
       }),
-      invalidatesTags: ["MyBookings"],
+      invalidatesTags: ["MyBookings","UserProfile"],
     }),
 
     deleteBooking: builder.mutation<ApiResponse<any>, DeleteBookingRequest>({
       query: (body) => ({
-        url: API_END_POINTS.bookings.delete,
+        url: API_END_POINTS.bookings.update,
         method: "POST",
         body,
       }),
-      invalidatesTags: ["MyBookings"],
+      invalidatesTags: ["MyBookings","UserProfile"],
     }),
 
     getUserBookings: builder.query<ApiResponse<BookingsListResponse>, UserBookingsRequest>({

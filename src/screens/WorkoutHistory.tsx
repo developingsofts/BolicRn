@@ -117,7 +117,7 @@ const WorkoutHistory: React.FC = ({ navigation }: any) => {
             {workouts.map((workout) => (
               <View key={workout.id} style={styles.card}>
                 <View style={styles.cardRow}>
-                  <View style={{  }}>
+                  <View style={{ flex: 1 }}>
                     <Text style={styles.title}>{workout.title}</Text>
                     <View style={styles.metaRow}>
                       <View style={[styles.badge, { backgroundColor: workout.categoryColor }]}> 
@@ -218,25 +218,26 @@ const styles = StyleSheet.create({
   cardRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
   title: {
     fontSize: 16,
     fontFamily: FontWeight.SemiBold,
     color: COLORS.text,
-    //add ellipsis if too long
-    width: DIMENSIONS.screenWidth - 180,
     marginBottom: 6,
+    flex: 1,
   },
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 6,
+    flexWrap: 'wrap',
+    gap: 8,
   },
   badge: {
     borderRadius: 8,
     paddingHorizontal: 10,
-    paddingVertical: 2,
-    marginRight: 6,
+    paddingVertical: 4,
   },
   badgeText: {
     color: COLORS.white,
@@ -247,7 +248,6 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     fontSize: 13,
     fontFamily: FontWeight.Medium,
-    marginRight: 8,
   },
   completedText: {
     color: COLORS._5E5E5E,
@@ -266,6 +266,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.04,
     shadowRadius: 4,
     elevation: 1,
+    marginLeft: 12,
+    flexShrink: 0,
   },
   postButtonText: {
     color: COLORS.app_black,

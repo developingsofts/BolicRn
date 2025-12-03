@@ -26,7 +26,7 @@ import PriceBreakdown, {
 } from "../components/PriceBreakdown";
 import PaymentOptionsDialog from "../components/PaymentOptionsDialog";
 import { Toast } from "../components/ToastManager";
-import { COLORS, DIMENSIONS, toUtc } from "../config/constants";
+import { COLORS, DIMENSIONS, convertLocaDatemmddyyyylToUTC } from "../config/constants";
 import { r } from "../designing/responsiveDesigns";
 import FontWeight from "../hooks/useInterFonts";
 import { LeftArrow } from "../../assets";
@@ -140,27 +140,30 @@ const BookingConfirmationScreen: React.FC = () => {
 
 		(async () => {
 			try {
-				// Format date as mm/dd/yyyy
-				const firstDate = new Date(selectedSlots[0]?.date || date);
-				const month = String(firstDate.getMonth() + 1).padStart(2, "0");
-				const day = String(firstDate.getDate()).padStart(2, "0");
-				const year = firstDate.getFullYear();
-				const formattedDate = `${month}/${day}/${year}`;
+				// Get local date and time
+				const localDateStr = selectedSlots[0]?.date || date;
+				const localTimeStr = selectedSlots[0]?.time || time;
 
-				// Convert time to UTC using toUtc function
-				const timeStr = selectedSlots[0]?.time || time;
-				const utcTime = toUtc(timeStr);
+				console.log("[BookingConfirmation] Local date:", localDateStr);
+				console.log("[BookingConfirmation] Local time:", localTimeStr);
+
+				// Convert local to UTC using utility function
+				const { utcDate, utcTime } = convertLocaDatemmddyyyylToUTC(localDateStr, localTimeStr);
+
+				if (!utcDate || !utcTime) {
+					throw new Error('Failed to convert date/time to UTC');
+				}
 
 				console.log("[BookingConfirmation] Creating booking with:");
-				console.log("  Date:", formattedDate);
-				console.log("  Time:", timeStr, "->", utcTime);
+				console.log("  UTC Date:", utcDate);
+				console.log("  UTC Time:", utcTime);
 				console.log("  Trainer ID:", trainerId);
 				console.log("  Price ID:", priceId);
 
 				const response = await createBooking({
 					trainer_id: trainerId || "",
 					price_id: priceId || "",
-					date: formattedDate,
+					date: utcDate,
 					time: utcTime,
 					status: "upcomming",
 				}).unwrap();

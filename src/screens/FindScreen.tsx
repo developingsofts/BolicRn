@@ -76,13 +76,15 @@ function mapToSwipeableItem(item: any): SwipeableItem {
 
 interface FindScreenProps {
   navigation: any;
+  route: any;
 }
 
-const FindScreen: React.FC<FindScreenProps> = ({ navigation }) => {
+const FindScreen: React.FC<FindScreenProps> = ({ navigation,route }) => {
   const [selectedFilters, setSelectedFilters] = useState<string[]>(["All"]);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const tab = route?.params?.tab || "FindPartners";
   const [activeTab, setActiveTab] = useState<"partners" | "trainers">(
-    "partners"
+    tab === "FindTrainers" ? "trainers" : "partners"
   );
   const [menuVisible, setMenuVisible] = useState(false);
   const [ratingModalVisible, setRatingModalVisible] = useState(false);

@@ -1,26 +1,26 @@
 import React, { useState, useEffect } from "react";
-import StatsRow from '../components/StatsRow';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Image,
-} from "react-native";
-import RefreshableScrollView from '../components/RefreshableScrollView';
+import StatsRow from "../components/StatsRow";
+import { View, Text, StyleSheet, TouchableOpacity, Image } from "react-native";
+import RefreshableScrollView from "../components/RefreshableScrollView";
 import { useFocusEffect } from "@react-navigation/native";
 import { useAuth } from "../contexts/AuthContext";
-import { useAppDispatch } from '../store/hooks';
-import { updateUser } from '../store/userSlice';
-import { useGetMyProfileQuery, useGetUserProfileQuery } from '../services/api/userApi';
-import { useFollowUserMutation, useUnfollowUserMutation } from '../services/api/followsApi';
-import type { User, UserProfile } from '../types';
+import { useAppDispatch } from "../store/hooks";
+import { updateUser } from "../store/userSlice";
+import {
+  useGetMyProfileQuery,
+  useGetUserProfileQuery,
+} from "../services/api/userApi";
+import {
+  useFollowUserMutation,
+  useUnfollowUserMutation,
+} from "../services/api/followsApi";
+import type { User, UserProfile } from "../types";
 import { COLORS, DIMENSIONS } from "../config/constants";
 import STRINGS from "../config/strings";
 import { SafeAreaView } from "react-native-safe-area-context";
-import TrainerOnboarding from '../components/TrainerOnboarding';
-import { useNavigation } from '@react-navigation/native';
-import { useState as useLocalState } from 'react';
+import TrainerOnboarding from "../components/TrainerOnboarding";
+import { useNavigation } from "@react-navigation/native";
+import { useState as useLocalState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import {
   Awards,
@@ -45,6 +45,8 @@ import { Calendar } from "react-native-calendars";
 import BookingCard from "../components/BookingCard";
 import BookingList from "../components/BookingList";
 import ScheduleList from "../components/ScheduleList";
+import { useDeleteBookingMutation } from "../services/api/bookingApi";
+import { Toast } from "../components/ToastManager";
 
 interface ProfileScreenProps {
   navigation: any;
@@ -85,19 +87,30 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
   const passedUser = route?.params?.user;
   const userId = passedUser?.id || route?.params?.userId;
   const isOwnProfile = !userId && !passedUser;
-  const { data: myProfileData, refetch: refetchMyProfile } = useGetMyProfileQuery(undefined, { skip: !isOwnProfile || !isAuthenticated });
-  const { data: userProfileData, refetch: refetchUserProfile } = useGetUserProfileQuery(userId || '', { skip: isOwnProfile || !userId || !isAuthenticated });
+  const { data: myProfileData, refetch: refetchMyProfile } =
+    useGetMyProfileQuery(undefined, {
+      skip: !isOwnProfile || !isAuthenticated,
+    });
+  const { data: userProfileData, refetch: refetchUserProfile } =
+    useGetUserProfileQuery(userId || "", {
+      skip: isOwnProfile || !userId || !isAuthenticated,
+    });
 
   const [followUser] = useFollowUserMutation();
   const [unfollowUser] = useUnfollowUserMutation();
+  const [deleteBooking] = useDeleteBookingMutation();
 
   // Use correct profile data based on context
-  const profileData: User | UserProfile | undefined|null = isOwnProfile
-  ? (myProfileData && myProfileData.status === true && myProfileData.data ? myProfileData.data : user)
-  : (userProfileData && userProfileData.status === true && userProfileData.data ? userProfileData.data : passedUser);
+  const profileData: User | UserProfile | undefined | null = isOwnProfile
+    ? myProfileData && myProfileData.status === true && myProfileData.data
+      ? myProfileData.data
+      : user
+    : userProfileData && userProfileData.status === true && userProfileData.data
+    ? userProfileData.data
+    : passedUser;
 
   useEffect(() => {
-    if (!isOwnProfile && profileData && 'isFollowing' in profileData) {
+    if (!isOwnProfile && profileData && "isFollowing" in profileData) {
       setIsFollowing(profileData.isFollowing || false);
     }
   }, [profileData, isOwnProfile]);
@@ -107,7 +120,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
     if (isOwnProfile) {
       const result = await refetchMyProfile();
       const apiRes = result?.data;
-      if (apiRes && apiRes.status && 'data' in apiRes && apiRes.data) {
+      if (apiRes && apiRes.status && "data" in apiRes && apiRes.data) {
         dispatch(updateUser(apiRes.data));
       }
     } else if (userId) {
@@ -123,7 +136,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
       await followUser({ followUserId: targetUserId });
       setIsFollowing(true);
     } catch (error) {
-      console.error('Follow error:', error);
+      console.error("Follow error:", error);
     }
   };
 
@@ -134,10 +147,10 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
       await unfollowUser({ unfollowUserId: targetUserId });
       setIsFollowing(false);
     } catch (error) {
-      console.error('Unfollow error:', error);
+      console.error("Unfollow error:", error);
     }
   };
-  
+
   const [activeTab, setActiveTab] = useState<TabType>("activity");
   const [activeSubTab, setActiveSubTab] = useState<
     "posts" | "workouts" | "connections"
@@ -149,17 +162,20 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
   //   !route?.params?.userId || route.params.userId === user?.id;
   const navigationNative = useNavigation();
   // Use trainerOnboardingStep for trainers, fallback to onboardingStep for users
-  const isTrainer = user?.role === 'trainer';
+  const isTrainer = user?.role === "trainer";
   const trainerOnboardingStep = user?.trainerOnboardingStep ?? 0;
-  const onboardingStep = isTrainer ? trainerOnboardingStep : (user?.onboardingStep ?? 0);
+  const onboardingStep = isTrainer
+    ? trainerOnboardingStep
+    : user?.onboardingStep ?? 0;
   // Show onboarding only if trainer and step < 2
   const showTrainerOnboarding = isOwnProfile && isTrainer && onboardingStep < 2;
   // Show trainer menu if trainer and onboarding complete (step >= 2)
-  const showOwnProfileFeatures = isOwnProfile && !isGuest && (!isTrainer || onboardingStep >= 2);
+  const showOwnProfileFeatures =
+    isOwnProfile && !isGuest && (!isTrainer || onboardingStep >= 2);
 
   // Handler to launch onboarding flow and update onboardingStep after completion
   const handleTrainerOnboarding = () => {
-    navigation.navigate('TrainerSetup');
+    navigation.navigate("TrainerSetup");
   };
   const profileBio = (() => {
     // First try route params bio (for specific cases)
@@ -184,26 +200,27 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
     return isGuest ? "No bio available" : STRINGS.PROFILE.bio;
   })();
 
-
-    const bookingsData = [
-    {
-      id: "1",
-      guestName: "John Doe",
-      guestInitial: "JD",
-      date: "2023-09-15",
-      timeRange: "10:00 AM - 11:00 AM",
-      sessionType: "Personal Training",
-      price: 50,
-      onAccept: () => console.log("Accepted"),
-      onDecline: () => console.log("Declined"),
-    },
- 
-  ];
+  const bookingsData =
+    profileData && "booking_request" in profileData
+      ? profileData?.booking_request || []
+      : [];
 
   const trainerMenuItems = [
-    { id: "all-bookings", label: "All Bookings", icon: "calendar-outline" as const },
-    { id: "my-availability", label: "My Availability", icon: "time-outline" as const },
-    { id: "my-pricing", label: "My Pricing", icon: "pricetag-outline" as const },
+    {
+      id: "all-bookings",
+      label: "All Bookings",
+      icon: "calendar-outline" as const,
+    },
+    {
+      id: "my-availability",
+      label: "My Availability",
+      icon: "time-outline" as const,
+    },
+    {
+      id: "my-pricing",
+      label: "My Pricing",
+      icon: "pricetag-outline" as const,
+    },
     { id: "my-rating", label: "My Rating", icon: "star-outline" as const },
   ];
 
@@ -213,8 +230,16 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
       label: STRINGS.PROFILE.posts,
       icon: "document-text-outline" as const,
     },
-    { id: "connections", label: "Connections", icon: "people-outline" as const },
-    { id: "achievements", label: STRINGS.PROFILE.achievements, icon: "trophy-outline" as const },
+    {
+      id: "connections",
+      label: "Connections",
+      icon: "people-outline" as const,
+    },
+    {
+      id: "achievements",
+      label: STRINGS.PROFILE.achievements,
+      icon: "trophy-outline" as const,
+    },
     {
       id: "rating",
       label: "Rating",
@@ -222,48 +247,69 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
     },
   ];
 
-  const menuItems = isOwnProfile ? (isTrainer ? trainerMenuItems : [
-    {
-      id: "posts",
-      label: showOwnProfileFeatures ? "My Posts" : STRINGS.PROFILE.posts,
-      icon: "document-text-outline" as const,
-    },
-    { id: "connections", label: "Connections", icon: "people-outline" as const },
-    ...(showOwnProfileFeatures
-      ? [
+  const menuItems = isOwnProfile
+    ? isTrainer
+      ? trainerMenuItems
+      : [
           {
-            id: "schedule-session",
-            label: "Schedule Sessions",
-            icon: "calendar-outline" as const,
+            id: "posts",
+            label: showOwnProfileFeatures ? "My Posts" : STRINGS.PROFILE.posts,
+            icon: "document-text-outline" as const,
           },
           {
-            id: "workout-history",
-            label: "Workout History",
-            icon: "time-outline" as const,
+            id: "connections",
+            label: "Connections",
+            icon: "people-outline" as const,
+          },
+          ...(showOwnProfileFeatures
+            ? [
+                {
+                  id: "schedule-session",
+                  label: "Schedule Sessions",
+                  icon: "calendar-outline" as const,
+                },
+                {
+                  id: "workout-history",
+                  label: "Workout History",
+                  icon: "time-outline" as const,
+                },
+              ]
+            : []),
+          {
+            id: "achievements",
+            label: STRINGS.PROFILE.achievements,
+            icon: "trophy-outline" as const,
+          },
+          {
+            id: "rating",
+            label: showOwnProfileFeatures ? "My Ratings" : "Rating",
+            icon: "star-outline" as const,
           },
         ]
-      : []),
-    { id: "achievements", label: STRINGS.PROFILE.achievements, icon: "trophy-outline" as const },
-    {
-      id: "rating",
-      label: showOwnProfileFeatures ? "My Ratings" : "Rating",
-      icon: "star-outline" as const,
-    },
-  ]) : guestMenuItems;
+    : guestMenuItems;
 
   const handleLogout = async () => {
     await logout();
   };
 
-
-
-
-
   const handleBookTrainer = () => {
-    navigation.navigate('BookTrainer', {
+    navigation.navigate("BookTrainer", {
       trainerId: route?.params?.userId || user?.id,
-      trainerName: user?.displayName || 'Trainer',
+      trainerName: user?.displayName || "Trainer",
     });
+  };
+
+  const handleRemove = async (id: number) => {
+    if (!id) return;
+
+    try {
+      await deleteBooking({ id, status: "canceled" }).unwrap();
+      Toast.success("Booking removed successfully");
+      await refetchMyProfile(); // Refresh profile data
+    } catch (error) {
+      Toast.error("Failed to remove booking");
+      console.error("Delete booking error:", error);
+    }
   };
 
   const renderFollowingView = () => {
@@ -278,7 +324,10 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
             <Text style={styles.followingText}>Book Session</Text>
           </View>
         </TouchableOpacity> */}
-        <TouchableOpacity style={styles.followingMainBtn} onPress={isFollowing ? undefined : handleFollow}>
+        <TouchableOpacity
+          style={styles.followingMainBtn}
+          onPress={isFollowing ? undefined : handleFollow}
+        >
           <View style={styles.followingMainBtnContent}>
             <Image source={Following} style={styles.smallIconSize} />
             <Text style={styles.followingText}>
@@ -287,7 +336,10 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
           </View>
         </TouchableOpacity>
         {isFollowing && (
-          <TouchableOpacity style={styles.followingIconBtn} onPress={handleUnfollow}>
+          <TouchableOpacity
+            style={styles.followingIconBtn}
+            onPress={handleUnfollow}
+          >
             <Image source={DeleteUser} style={styles.smallIconSize} />
           </TouchableOpacity>
         )}
@@ -296,10 +348,14 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
   };
   const renderProfileAvatar = () => {
     // Prefer user from route params if present (for visiting other profiles)
-  const displayName = profileData?.displayName || (profileData as any)?.userName || STRINGS.PROFILE.guestUser;
+    const displayName =
+      profileData?.displayName ||
+      (profileData as any)?.userName ||
+      STRINGS.PROFILE.guestUser;
     const initial = displayName?.charAt(0)?.toUpperCase() || "G";
     const location = profileData?.location || STRINGS.PROFILE.defaultLocation;
-  const imageUrl = (profileData as any)?.imageUrl || (profileData as any)?.profilePicture;
+    const imageUrl =
+      (profileData as any)?.imageUrl || (profileData as any)?.profilePicture;
     return (
       <LinearGradient
         colors={[COLORS.gradient1, COLORS.gradient2, COLORS.gradient3]}
@@ -377,34 +433,17 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
     { icon: Users, count: 12, title: STRINGS.PROFILE.statsLabels.partners },
     { icon: Awards, count: 8, title: STRINGS.PROFILE.statsLabels.awards },
   ];
-    const statsDataTrainer = [
-      { icon: Request, count: 2, title: "Requests" },
-      { icon: Calender, count: 1, title: "Today" },
-      { icon: Users2, count: 12, title: "Clients" },     
-    ];
 
-    const schedulesData = [
-      {
-        id: "1",
-        startTime: "11:30 AM",
-        endTime: "12:30 PM",
-        clientName: "Jane Smith",
-        sessionType: "Yoga",
-        onRemove: () => console.log("Removed"),
-        onMessage: () => console.log("Message Jane Smith"),
-      },
-      {
-        id: "2",
-        startTime: "1:00 PM",
-        endTime: "2:00 PM",
-        clientName: "Bob Lee",
-        sessionType: "HIIT",
-        onRemove: () => console.log("Removed"),
-        onMessage: () => console.log("Message Bob Lee"),
-      },
-      // Add more schedules as needed
-    ];
-       
+  const schedulesData =
+    profileData && "today_schedule" in profileData
+      ? profileData?.today_schedule || []
+      : [];
+
+  const statsDataTrainer = [
+    { icon: Request, count: bookingsData?.length || 0, title: "Requests" },
+    { icon: Calender, count: schedulesData?.length || 0, title: "Today" },
+    { icon: Users2, count: 12, title: "Clients" },
+  ];
 
   return (
     <SafeAreaView
@@ -421,7 +460,13 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
       >
         <View>
           {renderProfileAvatar()}
-          {showTrainerOnboarding ? <TrainerOnboarding onGetStarted={handleTrainerOnboarding} /> : <StatsRow stats={(!isOwnProfile || !isTrainer) ? statsData : statsDataTrainer} />}
+          {showTrainerOnboarding ? (
+            <TrainerOnboarding onGetStarted={handleTrainerOnboarding} />
+          ) : (
+            <StatsRow
+              stats={!isOwnProfile || !isTrainer ? statsData : statsDataTrainer}
+            />
+          )}
         </View>
         {!showTrainerOnboarding && !isTrainer && showOwnProfileFeatures && (
           <View style={styles.weeklyActivityCard}>
@@ -438,7 +483,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
                 <View style={styles.progressBarContainer}>
                   <View style={[styles.progressBarFill, { width: "60%" }]} />
                 </View>
-              </View> 
+              </View>
               {/* Streak Stats */}
               <View style={styles.streakStatsContainer}>
                 <View style={styles.streakStatItem}>
@@ -476,7 +521,11 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
                           ]}
                         >
                           {isCompleted && (
-                            <Ionicons name="checkmark" size={16} color={COLORS.white} />
+                            <Ionicons
+                              name="checkmark"
+                              size={16}
+                              color={COLORS.white}
+                            />
                           )}
                         </View>
                       </View>
@@ -487,98 +536,103 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
             </View>
           </View>
         )}
-        {
-          isOwnProfile && isTrainer && !showTrainerOnboarding && (
-            <View style={{ marginTop: 60, width: '90%',margin:"auto"}}>
-              <BookingList bookings={bookingsData} />
-              <ScheduleList schedules={schedulesData} />    
-            </View>
-          
-          )
-        }
+        {isOwnProfile && isTrainer && !showTrainerOnboarding && (
+          <View style={{ marginTop: 60, width: "90%", margin: "auto" }}>
+            <BookingList bookings={bookingsData} onRemove={handleRemove} />
+            <ScheduleList
+              schedules={schedulesData}
+              onMessage={(user) =>
+                navigation.navigate("Chat", {
+                  partnerId: user.id.toString(),
+                  partnerName: user.name,
+                })
+              }
+              onRemove={handleRemove}
+            />
+          </View>
+        )}
 
-       {!showTrainerOnboarding && (isOwnProfile || isGuest) && <View
-          style={[
-            styles.menuListContainer,
-            isGuest && styles.menuListGuestSpacing,
-          ]}
-        >
-          {menuItems.map((item, index) => (
-            <TouchableOpacity
-              key={item.id}
-              style={[
-                styles.menuItem,
-                index === 0 && styles.menuItemActive,
-              ]}
-              onPress={() => {
-                // Handle guest profile navigation
-                if (isGuest) {
-                  if (item.id === "posts") {
-                    navigation.navigate("MyPosts", { userId: userId });
-                  } else if (item.id === "connections") {
-                    navigation.navigate("Connections", { userId: userId });
-                  } else if (item.id === "achievements") {
-                    navigation.navigate("Achievements", { userId: userId });
-                  } else if (item.id === "rating") {
-                    navigation.navigate("MyRatings", { userId: userId });
+        {!showTrainerOnboarding && (isOwnProfile || isGuest) && (
+          <View
+            style={[
+              styles.menuListContainer,
+              isGuest && styles.menuListGuestSpacing,
+            ]}
+          >
+            {menuItems.map((item, index) => (
+              <TouchableOpacity
+                key={item.id}
+                style={[styles.menuItem, index === 0 && styles.menuItemActive]}
+                onPress={() => {
+                  // Handle guest profile navigation
+                  if (isGuest) {
+                    if (item.id === "posts") {
+                      navigation.navigate("MyPosts", { userId: userId });
+                    } else if (item.id === "connections") {
+                      navigation.navigate("Connections", { userId: userId });
+                    } else if (item.id === "achievements") {
+                      navigation.navigate("Achievements", { userId: userId });
+                    } else if (item.id === "rating") {
+                      navigation.navigate("MyRatings", { userId: userId });
+                    }
+                    return;
                   }
-                  return;
-                }
 
-                // Handle own profile navigation
-                if (isTrainer) {
-                  if (item.id === "all-bookings") {
-                    navigation.navigate("MyBookings");
-                  } else if (item.id === "my-availability") {
-                    navigation.navigate("TrainerAvailability");
-                  } else if (item.id === "my-pricing") {
-                    navigation.navigate("TrainerPricing");
-                  } else if (item.id === "my-rating") {
-                    navigation.navigate("MyRatings");
+                  // Handle own profile navigation
+                  if (isTrainer) {
+                    if (item.id === "all-bookings") {
+                      navigation.navigate("MyBookings");
+                    } else if (item.id === "my-availability") {
+                      navigation.navigate("TrainerAvailability");
+                    } else if (item.id === "my-pricing") {
+                      navigation.navigate("TrainerPricing");
+                    } else if (item.id === "my-rating") {
+                      navigation.navigate("MyRatings");
+                    } else {
+                      console.log(`Pressed ${item.label}`);
+                    }
                   } else {
-                    console.log(`Pressed ${item.label}`);
+                    if (item.id === "posts") {
+                      navigation.navigate("MyPosts", { userId });
+                    } else if (item.id === "workout-history") {
+                      navigation.navigate("WorkoutHistory");
+                    } else if (item.id === "connections") {
+                      navigation.navigate("Connections");
+                    } else if (item.id === "schedule-session") {
+                      navigation.navigate("ScheduledSessions");
+                    } else if (item.id === "achievements") {
+                      navigation.navigate("Achievements");
+                    } else if (item.id === "rating") {
+                      navigation.navigate("MyRatings");
+                    } else if (item.id === "my-bookings") {
+                      navigation.navigate("MyBookings");
+                    } else {
+                      // Handle other menu items as needed
+                      console.log(`Pressed ${item.label}`);
+                    }
                   }
-                } else {
-                  if (item.id === "posts") {
-                    navigation.navigate("MyPosts", { userId });
-                  } else if (item.id === "workout-history") {
-                    navigation.navigate("WorkoutHistory");
-                  } else if (item.id === "connections") {
-                    navigation.navigate("Connections");
-                  } else if (item.id === "schedule-session") {
-                    navigation.navigate("ScheduledSessions");
-                  } else if (item.id === "achievements") {
-                    navigation.navigate("Achievements");
-                  } else if (item.id === "rating") {
-                    navigation.navigate("MyRatings");
-                  } else if (item.id === "my-bookings") {
-                    navigation.navigate("MyBookings");
-                  } else {
-                    // Handle other menu items as needed
-                    console.log(`Pressed ${item.label}`);
-                  }
-                }
-              }}
-              activeOpacity={0.7}
-            >
-              <View style={styles.menuItemLeft}>
+                }}
+                activeOpacity={0.7}
+              >
+                <View style={styles.menuItemLeft}>
+                  <Ionicons
+                    name={item.icon as any}
+                    size={20}
+                    color={COLORS._616888}
+                    style={styles.menuItemIcon}
+                  />
+                  <Text style={styles.menuItemLabel}>{item.label}</Text>
+                </View>
                 <Ionicons
-                  name={item.icon as any}
+                  name="chevron-forward"
                   size={20}
                   color={COLORS._616888}
-                  style={styles.menuItemIcon}
                 />
-                <Text style={styles.menuItemLabel}>{item.label}</Text>
-              </View>
-              <Ionicons
-                name="chevron-forward"
-                size={20}
-                color={COLORS._616888}
-              />
-            </TouchableOpacity>
-          ))}
-        </View>}
-  </RefreshableScrollView>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+      </RefreshableScrollView>
       {isOwnProfile && !isGuest && (
         <View style={styles.logoutSection}>
           <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
@@ -715,12 +769,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 10,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   avatarImage: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
   },
   guestAvatar: {
     // backgroundColor: "#6c757d",
@@ -745,7 +799,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.white,
     textAlign: "center",
-    marginBottom:20,
+    marginBottom: 20,
     fontFamily: FontWeight.Regular,
     marginHorizontal: 20,
   },
@@ -1367,14 +1421,14 @@ const styles = StyleSheet.create({
   },
   // Weekly Activity Styles
   weeklyActivityCard: {
-    width: '90%',
+    width: "90%",
     maxWidth: 600,
-    alignSelf: 'center',
+    alignSelf: "center",
     backgroundColor: COLORS.white,
     borderRadius: 16,
     marginTop: 60,
     marginBottom: 16,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
@@ -1398,9 +1452,9 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   weeklyGoalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 6,
   },
   weeklyGoalLabel: {
@@ -1417,15 +1471,15 @@ const styles = StyleSheet.create({
     height: 6,
     backgroundColor: COLORS._E6E6E7,
     borderRadius: 3,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   progressBarFill: {
-    height: '100%',
+    height: "100%",
     backgroundColor: "#0DB312",
     borderRadius: 3,
   },
   streakStatsContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 12,
     paddingTop: 6,
     marginBottom: 12,
@@ -1437,7 +1491,7 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontFamily: FontWeight.Medium,
     color: COLORS._616888,
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
     letterSpacing: 0.5,
     marginBottom: 3,
   },
@@ -1456,13 +1510,13 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   daysContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   dayColumn: {
-    flexDirection: 'column',
-    alignItems: 'center',
+    flexDirection: "column",
+    alignItems: "center",
     gap: 6,
   },
   dayLabel: {
@@ -1474,8 +1528,8 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 15,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   dayCircleCompleted: {
     backgroundColor: "#0DB312",
@@ -1483,32 +1537,32 @@ const styles = StyleSheet.create({
   dayCircleIncomplete: {
     borderWidth: 2,
     borderColor: COLORS._E6E6E7,
-    backgroundColor: 'transparent',
+    backgroundColor: "transparent",
   },
   // Menu List Styles
   menuListContainer: {
-    flexDirection: 'column',
+    flexDirection: "column",
     gap: 12,
     paddingHorizontal: 16,
     paddingVertical: 16,
     marginTop: 0,
     maxWidth: 600,
-    alignSelf: 'center',
-    width: '100%',
+    alignSelf: "center",
+    width: "100%",
   },
   menuListGuestSpacing: {
     paddingVertical: 70,
   },
   menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     padding: 16,
     backgroundColor: COLORS.white,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: COLORS._E6E6E7,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
@@ -1519,8 +1573,8 @@ const styles = StyleSheet.create({
     // borderColor: COLORS.primary,
   },
   menuItemLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
   },
   menuItemIcon: {

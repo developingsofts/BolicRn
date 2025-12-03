@@ -219,7 +219,9 @@ export const baseApi = createApi({
     "MyBookings",
     "ScheduledSessions",
     "BookTrainer",
-    "SelectDateTime"
+    "SelectDateTime",
+    "UserProfile",
+    "Connections",
   ],
   endpoints: () => ({}),
 });

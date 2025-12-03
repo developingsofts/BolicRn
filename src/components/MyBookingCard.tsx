@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { COLORS } from "../config/constants";
 import FontWeight from "../hooks/useInterFonts";
 import ConfirmDialog from "./ConfirmDialog";
+import { BookingData } from "../services/api/bookingApi";
 
 interface MyBookingCardProps {
   id: string;
@@ -11,6 +12,7 @@ interface MyBookingCardProps {
   timeRange: string;
   clientName: string;
   clientInitial: string;
+  booking: BookingData;
   onDecline?: (clientName: string) => void;
   onReschedule?: (clientName: string) => void;
   hideActions?: boolean;
@@ -18,17 +20,20 @@ interface MyBookingCardProps {
 }
 
 const MyBookingCard = ({
+  id,
   sessionType,
   date,
   timeRange,
   clientName,
   clientInitial,
+  booking,
   onDecline,
   onReschedule,
   hideActions,
   navigation,
 }: MyBookingCardProps) => {
   const [showDeclineDialog, setShowDeclineDialog] = useState(false);
+  const [dateTimeHeight, setDateTimeHeight] = useState(0);
 
   const handleDecline = () => {
     setShowDeclineDialog(true);
@@ -40,8 +45,16 @@ const MyBookingCard = ({
   };
 
   const handleReschedule = () => {
-    if (navigation && typeof navigation.navigate === 'function') {
-      navigation.navigate('RescheduleSession');
+    if (navigation && typeof navigation.navigate === "function") {
+      console.log(
+        "Navigating to RescheduleSessionScreen with bookingId:",
+        clientName
+      );
+      if (booking) {
+        navigation.navigate("RescheduleSession", {
+          booking,
+        });
+      }
     } else if (onReschedule) {
       onReschedule(clientName);
     } else {
@@ -55,7 +68,12 @@ const MyBookingCard = ({
       <Text style={styles.sessionType}>{sessionType}</Text>
       {/* Top Row: Date, Time, and Client/Badge with Separator */}
       <View style={styles.topRow}>
-        <View style={styles.dateTimeCol}>
+        <View
+          style={styles.dateTimeCol}
+          onLayout={(event) => {
+            setDateTimeHeight(event.nativeEvent.layout.height);
+          }}
+        >
           <Text style={styles.date} numberOfLines={1} ellipsizeMode="tail">
             {date}
           </Text>
@@ -63,7 +81,7 @@ const MyBookingCard = ({
             {timeRange}
           </Text>
         </View>
-        <View style={styles.verticalSeparator} />
+        <View style={[styles.verticalSeparator, { height: dateTimeHeight }]} />
         <View style={styles.clientBadgeCol}>
           <View style={styles.clientTextCol}>
             <Text style={styles.clientLabel}>Client</Text>
@@ -89,7 +107,9 @@ const MyBookingCard = ({
             style={[styles.actionButton, styles.rescheduleButton]}
             onPress={handleReschedule}
           >
-            <Text style={[styles.actionButtonText, styles.rescheduleButtonText]}>
+            <Text
+              style={[styles.actionButtonText, styles.rescheduleButtonText]}
+            >
               Rescheduled
             </Text>
           </TouchableOpacity>
@@ -115,7 +135,7 @@ const styles = StyleSheet.create({
     width: "100%",
     backgroundColor: "#fff",
     borderRadius: 16,
-    padding: 24,
+    padding: 15,
     marginBottom: 8,
     borderWidth: 1,
     borderColor: COLORS.border,
@@ -131,12 +151,12 @@ const styles = StyleSheet.create({
   topRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 10,
+    marginBottom: 5,
     justifyContent: "space-between",
     width: "100%",
   },
   dateTimeCol: {
-
+    marginRight: 12,
   },
   date: {
     fontSize: 15,
@@ -148,14 +168,15 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: COLORS.primary,
     marginBottom: 2,
- 
+  },
+  separatorContainer: {
+    justifyContent: "center",
+    alignItems: "center",
   },
   verticalSeparator: {
     width: 1,
-    height: 40,
     backgroundColor: COLORS.border,
     marginHorizontal: 12,
-    borderRadius: 1,
   },
   badgeCol: {
     flex: 1,
@@ -166,11 +187,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "flex-end",
-    gap: 4,
+    gap: 8,
+    flex: 1,
+    marginLeft: 2,
   },
   clientTextCol: {
     flexDirection: "column",
     justifyContent: "center",
+    flex: 1,
+    minWidth: 0,
   },
   clientLabel: {
     fontSize: 13,
@@ -182,15 +207,16 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     fontWeight: "500",
     textAlign: "right",
+    flexWrap: "wrap",
   },
   avatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: COLORS.primary,
     alignItems: "center",
     justifyContent: "center",
-    marginLeft: 8,
+    flexShrink: 0,
   },
   avatarText: {
     color: COLORS.white,
@@ -214,7 +240,7 @@ const styles = StyleSheet.create({
   declineButton: {
     backgroundColor: COLORS.white,
     borderColor: COLORS.white,
-    boxShadow: "0px 0px 12px 0px #76767626"
+    boxShadow: "0px 0px 12px 0px #76767626",
   },
   declineButtonText: {
     color: COLORS._FF1616,
@@ -234,7 +260,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "400",
     color: COLORS._5E5E5E,
-    marginBottom: 10,
+    marginBottom: 5,
   },
 });
 

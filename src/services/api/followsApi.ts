@@ -14,7 +14,7 @@ export const followsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     followUser: builder.mutation<ApiResponse<any>, FollowPayload>({
       query: (body) => ({
-        url: '/follows/follow',
+        url: API_END_POINTS.follows.follow,
         method: 'POST',
         body,
       }),
@@ -22,7 +22,7 @@ export const followsApi = baseApi.injectEndpoints({
     }),
     unfollowUser: builder.mutation<ApiResponse<any>, UnfollowPayload>({
       query: (body) => ({
-        url: '/follows/unfollow',
+        url: API_END_POINTS.follows.unfollow,
         method: 'POST',
         body,
       }),
@@ -30,14 +30,14 @@ export const followsApi = baseApi.injectEndpoints({
     }),
     getFollowers: builder.query<ApiResponse<any>, { userId: string; page?: number; limit?: number }>({
       query: ({ userId, page = 1, limit = 10 }) => ({
-        url: `/follows/followers?userId=${userId}&page=${page}&limit=${limit}`,
+        url: API_END_POINTS.follows.followers(userId, page, limit),
         method: 'GET',
       }),
       providesTags: ['User'],
     }),
     getFollowing: builder.query<ApiResponse<any>, { userId: string; page?: number; limit?: number }>({
       query: ({ userId, page = 1, limit = 10 }) => ({
-        url: `/follows/following?userId=${userId}&page=${page}&limit=${limit}`,
+        url: API_END_POINTS.follows.following(userId, page, limit),
         method: 'GET',
       }),
       providesTags: ['User'],

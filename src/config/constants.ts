@@ -223,6 +223,325 @@ export const toLocalTime = (utcStr: string) => {
   return result;
 };
 
+// Convert local date and time to UTC date and time
+// Returns object with utcDate (mm/dd/yyyy) and utcTime (HH:MM AM/PM)
+export const convertLocaDatemmddyyyylToUTC = (localDate: string, localTime: string): { utcDate: string; utcTime: string } => {
+  console.log('[convertLocalToUTC] Input - Date:', localDate, 'Time:', localTime);
+
+  try {
+    // Parse local date (expected format: "mm/dd/yyyy" or "YYYY-MM-DD")
+    let dateObj: Date;
+    if (localDate.includes('-')) {
+      // ISO format: "2025-12-03"
+      dateObj = new Date(localDate + 'T00:00:00');
+    } else if (localDate.includes('/')) {
+      // mm/dd/yyyy format
+      const [month, day, year] = localDate.split('/');
+      dateObj = new Date(`${year}-${month}-${day}T00:00:00`);
+    } else {
+      // Fallback: assume it's a date string
+      dateObj = new Date(localDate);
+    }
+
+    console.log('[convertLocalToUTC] Parsed date object:', dateObj);
+
+    if (isNaN(dateObj.getTime())) {
+      throw new Error('Invalid date format');
+    }
+
+    // Get initial date components
+    const year = dateObj.getFullYear();
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const day = String(dateObj.getDate()).padStart(2, '0');
+
+    // Parse time string to extract hours and minutes (supports formats like "09:30 AM" or "9:30 AM")
+    const timeMatch = localTime.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+    if (!timeMatch) {
+      throw new Error('Invalid time format. Expected "HH:MM AM/PM"');
+    }
+
+    let hours = parseInt(timeMatch[1], 10);
+    const minutes = parseInt(timeMatch[2], 10);
+    const ampm = timeMatch[3].toUpperCase();
+
+    // Convert 12-hour to 24-hour format
+    if (ampm === 'PM' && hours < 12) hours += 12;
+    if (ampm === 'AM' && hours === 12) hours = 0;
+
+    console.log('[convertLocalToUTC] Local time in 24-hour format: ' + hours + ':' + String(minutes).padStart(2, '0'));
+
+    // Get timezone offset in minutes
+    const tzOffsetMinutes = new Date().getTimezoneOffset();
+    console.log('[convertLocalToUTC] Timezone offset (minutes):', tzOffsetMinutes);
+
+    // Convert to total minutes and adjust for timezone
+    const totalLocalMinutes = hours * 60 + minutes;
+    const totalUtcMinutes = totalLocalMinutes + tzOffsetMinutes;
+
+    console.log('[convertLocalToUTC] Total local minutes:', totalLocalMinutes);
+    console.log('[convertLocalToUTC] Total UTC minutes (before wrap):', totalUtcMinutes);
+
+    // Calculate UTC hours and minutes
+    let utcHours = Math.floor(totalUtcMinutes / 60);
+    let utcMinutes = totalUtcMinutes % 60;
+
+    // Handle day wrapping
+    let utcDay = parseInt(day, 10);
+    let utcMonth = parseInt(month, 10);
+    let utcYear = year;
+
+    if (totalUtcMinutes < 0) {
+      utcDay -= 1;
+      if (utcDay < 1) {
+        utcMonth -= 1;
+        if (utcMonth < 1) {
+          utcMonth = 12;
+          utcYear -= 1;
+        }
+        const lastDay = new Date(utcYear, utcMonth, 0).getDate();
+        utcDay = lastDay;
+      }
+      utcHours = (24 + (totalUtcMinutes / 60)) % 24;
+    } else if (totalUtcMinutes >= 24 * 60) {
+      utcDay += 1;
+      const lastDay = new Date(utcYear, utcMonth + 1, 0).getDate();
+      if (utcDay > lastDay) {
+        utcDay = 1;
+        utcMonth += 1;
+        if (utcMonth > 12) {
+          utcMonth = 1;
+          utcYear += 1;
+        }
+      }
+      utcHours = (totalUtcMinutes / 60) % 24;
+    }
+
+    // Ensure utcHours is in valid range
+    utcHours = Math.floor(utcHours) % 24;
+    if (utcHours < 0) utcHours += 24;
+
+    console.log('[convertLocalToUTC] UTC hours:', utcHours, 'UTC minutes:', utcMinutes);
+
+    // Format UTC date as mm/dd/yyyy
+    const formattedUtcDate = `${String(utcMonth).padStart(2, '0')}/${String(utcDay).padStart(2, '0')}/${utcYear}`;
+
+    // Format UTC time as HH:MM AM/PM (12-hour format)
+    let displayHours = utcHours;
+    const displayAmpm = utcHours >= 12 ? 'PM' : 'AM';
+    displayHours = displayHours % 12;
+    if (displayHours === 0) displayHours = 12;
+    const formattedUtcTime = `${String(displayHours).padStart(2, '0')}:${String(Math.round(utcMinutes)).padStart(2, '0')} ${displayAmpm}`;
+
+    console.log('[convertLocalToUTC] Conversion result:');
+    console.log('  Local:', localDate, '@', localTime);
+    console.log('  UTC Date:', formattedUtcDate);
+    console.log('  UTC Time:', formattedUtcTime);
+
+    return {
+      utcDate: formattedUtcDate,
+      utcTime: formattedUtcTime,
+    };
+  } catch (error) {
+    console.error('[convertLocalToUTC] Error:', error);
+    return {
+      utcDate: '',
+      utcTime: '',
+    };
+  }
+};
+
+// Convert UTC ISO date string and time to display format with local time conversion
+// Input: utcIsoDate (e.g., "2025-12-03T05:09:26.795Z"), time (e.g., "05:09 AM" in UTC)
+// Output: {date: "Wednesday - Dec 3, 2025", time: "10:39 AM"} (converted to local time)
+export const formatUTCToDisplayDateTime = (utcIsoDate: string, time: string): {date:string,time:string} => {
+  console.log('[formatUTCToDisplayDateTime] Input - ISO Date:', utcIsoDate, 'UTC Time:', time);
+
+  try {
+    if (!utcIsoDate || !time) {
+      console.log('[formatUTCToDisplayDateTime] Empty input');
+      return {date: '', time: ''};
+    }
+
+    // Parse UTC ISO date
+    const date = new Date(utcIsoDate);
+    if (isNaN(date.getTime())) {
+      throw new Error('Invalid ISO date format');
+    }
+
+    // Get date components
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const monthNamesShort = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+    const dayName = dayNames[date.getUTCDay()];
+    const monthShort = monthNamesShort[date.getUTCMonth()];
+    const dayOfMonth = date.getUTCDate();
+    const year = date.getUTCFullYear();
+
+    // Parse UTC time string
+    const timeMatch = time.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+    if (!timeMatch) {
+      throw new Error('Invalid time format. Expected "HH:MM AM/PM"');
+    }
+
+    let utcHour = parseInt(timeMatch[1], 10);
+    const utcMinute = parseInt(timeMatch[2], 10);
+    const ampm = timeMatch[3].toUpperCase();
+
+    // Convert 12-hour to 24-hour format for UTC
+    if (ampm === 'PM' && utcHour < 12) utcHour += 12;
+    if (ampm === 'AM' && utcHour === 12) utcHour = 0;
+
+    console.log('[formatUTCToDisplayDateTime] UTC time in 24-hour:', utcHour, ':', utcMinute);
+
+    // Get timezone offset in minutes
+    const tzOffsetMinutes = new Date().getTimezoneOffset();
+    console.log('[formatUTCToDisplayDateTime] Timezone offset (minutes):', tzOffsetMinutes);
+
+    // Convert UTC to local time
+    // local = UTC - offset (because offset is negative for timezones ahead of UTC)
+    const totalUtcMinutes = utcHour * 60 + utcMinute;
+    const totalLocalMinutes = totalUtcMinutes - tzOffsetMinutes;
+
+    console.log('[formatUTCToDisplayDateTime] Total UTC minutes:', totalUtcMinutes);
+    console.log('[formatUTCToDisplayDateTime] Total local minutes (before wrap):', totalLocalMinutes);
+
+    // Calculate local hours and minutes with day wrapping
+    let localHours = Math.floor(totalLocalMinutes / 60);
+    let localMinutes = totalLocalMinutes % 60;
+
+    // Handle day wrapping for display
+    let displayDayName = dayName;
+    let displayMonth = monthShort;
+    let displayDayOfMonth = dayOfMonth;
+    let displayYear = year;
+
+    if (totalLocalMinutes < 0) {
+      // Previous day
+      const prevDate = new Date(date);
+      prevDate.setUTCDate(prevDate.getUTCDate() - 1);
+      displayDayName = dayNames[prevDate.getUTCDay()];
+      displayMonth = monthNamesShort[prevDate.getUTCMonth()];
+      displayDayOfMonth = prevDate.getUTCDate();
+      displayYear = prevDate.getUTCFullYear();
+      localHours = (24 + (totalLocalMinutes / 60)) % 24;
+    } else if (totalLocalMinutes >= 24 * 60) {
+      // Next day
+      const nextDate = new Date(date);
+      nextDate.setUTCDate(nextDate.getUTCDate() + 1);
+      displayDayName = dayNames[nextDate.getUTCDay()];
+      displayMonth = monthNamesShort[nextDate.getUTCMonth()];
+      displayDayOfMonth = nextDate.getUTCDate();
+      displayYear = nextDate.getUTCFullYear();
+      localHours = (totalLocalMinutes / 60) % 24;
+    }
+
+    // Ensure valid range
+    localHours = Math.floor(localHours) % 24;
+    if (localHours < 0) localHours += 24;
+
+    console.log('[formatUTCToDisplayDateTime] Local time in 24-hour:', localHours, ':', Math.round(localMinutes));
+
+    // Convert 24-hour local time back to 12-hour format
+    let displayLocalHour = localHours;
+    const displayLocalAmpm = localHours >= 12 ? 'PM' : 'AM';
+    displayLocalHour = displayLocalHour % 12;
+    if (displayLocalHour === 0) displayLocalHour = 12;
+
+    const localTimeStr = `${String(displayLocalHour).padStart(2, '0')}:${String(Math.round(localMinutes)).padStart(2, '0')} ${displayLocalAmpm}`;
+
+    // Format date and time
+    const dateformatted = `${displayDayName} - ${displayMonth} ${displayDayOfMonth}, ${displayYear}`;
+    const timeFormatted = localTimeStr;
+
+    console.log('[formatUTCToDisplayDateTime] Result:');
+    console.log('  Date:', dateformatted);
+    console.log('  Time (converted to local):', timeFormatted);
+    
+    return {date: dateformatted, time: timeFormatted};
+  } catch (error) {
+    console.error('[formatUTCToDisplayDateTime] Error:', error);
+    return {date: '', time: ''};
+  }
+};
+
+
+export const convertBookingDateTommddyyyyFormat = (dateString: string): string => {
+  const dateMatch = dateString.match(/(\w+)\s*-\s*(\w+)\s+(\d+),\s*(\d+)/);
+  
+  if (!dateMatch) {
+    return dateString; // Return original if format doesn't match
+  }
+
+  const monthStr = dateMatch[2]; // "Dec"
+  const dayStr = dateMatch[3]; // "10"
+  const yearStr = dateMatch[4]; // "2025"
+
+  // Convert month name to number
+  const monthMap: { [key: string]: string } = {
+    "Jan": "01", "Feb": "02", "Mar": "03", "Apr": "04",
+    "May": "05", "Jun": "06", "Jul": "07", "Aug": "08",
+    "Sep": "09", "Oct": "10", "Nov": "11", "Dec": "12"
+  };
+
+  const monthNum = monthMap[monthStr] || "01";
+  return `${monthNum}/${dayStr.padStart(2, "0")}/${yearStr}`;
+};
+
+
+// Add 1 hour to a given time in HH:MM AM/PM format
+// Input: time (e.g., "09:30 AM" or "11:45 PM")
+// Output: time + 1 hour (e.g., "10:30 AM" or "12:45 AM")
+export const addOneHourToTime = (time: string): string => {
+  console.log('[addOneHourToTime] Input time:', time);
+
+  try {
+    if (!time) {
+      console.log('[addOneHourToTime] Empty input');
+      return '';
+    }
+
+    // Parse time string (supports formats like "09:30 AM" or "9:30 AM")
+    const timeMatch = time.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+    if (!timeMatch) {
+      throw new Error('Invalid time format. Expected "HH:MM AM/PM"');
+    }
+
+    let hours = parseInt(timeMatch[1], 10);
+    const minutes = parseInt(timeMatch[2], 10);
+    const ampm = timeMatch[3].toUpperCase();
+
+    // Convert 12-hour to 24-hour format
+    if (ampm === 'PM' && hours < 12) hours += 12;
+    if (ampm === 'AM' && hours === 12) hours = 0;
+
+    console.log('[addOneHourToTime] Time in 24-hour format:', hours, ':', minutes);
+
+    // Add 1 hour
+    hours += 1;
+
+    // Handle 24-hour wrapping (23:00 + 1 hour = 00:00, which is 12:00 AM next day)
+    if (hours >= 24) {
+      hours = 0;
+    }
+
+    console.log('[addOneHourToTime] After adding 1 hour (24-hour):', hours, ':', minutes);
+
+    // Convert back to 12-hour format
+    let displayHour = hours;
+    const displayAmpm = hours >= 12 ? 'PM' : 'AM';
+    displayHour = displayHour % 12;
+    if (displayHour === 0) displayHour = 12;
+
+    const result = `${String(displayHour).padStart(2, '0')}:${String(minutes).padStart(2, '0')} ${displayAmpm}`;
+
+    console.log('[addOneHourToTime] Result:', result);
+    return result;
+  } catch (error) {
+    console.error('[addOneHourToTime] Error:', error);
+    return '';
+  }
+};
+
 // XP and Leveling Configuration
 export const XP_CONFIG = {
   workoutCompletion: 50,

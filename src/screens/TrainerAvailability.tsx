@@ -269,6 +269,7 @@ const TrainerAvailability: React.FC<{ navigation: any }> = ({ navigation }) => {
   };
 
   const handleUpdate = async () => {
+    console.log("Updating availability with state:", user?.id);
     if (!user?.id) return;
     // Convert availability state to slots array, converting local times to UTC
     const slots = daysOfWeek.map((day) => {

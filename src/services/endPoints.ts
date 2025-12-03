@@ -124,4 +124,17 @@ export const API_END_POINTS = {
       `/notifications/${notificationId}/read`,
     settings: "/notifications/settings",
   },
+
+  follows: {
+    follow: "/follows/follow",
+    unfollow: "/follows/unfollow",
+    followers: (userId: string, page: number = 1, limit: number = 10) =>
+      `/follows/followers?userId=${userId}&page=${page}&limit=${limit}`,
+    following: (userId: string, page: number = 1, limit: number = 10) =>
+      `/follows/following?userId=${userId}&page=${page}&limit=${limit}`,
+  },
+
+  connections: {
+    userConnections: "/connections/user",
+  },
 };

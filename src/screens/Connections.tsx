@@ -12,7 +12,7 @@ import BasicTopBar from "../components/BasicTopBar";
 import { COLORS, DIMENSIONS } from "../config/constants";
 import FontWeight from "../hooks/useInterFonts";
 import { useAuth } from "../contexts/AuthContext";
-import { useGetFollowingQuery } from "../services/api/followsApi";
+import { useGetUserConnectionsQuery } from "../services/api/connectionsApi";
 
 const Connections: React.FC = ({ navigation, route }: any) => {
   const { user, isAuthenticated } = useAuth();
@@ -32,14 +32,14 @@ const Connections: React.FC = ({ navigation, route }: any) => {
   const [refreshing, setRefreshing] = useState(false);
 
   const {
-    data: followingData,
-    isLoading: followingLoading,
-    isFetching: followingFetching,
-    refetch: refetchFollowing,
-    error: followingError,
-  } = useGetFollowingQuery(
+    data: connectionsData,
+    isLoading: connectionsLoading,
+    isFetching: connectionsFetching,
+    refetch: refetchConnections,
+    error: connectionsError,
+  } = useGetUserConnectionsQuery(
     {
-      userId: userId?.toString?.(),
+      userId: userId,
       page,
       limit: 20,
     },
@@ -48,9 +48,9 @@ const Connections: React.FC = ({ navigation, route }: any) => {
 
   // Append new users to allFollowing on data change
   useEffect(() => {
-    if (followingData?.status) {
+    if (connectionsData?.status) {
       // API returns users under data.users
-      const items = (followingData.data?.users as any[]) ?? [];
+      const items = (connectionsData.data?.users as any[]) ?? [];
       if (page === 1) {
         setAllFollowing(items);
       } else {
@@ -62,16 +62,21 @@ const Connections: React.FC = ({ navigation, route }: any) => {
         });
       }
       setHasMore(items.length === 20); // If less than limit, no more pages
+    }
+  }, [connectionsData, page]);
+
+  // Stop refreshing when fetch completes
+  useEffect(() => {
+    if (refreshing && !connectionsFetching) {
       setRefreshing(false);
     }
-  }, [followingData, page]);
+  }, [connectionsFetching, refreshing]);
 
   // Pull-to-refresh handler
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     setRefreshing(true);
-    setPage(1);
     setAllFollowing([]);
-    // refetchFollowing(); // Not needed, useGetFollowingQuery will refetch on page change
+    await refetchConnections();
   };
 
   // Memoize following users for rendering
@@ -86,7 +91,7 @@ const Connections: React.FC = ({ navigation, route }: any) => {
   }, [allFollowing]);
 
   const handleLoadMore = () => {
-    if (hasMore && !followingFetching) {
+    if (hasMore && !connectionsFetching) {
       setPage((prev) => prev + 1);
     }
   };
@@ -130,11 +135,11 @@ const Connections: React.FC = ({ navigation, route }: any) => {
           </TouchableOpacity>
         )}
         {/* Achievements-style grid/list with loading, error, empty states */}
-        {followingLoading && page === 1 ? (
+        {connectionsLoading && page === 1 ? (
           <View style={{ padding: 20, alignItems: 'center' }}>
             <Text>Loading connections...</Text>
           </View>
-        ) : followingError ? (
+        ) : connectionsError ? (
           <View style={{ padding: 20, alignItems: 'center' }}>
             <Text style={{ color: COLORS.error }}>Failed to load connections.</Text>
           </View>
@@ -176,10 +181,10 @@ const Connections: React.FC = ({ navigation, route }: any) => {
                   borderRadius: 8,
                 }}
                 onPress={handleLoadMore}
-                disabled={followingFetching}
+                disabled={connectionsFetching}
               >
                 <Text style={{ color: COLORS.white, fontWeight: '600' }}>
-                  {followingFetching ? 'Loading...' : 'Load More'}
+                  {connectionsFetching ? 'Loading...' : 'Load More'}
                 </Text>
               </TouchableOpacity>
             )}

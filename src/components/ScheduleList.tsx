@@ -1,26 +1,21 @@
 import React from "react";
 import { View } from "react-native";
 import ScheduleCard from "./ScheduleCard";
+import { BookingData, PriceInfo, TrainerInfo, UserInfo } from "../services/api/bookingApi";
 
-export interface Schedule {
-  id: string;
-  startTime: string;
-  endTime: string;
-  clientName: string;
-  sessionType: string;
-  onRemove?: () => void;
-  onMessage?: () => void;
-}
 
 interface ScheduleListProps {
-  schedules: Schedule[];
+  schedules: BookingData[];
+  onMessage?: (user: UserInfo) => void;
+  onRemove?: (scheduleId: number) => void;
 }
 
-const ScheduleList: React.FC<ScheduleListProps> = ({ schedules }) => {
+const ScheduleList: React.FC<ScheduleListProps> = ({ schedules, onMessage,onRemove}) => {
   return (
     <View>
       {schedules.map((schedule) => (
-        <ScheduleCard key={schedule.id} {...schedule} />
+        <ScheduleCard key={schedule.id} {...schedule} onMessage={onMessage} onRemove={onRemove && (() => onRemove(schedule.id))}/>
+        
       ))}
     </View>
   );
