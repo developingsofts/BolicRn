@@ -49,7 +49,7 @@ export interface UpdateBookingRequest {
 
 export interface DeleteBookingRequest {
   id: number | string;
-  status?: "canceled";
+  status?: "canceled"|"upcomming";
 }
 
 export interface PaginationInfo {

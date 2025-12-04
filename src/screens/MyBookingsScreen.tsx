@@ -122,19 +122,25 @@ const MyBookingsScreen = ({ navigation }: any) => {
     }
   }, [bookingsResponse, activeTab]);
 
-  const handleTabChange = useCallback((tabKey: string) => {
-    // Only proceed if switching to a different tab
-    if (tabKey === activeTab) {
-      return;
-    }
-    
-    setActiveTab(tabKey);
-    
-    // If switching to a tab with no data, refetch the API
-    if (bookingsByTab[tabKey]?.length === 0 && pagination[tabKey]?.page === 1) {
-      refetch();
-    }
-  }, [activeTab, bookingsByTab, pagination, refetch]);
+  const handleTabChange = useCallback(
+    (tabKey: string) => {
+      // Only proceed if switching to a different tab
+      if (tabKey === activeTab) {
+        return;
+      }
+
+      setActiveTab(tabKey);
+
+      // If switching to a tab with no data, refetch the API
+      if (
+        bookingsByTab[tabKey]?.length === 0 &&
+        pagination[tabKey]?.page === 1
+      ) {
+        refetch();
+      }
+    },
+    [activeTab, bookingsByTab, pagination, refetch]
+  );
 
   const handleLoadMore = useCallback(() => {
     if (pagination[activeTab]?.hasMore && !isFetching) {
@@ -288,7 +294,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   tabContainerWrapper: {
-    marginHorizontal: DIMENSIONS.spacing.lg,
+    marginHorizontal: DIMENSIONS.spacing.md,
     marginTop: 10,
     marginBottom: 10,
   },
@@ -296,7 +302,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     backgroundColor: COLORS.surface,
     borderRadius: 50,
-    padding: 6,
+
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -307,21 +313,21 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "transparent",
     borderRadius: 50,
-    paddingVertical: 10,
-    marginHorizontal: 2,
+    paddingVertical: 12,
     alignItems: "center",
   },
   tabButtonActive: {
     backgroundColor: COLORS.primary,
   },
   tabText: {
-    fontSize: 15,
-    color: COLORS.text,
+    fontSize: 16,
+    color: COLORS._5E5E5E,
     fontFamily: FontWeight.Medium,
   },
   tabTextActive: {
     color: COLORS.white,
-    fontFamily: FontWeight.SemiBold,
+    fontFamily: FontWeight.Medium,
+    fontSize: 16,
   },
   scrollView: {
     flex: 1,
@@ -329,10 +335,10 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: 100,
-    paddingHorizontal: DIMENSIONS.spacing.lg,
+    paddingHorizontal: DIMENSIONS.spacing.md,
   },
   bookingList: {
-    gap: 20,
+    gap: 10,
   },
   loadingContainer: {
     flex: 1,

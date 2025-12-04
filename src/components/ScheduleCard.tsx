@@ -1,10 +1,11 @@
 import React, { use, useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Platform } from "react-native";
 import { Image } from "react-native";
 import { ScheduleClose, ScheduleChat } from "../../assets";
 import { PriceInfo, TrainerInfo, UserInfo } from "../services/api/bookingApi";
-import { addOneHourToTime, toLocalTime } from "../config/constants";
+import { addOneHourToTime, COLORS, toLocalTime } from "../config/constants";
 import ConfirmDialog from "./ConfirmDialog";
+import FontWeight from "../hooks/useInterFonts";
 
 interface ScheduleCardProps {
   id: number;
@@ -66,7 +67,7 @@ const ScheduleCard: React.FC<ScheduleCardProps> = ({
             style={[styles.iconBtn, styles.removeBtn]}
             onPress={handleDecline}
           >
-            <Image source={ScheduleClose} style={styles.actionIcon} />
+            <Image source={ScheduleClose} style={styles.actionIcon}  />
           </TouchableOpacity>
           <View style={styles.actionDivider} />
           <TouchableOpacity
@@ -82,7 +83,7 @@ const ScheduleCard: React.FC<ScheduleCardProps> = ({
         onClose={() => setShowDeclineDialog(false)}
         onConfirm={handleDeclineConfirm}
         title="Decline Client Request"
-        description={`Confirm if you wish to decline upcoming client session request for the ${date} ${time}.
+        description={`Confirm if you wish to decline upcoming client session request for the time ${localtime}.
 
 Client will be notified and refund will be initiated.`}
         confirmText="Delete"
@@ -95,8 +96,8 @@ Client will be notified and refund will be initiated.`}
 const styles = StyleSheet.create({
   title: {
     fontSize: 16,
-    fontWeight: "600",
-    color: "#51515",
+    fontFamily: FontWeight.SemiBold,
+    color: COLORS.app_black,
     marginBottom: 12,
   },
   card: {
@@ -104,11 +105,17 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 2,
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
     borderWidth: 1,
     borderColor: "#E5E7EB",
   },
@@ -120,48 +127,59 @@ const styles = StyleSheet.create({
   infoSection: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 18,
+    gap: 16,
+    flex: 1,
+    minWidth: 0,
   },
   timeSection: {
     flexDirection: "column",
   },
   startTime: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#2563eb",
+    fontSize: 16,
+    fontFamily: FontWeight.SemiBold,
+    color: COLORS.primary,
   },
   endTime: {
-    fontSize: 13,
-    color: "#6B7280",
+    fontSize: 14,
+    color: COLORS._5E5E5E,
+    fontFamily: FontWeight.Regular,
     textAlign: "right",
   },
   clientSection: {
     flexDirection: "column",
+    flex: 1,
+    minWidth: 0,
   },
   verticalDivider: {
     width: 1,
     height: 40,
-    backgroundColor: "#E5E7EB",
+    backgroundColor: COLORS._BFDEFF,
     alignSelf: "center",
+    flexShrink: 0,
   },
   clientName: {
-    fontWeight: "600",
-    fontSize: 15,
-    color: "#222",
+    fontFamily: FontWeight.SemiBold,
+    fontSize: 16,
+    color: COLORS.gradient1,
+    flexWrap: "wrap",
   },
   sessionType: {
-    fontSize: 13,
-    color: "#6B7280",
+    fontSize: 14,
+    color: COLORS._5E5E5E,
+    fontFamily: FontWeight.Regular,
+    flexWrap: "wrap",
   },
   actions: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
+    marginLeft: 12,
+    flexShrink: 0,
   },
   iconBtn: {
-    height: 32,
-    width: 32,
-    borderRadius: 16,
+    height: 36,
+    width: 36,
+    borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -169,7 +187,6 @@ const styles = StyleSheet.create({
     width: 1,
     height: 24,
     backgroundColor: "#E5E7EB",
-    marginHorizontal: 4,
     alignSelf: "center",
   },
   removeBtn: {},

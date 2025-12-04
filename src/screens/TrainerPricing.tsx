@@ -10,6 +10,8 @@ import {
   Platform,
   ToastAndroid,
   RefreshControl,
+  KeyboardAvoidingView,
+  Image,
 } from "react-native";
 // Pull to refresh state and handler
 
@@ -28,6 +30,7 @@ import {
 import { useAuth } from "../contexts/AuthContext";
 import { TextInput } from "react-native-gesture-handler";
 import FontWeight from "../hooks/useInterFonts";
+import { Add } from "../../assets";
 
 interface Package {
   id: string;
@@ -36,7 +39,7 @@ interface Package {
   price: number;
 }
 
-// No initialPackages, will fetch from API
+// No initialPackages, will fetch from APIx
 
 const TrainerPricing: React.FC<{ navigation: any }> = ({ navigation }) => {
   const { user } = useAuth();
@@ -68,7 +71,7 @@ const TrainerPricing: React.FC<{ navigation: any }> = ({ navigation }) => {
     setRefreshing(true);
     refetchPrices();
     setRefreshing(false);
-  };    
+  };
 
   useEffect(() => {
     // Type guard for ApiResponse<TrainingPriceSession[]>
@@ -230,11 +233,14 @@ const TrainerPricing: React.FC<{ navigation: any }> = ({ navigation }) => {
           )}
           <TouchableOpacity style={styles.addBtn} onPress={openAddSession}>
             <Text style={styles.addBtnText}>Add New Session</Text>
-            <Ionicons
-              name="add"
-              size={22}
-              color={"#191919"}
-              style={{ marginLeft: 8 }}
+            <Image
+              source={Add}
+              style={{
+                width: 10,
+                height: 10,
+                marginLeft: 8,
+                tintColor: COLORS._191919,
+              }}
             />
           </TouchableOpacity>
         </View>
@@ -245,110 +251,118 @@ const TrainerPricing: React.FC<{ navigation: any }> = ({ navigation }) => {
         transparent={true}
         onRequestClose={closeModal}
       >
-        <View
-          style={{
-            backgroundColor: "rgba(0,0,0,0.3)",
-            flex: 1,
-            justifyContent: "flex-end",
-          }}
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={{ flex: 1 }}
         >
           <View
             style={{
-              backgroundColor: "#fff",
-              paddingTop: 16,
-              paddingHorizontal: 20,
-              paddingBottom: 32,
-              borderTopLeftRadius: 24,
-              borderTopRightRadius: 24,
-              width: "100%",
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: -2 },
-              shadowOpacity: 0.15,
-              shadowRadius: 12,
-              elevation: 10,
+              backgroundColor: "rgba(0,0,0,0.3)",
+              flex: 1,
+              justifyContent: "flex-end",
             }}
           >
             <View
               style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "space-between",
-                marginBottom: 12,
+                backgroundColor: "#fff",
+                paddingTop: 16,
+                paddingHorizontal: 20,
+                paddingBottom: 32,
+                borderTopLeftRadius: 24,
+                borderTopRightRadius: 24,
+                width: "100%",
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: -2 },
+                shadowOpacity: 0.15,
+                shadowRadius: 12,
+                elevation: 10,
               }}
             >
-              <Text
+              <View
                 style={{
-                  fontWeight: "bold",
-                  fontSize: 20,
-                  textAlign: "center",
-                  flex: 1,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginBottom: 12,
+                  position: "relative",
                 }}
               >
-                {modalMode === "edit" ? "Edit Session" : "Create Session"}
-              </Text>
+                <Text
+                  style={{
+                    fontFamily: FontWeight.SemiBold,
+                    fontSize: 20,
+                    textAlign: "center",
+                    flex: 1,
+                  }}
+                >
+                  {modalMode === "edit" ? "Edit Session" : "Create Session"}
+                </Text>
+                <TouchableOpacity
+                  onPress={closeModal}
+                  style={{ position: "absolute", right: 0, padding: 4 }}
+                >
+                  <Ionicons name="close" size={24} color="#222" />
+                </TouchableOpacity>
+              </View>
+              <View style={styles.sessionCard}>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Session name</Text>
+                  <TextInput
+                    style={[styles.inputField, { height: 48 }]}
+                    value={modalForm.session_name}
+                    onChangeText={(text) =>
+                      setModalForm((f: any) => ({ ...f, session_name: text }))
+                    }
+                    placeholder="Session name"
+                    placeholderTextColor={COLORS._5E5E5E}
+                  />
+                </View>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Description</Text>
+                  <TextInput
+                    style={[styles.inputField, { height: 48 }]}
+                    value={modalForm.description}
+                    onChangeText={(text) =>
+                      setModalForm((f: any) => ({ ...f, description: text }))
+                    }
+                    placeholder="Description"
+                    placeholderTextColor={COLORS._5E5E5E}
+                    multiline
+                  />
+                </View>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Price per hour</Text>
+                  <TextInput
+                    style={[styles.inputField, { height: 48 }]}
+                    value={modalForm.price}
+                    onChangeText={(text) =>
+                      setModalForm((f: any) => ({ ...f, price: text }))
+                    }
+                    placeholder="$ per hour"
+                    placeholderTextColor={COLORS._5E5E5E}
+                    keyboardType="numeric"
+                  />
+                </View>
+              </View>
               <TouchableOpacity
-                onPress={closeModal}
-                style={{ marginLeft: 8, padding: 4 }}
+                style={{
+                  backgroundColor: COLORS.primary,
+                  borderRadius: 8,
+                  padding: 14,
+                  alignItems: "center",
+                  marginTop: 18,
+                }}
+                onPress={handleModalSubmit}
               >
-                <Ionicons name="close" size={24} color="#222" />
+                <Text
+                  style={{ color: "#fff", fontFamily: FontWeight.Medium, fontSize: 14 }}
+                >
+                  {modalMode === "edit" ? "Update" : "Create"}
+                </Text>
               </TouchableOpacity>
             </View>
-            <View style={styles.sessionCard}>
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Session name</Text>
-                <TextInput
-                  style={styles.inputField}
-                  value={modalForm.session_name}
-                  onChangeText={(text) =>
-                    setModalForm((f: any) => ({ ...f, session_name: text }))
-                  }
-                  placeholder="Session name"
-                  placeholderTextColor={COLORS.textSecondary}
-                />
-              </View>
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Description</Text>
-                <TextInput
-                  style={[styles.inputField, { height: 48 }]}
-                  value={modalForm.description}
-                  onChangeText={(text) =>
-                    setModalForm((f: any) => ({ ...f, description: text }))
-                  }
-                  placeholder="Description"
-                  placeholderTextColor={COLORS.textSecondary}
-                  multiline
-                />
-              </View>
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Price per hour</Text>
-                <TextInput
-                  style={styles.inputField}
-                  value={modalForm.price}
-                  onChangeText={(text) =>
-                    setModalForm((f: any) => ({ ...f, price: text }))
-                  }
-                  placeholder="$ per hour"
-                  placeholderTextColor={COLORS.textSecondary}
-                  keyboardType="numeric"
-                />
-              </View>
-            </View>
-            <TouchableOpacity
-              style={{
-                backgroundColor: COLORS.primary,
-                borderRadius: 8,
-                padding: 14,
-                alignItems: "center",
-                marginTop: 18,
-              }}
-              onPress={handleModalSubmit}
-            >
-              <Text style={{ color: "#fff", fontWeight: "bold", fontSize: 16 }}>
-                {modalMode === "edit" ? "Update" : "Create"}
-              </Text>
-            </TouchableOpacity>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
       <ConfirmDialog
         visible={showDeleteDialog}
@@ -400,31 +414,30 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   cardTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: COLORS.text,
+    fontSize: 16,
+    fontFamily: FontWeight.SemiBold,
+    color: COLORS.gradient1,
     marginBottom: 4,
   },
   cardDesc: {
     fontSize: 14,
-    color: COLORS.textSecondary,
+    color: COLORS._5E5E5E,
+    fontFamily: FontWeight.Regular,
   },
   cardPriceBox: {
-     flexDirection: "row",
-     alignItems: "flex-end",
-     minWidth: 80,
+    flexDirection: "row",
+    alignItems: "flex-end",
+    minWidth: 80,
   },
   cardPrice: {
     fontSize: 20,
-    fontFamily: FontWeight.Bold,
+    fontFamily: FontWeight.SemiBold,
     color: COLORS.primary,
-    fontWeight: 'bold',
   },
   cardPerHour: {
     fontSize: 14,
-    fontFamily: FontWeight.Bold,
+    fontFamily: FontWeight.SemiBold,
     color: COLORS.primary,
-    fontWeight: 'bold',
     marginTop: 0,
   },
   cardActions: {
@@ -434,7 +447,7 @@ const styles = StyleSheet.create({
   },
   actionBtn: {
     flex: 1,
-    borderRadius: 8,
+    borderRadius: 5,
     paddingVertical: 12,
     alignItems: "center",
     justifyContent: "center",
@@ -447,13 +460,13 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
   },
   deleteText: {
-    color: "#EB3434",
-    fontWeight: "600",
+    color: COLORS._EB3434,
+    fontFamily: FontWeight.Medium,
     fontSize: 14,
   },
   editText: {
     color: COLORS.white,
-    fontWeight: "600",
+    fontFamily: FontWeight.Medium,
     fontSize: 14,
   },
   addBtn: {
@@ -462,17 +475,18 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderRadius: 10,
     backgroundColor: COLORS.white,
-    paddingVertical: 18,
+    paddingVertical: 14,
     marginTop: 8,
   },
   addBtnText: {
-    color: "#383838",
-    fontWeight: "600",
-    fontSize: 16,
+    color: COLORS._383838,
+    fontFamily: FontWeight.Medium,
+    fontSize: 14,
   },
   label: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
+    fontSize: 12,
+    fontFamily: FontWeight.Medium,
+    color: COLORS.gradient1,
     marginBottom: 2,
   },
   sessionCard: {
@@ -509,6 +523,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     minHeight: 36,
     justifyContent: "center",
+    fontSize: 14,
+    color: COLORS.app_black,
+    fontFamily: FontWeight.Regular,
   },
 });
 

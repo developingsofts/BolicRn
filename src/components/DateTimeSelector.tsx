@@ -795,8 +795,8 @@ const styles = StyleSheet.create({
   calendarTitle: {
     fontFamily: FontWeight.SemiBold,
     fontSize: 16,
-    color: COLORS.app_black,
-    marginBottom: DIMENSIONS.spacing.md,
+    color: COLORS.gradient1,
+    marginBottom: DIMENSIONS.spacing.sm,
   },
   slotsCard: {
     backgroundColor: COLORS.white,
@@ -818,17 +818,17 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: DIMENSIONS.spacing.lg,
+    marginBottom: DIMENSIONS.spacing.md,
   },
   slotsTitle: {
-    fontFamily: FontWeight.Bold,
+    fontFamily: FontWeight.ExtraBold,
     fontSize: 18,
-    color: COLORS.app_black,
+    color: COLORS.black,
   },
   firstAvailableText: {
-    fontFamily: FontWeight.SemiBold,
-    fontSize: 14,
-    color: COLORS.primary,
+    fontFamily: FontWeight.ExtraBold,
+    fontSize: 15  ,
+    color: COLORS._3A63ED,
   },
   slotsScrollContent: {
     gap: DIMENSIONS.spacing.md,
@@ -840,7 +840,7 @@ const styles = StyleSheet.create({
   dateButton: {
     backgroundColor: COLORS.background,
     borderRadius: 12,
-    padding: DIMENSIONS.spacing.md,
+    padding: DIMENSIONS.spacing.sm,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -848,18 +848,17 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
   },
   dateNumber: {
-    fontFamily: FontWeight.Bold,
-    fontSize: 24,
+    fontFamily: FontWeight.ExtraBold,
+    fontSize: 18,
     color: COLORS.app_black,
   },
   dateNumberSelected: {
     color: COLORS.white,
   },
   dateDay: {
-    fontFamily: FontWeight.Medium,
-    fontSize: 12,
+    fontFamily: FontWeight.ExtraBold,
+    fontSize: 13,
     color: COLORS._5E5E5E,
-    marginTop: 2,
   },
   dateDaySelected: {
     color: COLORS.white,
@@ -875,9 +874,9 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
   },
   timeSlotText: {
-    fontFamily: FontWeight.Medium,
+    fontFamily: FontWeight.SemiBold,
     fontSize: 14,
-    color: COLORS.app_black,
+    color: COLORS._222222,
   },
   timeSlotTextSelected: {
     color: COLORS.white,
@@ -891,15 +890,16 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   sessionTitle: {
-    fontSize: 17,
-    fontWeight: "600",
-    color: COLORS.text,
+    fontSize: 16,
+    fontFamily: FontWeight.SemiBold,
+    color: COLORS.gradient1,
     marginBottom: 6,
   },
   sessionDesc: {
     fontSize: 14,
-    color: COLORS.textSecondary,
+    color: COLORS._5E5E5E,
     marginBottom: 10,
+    fontFamily: FontWeight.Regular,
   },
   sessionDetailsRow: {
     flexDirection: "row",
@@ -908,17 +908,18 @@ const styles = StyleSheet.create({
   },
   sessionPriceDesc: {
     fontSize: 14,
-    color: COLORS.textSecondary,
+    color: COLORS._595D66,
+    fontFamily: FontWeight.SemiBold,
   },
   sessionPrice: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: COLORS.primary,
+    fontSize: 20,
+    fontFamily: FontWeight.SemiBold,
+    color: COLORS._2E6BDD,
   },
   continueButton: {
     backgroundColor: COLORS.primary,
-    borderRadius: 12,
-    paddingVertical: 16,
+    borderRadius: 5,
+    paddingVertical: 12,
     alignItems: "center",
     justifyContent: "center",
     marginTop: DIMENSIONS.spacing.md,
@@ -927,8 +928,8 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS._D9D9D9,
   },
   continueButtonText: {
-    fontFamily: FontWeight.SemiBold,
-    fontSize: 16,
+    fontFamily: FontWeight.Medium,
+    fontSize: 14,
     color: COLORS.white,
   },
 });

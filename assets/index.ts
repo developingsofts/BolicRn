@@ -41,6 +41,16 @@ export const ScheduleChat=require('../assets/schedule-chat.png');
 export const ScheduleClose=require('../assets/schedule-close.png');
 export const User3=require('../assets/icon-user.png');
 export const Trainer=require('../assets/icon-trainer.png');
+export const RequestBlack=require('../assets/request_black.png');
+export const Price=require('../assets/price.png');
+export const Rating=require('../assets/rating.png');
+export const Availabilituy=require('../assets/availability.png');
+export const VideoIcon=require('../assets/video.png');
+
+
+
+
+
 
 
 

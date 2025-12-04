@@ -1,5 +1,7 @@
 import React from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
+import { COLORS } from '../config/constants';
+import FontWeight from '../hooks/useInterFonts';
 
 interface Stat {
   icon: any;
@@ -66,13 +68,13 @@ const styles = StyleSheet.create({
   },
   statNumber: {
     fontSize: 20,
-    fontFamily: 'Inter-SemiBold',
-    color: '#222',
+    fontFamily: FontWeight.SemiBold,
+    color: COLORS.app_black,
   },
   statLabel: {
     fontSize: 11,
-    color: '#5E5E5E',
-    fontFamily: 'Inter-Medium',
+    color: COLORS._5E5E5E,
+    fontFamily: FontWeight.Regular,
     textTransform: 'uppercase',
   },
 });

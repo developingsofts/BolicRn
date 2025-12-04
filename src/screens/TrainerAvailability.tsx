@@ -9,6 +9,7 @@ import {
   Platform,
   ActivityIndicator,
   Image,
+  Modal,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -22,6 +23,7 @@ import {
 } from "../services/api/availabilityApi";
 import { Close } from "../../assets";
 import { useAuth } from "../contexts/AuthContext";
+import FontWeight from "../hooks/useInterFonts";
 
 interface DayAvailability {
   start_time: string;
@@ -52,6 +54,7 @@ const TrainerAvailability: React.FC<{ navigation: any }> = ({ navigation }) => {
     mode: "start" | "end";
   } | null>(null);
   const [pickerValue, setPickerValue] = useState(new Date());
+  const [tempPickerValue, setTempPickerValue] = useState(new Date());
   const [updateAvailability, { isLoading: isUpdating }] =
     useUpdateAvailabilityMutation();
   const [deleteAvailability] = useDeleteAvailabilityMutation();
@@ -86,9 +89,20 @@ const TrainerAvailability: React.FC<{ navigation: any }> = ({ navigation }) => {
             week[day] = { start_time: "", end_time: "" };
           } else {
             // Convert UTC times to local timezone
-            const localStartTime = slot.start_time ? toLocalTime(slot.start_time) : "";
-            const localEndTime = slot.end_time ? toLocalTime(slot.end_time) : "";
-            console.log('[useEffect] slot:', slot, 'localStartTime:', localStartTime, 'localEndTime:', localEndTime);
+            const localStartTime = slot.start_time
+              ? toLocalTime(slot.start_time)
+              : "";
+            const localEndTime = slot.end_time
+              ? toLocalTime(slot.end_time)
+              : "";
+            console.log(
+              "[useEffect] slot:",
+              slot,
+              "localStartTime:",
+              localStartTime,
+              "localEndTime:",
+              localEndTime
+            );
             week[day] = {
               start_time: localStartTime,
               end_time: localEndTime,
@@ -187,6 +201,7 @@ const TrainerAvailability: React.FC<{ navigation: any }> = ({ navigation }) => {
     const date = new Date();
     date.setHours(h, m, 0, 0);
     setPickerValue(date);
+    setTempPickerValue(date);
     setPicker({ day, mode });
   };
 
@@ -195,9 +210,27 @@ const TrainerAvailability: React.FC<{ navigation: any }> = ({ navigation }) => {
       setPicker(null);
       return;
     }
-    if (selectedDate && picker) {
-      let newTime = formatTime(selectedDate);
-      // Ensure AM/PM is uppercase
+    if (selectedDate) {
+      setTempPickerValue(selectedDate);
+      // On Android, immediately update. On iOS, wait for OK button
+      if (Platform.OS === "android" && picker) {
+        let newTime = formatTime(selectedDate);
+        newTime = newTime.replace(/am|pm/, (match) => match.toUpperCase());
+        setAvailability((prev) => ({
+          ...prev,
+          [picker.day]: {
+            ...prev[picker.day],
+            [picker.mode === "start" ? "start_time" : "end_time"]: newTime,
+          },
+        }));
+        setPicker(null);
+      }
+    }
+  };
+
+  const handlePickerConfirm = () => {
+    if (picker) {
+      let newTime = formatTime(tempPickerValue);
       newTime = newTime.replace(/am|pm/, (match) => match.toUpperCase());
       setAvailability((prev) => ({
         ...prev,
@@ -240,7 +273,14 @@ const TrainerAvailability: React.FC<{ navigation: any }> = ({ navigation }) => {
     const slots = daysOfWeek.map((day) => {
       const startUtc = toUtc("09:00 AM");
       const endUtc = toUtc("05:00 PM");
-      console.log('[handleDiscard] day:', day, 'startUtc:', startUtc, 'endUtc:', endUtc);
+      console.log(
+        "[handleDiscard] day:",
+        day,
+        "startUtc:",
+        startUtc,
+        "endUtc:",
+        endUtc
+      );
       return {
         day,
         start_time: startUtc,
@@ -276,11 +316,22 @@ const TrainerAvailability: React.FC<{ navigation: any }> = ({ navigation }) => {
       const dayObj = availability[day] || { start_time: "", end_time: "" };
       const { start_time, end_time } = dayObj;
       const isOff = !start_time && !end_time;
-      
+
       const startUtc = isOff ? "" : toUtc(start_time);
       const endUtc = isOff ? "" : toUtc(end_time);
-      console.log('[handleUpdate] day:', day, 'localStart:', start_time, 'startUtc:', startUtc, 'localEnd:', end_time, 'endUtc:', endUtc);
-      
+      console.log(
+        "[handleUpdate] day:",
+        day,
+        "localStart:",
+        start_time,
+        "startUtc:",
+        startUtc,
+        "localEnd:",
+        end_time,
+        "endUtc:",
+        endUtc
+      );
+
       return {
         day,
         start_time: startUtc,
@@ -326,105 +377,142 @@ const TrainerAvailability: React.FC<{ navigation: any }> = ({ navigation }) => {
       ) : (
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={styles.sessionCard}>
-            {daysOfWeek.map((day, idx) => (
-              <View key={day} style={styles.scheduleRow}>
-                <Text style={styles.dayText}>{day}</Text>
-                <View style={styles.timeRow}>
-                  {/* Start time with cross icon overlay */}
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      position: "relative",
-                    }}
-                  >
-                    {!(availability[day] && availability[day].start_time) &&
-                    !(availability[day] && availability[day].end_time) ? (
-                      <React.Fragment>
-                        <TouchableOpacity onPress={() => handleToggleOff(day)}>
-                          <View style={styles.offCircle}>
-                            <Text style={styles.offTextCircle}>OFF</Text>
+            {daysOfWeek.map((day, idx) => {
+              const isOff =
+                !availability[day]?.start_time &&
+                !availability[day]?.end_time;
+              return (
+                <View key={day} style={styles.scheduleRow}>
+                  <Text style={styles.dayText}>{day}</Text>
+                  <View style={styles.timeRow}>
+                    {isOff ? (
+                      <>
+                        <TouchableOpacity
+                          style={{ width: "40%" }}
+                          onPress={() => handleToggleOff(day)}
+                        >
+                          <View style={styles.badgeOff}>
+                            <Text style={styles.badgeText}>OFF</Text>
                           </View>
                         </TouchableOpacity>
                         <Text style={styles.dash}>-</Text>
-                        <TouchableOpacity onPress={() => handleToggleOff(day)}>
-                          <View style={styles.offCircle}>
-                            <Text style={styles.offTextCircle}>OFF</Text>
+                        <TouchableOpacity
+                          style={{ width: "40%" }}
+                          onPress={() => handleToggleOff(day)}
+                        >
+                          <View style={styles.badgeOff}>
+                            <Text style={styles.badgeText}>OFF</Text>
                           </View>
                         </TouchableOpacity>
-                      </React.Fragment>
+                      </>
                     ) : (
-                      <React.Fragment>
-                        <View style={{ position: "relative" }}>
-                          <TouchableOpacity
-                            style={{
-                              position: "absolute",
-                              left: -10,
-                              top: -10,
-                              zIndex: 2,
-                            }}
-                            onPress={() => handleToggleOff(day)}
-                          >
-                            <Image
-                              source={Close}
-                              style={{
-                                width: 28,
-                                height: 28,
-                                tintColor: COLORS.error,
-                              }}
-                            />
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            style={{
-                              borderWidth: 0.5,
-                              borderColor: "#0000001F",
-                              paddingHorizontal: 12,
-                              paddingVertical: 9,
-                              borderRadius: 32,
-                            }}
-                            onPress={() => openPicker(day, "start")}
-                          >
-                            <Text style={styles.timeText}>
-                              {(availability[day] &&
-                                availability[day].start_time) ||
-                                ""}
-                            </Text>
-                          </TouchableOpacity>
-                        </View>
-                        <Text style={styles.dash}>-</Text>
+                      <>
                         <TouchableOpacity
                           style={{
                             borderWidth: 0.5,
                             borderColor: "#0000001F",
-                            paddingHorizontal: 12,
+                            paddingHorizontal: 5,
                             paddingVertical: 9,
+                            width: "40%",
+                            borderRadius: 32,
+                          }}
+                          onPress={() => openPicker(day, "start")}
+                        >
+                          <Text style={styles.timeText}>
+                            {availability[day]?.start_time || ""}
+                          </Text>
+                        </TouchableOpacity>
+                        <Text style={[styles.dash, { marginHorizontal: 2 }]}>
+                          -
+                        </Text>
+                        <TouchableOpacity
+                          style={{
+                            borderWidth: 0.5,
+                            borderColor: "#0000001F",
+                            paddingHorizontal: 5,
+                            paddingVertical: 9,
+                            width: "40%",
                             borderRadius: 32,
                           }}
                           onPress={() => openPicker(day, "end")}
                         >
                           <Text style={styles.timeText}>
-                            {(availability[day] &&
-                              availability[day].end_time) ||
-                              ""}
+                            {availability[day]?.end_time || ""}
                           </Text>
                         </TouchableOpacity>
-                      </React.Fragment>
+                        <TouchableOpacity
+                          style={{ position: "absolute", right: 0 }}
+                          onPress={() => handleToggleOff(day)}
+                        >
+                          <Image
+                            source={Close}
+                            style={{
+                              width: 24,
+                              height: 24,
+                              tintColor: COLORS.error,
+                            }}
+                          />
+                        </TouchableOpacity>
+                      </>
                     )}
                   </View>
                 </View>
-              </View>
-            ))}
+              );
+            })}
           </View>
 
           {/* Only render the picker once, outside the map */}
-          {picker && (
+          {picker && Platform.OS === "android" && (
             <DateTimePicker
-              value={pickerValue}
+              value={tempPickerValue}
               mode="time"
               is24Hour={false}
-              display={Platform.OS === "ios" ? "spinner" : "default"}
+              display="default"
               onChange={onTimeChange}
             />
+          )}
+
+          {picker && Platform.OS === "ios" && (
+            <Modal
+              visible={true}
+              transparent={true}
+              animationType="slide"
+              onRequestClose={() => setPicker(null)}
+            >
+              <View style={styles.iosPickerOverlay}>
+                <View style={styles.iosPickerContainer}>
+                  <View style={styles.iosPickerHeader}>
+                    <TouchableOpacity
+                      style={styles.iosPickerHeaderButton}
+                      onPress={() => setPicker(null)}
+                    >
+                      <Text style={styles.iosPickerCancel}>Cancel</Text>
+                    </TouchableOpacity>
+                    <Text
+                      style={[
+                        styles.iosPickerTitle,
+                        styles.iosPickerHeaderTitle,
+                      ]}
+                    >
+                      Select Time
+                    </Text>
+                    <TouchableOpacity
+                      style={styles.iosPickerHeaderButton}
+                      onPress={handlePickerConfirm}
+                    >
+                      <Text style={styles.iosPickerOk}>OK</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <DateTimePicker
+                    value={tempPickerValue}
+                    mode="time"
+                    is24Hour={false}
+                    display="spinner"
+                    onChange={onTimeChange}
+                  />
+                </View>
+              </View>
+            </Modal>
           )}
 
           {/* Action Buttons */}
@@ -453,7 +541,7 @@ const TrainerAvailability: React.FC<{ navigation: any }> = ({ navigation }) => {
 
 const styles = StyleSheet.create({
   offCircle: {
-    backgroundColor: "#E6E6E6",
+    backgroundColor: COLORS._E6E6E6,
     borderRadius: 32,
     paddingHorizontal: 18,
     paddingVertical: 9,
@@ -462,9 +550,9 @@ const styles = StyleSheet.create({
     minWidth: 60,
   },
   offTextCircle: {
-    color: "#C77A7A",
-    fontWeight: "600",
-    fontSize: 18,
+    color: COLORS._DA9393,
+    fontFamily: FontWeight.SemiBold,
+    fontSize: 15,
     textAlign: "center",
   },
   offTimeBox: {
@@ -505,7 +593,7 @@ const styles = StyleSheet.create({
   },
   // ...existing code...
   scrollContent: {
-    padding: 24,
+    padding: 15,
   },
   card: {
     backgroundColor: COLORS.surface,
@@ -534,20 +622,22 @@ const styles = StyleSheet.create({
   scheduleRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
     marginBottom: 15,
+    position: "relative",
   },
   dayText: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: COLORS.text,
-    minWidth: 100,
+    fontSize: 16,
+    fontFamily: FontWeight.SemiBold,
+    color: COLORS.app_black,
+    minWidth: 90,
+    marginRight: 10,
   },
   timeRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    width: "60%",
+    flex: 1,
+    gap: 2,
+    justifyContent: "flex-start",
   },
   badgeOff: {
     backgroundColor: "#E6E6E6",
@@ -556,12 +646,14 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
   },
   badgeText: {
-    color: "#DA9393",
-    fontSize: 15,
+    color: COLORS._DA9393,
+    fontSize: 14,
+    fontFamily: FontWeight.Medium,
+    textAlign: "center",
   },
   dash: {
     color: COLORS.textSecondary,
-    marginHorizontal: 6,
+    fontSize: 16,
   },
   row: {
     flexDirection: "row",
@@ -620,8 +712,10 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
   },
   timeText: {
-    fontSize: 15,
     color: COLORS.text,
+    fontSize: 14,
+    fontFamily: FontWeight.SemiBold,
+    textAlign: "center",
   },
   toText: {
     fontSize: 14,
@@ -655,26 +749,78 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   actionBtn: {
-    borderRadius: 8,
+    borderRadius: 5,
     flex: 1,
     paddingVertical: 14,
     alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
   },
   discardBtn: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: COLORS.white,
   },
   updateBtn: {
     backgroundColor: COLORS.primary,
   },
   discardText: {
-    color: COLORS.error,
-    fontWeight: "600",
-    fontSize: 16,
+    color: COLORS._EB3434,
+    fontFamily: FontWeight.Medium,
+    fontSize: 14,
   },
   updateText: {
     color: COLORS.white,
-    fontWeight: "600",
+    fontFamily: FontWeight.Medium,
+    fontSize: 14,
+  },
+  iosPickerOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
+  },
+  iosPickerContainer: {
+    backgroundColor: "#F9F9F9",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  iosPickerHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E5E5",
+    width: "100%",
+  },
+  iosPickerHeaderTitle: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    textAlign: "center",
+  },
+  iosPickerHeaderButton: {
+    zIndex: 1,
+  },
+  iosPickerCancel: {
     fontSize: 16,
+    color: COLORS.error,
+    fontWeight: "600",
+  },
+  iosPickerTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: COLORS.text,
+  },
+  iosPickerOk: {
+    fontSize: 16,
+    color: COLORS.primary,
+    fontWeight: "600",
   },
 });
 

@@ -23,6 +23,7 @@ import { useNavigation } from "@react-navigation/native";
 import { useState as useLocalState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import {
+  Availabilituy,
   Awards,
   Calender,
   CircleComment,
@@ -33,7 +34,9 @@ import {
   Fire,
   Following,
   Like,
+  Price,
   Request,
+  RequestBlack,
   Settings,
   Thunder,
   Users,
@@ -98,7 +101,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
 
   const [followUser] = useFollowUserMutation();
   const [unfollowUser] = useUnfollowUserMutation();
-  const [deleteBooking] = useDeleteBookingMutation();
+  const [updateBooking] = useDeleteBookingMutation();
 
   // Use correct profile data based on context
   const profileData: User | UserProfile | undefined | null = isOwnProfile
@@ -209,19 +212,19 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
     {
       id: "all-bookings",
       label: "All Bookings",
-      icon: "calendar-outline" as const,
+      icon: RequestBlack,
     },
     {
       id: "my-availability",
       label: "My Availability",
-      icon: "time-outline" as const,
+      icon: Availabilituy,
     },
     {
       id: "my-pricing",
       label: "My Pricing",
-      icon: "pricetag-outline" as const,
+      icon: Price,
     },
-    { id: "my-rating", label: "My Rating", icon: "star-outline" as const },
+    // { id: "my-rating", label: "My Rating", icon: Rating },
   ];
 
   const guestMenuItems = [
@@ -303,12 +306,25 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
     if (!id) return;
 
     try {
-      await deleteBooking({ id, status: "canceled" }).unwrap();
+      await updateBooking({ id, status: "canceled" }).unwrap();
       Toast.success("Booking removed successfully");
       await refetchMyProfile(); // Refresh profile data
     } catch (error) {
       Toast.error("Failed to remove booking");
       console.error("Delete booking error:", error);
+    }
+  };
+
+  const handleAccept = async (id: number) => {
+    if (!id) return;
+
+    try {
+      await updateBooking({ id, status: "upcomming" }).unwrap();
+      Toast.success("Booking updated successfully");
+      await refetchMyProfile(); // Refresh profile data
+    } catch (error) {
+      Toast.error("Failed to update booking");
+      console.error("Update booking error:", error);
     }
   };
 
@@ -538,7 +554,11 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
         )}
         {isOwnProfile && isTrainer && !showTrainerOnboarding && (
           <View style={{ marginTop: 60, width: "90%", margin: "auto" }}>
-            <BookingList bookings={bookingsData} onRemove={handleRemove} />
+            <BookingList
+              bookings={bookingsData}
+              onRemove={handleRemove}
+              onAccept={handleAccept}
+            />
             <ScheduleList
               schedules={schedulesData}
               onMessage={(user) =>
@@ -615,12 +635,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
                 activeOpacity={0.7}
               >
                 <View style={styles.menuItemLeft}>
-                  <Ionicons
-                    name={item.icon as any}
-                    size={20}
-                    color={COLORS._616888}
-                    style={styles.menuItemIcon}
-                  />
+                  <Image source={item.icon} style={styles.menuItemIcon} />
                   <Text style={styles.menuItemLabel}>{item.label}</Text>
                 </View>
                 <Ionicons
@@ -1579,11 +1594,13 @@ const styles = StyleSheet.create({
   },
   menuItemIcon: {
     marginRight: 0,
+    width: 20,
+    height: 20,
   },
   menuItemLabel: {
     fontSize: 16,
-    fontFamily: FontWeight.Medium,
-    color: COLORS.app_black,
+    fontFamily: FontWeight.SemiBold,
+    color: COLORS.gradient1,
   },
 });
 

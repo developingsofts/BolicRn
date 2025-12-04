@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Alert } from "react-native";
+import { Alert, Image } from "react-native";
 import { useCreateTrainingPriceMutation } from "../services/api/pricesApi";
 import {
   View,
@@ -14,6 +14,7 @@ import {
 import { COLORS, DIMENSIONS } from "../config/constants";
 import FontWeight from "../hooks/useInterFonts";
 import { Ionicons } from "@expo/vector-icons";
+import { Add } from "../../assets";
 
 interface TrainerSetupStep1Props {
   onNext: () => void;
@@ -71,7 +72,6 @@ const TrainerSetupStep1: React.FC<TrainerSetupStep1Props> = ({ onNext }) => {
       return;
     }
     try {
-      
       await createTrainingPrice(
         validSessions.map((s) => ({
           session_name: s.name,
@@ -99,11 +99,14 @@ const TrainerSetupStep1: React.FC<TrainerSetupStep1Props> = ({ onNext }) => {
           onPress={handleAddSession}
         >
           <Text style={styles.addSessionText}>Add New Session</Text>
-          <Ionicons
-            name="add"
-            size={20}
-            color={"#383838"}
-            style={{ marginRight: 8 }}
+          <Image
+            source={Add}
+            tintColor={COLORS._191919}
+            style={{
+              width: 12,
+              height: 12,
+              marginLeft: 5,
+            }}
           />
         </TouchableOpacity>
         <View style={{ marginBottom: 16 }}>
@@ -115,7 +118,7 @@ const TrainerSetupStep1: React.FC<TrainerSetupStep1Props> = ({ onNext }) => {
         {sessions.map((session, index) => (
           <View key={session.id} style={styles.sessionCard}>
             <View style={styles.sessionHeader}>
-              <Text style={styles.sessionTitle}>Session {index + 1}</Text>
+              {/* <Text style={styles.sessionTitle}>Session {index + 1}</Text> */}
               {sessions.length > 1 && index !== 0 && (
                 <TouchableOpacity
                   style={styles.removeBtn}
@@ -128,11 +131,11 @@ const TrainerSetupStep1: React.FC<TrainerSetupStep1Props> = ({ onNext }) => {
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Session name</Text>
               <TextInput
-                style={styles.inputField}
+                style={[styles.inputField, { height: 48 }]}
                 value={session.name}
                 onChangeText={(text) => updateSession(session.id, "name", text)}
                 placeholder="Session name"
-                placeholderTextColor={COLORS.textSecondary}
+                placeholderTextColor={COLORS._5E5E5E}
               />
             </View>
             <View style={styles.inputGroup}>
@@ -144,20 +147,19 @@ const TrainerSetupStep1: React.FC<TrainerSetupStep1Props> = ({ onNext }) => {
                   updateSession(session.id, "description", text)
                 }
                 placeholder="Description"
-                placeholderTextColor={COLORS.textSecondary}
-                multiline
+                placeholderTextColor={COLORS._5E5E5E}
               />
             </View>
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Price per hour</Text>
               <TextInput
-                style={styles.inputField}
+                style={[styles.inputField, { height: 48 }]}
                 value={session.price}
                 onChangeText={(text) =>
                   updateSession(session.id, "price", text)
                 }
                 placeholder="$ per hour"
-                placeholderTextColor={COLORS.textSecondary}
+                placeholderTextColor={COLORS._5E5E5E}
                 keyboardType="numeric"
               />
             </View>
@@ -190,7 +192,7 @@ const styles = StyleSheet.create({
   addSessionBtn: {
     flexDirection: "row",
     alignItems: "center",
-    borderRadius: 4,
+    borderRadius: 5,
     paddingVertical: 14,
     paddingHorizontal: 0,
     boxShadow: "0px 0px 12px 0px #76767626",
@@ -200,19 +202,21 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   addSessionText: {
-    color: "#383838",
-    fontSize: 16,
+    color: COLORS._383838,
+    fontSize: 14,
     fontFamily: FontWeight.Medium,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontFamily: FontWeight.SemiBold,
-    color: COLORS.text,
+    color: COLORS.app_black,
     marginBottom: 2,
   },
   sectionDesc: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
+    fontSize: 14,
+    color: COLORS._5E5E5E,
+    fontFamily: FontWeight.Medium,
+    marginTop: 5,
   },
   sessionCard: {
     backgroundColor: COLORS.card,
@@ -231,7 +235,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 5,
   },
   sessionTitle: {
     fontSize: 16,
@@ -253,16 +257,21 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   label: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
+    fontSize: 12,
+    color: COLORS.gradient1,
     marginBottom: 2,
+    fontFamily: FontWeight.Medium,
   },
   inputField: {
     backgroundColor: "#F5F5F5",
     borderRadius: 8,
     paddingVertical: 10,
     paddingHorizontal: 12,
+    alignContent: "center",
     minHeight: 36,
+    fontFamily: FontWeight.Medium,
+    fontSize:14,
+    color: COLORS.app_black,
     justifyContent: "center",
   },
   inputText: {
@@ -272,15 +281,15 @@ const styles = StyleSheet.create({
   },
   nextBtn: {
     backgroundColor: COLORS.primary,
-    borderRadius: 10,
-    paddingVertical: 16,
+    borderRadius: 5,
+    paddingVertical: 14,
     alignItems: "center",
     marginTop: 10,
     marginBottom: 30,
   },
   nextBtnText: {
     color: COLORS.white,
-    fontSize: 16,
+    fontSize: 14,
     fontFamily: FontWeight.Medium,
   },
 });

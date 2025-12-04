@@ -157,8 +157,9 @@ const styles = StyleSheet.create({
     paddingVertical: 18,
   },
   progressStep: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
+    fontSize: 14,
+    color: COLORS._5E5E5E,
+    fontFamily: FontWeight.Medium,
     marginBottom: 6,
   },
   progressBarBg: {

@@ -8,12 +8,12 @@ import {
   Image,
   ActivityIndicator,
 } from "react-native";
-import RefreshableScrollView from '../components/RefreshableScrollView';
+import RefreshableScrollView from "../components/RefreshableScrollView";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { COLORS, DIMENSIONS } from "../config/constants";
 import STRINGS from "../config/strings";
 import { useAuth } from "../contexts/AuthContext";
-import { useGetMyProfileQuery } from '../services/api/userApi';
+import { useGetMyProfileQuery } from "../services/api/userApi";
 import { Close, Deactivate } from "../../assets";
 import FontWeight from "../hooks/useInterFonts";
 import {
@@ -40,12 +40,19 @@ interface SettingsScreenProps {
 }
 
 const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
-  const { logout, user, updateUser: updateAuthUser, isAuthenticated } = useAuth();
+  const {
+    logout,
+    user,
+    updateUser: updateAuthUser,
+    isAuthenticated,
+  } = useAuth();
   const [updateProfile, { isLoading: isSaving }] = useUpdateMyProfileMutation();
   const [deleteAccount, { isLoading: isDeleting }] =
     useDeleteMyAccountMutation();
   const [refreshing, setRefreshing] = useState(false);
-  const { refetch: refetchMyProfile } = useGetMyProfileQuery(undefined, { skip: !isAuthenticated });
+  const { refetch: refetchMyProfile } = useGetMyProfileQuery(undefined, {
+    skip: !isAuthenticated,
+  });
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -128,7 +135,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
       await logout();
       // Navigation will be handled automatically by the auth state change
     } catch (error) {
-      console.error('Logout failed:', error);
+      console.error("Logout failed:", error);
     }
   };
 
@@ -248,10 +255,8 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
             <Switch
               value={notificationsEnabled}
               onValueChange={handleNotificationsToggle}
-              trackColor={{ false: COLORS.border, true: COLORS.primary }}
-              thumbColor={
-                notificationsEnabled ? COLORS.white : COLORS.textSecondary
-              }
+              trackColor={{ false: COLORS.textSecondary, true: COLORS._C9E3FF }}
+              thumbColor={notificationsEnabled ? COLORS.primary : COLORS.border}
               disabled={isBusy}
             />
           </View>
@@ -267,9 +272,9 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
             <Switch
               value={profileVisibilityEnabled}
               onValueChange={handleProfileVisibilityToggle}
-              trackColor={{ false: COLORS.border, true: COLORS.primary }}
+              trackColor={{ false: COLORS.textSecondary, true: COLORS._C9E3FF }}
               thumbColor={
-                profileVisibilityEnabled ? COLORS.white : COLORS.textSecondary
+                profileVisibilityEnabled ? COLORS.primary : COLORS.border
               }
               disabled={isBusy}
             />
@@ -286,10 +291,8 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
             <Switch
               value={preferencesEnabled}
               onValueChange={handleMatchingToggle}
-              trackColor={{ false: COLORS.border, true: COLORS.primary }}
-              thumbColor={
-                preferencesEnabled ? COLORS.white : COLORS.textSecondary
-              }
+              trackColor={{ false: COLORS.textSecondary, true: COLORS._C9E3FF }}
+              thumbColor={preferencesEnabled ? COLORS.primary : COLORS.border}
               disabled={isBusy}
             />
           </View>
@@ -332,9 +335,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
           style={styles.deactivateBtn}
           disabled={isBusy}
         >
-          <Text style={styles.logoutText}>
-            {STRINGS.SETTINGS.logout}
-          </Text>
+          <Text style={styles.logoutText}>{STRINGS.SETTINGS.logout}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -347,7 +348,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
             {STRINGS.SETTINGS.deactivateAccount}
           </Text>
         </TouchableOpacity>
-  </RefreshableScrollView>
+      </RefreshableScrollView>
 
       <ConfirmationDialog
         visible={showDeactivateDialog}

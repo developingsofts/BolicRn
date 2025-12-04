@@ -21,7 +21,10 @@ import { useAuth } from "../contexts/AuthContext";
 import { Trash, Close } from "../../assets";
 import { LinearGradient } from "expo-linear-gradient";
 import { r } from "../designing/responsiveDesigns";
-import { useUpdateMyProfileWithImageMutation, useUpdateMyProfileMutation } from "../services/api/userApi";
+import {
+  useUpdateMyProfileWithImageMutation,
+  useUpdateMyProfileMutation,
+} from "../services/api/userApi";
 import { Toast } from "../components/ToastManager";
 import TrainerProfileDetails from "../components/TrainerProfileDetails";
 
@@ -45,19 +48,23 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
   route,
 }) => {
   const { user, updateUser } = useAuth();
-  const [updateProfileWithImage, { isLoading: isLoadingWithImage }] = useUpdateMyProfileWithImageMutation();
-  const [updateProfile, { isLoading: isLoadingProfile }] = useUpdateMyProfileMutation();
-  
+  const [updateProfileWithImage, { isLoading: isLoadingWithImage }] =
+    useUpdateMyProfileWithImageMutation();
+  const [updateProfile, { isLoading: isLoadingProfile }] =
+    useUpdateMyProfileMutation();
+
   const isLoading = isLoadingWithImage || isLoadingProfile;
-  
+
   const isGuest = route?.params?.isGuest || !user;
   const isOwnProfile =
     !route?.params?.userId || route.params.userId === user?.id;
-  
+
   const [name, setName] = useState(user?.displayName || "");
   const [location, setLocation] = useState(user?.location || "");
   const [bio, setBio] = useState(user?.bio || user?.currentPRs || "");
-  const [selectedImage, setSelectedImage] = useState<string | null>(user?.imageUrl || null);
+  const [selectedImage, setSelectedImage] = useState<string | null>(
+    user?.imageUrl || null
+  );
   const [imageFile, setImageFile] = useState<any>(null);
   const [deleteImage, setDeleteImage] = useState(false);
   const [isLocationFocused, setIsLocationFocused] = useState(false);
@@ -80,7 +87,13 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
       setImageFile(null);
       setDeleteImage(false);
     }
-  }, [user?.imageUrl, user?.displayName, user?.location, user?.bio, user?.currentPRs]);
+  }, [
+    user?.imageUrl,
+    user?.displayName,
+    user?.location,
+    user?.bio,
+    user?.currentPRs,
+  ]);
 
   useEffect(() => {
     return () => {
@@ -91,11 +104,11 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
   }, []);
 
   useEffect(() => {
-    const keyboardDidShow = Keyboard.addListener('keyboardDidShow', () => {
+    const keyboardDidShow = Keyboard.addListener("keyboardDidShow", () => {
       setKeyboardVisible(true);
     });
 
-    const keyboardDidHide = Keyboard.addListener('keyboardDidHide', () => {
+    const keyboardDidHide = Keyboard.addListener("keyboardDidHide", () => {
       setKeyboardVisible(false);
       // Blur the bio input when keyboard is hidden so it can be focused again
       bioInputRef.current?.blur();
@@ -134,18 +147,19 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
 
   const handleImagePick = async () => {
     try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      
-      if (status !== 'granted') {
+      const { status } =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (status !== "granted") {
         Alert.alert(
-          'Permission Required',
-          'Please grant permission to access your photos to upload a profile picture.'
+          "Permission Required",
+          "Please grant permission to access your photos to upload a profile picture."
         );
         return;
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
+        mediaTypes: ["images"],
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.8,
@@ -154,22 +168,22 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
       if (!result.canceled && result.assets[0]) {
         const asset = result.assets[0];
         setSelectedImage(asset.uri);
-        
+
         // Determine the correct MIME type
-        const uriParts = asset.uri.split('.');
+        const uriParts = asset.uri.split(".");
         const fileExtension = uriParts[uriParts.length - 1].toLowerCase();
-        let mimeType = 'image/jpeg'; // default
-        
-        if (fileExtension === 'png') {
-          mimeType = 'image/png';
-        } else if (fileExtension === 'jpg' || fileExtension === 'jpeg') {
-          mimeType = 'image/jpeg';
-        } else if (fileExtension === 'gif') {
-          mimeType = 'image/gif';
-        } else if (fileExtension === 'webp') {
-          mimeType = 'image/webp';
+        let mimeType = "image/jpeg"; // default
+
+        if (fileExtension === "png") {
+          mimeType = "image/png";
+        } else if (fileExtension === "jpg" || fileExtension === "jpeg") {
+          mimeType = "image/jpeg";
+        } else if (fileExtension === "gif") {
+          mimeType = "image/gif";
+        } else if (fileExtension === "webp") {
+          mimeType = "image/webp";
         }
-        
+
         setImageFile({
           uri: asset.uri,
           type: mimeType,
@@ -178,8 +192,8 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
         setDeleteImage(false); // Reset delete flag when new image is selected
       }
     } catch (error) {
-      console.error('Error picking image:', error);
-      Toast.error('Failed to pick image');
+      console.error("Error picking image:", error);
+      Toast.error("Failed to pick image");
     }
   };
 
@@ -241,18 +255,18 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
 
   const handleSave = async () => {
     if (!name.trim()) {
-      Toast.error('Please enter your name');
+      Toast.error("Please enter your name");
       return;
     }
 
     if (bio.trim().length > 500) {
-      Toast.error('Bio cannot exceed 500 characters');
+      Toast.error("Bio cannot exceed 500 characters");
       return;
     }
 
     try {
       let response;
-      
+
       // If there's an image file, use FormData mutation
       if (imageFile) {
         const payload: any = {
@@ -269,7 +283,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
           displayName: name.trim(),
           bio: bio.trim(),
           location: location.trim(),
-          imageUrl: '', // Send empty string to delete image
+          imageUrl: "", // Send empty string to delete image
         };
 
         response = await updateProfile(payload).unwrap();
@@ -286,14 +300,14 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
 
       if (response.status && response.data) {
         // Redux store is automatically updated via onQueryStarted in userApi
-        Toast.success('Profile updated successfully');
+        Toast.success("Profile updated successfully");
         navigation.goBack();
       } else {
-        Toast.error(response.message || 'Failed to update profile');
+        Toast.error(response.message || "Failed to update profile");
       }
     } catch (error: any) {
-      console.error('Profile update error:', error);
-      Toast.error(error?.data?.message || 'Failed to update profile');
+      console.error("Profile update error:", error);
+      Toast.error(error?.data?.message || "Failed to update profile");
     }
   };
   const renderProfileAvatar = () => {
@@ -311,7 +325,10 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
           <Text style={styles.editProfileTitle}>
             {STRINGS.EDIT_PROFILE.title}
           </Text>
-          <TouchableOpacity onPress={() => navigation.goBack()} disabled={isLoading}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            disabled={isLoading}
+          >
             <Image source={Close} style={styles.iconSize} />
           </TouchableOpacity>
         </View>
@@ -319,7 +336,10 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
         <View style={styles.avatarRow}>
           <View style={[styles.avatar, isGuest && styles.guestAvatar]}>
             {selectedImage ? (
-              <Image source={{ uri: selectedImage }} style={styles.avatarImage} />
+              <Image
+                source={{ uri: selectedImage }}
+                style={styles.avatarImage}
+              />
             ) : (
               <Text style={styles.avatarText}>{initial}</Text>
             )}
@@ -329,8 +349,8 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
               <Text style={styles.displayName}>{displayName}</Text>
             </View>
             <View style={styles.avatarActionsRow}>
-              <TouchableOpacity 
-                style={styles.uploadBtn} 
+              <TouchableOpacity
+                style={styles.uploadBtn}
                 onPress={handleImagePick}
                 disabled={isLoading}
               >
@@ -338,8 +358,8 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
                   {STRINGS.EDIT_PROFILE.uploadNew}
                 </Text>
               </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.deleteBtn} 
+              <TouchableOpacity
+                style={styles.deleteBtn}
                 onPress={handleDeleteImage}
                 disabled={isLoading}
               >
@@ -363,7 +383,9 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
           style={styles.inputField}
           value={name}
           onChangeText={setName}
-          placeholder={isNameFocused ? "" : STRINGS.EDIT_PROFILE.namePlaceholder}
+          placeholder={
+            isNameFocused ? "" : STRINGS.EDIT_PROFILE.namePlaceholder
+          }
           placeholderTextColor={COLORS._D9D9D9}
           editable={!isLoading}
           onFocus={() => setIsNameFocused(true)}
@@ -403,7 +425,9 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
             >
               {suggestions.map((item, index) => (
                 <TouchableOpacity
-                  key={item?.magicKey || `${item?.text || "suggestion"}-${index}`}
+                  key={
+                    item?.magicKey || `${item?.text || "suggestion"}-${index}`
+                  }
                   style={styles.suggestionItem}
                   onPress={() => handleSelectSuggestion(item?.text || "")}
                 >
@@ -437,32 +461,33 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
     <SafeAreaView edges={[]} style={styles.container}>
       <ScrollView
         ref={scrollViewRef}
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: keyboardVisible ? 180 : 0 }]}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: keyboardVisible ? 180 : 0 },
+        ]}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         showsVerticalScrollIndicator={false}
       >
         {renderProfileAvatar()}
         <View style={styles.formWrapper}>
-            {renderProfileForm()}
-      {user?.role === 'trainer' && (
-          <TrainerProfileDetails />
-        )}
-            <TouchableOpacity 
-              style={[styles.saveBtn, isLoading && styles.saveBtnDisabled]} 
-              onPress={handleSave}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <ActivityIndicator size="small" color={COLORS.white} />
-              ) : (
-                <Text style={styles.saveBtnText}>
-                  {STRINGS.EDIT_PROFILE.saveChanges}
-                </Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
+          {renderProfileForm()}
+          {user?.role === "trainer" && <TrainerProfileDetails />}
+          <TouchableOpacity
+            style={[styles.saveBtn, isLoading && styles.saveBtnDisabled]}
+            onPress={handleSave}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator size="small" color={COLORS.white} />
+            ) : (
+              <Text style={styles.saveBtnText}>
+                {STRINGS.EDIT_PROFILE.saveChanges}
+              </Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -471,12 +496,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.white,
-   
   },
   scrollContent: {
     flexGrow: 1,
-   paddingBottom:0
-
+    paddingBottom: 0,
   },
   profileHeader: {
     backgroundColor: COLORS.gradient3,
@@ -585,7 +608,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     gap: 20,
     paddingBottom: 90,
-    
   },
   profileFormContainer: {
     width: "100%",
@@ -666,23 +688,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: COLORS.app_black,
     marginBottom: 5,
-    textAlignVertical: 'top',
+    textAlignVertical: "top",
   },
   characterCount: {
     fontSize: 12,
     color: COLORS._616888,
-    textAlign: 'right',
+    textAlign: "right",
     marginBottom: 10,
     fontFamily: FontWeight.Medium,
   },
   savePostContainer: {},
   saveBtn: {
     backgroundColor: COLORS.primary,
-    borderRadius: 8,
+    borderRadius: 5,
     paddingVertical: 14,
     alignItems: "center",
     zIndex: 10,
-
   },
   saveBtnDisabled: {
     opacity: 0.6,

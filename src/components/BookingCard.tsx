@@ -3,7 +3,8 @@ import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { Image } from "react-native";
 import ConfirmDialog from "./ConfirmDialog";
 import { PriceInfo, TrainerInfo, UserInfo } from "../services/api/bookingApi";
-import { formatUTCToDisplayDateTime } from "../config/constants";
+import { COLORS, formatUTCToDisplayDateTime } from "../config/constants";
+import FontWeight from "../hooks/useInterFonts";
 
 interface BookingCardProps {
   id: number;
@@ -28,8 +29,10 @@ const BookingCard: React.FC<BookingCardProps> = ({
   onAccept,
   onRemove,
 }) => {
-
-  const {date: localDate, time: localTime} = formatUTCToDisplayDateTime(date,time)
+  const { date: localDate, time: localTime } = formatUTCToDisplayDateTime(
+    date,
+    time
+  );
   const [showDeclineDialog, setShowDeclineDialog] = useState(false);
 
   const handleDecline = () => {
@@ -78,7 +81,7 @@ const BookingCard: React.FC<BookingCardProps> = ({
         onClose={() => setShowDeclineDialog(false)}
         onConfirm={handleDeclineConfirm}
         title="Decline Client Request"
-        description={`Confirm if you wish to decline upcoming client session request for the ${date} ${time}.
+        description={`Confirm if you wish to decline upcoming client session request for the ${localDate} ${localTime}.
 
 Client will be notified and refund will be initiated.`}
         confirmText="Delete"
@@ -100,7 +103,7 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 2,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: COLORS._E5E7EB,
   },
   headerRow: {
     flexDirection: "row",
@@ -112,26 +115,27 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#2563eb",
+    backgroundColor: COLORS.primary,
     alignItems: "center",
     justifyContent: "center",
   },
   avatarText: {
-    color: "#fff",
-    fontWeight: "500",
-    fontSize: 18,
+    color: COLORS.white,
+    fontFamily: FontWeight.SemiBold,
+    fontSize: 22,
   },
   headerInfo: {
     flex: 1,
   },
   guestName: {
-    fontWeight: "600",
+    fontFamily: FontWeight.SemiBold,
     fontSize: 16,
-    color: "#222",
+    color: COLORS.gradient1,
   },
   mutedText: {
-    color: "#6B7280",
-    fontSize: 13,
+    color: COLORS._5E5E5E,
+    fontFamily: FontWeight.Regular,
+    fontSize: 14,
   },
   sessionRow: {
     flexDirection: "row",
@@ -140,13 +144,14 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   sessionType: {
-    color: "#6B7280",
+    color: COLORS._5E5E5E,
+    fontFamily: FontWeight.Regular,
     fontSize: 14,
   },
   price: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#2563eb",
+    fontSize: 16,
+    fontFamily: FontWeight.SemiBold,
+    color: COLORS.primary,
   },
   buttonRow: {
     flexDirection: "row",
@@ -160,19 +165,24 @@ const styles = StyleSheet.create({
   },
   declineButton: {
     backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#ef4444",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
   },
   acceptButton: {
-    backgroundColor: "#22c55e",
+    backgroundColor: COLORS._109320,
   },
   declineText: {
-    color: "#ef4444",
-    fontWeight: "600",
+    color: COLORS._EB3434,
+    fontFamily: FontWeight.Medium,
+    fontSize: 14,
   },
   acceptText: {
-    color: "#fff",
-    fontWeight: "600",
+    color: COLORS.white,
+    fontFamily: FontWeight.Medium,
+    fontSize: 14,
   },
 });
 

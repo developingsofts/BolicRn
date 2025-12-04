@@ -159,13 +159,14 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   date: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: COLORS.text,
+    fontSize: 16,
+    fontFamily: FontWeight.SemiBold,
+    color: COLORS.gradient1,
     marginBottom: 2,
   },
   timeRange: {
-    fontSize: 15,
+    fontSize: 14,
+    fontFamily: FontWeight.SemiBold,
     color: COLORS.primary,
     marginBottom: 2,
   },
@@ -175,7 +176,7 @@ const styles = StyleSheet.create({
   },
   verticalSeparator: {
     width: 1,
-    backgroundColor: COLORS.border,
+    backgroundColor: COLORS._BFDEFF,
     marginHorizontal: 12,
   },
   badgeCol: {
@@ -198,14 +199,15 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   clientLabel: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
+    fontSize: 12,
+    color: COLORS._5E5E5E,
     textAlign: "right",
+    fontFamily: FontWeight.Medium,
   },
   clientName: {
-    fontSize: 15,
-    color: COLORS.text,
-    fontWeight: "500",
+    fontSize: 16,
+    color: COLORS.gradient1,
+    fontFamily: FontWeight.SemiBold,
     textAlign: "right",
     flexWrap: "wrap",
   },
@@ -221,7 +223,7 @@ const styles = StyleSheet.create({
   avatarText: {
     color: COLORS.white,
     fontFamily: FontWeight.SemiBold,
-    fontSize: 16,
+    fontSize: 18,
   },
   actions: {
     flexDirection: "row",
@@ -231,7 +233,7 @@ const styles = StyleSheet.create({
   actionButton: {
     flex: 1,
     paddingVertical: 10,
-    borderRadius: 8,
+    borderRadius: 5,
     borderWidth: 1,
     borderColor: COLORS.border,
     alignItems: "center",
@@ -243,7 +245,7 @@ const styles = StyleSheet.create({
     boxShadow: "0px 0px 12px 0px #76767626",
   },
   declineButtonText: {
-    color: COLORS._FF1616,
+    color: COLORS._EB3434,
   },
   rescheduleButton: {
     backgroundColor: COLORS.primary,
@@ -254,11 +256,11 @@ const styles = StyleSheet.create({
   },
   actionButtonText: {
     fontFamily: FontWeight.Medium,
-    fontSize: 15,
+    fontSize: 14,
   },
   sessionType: {
     fontSize: 14,
-    fontWeight: "400",
+    fontFamily: FontWeight.Regular,
     color: COLORS._5E5E5E,
     marginBottom: 5,
   },
