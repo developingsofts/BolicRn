@@ -9,6 +9,9 @@ import LoadingScreen from "./src/components/LoadingScreen";
 import { Platform, StatusBar } from "react-native";
 import { store } from "./src/store/store";
 import ToastWrapper from "./src/components/ToastWrapper";
+import { initializeStripe } from "./src/config/StripeConfig";
+
+const STRIPE_PUBLISHABLE_KEY = "pk_test_XXXXXX"; // Replace with your actual key
 
 export default function App() {
   const fontsLoaded = useInterFonts();
@@ -18,8 +21,9 @@ export default function App() {
       StatusBar.setTranslucent(true);
       StatusBar.setBarStyle("light-content");
       StatusBar.setBackgroundColor("transparent");
-    
     }
+
+    // initializeStripe(STRIPE_PUBLISHABLE_KEY); // Initialize analytics on app start
   }, []);
 
   if (!fontsLoaded) {
@@ -31,13 +35,15 @@ export default function App() {
       <ReduxProvider store={store}>
         <PaperProvider>
           <AuthProvider>
-            <AppNavigator />
-            <ToastWrapper />
-            {/* <StatusBar
-                translucent
-                backgroundColor="transparent"
-                style="light"
-              /> */}
+            {/* <StripeProvider
+              publishableKey={STRIPE_PUBLISHABLE_KEY}
+              merchantIdentifier="merchant.com.yourapp"
+              urlScheme="yourapp"
+            >
+             
+            </StripeProvider> */}
+             <AppNavigator />
+              <ToastWrapper />
           </AuthProvider>
         </PaperProvider>
       </ReduxProvider>

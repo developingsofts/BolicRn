@@ -23,24 +23,30 @@ import { useNavigation } from "@react-navigation/native";
 import { useState as useLocalState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import {
+  Achievements,
   Availabilituy,
   Awards,
   Calender,
   CircleComment,
   CircleEdit,
   Comment,
+  Connections,
   DeleteUser,
   Exit,
   Fire,
   Following,
   Like,
+  Posts,
   Price,
+  Rating,
   Request,
   RequestBlack,
   Settings,
   Thunder,
+  Tick,
   Users,
   Users2,
+  Workout,
 } from "../../assets";
 import FontWeight from "../hooks/useInterFonts";
 import { LinearGradient } from "expo-linear-gradient";
@@ -50,6 +56,7 @@ import BookingList from "../components/BookingList";
 import ScheduleList from "../components/ScheduleList";
 import { useDeleteBookingMutation } from "../services/api/bookingApi";
 import { Toast } from "../components/ToastManager";
+import { ResizeMode } from "expo-av";
 
 interface ProfileScreenProps {
   navigation: any;
@@ -231,23 +238,23 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
     {
       id: "posts",
       label: STRINGS.PROFILE.posts,
-      icon: "document-text-outline" as const,
+      icon: Posts,
     },
     {
       id: "connections",
       label: "Connections",
-      icon: "people-outline" as const,
+      icon: Connections,
     },
     {
       id: "achievements",
       label: STRINGS.PROFILE.achievements,
-      icon: "trophy-outline" as const,
+      icon: Achievements,
     },
-    {
-      id: "rating",
-      label: "Rating",
-      icon: "star-outline" as const,
-    },
+    // {
+    //   id: "rating",
+    //   label: "Rating",
+    //   icon: "star-outline" as const,
+    // },
   ];
 
   const menuItems = isOwnProfile
@@ -257,37 +264,37 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
           {
             id: "posts",
             label: showOwnProfileFeatures ? "My Posts" : STRINGS.PROFILE.posts,
-            icon: "document-text-outline" as const,
+            icon: Posts,
           },
           {
             id: "connections",
             label: "Connections",
-            icon: "people-outline" as const,
+            icon: Connections,
           },
           ...(showOwnProfileFeatures
             ? [
                 {
                   id: "schedule-session",
                   label: "Schedule Sessions",
-                  icon: "calendar-outline" as const,
+                  icon: Availabilituy,
                 },
                 {
                   id: "workout-history",
                   label: "Workout History",
-                  icon: "time-outline" as const,
+                  icon: Workout,
                 },
               ]
             : []),
           {
             id: "achievements",
             label: STRINGS.PROFILE.achievements,
-            icon: "trophy-outline" as const,
+            icon: Achievements,
           },
-          {
-            id: "rating",
-            label: showOwnProfileFeatures ? "My Ratings" : "Rating",
-            icon: "star-outline" as const,
-          },
+          // {
+          //   id: "rating",
+          //   label: showOwnProfileFeatures ? "My Ratings" : "Rating",
+          //   icon: Rating,
+          // },
         ]
     : guestMenuItems;
 
@@ -444,10 +451,26 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
   };
 
   const statsData = [
-    { icon: Thunder, count: 157, title: STRINGS.PROFILE.statsLabels.workouts },
-    { icon: Fire, count: 157, title: STRINGS.PROFILE.statsLabels.streak },
-    { icon: Users, count: 12, title: STRINGS.PROFILE.statsLabels.partners },
-    { icon: Awards, count: 8, title: STRINGS.PROFILE.statsLabels.awards },
+    {
+      icon: Thunder,
+      count: profileData?.totalWorkouts || 0,
+      title: STRINGS.PROFILE.statsLabels.workouts,
+    },
+    {
+      icon: Fire,
+      count: profileData?.longestStreak || 0,
+      title: STRINGS.PROFILE.statsLabels.streak,
+    },
+    {
+      icon: Users,
+      count: profileData?.partnersCount || 0,
+      title: STRINGS.PROFILE.statsLabels.partners,
+    },
+    {
+      icon: Awards,
+      count: profileData?.awardsCount || 0,
+      title: STRINGS.PROFILE.statsLabels.awards,
+    },
   ];
 
   const schedulesData =
@@ -458,7 +481,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
   const statsDataTrainer = [
     { icon: Request, count: bookingsData?.length || 0, title: "Requests" },
     { icon: Calender, count: schedulesData?.length || 0, title: "Today" },
-    { icon: Users2, count: 12, title: "Clients" },
+    { icon: Users2, count: profileData?.clientCount || 0, title: "Clients" },
   ];
 
   return (
@@ -494,21 +517,42 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
               <View style={styles.weeklyGoalSection}>
                 <View style={styles.weeklyGoalHeader}>
                   <Text style={styles.weeklyGoalLabel}>Weekly Goal</Text>
-                  <Text style={styles.weeklyGoalValue}>3/5 Workouts</Text>
+                  <Text style={styles.weeklyGoalValue}>{`${
+                    profileData?.completedWeeklySessions || 0
+                  }/${profileData?.totalWeeklySessions || 0} Workouts`}</Text>
                 </View>
                 <View style={styles.progressBarContainer}>
-                  <View style={[styles.progressBarFill, { width: "60%" }]} />
+                  <View
+                    style={[
+                      styles.progressBarFill,
+                      {
+                        width: `${Math.min(
+                          100,
+                          ((profileData?.completedWeeklySessions || 0) /
+                            Math.max(
+                              profileData?.totalWeeklySessions || 1,
+                              1
+                            )) *
+                            100
+                        )}%`,
+                      },
+                    ]}
+                  />
                 </View>
               </View>
               {/* Streak Stats */}
               <View style={styles.streakStatsContainer}>
                 <View style={styles.streakStatItem}>
                   <Text style={styles.streakStatLabel}>CURRENT STREAK</Text>
-                  <Text style={styles.streakStatValue}>7 Days</Text>
+                  <Text style={styles.streakStatValue}>
+                    {profileData?.currentStreak || 0} Days
+                  </Text>
                 </View>
                 <View style={styles.streakStatItem}>
                   <Text style={styles.streakStatLabel}>LONGEST STREAK</Text>
-                  <Text style={styles.streakStatValue}>157 Days</Text>
+                  <Text style={styles.streakStatValue}>
+                    {profileData?.longestStreak || 0} Days
+                  </Text>
                 </View>
               </View>
               {/* Daily Streak */}
@@ -517,13 +561,13 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
                 <View style={styles.daysContainer}>
                   {["M", "T", "W", "T", "F", "S", "S"].map((day, index) => {
                     const isCompleted = [
-                      true,
-                      true,
-                      true,
-                      true,
-                      false,
-                      false,
-                      false,
+                      profileData?.weeklyActivity?.Mon || false,
+                      profileData?.weeklyActivity?.Tue || false,
+                      profileData?.weeklyActivity?.Wed || false,
+                      profileData?.weeklyActivity?.Thu || false,
+                      profileData?.weeklyActivity?.Fri || false,
+                      profileData?.weeklyActivity?.Sat || false,
+                      profileData?.weeklyActivity?.Sun || false,
                     ][index];
                     return (
                       <View key={index} style={styles.dayColumn}>
@@ -537,10 +581,14 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
                           ]}
                         >
                           {isCompleted && (
-                            <Ionicons
-                              name="checkmark"
-                              size={16}
-                              color={COLORS.white}
+                            <Image
+                              source={Tick}
+                              resizeMode={ResizeMode.CONTAIN}
+                              style={{
+                                width: 15,
+                                height: 15,
+                                tintColor: COLORS.white,
+                              }}
                             />
                           )}
                         </View>
@@ -755,8 +803,8 @@ const styles = StyleSheet.create({
     width: "100%",
     paddingHorizontal: 10,
     paddingTop: 10,
-    // marginTop: 10,
     marginBottom: 16,
+    marginTop: DIMENSIONS.spacing.lg,
   },
   headerIconsContainer: {
     flexDirection: "row",
@@ -1474,12 +1522,12 @@ const styles = StyleSheet.create({
   },
   weeklyGoalLabel: {
     fontSize: 12,
-    fontFamily: FontWeight.Regular,
-    color: COLORS._616888,
+    fontFamily: FontWeight.Medium,
+    color: COLORS._5E5E5E,
   },
   weeklyGoalValue: {
     fontSize: 12,
-    fontFamily: FontWeight.SemiBold,
+    fontFamily: FontWeight.Medium,
     color: COLORS.primary,
   },
   progressBarContainer: {
@@ -1490,7 +1538,7 @@ const styles = StyleSheet.create({
   },
   progressBarFill: {
     height: "100%",
-    backgroundColor: "#0DB312",
+    backgroundColor: COLORS._0DB312,
     borderRadius: 3,
   },
   streakStatsContainer: {
@@ -1503,15 +1551,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   streakStatLabel: {
-    fontSize: 9,
-    fontFamily: FontWeight.Medium,
-    color: COLORS._616888,
+    fontSize: 12,
+    fontFamily: FontWeight.Regular,
+    color: COLORS._5E5E5E,
     textTransform: "uppercase",
     letterSpacing: 0.5,
     marginBottom: 3,
   },
   streakStatValue: {
-    fontSize: 20,
+    fontSize: 16,
     fontFamily: FontWeight.Bold,
     color: COLORS.app_black,
   },
@@ -1520,8 +1568,8 @@ const styles = StyleSheet.create({
   },
   dailyStreakLabel: {
     fontSize: 12,
-    fontFamily: FontWeight.Regular,
-    color: COLORS._616888,
+    fontFamily: FontWeight.Medium,
+    color: COLORS._5E5E5E,
     marginBottom: 10,
   },
   daysContainer: {
@@ -1535,9 +1583,9 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   dayLabel: {
-    fontSize: 11,
+    fontSize: 10,
     fontFamily: FontWeight.Regular,
-    color: COLORS._616888,
+    color: COLORS._5E5E5E,
   },
   dayCircle: {
     width: 30,
@@ -1547,11 +1595,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   dayCircleCompleted: {
-    backgroundColor: "#0DB312",
+    backgroundColor: COLORS._0DB312,
   },
   dayCircleIncomplete: {
-    borderWidth: 2,
-    borderColor: COLORS._E6E6E7,
+    borderWidth: 1,
+    borderColor: COLORS._D7D7D7,
     backgroundColor: "transparent",
   },
   // Menu List Styles

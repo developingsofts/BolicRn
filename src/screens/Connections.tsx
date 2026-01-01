@@ -19,10 +19,11 @@ const Connections: React.FC = ({ navigation, route }: any) => {
   const userId = route?.params?.userId || user?.id;
   const isOwnProfile =
     !route?.params?.userId || route?.params?.userId === user?.id;
-    
+
   const handleAddNew = () => {
-    // TODO: Implement add new connection logic
-    alert("Add new connection feature coming soon!");
+    navigation.navigate("Main", {
+      screen: "Find",
+    });
   };
 
   // Pagination state
@@ -84,9 +85,9 @@ const Connections: React.FC = ({ navigation, route }: any) => {
     if (!Array.isArray(allFollowing)) return [];
     return allFollowing.map((user: any) => ({
       id: String(user?.id ?? user?._id ?? Math.random()),
-      name: user?.displayName || user?.name || 'Unknown',
-      location: user?.location || '',
-      initial: (user?.displayName || user?.name || '?').charAt(0).toUpperCase(),
+      name: user?.displayName || user?.name || "Unknown",
+      location: user?.location || "",
+      initial: (user?.displayName || user?.name || "?").charAt(0).toUpperCase(),
     }));
   }, [allFollowing]);
 
@@ -136,15 +137,17 @@ const Connections: React.FC = ({ navigation, route }: any) => {
         )}
         {/* Achievements-style grid/list with loading, error, empty states */}
         {connectionsLoading && page === 1 ? (
-          <View style={{ padding: 20, alignItems: 'center' }}>
+          <View style={{ padding: 20, alignItems: "center" }}>
             <Text>Loading connections...</Text>
           </View>
         ) : connectionsError ? (
-          <View style={{ padding: 20, alignItems: 'center' }}>
-            <Text style={{ color: COLORS.error }}>Failed to load connections.</Text>
+          <View style={{ padding: 20, alignItems: "center" }}>
+            <Text style={{ color: COLORS.error }}>
+              Failed to load connections.
+            </Text>
           </View>
         ) : following.length === 0 ? (
-          <View style={{ padding: 20, alignItems: 'center' }}>
+          <View style={{ padding: 20, alignItems: "center" }}>
             <Text>No connections yet.</Text>
           </View>
         ) : (
@@ -154,7 +157,9 @@ const Connections: React.FC = ({ navigation, route }: any) => {
                 <View key={connection.id} style={styles.card}>
                   <View style={styles.cardRow}>
                     <View style={styles.avatar}>
-                      <Text style={styles.avatarText}>{connection.initial}</Text>
+                      <Text style={styles.avatarText}>
+                        {connection.initial}
+                      </Text>
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.name}>{connection.name}</Text>
@@ -174,7 +179,7 @@ const Connections: React.FC = ({ navigation, route }: any) => {
               <TouchableOpacity
                 style={{
                   marginTop: 20,
-                  alignSelf: 'center',
+                  alignSelf: "center",
                   backgroundColor: COLORS.primary,
                   paddingHorizontal: 32,
                   paddingVertical: 12,
@@ -183,8 +188,8 @@ const Connections: React.FC = ({ navigation, route }: any) => {
                 onPress={handleLoadMore}
                 disabled={connectionsFetching}
               >
-                <Text style={{ color: COLORS.white, fontWeight: '600' }}>
-                  {connectionsFetching ? 'Loading...' : 'Load More'}
+                <Text style={{ color: COLORS.white, fontWeight: "600" }}>
+                  {connectionsFetching ? "Loading..." : "Load More"}
                 </Text>
               </TouchableOpacity>
             )}
@@ -192,10 +197,8 @@ const Connections: React.FC = ({ navigation, route }: any) => {
         )}
       </ScrollView>
     </SafeAreaView>
-        
   );
 };
-
 
 const styles = StyleSheet.create({
   container: {
@@ -213,7 +216,7 @@ const styles = StyleSheet.create({
   addButton: {
     width: "100%",
     backgroundColor: COLORS.primary,
-    paddingVertical: 18,
+    paddingVertical: 14,
     borderRadius: 4,
     alignItems: "center",
     marginBottom: 20,
@@ -226,8 +229,8 @@ const styles = StyleSheet.create({
   },
   addButtonText: {
     color: COLORS.white,
-    fontFamily: FontWeight.SemiBold,
-    fontSize: 16,
+    fontFamily: FontWeight.Medium,
+    fontSize: 14,
     letterSpacing: 0.2,
   },
   connectionList: {

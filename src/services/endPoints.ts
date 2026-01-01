@@ -56,6 +56,9 @@ export const API_END_POINTS = {
     dislike: "/matching/dislike",
     matches: "/matching/matches",
     potential: "/matching/potential",
+    swipe: "/swipes/create",
+    partners: "/matching/potential/users",
+    trainers: "/matching/potential/trainers",
   },
 
   messages: {

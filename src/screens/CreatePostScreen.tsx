@@ -25,6 +25,9 @@ import { Divider } from "react-native-paper";
 import BasicTopBar from "../components/BasicTopBar";
 import { useCreatePostMutation } from "../services/api/postsApi";
 import { Toast } from "../components/ToastManager";
+import type { Achievement as AchievementType } from "../types";
+import { useGetUserAchievementsQuery } from "../services/api";
+import { useAuth } from "../contexts/AuthContext";
 
 interface CreatePostScreenProps {
   navigation: any;
@@ -42,70 +45,88 @@ interface Achievement {
   icon: string;
 }
 
-const CreatePostScreen: React.FC<CreatePostScreenProps> = ({ navigation, route }) => {
+const CreatePostScreen: React.FC<CreatePostScreenProps> = ({
+  navigation,
+  route,
+}) => {
   const styles = useResponsive(baseStyles);
   const [createPost, { isLoading }] = useCreatePostMutation();
   const groupId = route?.params?.groupId;
-  
+  const { user, isAuthenticated } = useAuth();
+
   const [postText, setPostText] = useState("");
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<any>(null);
   const [selectedAchievement, setSelectedAchievement] =
-    useState<Achievement | null>(null);
+    useState< AchievementType | null>(null);
   const [showAchievementModal, setShowAchievementModal] = useState(false);
   const [showUnlockedModal, setShowUnlockedModal] = useState(false);
+  const { data: achievementsData, isLoading: achievementsLoading } =
+    useGetUserAchievementsQuery(
+      { userId: undefined },
+      { skip: !isAuthenticated }
+    );
+
+  const achievements: AchievementType[] =
+    achievementsData?.status && achievementsData?.data
+      ? achievementsData.data
+      : [];
 
   // Mock achievements data
-  const achievements: Achievement[] = [
-    {
-      id: "1",
-      title: "First Steps",
-      description: "Complete first workout",
-      icon: "🏃‍♂️",
-    },
-    {
-      id: "2",
-      title: "Century Club",
-      description: "Reach the 100 workout",
-      icon: "💯",
-    },
-    {
-      id: "3",
-      title: "Community Leader",
-      description: "Create your first group",
-      icon: "👥",
-    },
-  ];
+  // const achievements: Achievement[] = [
+  //   {
+  //     id: "1",
+  //     title: "First Steps",
+  //     description: "Complete first workout",
+  //     icon: "🏃‍♂️",
+  //   },
+  //   {
+  //     id: "2",
+  //     title: "Century Club",
+  //     description: "Reach the 100 workout",
+  //     icon: "💯",
+  //   },
+  //   {
+  //     id: "3",
+  //     title: "Community Leader",
+  //     description: "Create your first group",
+  //     icon: "👥",
+  //   },
+  // ];
 
   const handleBack = () => {
     if (navigation.canGoBack()) {
       navigation.goBack();
     } else {
       // Fallback to navigate to home
-      navigation.navigate('HomeFeed');
+      navigation.navigate("HomeFeed");
     }
   };
 
   const openDeviceSettings = () => {
     Linking.openSettings().catch(() => {
-      Alert.alert(STRINGS.COMMON.error, STRINGS.CREATE_POST.errors.unableToOpenSettings);
+      Alert.alert(
+        STRINGS.COMMON.error,
+        STRINGS.CREATE_POST.errors.unableToOpenSettings
+      );
     });
   };
 
   const handleSelectPhoto = async () => {
     try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      
-      if (status !== 'granted') {
+      const { status } =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (status !== "granted") {
         Alert.alert(
-          'Permission Required',
-          'Please grant permission to access your photos to upload media.'
+          "Permission Required",
+          "Please grant permission to access your photos to upload media."
         );
         return;
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
+        mediaTypes: ["images"],
         allowsEditing: true,
         aspect: [4, 3],
         quality: 0.8,
@@ -114,22 +135,22 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({ navigation, route }
       if (!result.canceled && result.assets[0]) {
         const asset = result.assets[0];
         setSelectedImage(asset.uri);
-        
+
         // Determine the correct MIME type
-        const uriParts = asset.uri.split('.');
+        const uriParts = asset.uri.split(".");
         const fileExtension = uriParts[uriParts.length - 1].toLowerCase();
-        let mimeType = 'image/jpeg';
-        
-        if (fileExtension === 'png') {
-          mimeType = 'image/png';
-        } else if (fileExtension === 'jpg' || fileExtension === 'jpeg') {
-          mimeType = 'image/jpeg';
-        } else if (fileExtension === 'gif') {
-          mimeType = 'image/gif';
-        } else if (fileExtension === 'webp') {
-          mimeType = 'image/webp';
+        let mimeType = "image/jpeg";
+
+        if (fileExtension === "png") {
+          mimeType = "image/png";
+        } else if (fileExtension === "jpg" || fileExtension === "jpeg") {
+          mimeType = "image/jpeg";
+        } else if (fileExtension === "gif") {
+          mimeType = "image/gif";
+        } else if (fileExtension === "webp") {
+          mimeType = "image/webp";
         }
-        
+
         setImageFile({
           uri: asset.uri,
           type: mimeType,
@@ -137,8 +158,8 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({ navigation, route }
         });
       }
     } catch (error) {
-      console.error('Error picking image:', error);
-      Toast.error('Failed to pick image');
+      console.error("Error picking image:", error);
+      Toast.error("Failed to pick image");
     }
   };
 
@@ -148,7 +169,7 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({ navigation, route }
     setShowAchievementModal(true);
   };
 
-  const handleAchievementSelect = (achievement: Achievement) => {
+  const handleAchievementSelect = (achievement: AchievementType) => {
     setSelectedAchievement(achievement);
     setShowAchievementModal(false);
     setShowUnlockedModal(true);
@@ -156,7 +177,10 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({ navigation, route }
 
   const handlePost = async () => {
     if (!postText.trim() && !selectedImage) {
-      Toast.error(STRINGS.CREATE_POST.errors.addContent || 'Please add some content to your post');
+      Toast.error(
+        STRINGS.CREATE_POST.errors.addContent ||
+          "Please add some content to your post"
+      );
       return;
     }
 
@@ -167,7 +191,7 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({ navigation, route }
 
       // Add achievement ID if selected
       if (selectedAchievement) {
-        payload.achievementId = parseInt(selectedAchievement.id);
+        payload.achievementId = parseInt(selectedAchievement.id.toString());
       }
 
       // Add media file if selected
@@ -183,21 +207,24 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({ navigation, route }
       const response = await createPost(payload).unwrap();
 
       if (response.status) {
-        Toast.success(STRINGS.CREATE_POST.success.postCreated || 'Post created successfully!');
-        
+        Toast.success(
+          STRINGS.CREATE_POST.success.postCreated ||
+            "Post created successfully!"
+        );
+
         // If this was a group post, navigate to GroupDetails screen
         if (groupId) {
-          navigation.replace('GroupDetails', { group: { id: groupId } });
+          navigation.replace("GroupDetails", { group: { id: groupId } });
         } else {
           // Navigate back to previous screen (Home)
           handleBack();
         }
       } else {
-        Toast.error(response.message || 'Failed to create post');
+        Toast.error(response.message || "Failed to create post");
       }
     } catch (error: any) {
-      console.error('Create post error:', error);
-      Toast.error(error?.data?.message || 'Failed to create post');
+      console.error("Create post error:", error);
+      Toast.error(error?.data?.message || "Failed to create post");
     }
   };
 
@@ -212,7 +239,7 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({ navigation, route }
 
   return (
     <SafeAreaView edges={["left", "right", "bottom"]} style={styles.container}>
-       <BasicTopBar
+      <BasicTopBar
         containerStyle={styles.header}
         showBackButton={true}
         onBackPress={handleBack}
@@ -223,8 +250,15 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({ navigation, route }
       />
 
       <View style={{ paddingHorizontal: 20 }}>
-        <Pressable style={styles.shareWorkoutCard} onPress={() => {navigation.navigate('ShareWorkout')}}>
-          <Text style={styles.shareWorkoutText}>{STRINGS.CREATE_POST.shareWorkout}</Text>
+        <Pressable
+          style={styles.shareWorkoutCard}
+          onPress={() => {
+            navigation.navigate("ShareWorkout");
+          }}
+        >
+          <Text style={styles.shareWorkoutText}>
+            {STRINGS.CREATE_POST.shareWorkout}
+          </Text>
           <Ionicons name="chevron-forward" size={24} color={COLORS.app_black} />
         </Pressable>
 
@@ -317,7 +351,9 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({ navigation, route }
                     justifyContent: "space-between",
                   }}
                 >
-                  <Text style={styles.imagesTitle}>{STRINGS.CREATE_POST.uploadedImage}</Text>
+                  <Text style={styles.imagesTitle}>
+                    {STRINGS.CREATE_POST.uploadedImage}
+                  </Text>
                   <Pressable onPress={removeImage}>
                     <Text
                       style={[styles.imagesTitle, { color: COLORS._FF1616 }]}
@@ -350,7 +386,9 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({ navigation, route }
             <View style={styles.modalOverlay}>
               <View style={styles.modalContent}>
                 <View style={styles.modalHeader}>
-                  <Text style={styles.modalTitle}>{STRINGS.CREATE_POST.selectAchievement}</Text>
+                  <Text style={styles.modalTitle}>
+                    {STRINGS.CREATE_POST.selectAchievement}
+                  </Text>
                   <TouchableOpacity
                     onPress={() => setShowAchievementModal(false)}
                   >
@@ -393,15 +431,17 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({ navigation, route }
             </View>
           </Modal>
 
-          <TouchableOpacity 
-            style={[styles.postButton, isLoading && styles.postButtonDisabled]} 
+          <TouchableOpacity
+            style={[styles.postButton, isLoading && styles.postButtonDisabled]}
             onPress={handlePost}
             disabled={isLoading}
           >
             {isLoading ? (
               <ActivityIndicator size="small" color={COLORS.white} />
             ) : (
-              <Text style={styles.postButtonText}>{STRINGS.CREATE_POST.post}</Text>
+              <Text style={styles.postButtonText}>
+                {STRINGS.CREATE_POST.post}
+              </Text>
             )}
           </TouchableOpacity>
         </View>
@@ -461,10 +501,11 @@ const baseStyles = StyleSheet.create({
     color: COLORS.white,
   },
   textInputContainer: {
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.white,
     borderRadius: 10,
     paddingHorizontal: 10,
     height: 130,
+    paddingTop: 5,
     maxHeight: 130,
     borderWidth: 1,
     borderColor: COLORS._D9D9D9,
@@ -490,7 +531,7 @@ const baseStyles = StyleSheet.create({
     fontFamily: FontWeight.Medium,
     textAlign: "center",
     alignSelf: "center",
-    color: COLORS._5E5E5E,
+    color: COLORS.gradient1,
   },
   achievementContainer: {
     backgroundColor: COLORS.white,
@@ -515,7 +556,7 @@ const baseStyles = StyleSheet.create({
     fontSize: 16,
     fontFamily: FontWeight.SemiBold,
     color: COLORS.gradient1,
-    letterSpacing: 1,
+    letterSpacing: 0,
   },
   achievementCard: {
     flexDirection: "row",

@@ -31,13 +31,56 @@ const YEARS = [
   { label: "10+ Years", value: "10" },
 ];
 
-const TrainerProfileDetails: React.FC = () => {
-  const [workExperience, setWorkExperience] = useState("7");
-  const [videoPreview, setVideoPreview] = useState<string | null>(null);
+interface TrainerProfileDetailsProps {
+  workExperience?: string;
+  videoFile?: any;
+  onVideoFileChange?: (file: any) => void;
+  onWorkExperienceChange?: (value: string) => void;
+}
+
+
+
+function getValueFromLabel(label?: string): string {
+  if (!label) return "7";
+  const found = YEARS.find((y) => y.label.toLowerCase() === label.toLowerCase());
+  return found ? found.value : label;
+}
+
+const TrainerProfileDetails: React.FC<TrainerProfileDetailsProps> = ({
+  workExperience: propWorkExperience,
+  videoFile: propVideoFile,
+  onVideoFileChange,
+  onWorkExperienceChange,
+}) => {
+  const [workExperience, setWorkExperience] = useState(getValueFromLabel(propWorkExperience));
+  const [videoPreview, setVideoPreview] = useState<string | null>(propVideoFile?.uri || null);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [videoFile, setVideoFile] = useState<any>(propVideoFile || null);
+
+  React.useEffect(() => {
+    if (propWorkExperience) {
+      setWorkExperience(getValueFromLabel(propWorkExperience));
+    }
+  }, [propWorkExperience]);
+
+  React.useEffect(() => {
+    if (propVideoFile) {
+      console.log("Prop video file changed:", propVideoFile);
+      setVideoFile(propVideoFile);
+      setVideoPreview(propVideoFile || null);
+    }
+  }, [propVideoFile]);
 
   const selectedLabel =
     YEARS.find((y) => y.value === workExperience)?.label || "Select";
+
+  React.useEffect(() => {
+    if (onWorkExperienceChange) {
+      onWorkExperienceChange(selectedLabel);
+    }
+    // Only run on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleVideoUpload = async () => {
     try {
@@ -53,17 +96,40 @@ const TrainerProfileDetails: React.FC = () => {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ["videos"],
         allowsEditing: false,
-        quality: 1,
+        quality: 0.8,
       });
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const asset = result.assets[0];
         setVideoPreview(asset.uri);
+        // Determine the correct MIME type
+        const uriParts = asset.uri.split(".");
+        const fileExtension = uriParts[uriParts.length - 1].toLowerCase();
+        let mimeType = "video/mp4"; // default
+
+        if (fileExtension === "mp4") {
+          mimeType = "video/mp4";
+        } else if (fileExtension === "mov") {
+          mimeType = "video/quicktime";
+        }
+        console.log("File extension:", fileExtension);
+        console.log("MIME type:", mimeType);
+
+        const fileObj = {
+          uri: asset.uri,
+          type: mimeType,
+          name: asset.fileName || `intro_${Date.now()}.${fileExtension}`,
+        };
+        console.log("Picked video file:", fileObj);
+        setVideoFile(fileObj);
+        if (onVideoFileChange) {
+          onVideoFileChange(fileObj);
+        }
       }
     } catch (error) {
       Alert.alert("Error", "Failed to pick video.");
     }
   };
-
+  
   return (
     <View style={styles.container}>
       <Text style={styles.heading}>Trainer Profile Details</Text>
@@ -96,6 +162,9 @@ const TrainerProfileDetails: React.FC = () => {
                 onPress={() => {
                   setWorkExperience(item.value);
                   setShowDropdown(false);
+                  if (onWorkExperienceChange) {
+                    onWorkExperienceChange(item.label);
+                  }
                 }}
               >
                 <Text

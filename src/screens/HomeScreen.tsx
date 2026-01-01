@@ -45,11 +45,13 @@ import {
 import { useGetFollowersQuery } from "../services/api/followsApi";
 import type { Note as NoteEntity } from "../types";
 import type { ReactionType } from "../constants/reactions";
-import { Like, CommentRemove } from "../../assets";
+import { Like, CommentRemove, ThreeDots } from "../../assets";
 import CommentsModal from "../components/CommentsModal";
 import ConfirmationDialog from "../components/ConfirmationDialog";
 import EditPostModal from "../components/EditPostModal";
 import { r } from "../designing/responsiveDesigns";
+import { ResizeMode } from "expo-av";
+import SelectWorkoutScreen from "./SelectWorkoutScreen";
 
 interface HomeScreenProps {
   navigation: any;
@@ -154,13 +156,16 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     isLoading: achievementsLoading,
     refetch: refetchAchievements,
     error: achievementsError,
-  } = useGetUserAchievementsQuery({ userId: undefined }, { skip: !isAuthenticated });
+  } = useGetUserAchievementsQuery(
+    { userId: undefined },
+    { skip: !isAuthenticated }
+  );
 
   const {
     data: potentialMatchesData,
     isLoading: potentialMatchesLoading,
     refetch: refetchPotentialMatches,
-  } = useGetPotentialMatchesQuery(undefined, { skip: !isAuthenticated });
+  } = useGetPotentialMatchesQuery({page: 1, limit: 10}, { skip: !isAuthenticated });
 
   const {
     data: userPostsData,
@@ -476,8 +481,9 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     }
 
     const rawExercises =
-      ((detailedWorkout?.workoutExercises as any[]) ??
-        (sourceWorkout?.workoutExercises as any[]) ?? []) ?? [];
+      (detailedWorkout?.workoutExercises as any[]) ??
+      (sourceWorkout?.workoutExercises as any[]) ??
+      [];
 
     const exercises = rawExercises
       .slice()
@@ -601,7 +607,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
       return [];
     }
 
-    const partners = (potentialMatchesData.data as any[]) ?? [];
+    const partners = (potentialMatchesData.data?.users as any[]) ?? [];
 
     return partners.map((partner: any) => {
       const name =
@@ -1023,6 +1029,15 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const startWorkoutOfTheDay = () => {
     navigation.navigate("SelectWorkout");
   };
+  const handleBookSession = () => {
+    navigation.navigate("Main", {
+      screen: "Find",
+      params: {
+        screen: "FindMain",
+        params: { tab: "FindTrainers" },
+      },
+    });
+  };
 
   const getTimeAgo = (date: Date) => {
     const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
@@ -1365,7 +1380,11 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                               style={styles.socialPostMenu}
                               onPress={() => handlePostMenuPress(postId)}
                             >
-                              <Text style={styles.socialPostMenuText}>⋯</Text>
+                              <Image
+                                source={ThreeDots}
+                                style={{ width: 20, height: 20 }}
+                                resizeMode={ResizeMode.CONTAIN}
+                              />
                             </TouchableOpacity>
                             {openPostMenuId === postId && (
                               <View style={styles.postMenuDropdown}>
@@ -1455,10 +1474,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                                 style={[
                                   styles.socialPostActionIcon,
                                   {
-                                    tintColor:
-                                      currentReaction === "like"
-                                        ? COLORS.gradient1
-                                        : "#888888",
+                                    tintColor: COLORS.gradient1,
                                   },
                                 ]}
                               />
@@ -1567,7 +1583,9 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
                   const detailText =
                     detailParts.join(" • ") || "Ready to train";
-                    {console.log("Rendering suggested partner:", partner);}
+                  {
+                    console.log("Rendering suggested partner:", partner);
+                  }
                   return (
                     <View key={partner.id} style={styles.friendSuggestionCard}>
                       <View style={styles.friendSuggestionAvatar}>
@@ -1655,7 +1673,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                 <>
                   <TouchableOpacity
                     style={styles.quickActionCard}
-                    onPress={() => navigation.navigate("ScheduleChat")}
+                    onPress={handleBookSession}
                   >
                     <Text style={styles.quickActionIcon}>🗓️</Text>
                     <Text style={styles.quickActionTitle}>Schedule Chat</Text>
@@ -1666,7 +1684,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
                   <TouchableOpacity
                     style={styles.quickActionCard}
-                    onPress={() => navigation.navigate("Workouts")}
+                    onPress={startWorkoutOfTheDay}
                   >
                     <Text style={styles.quickActionIcon}>💪</Text>
                     <Text style={styles.quickActionTitle}>Browse Workouts</Text>
@@ -2005,6 +2023,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
     overflow: "hidden",
+    marginTop: DIMENSIONS.spacing.lg,
   },
   profileButtonImage: {
     width: "100%",
@@ -2024,15 +2043,15 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: "bold",
-    color: COLORS.text,
+    fontFamily: FontWeight.SemiBold,
+    color: COLORS.gradient1,
     // marginBottom: DIMENSIONS.spacing.md,
   },
 
   sectionTitleWithSideText: {
     fontSize: 20,
-    fontWeight: "bold",
-    color: COLORS.text,
+    fontFamily: FontWeight.SemiBold,
+    color: COLORS.gradient1,
     marginBottom: DIMENSIONS.spacing.md,
   },
   quickActions: {
@@ -2094,8 +2113,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   addNoteButtonText: {
-    color: COLORS.surface,
-    fontWeight: "600",
+    color: COLORS.white,
+    fontFamily: FontWeight.Medium,
     fontSize: 14,
   },
   notesList: {
@@ -2113,8 +2132,9 @@ const styles = StyleSheet.create({
   notesStatusText: {
     paddingHorizontal: DIMENSIONS.spacing.md,
     paddingBottom: DIMENSIONS.spacing.md,
-    color: COLORS.textSecondary,
+    color: COLORS._5E5E5E,
     fontSize: 14,
+    fontFamily: FontWeight.Medium,
   },
   noteItem: {
     marginBottom: DIMENSIONS.spacing.md,
@@ -2126,8 +2146,8 @@ const styles = StyleSheet.create({
   },
   noteText: {
     fontSize: 14,
-    color: COLORS.text,
-    marginBottom: DIMENSIONS.spacing.sm,
+    color: COLORS.app_black,
+    fontFamily: FontWeight.Medium,
   },
   noteFooter: {
     flexDirection: "row",
@@ -2136,7 +2156,8 @@ const styles = StyleSheet.create({
   },
   noteTime: {
     fontSize: 12,
-    color: COLORS.textSecondary,
+    color: COLORS._5E5E5E,
+    fontFamily: FontWeight.Medium,
   },
   deleteNoteButton: {
     padding: 4,
@@ -2177,15 +2198,16 @@ const styles = StyleSheet.create({
   },
   achievementTitle: {
     fontSize: 14,
-    fontWeight: "600",
-    color: COLORS.text,
+    fontFamily: FontWeight.Medium,
+    color: COLORS.app_black,
     textAlign: "center",
     marginBottom: DIMENSIONS.spacing.xs,
   },
   achievementDescription: {
     fontSize: 12,
-    color: COLORS.textSecondary,
+    color: COLORS._5E5E5E,
     textAlign: "center",
+    fontFamily: FontWeight.Regular,
     marginBottom: DIMENSIONS.spacing.sm,
   },
   progressContainer: {
@@ -2206,7 +2228,8 @@ const styles = StyleSheet.create({
   },
   progressText: {
     fontSize: 10,
-    color: COLORS.textSecondary,
+    color: COLORS._5E5E5E,
+    fontFamily: FontWeight.Medium,
   },
   unlockedBadge: {
     position: "absolute",
@@ -2219,8 +2242,8 @@ const styles = StyleSheet.create({
   },
   unlockedText: {
     fontSize: 10,
-    color: COLORS.surface,
-    fontWeight: "600",
+    color: COLORS.white,
+    fontFamily: FontWeight.Medium,
   },
 
   statsGrid: {
@@ -2271,24 +2294,26 @@ const styles = StyleSheet.create({
   },
   activityTitle: {
     fontSize: 16,
-    fontWeight: "600",
-    color: COLORS.text,
+    fontFamily: FontWeight.SemiBold,
+    color: COLORS.app_black,
     marginBottom: DIMENSIONS.spacing.xs,
   },
   activityDetails: {
     fontSize: 12,
-    color: COLORS.textSecondary,
+    color: COLORS._5E5E5E,
+    fontFamily: FontWeight.Medium,
   },
   activityTime: {
     fontSize: 12,
-    color: COLORS.textSecondary,
+    color: COLORS._5E5E5E,
+    fontFamily: FontWeight.Medium,
   },
   createPostButton: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: COLORS.primary,
-    borderRadius: DIMENSIONS.borderRadius,
-    padding: DIMENSIONS.spacing.lg,
+    borderRadius: 5,
+    padding: 14,
     justifyContent: "center",
   },
   createPostIcon: {
@@ -2296,9 +2321,9 @@ const styles = StyleSheet.create({
     marginRight: DIMENSIONS.spacing.sm,
   },
   createPostText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: COLORS.surface,
+    fontSize: 14,
+    fontFamily: FontWeight.Medium,
+    color: COLORS.white,
   },
 
   // Weekly Goal and Workout of the Day styles
@@ -2311,7 +2336,7 @@ const styles = StyleSheet.create({
   editButton: {
     fontSize: 14,
     color: COLORS.primary,
-    fontWeight: "500",
+    fontFamily: FontWeight.Medium,
   },
   weeklyGoalCard: {
     backgroundColor: COLORS.surface,
@@ -2328,8 +2353,8 @@ const styles = StyleSheet.create({
   },
   weeklyGoalTitle: {
     fontSize: 16,
-    fontWeight: "600",
-    color: COLORS.text,
+    fontFamily: FontWeight.Medium,
+    color: COLORS.app_black,
     flex: 1,
   },
   weeklyGoalProgressContainer: {
@@ -2338,7 +2363,7 @@ const styles = StyleSheet.create({
   },
   weeklyGoalProgress: {
     fontSize: 14,
-    fontWeight: "600",
+    fontFamily: FontWeight.Medium,
     color: COLORS.primary,
   },
   weeklyGoalLoader: {
@@ -2369,8 +2394,8 @@ const styles = StyleSheet.create({
   },
   workoutDate: {
     fontSize: 14,
-    color: COLORS.textSecondary,
-    fontWeight: "500",
+    color: COLORS._5E5E5E,
+    fontFamily: FontWeight.Medium,
   },
   workoutOfTheDayCard: {
     backgroundColor: COLORS.surface,
@@ -2384,8 +2409,8 @@ const styles = StyleSheet.create({
   },
   workoutOfTheDayTitle: {
     fontSize: 18,
-    fontWeight: "700",
-    color: COLORS.text,
+    fontFamily: FontWeight.SemiBold,
+    color: COLORS.app_black,
     marginBottom: DIMENSIONS.spacing.sm,
   },
   workoutOfTheDayMeta: {
@@ -2400,23 +2425,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
-    fontWeight: "600",
+    fontFamily: FontWeight.Medium,
     textTransform: "capitalize",
   },
   workoutOfTheDayDuration: {
     fontSize: 12,
-    color: COLORS.textSecondary,
-    fontWeight: "500",
+    color: COLORS._5E5E5E,
+    fontFamily: FontWeight.Medium,
   },
   workoutOfTheDayDifficulty: {
     fontSize: 12,
-    color: COLORS.textSecondary,
-    fontWeight: "500",
+    color: COLORS._5E5E5E,
+    fontFamily: FontWeight.Medium,
     textTransform: "capitalize",
   },
   workoutOfTheDayDescription: {
     fontSize: 14,
-    color: COLORS.textSecondary,
+    color: COLORS._5E5E5E,
+    fontFamily: FontWeight.Medium,
     lineHeight: 20,
     marginBottom: DIMENSIONS.spacing.lg,
   },
@@ -2425,9 +2451,8 @@ const styles = StyleSheet.create({
   },
   workoutOfTheDayExercisesTitle: {
     fontSize: 16,
-    fontWeight: "600",
-    color: COLORS.text,
-    marginBottom: DIMENSIONS.spacing.md,
+    fontFamily: FontWeight.SemiBold,
+    color: COLORS.app_black,
   },
   workoutOfTheDayExercise: {
     flexDirection: "row",
@@ -2442,18 +2467,19 @@ const styles = StyleSheet.create({
   },
   workoutOfTheDayExerciseName: {
     fontSize: 14,
-    fontWeight: "500",
-    color: COLORS.text,
+    fontFamily: FontWeight.Medium,
+    color: COLORS.app_black,
     flex: 1,
   },
   workoutOfTheDayExerciseDetails: {
     fontSize: 12,
-    color: COLORS.textSecondary,
+    color: COLORS._5E5E5E,
+    fontFamily: FontWeight.Medium,
   },
   workoutOfTheDayMoreExercises: {
     fontSize: 12,
     color: COLORS.primary,
-    fontWeight: "500",
+    fontFamily: FontWeight.Medium,
     textAlign: "center",
     paddingTop: DIMENSIONS.spacing.sm,
   },
@@ -2463,8 +2489,8 @@ const styles = StyleSheet.create({
   startWorkoutButton: {
     backgroundColor: COLORS.primary,
     paddingHorizontal: DIMENSIONS.spacing.xl,
-    paddingVertical: DIMENSIONS.spacing.md,
-    borderRadius: DIMENSIONS.borderRadius,
+    paddingVertical: 14,
+    borderRadius: 5,
     minWidth: 200,
     alignItems: "center",
   },
@@ -2482,13 +2508,13 @@ const styles = StyleSheet.create({
   },
   workoutCompletedText: {
     fontSize: 16,
-    fontWeight: "600",
+    fontFamily: FontWeight.SemiBold,
     color: COLORS.surface,
   },
   viewAllButton: {
     fontSize: 14,
     color: COLORS.primary,
-    fontWeight: "500",
+    fontFamily: FontWeight.Medium,
   },
   sectionLoader: {
     paddingVertical: DIMENSIONS.spacing.lg,
@@ -2547,7 +2573,8 @@ const styles = StyleSheet.create({
   },
   emptyStateText: {
     fontSize: 14,
-    color: COLORS.textSecondary,
+    fontFamily: FontWeight.Medium,
+    color: COLORS._5E5E5E,
     marginBottom: DIMENSIONS.spacing.md,
     textAlign: "center",
   },
@@ -2560,6 +2587,11 @@ const styles = StyleSheet.create({
   emptyStateButtonText: {
     color: COLORS.white,
     fontSize: 14,
+    fontFamily: FontWeight.Medium,
+  },
+  socialPostInitials: {
+    color: COLORS.surface,
+    fontSize: 16,
     fontWeight: "600",
   },
   socialPostInfo: {
@@ -2567,13 +2599,14 @@ const styles = StyleSheet.create({
   },
   socialPostName: {
     fontSize: 16,
-    fontWeight: "600",
-    color: COLORS.text,
+    fontFamily: FontWeight.SemiBold,
+    color: COLORS.app_black,
     marginBottom: 2,
   },
   socialPostTime: {
     fontSize: 12,
-    color: COLORS.textSecondary,
+    color: COLORS._5E5E5E,
+    fontFamily: FontWeight.Medium,
   },
   socialPostMenu: {
     padding: DIMENSIONS.spacing.sm,
@@ -2611,6 +2644,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.text,
     lineHeight: 20,
+    fontFamily: FontWeight.Medium,
     marginBottom: DIMENSIONS.spacing.md,
   },
   socialPostActions: {
@@ -2688,7 +2722,7 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: COLORS.secondary,
+    backgroundColor: COLORS.primary,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: DIMENSIONS.spacing.sm,
@@ -2706,14 +2740,15 @@ const styles = StyleSheet.create({
   },
   friendSuggestionName: {
     fontSize: 14,
-    fontWeight: "600",
-    color: COLORS.text,
+    fontFamily: FontWeight.SemiBold,
+    color: COLORS.app_black,
     textAlign: "center",
     marginBottom: DIMENSIONS.spacing.xs,
   },
   friendSuggestionDetails: {
     fontSize: 12,
-    color: COLORS.textSecondary,
+    fontFamily: FontWeight.Regular,
+    color: COLORS._5E5E5E,
     textAlign: "center",
     marginBottom: DIMENSIONS.spacing.md,
     lineHeight: 16,
@@ -2722,14 +2757,14 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     paddingHorizontal: DIMENSIONS.spacing.md,
     paddingVertical: DIMENSIONS.spacing.sm,
-    borderRadius: DIMENSIONS.borderRadius,
+    borderRadius: 5,
     minWidth: 80,
     alignItems: "center",
   },
   friendSuggestionButtonText: {
     fontSize: 12,
-    fontWeight: "600",
-    color: COLORS.surface,
+    fontFamily: FontWeight.Medium,
+    color: COLORS.white,
   },
   quickActionsGrid: {
     flexDirection: "row",
@@ -2752,8 +2787,8 @@ const styles = StyleSheet.create({
   },
   quickActionTitle: {
     fontSize: 16,
-    fontWeight: "600",
-    color: COLORS.text,
+    fontFamily: FontWeight.Medium,
+    color: COLORS.app_black,
     marginBottom: DIMENSIONS.spacing.xs,
     textAlign: "center",
   },
@@ -2764,11 +2799,12 @@ const styles = StyleSheet.create({
   quickActionToggleText: {
     color: COLORS.primary,
     fontSize: 14,
-    fontWeight: "500",
+    fontFamily: FontWeight.Medium,
   },
   quickActionSubtitle: {
     fontSize: 12,
-    color: COLORS.textSecondary,
+    fontFamily: FontWeight.Regular,
+    color: COLORS._5E5E5E,
     textAlign: "center",
   },
   notesCard: {
@@ -2791,6 +2827,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: DIMENSIONS.spacing.sm,
     fontSize: 14,
+    fontFamily: FontWeight.Medium,
     color: COLORS.text,
     backgroundColor: COLORS.background,
     marginRight: DIMENSIONS.spacing.sm,

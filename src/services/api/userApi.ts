@@ -19,11 +19,13 @@ interface UpdateProfileWithImagePayload {
   bio?: string;
   location?: string;
   imageFile?: File | { uri: string; type: string; name: string };
+  videoFile?: File | { uri: string; type: string; name: string };
   age?: number;
   trainingTypes?: string[];
   userGender?: string;
   genderPreference?: string;
   currentPRs?: string;
+  workExperience?: string;
   onboardingStep?: number;
 }
 
@@ -70,6 +72,8 @@ export const userApi = baseApi.injectEndpoints({
         if (payload.userGender) formData.append('userGender', payload.userGender);
         if (payload.genderPreference) formData.append('genderPreference', payload.genderPreference);
         if (payload.currentPRs) formData.append('currentPRs', payload.currentPRs);
+        if (payload.workExperience) formData.append('workExperience', payload.workExperience);
+
         if (payload.onboardingStep !== undefined) formData.append('onboardingStep', payload.onboardingStep.toString());
         
         // Add training types array
@@ -94,6 +98,26 @@ export const userApi = baseApi.injectEndpoints({
             formData.append('image', imageFile);
           }
         }
+
+        if (payload.videoFile) {
+          const videoFile = payload.videoFile as any;
+          if (videoFile.uri) {
+            // React Native format
+            formData.append('introVideo', {
+              uri: videoFile.uri,
+              type: videoFile.type || 'video/mp4',
+              name: videoFile.name || 'intro.mp4',
+            } as any);
+          } else {
+            // Web format
+            formData.append('video', videoFile);
+          }
+        }
+
+        console.log("FormData entries:");
+        formData.forEach((value, key) => {
+          console.log(key, value);
+        });
         
         return {
           url: '/user/update',
@@ -101,7 +125,7 @@ export const userApi = baseApi.injectEndpoints({
           body: formData,
         };
       },
-      invalidatesTags: ['User'],
+      invalidatesTags: ['User',"UserProfile"],
       async onQueryStarted(arg, { dispatch, queryFulfilled }) {
         try {
           const { data } = await queryFulfilled;

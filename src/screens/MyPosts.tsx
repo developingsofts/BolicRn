@@ -1,43 +1,71 @@
-import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, Modal, KeyboardAvoidingView, Platform, TextInput, ActivityIndicator } from 'react-native';
-import RefreshableScrollView from '../components/RefreshableScrollView';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import BasicTopBar from '../components/BasicTopBar';
-import ReactionSummary from '../components/ReactionSummary';
-import ReactionPicker from '../components/ReactionPicker';
-import { Like, CommentIcon } from '../../assets';
-import { COLORS, DIMENSIONS } from '../config/constants';
-import FontWeight from '../hooks/useInterFonts';
-import { useAuth } from '../contexts/AuthContext';
-import { useGetUserPostsQuery, useDeletePostMutation, useUpdatePostMutation } from '../services/api';
-import { useToggleLikeMutation } from '../services/api/likesCommentsApi';
-import CommentsModal from '../components/CommentsModal';
-import ConfirmationDialog from '../components/ConfirmationDialog';
-import type { ReactionType } from '../constants/reactions';
-
+import React, { useState, useMemo } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Image,
+  Alert,
+  Modal,
+  KeyboardAvoidingView,
+  Platform,
+  TextInput,
+  ActivityIndicator,
+} from "react-native";
+import RefreshableScrollView from "../components/RefreshableScrollView";
+import { SafeAreaView } from "react-native-safe-area-context";
+import BasicTopBar from "../components/BasicTopBar";
+import ReactionSummary from "../components/ReactionSummary";
+import ReactionPicker from "../components/ReactionPicker";
+import { Like, CommentIcon, ThreeDots } from "../../assets";
+import { COLORS, DIMENSIONS } from "../config/constants";
+import FontWeight from "../hooks/useInterFonts";
+import { useAuth } from "../contexts/AuthContext";
+import {
+  useGetUserPostsQuery,
+  useDeletePostMutation,
+  useUpdatePostMutation,
+} from "../services/api";
+import { useToggleLikeMutation } from "../services/api/likesCommentsApi";
+import CommentsModal from "../components/CommentsModal";
+import ConfirmationDialog from "../components/ConfirmationDialog";
+import type { ReactionType } from "../constants/reactions";
 
 const MyPosts: React.FC = ({ navigation, route }: any) => {
   const { user } = useAuth();
   // Accept userId from route params (if present)
   const userId = route?.params?.userId || user?.id;
-  const isOwnProfile = !route?.params?.userId || route?.params?.userId === user?.id;
+  const isOwnProfile =
+    !route?.params?.userId || route?.params?.userId === user?.id;
   const [refreshing, setRefreshing] = useState(false);
   const [openPostMenuId, setOpenPostMenuId] = useState<string | null>(null);
   const [showDeletePostDialog, setShowDeletePostDialog] = useState(false);
   const [postToDelete, setPostToDelete] = useState<string | null>(null);
-  const [editingPost, setEditingPost] = useState<{ id: string; caption: string } | null>(null);
+  const [editingPost, setEditingPost] = useState<{
+    id: string;
+    caption: string;
+  } | null>(null);
   const [editPostText, setEditPostText] = useState("");
   const [commentsModalVisible, setCommentsModalVisible] = useState(false);
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
   // Fetch posts for the correct user
-  const { data: postsData, refetch: refetchPosts, isLoading } = useGetUserPostsQuery({ userId }, { skip: !userId });
+  const {
+    data: postsData,
+    refetch: refetchPosts,
+    isLoading,
+  } = useGetUserPostsQuery({ userId }, { skip: !userId });
   const [deletePost] = useDeletePostMutation();
   const [updatePost, { isLoading: isUpdating }] = useUpdatePostMutation();
   const [reactToPost] = useToggleLikeMutation();
   const [reactingPostId, setReactingPostId] = useState<string | null>(null);
   const [likingPostId, setLikingPostId] = useState<string | null>(null);
-  const [reactionPickerPostId, setReactionPickerPostId] = useState<string | null>(null);
-  const posts = postsData && postsData.status && 'data' in postsData ? postsData.data.posts : [];
+  const [reactionPickerPostId, setReactionPickerPostId] = useState<
+    string | null
+  >(null);
+  const posts =
+    postsData && postsData.status && "data" in postsData
+      ? postsData.data.posts
+      : [];
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -73,7 +101,7 @@ const MyPosts: React.FC = ({ navigation, route }: any) => {
       setEditPostText("");
       refetchPosts();
     } catch (error) {
-      Alert.alert('Error', 'Failed to update post');
+      Alert.alert("Error", "Failed to update post");
     }
   };
 
@@ -91,7 +119,7 @@ const MyPosts: React.FC = ({ navigation, route }: any) => {
       setPostToDelete(null);
       refetchPosts();
     } catch (error) {
-      Alert.alert('Error', 'Failed to delete post');
+      Alert.alert("Error", "Failed to delete post");
     }
   };
 
@@ -105,22 +133,32 @@ const MyPosts: React.FC = ({ navigation, route }: any) => {
       return null;
     }
 
-    return posts.find((post: any) => String(post?.id) === String(reactionPickerPostId)) ?? null;
+    return (
+      posts.find(
+        (post: any) => String(post?.id) === String(reactionPickerPostId)
+      ) ?? null
+    );
   }, [posts, reactionPickerPostId]);
 
-  const handleReactToPost = async (postId: string, reactionType: ReactionType) => {
+  const handleReactToPost = async (
+    postId: string,
+    reactionType: ReactionType
+  ) => {
     try {
       setReactingPostId(postId);
       await reactToPost({ postId, reactionType }).unwrap();
       refetchPosts();
     } catch (error) {
-      console.error('Failed to update reaction:', error);
+      console.error("Failed to update reaction:", error);
     } finally {
       setReactingPostId(null);
     }
   };
 
-  const handleRemoveReaction = async (postId: string, currentReaction: ReactionType | null | undefined) => {
+  const handleRemoveReaction = async (
+    postId: string,
+    currentReaction: ReactionType | null | undefined
+  ) => {
     if (!currentReaction) {
       return;
     }
@@ -130,7 +168,7 @@ const MyPosts: React.FC = ({ navigation, route }: any) => {
 
   const handleQuickLike = (postId: string) => {
     setLikingPostId(postId);
-    handleReactToPost(postId, 'like').finally(() => {
+    handleReactToPost(postId, "like").finally(() => {
       setLikingPostId(null);
     });
   };
@@ -155,8 +193,8 @@ const MyPosts: React.FC = ({ navigation, route }: any) => {
   };
 
   const handlePostAction = (action: string, postId: string) => {
-    if (action === 'create') {
-      navigation.navigate('CreatePost');
+    if (action === "create") {
+      navigation.navigate("CreatePost");
     }
   };
 
@@ -164,9 +202,16 @@ const MyPosts: React.FC = ({ navigation, route }: any) => {
     <SafeAreaView edges={[]} style={styles.container}>
       <BasicTopBar
         onBackPress={() => navigation.goBack()}
-        title='Posts'
-        subtitle={isOwnProfile ? 'View / Manage your shared posts' : 'Posts shared by this user'}
-        containerStyle={{ paddingTop: DIMENSIONS.spacing.xxl, paddingBottom: DIMENSIONS.spacing.lg }}
+        title="Posts"
+        subtitle={
+          isOwnProfile
+            ? "View / Manage your shared posts"
+            : "Posts shared by this user"
+        }
+        containerStyle={{
+          paddingTop: DIMENSIONS.spacing.xxl,
+          paddingBottom: DIMENSIONS.spacing.lg,
+        }}
       />
 
       <RefreshableScrollView
@@ -178,7 +223,7 @@ const MyPosts: React.FC = ({ navigation, route }: any) => {
         {isOwnProfile && (
           <TouchableOpacity
             style={styles.createPostButton}
-            onPress={() => handlePostAction('create', '')}
+            onPress={() => handlePostAction("create", "")}
           >
             <Text style={styles.createPostButtonText}>Create New Post</Text>
           </TouchableOpacity>
@@ -190,124 +235,168 @@ const MyPosts: React.FC = ({ navigation, route }: any) => {
               <ActivityIndicator size="large" color={COLORS.primary} />
             </View>
           ) : posts.length === 0 ? (
-            <Text style={{ textAlign: 'center', color: COLORS._5E5E5E, marginTop: 32 }}>No posts yet.</Text>
+            <Text
+              style={{
+                textAlign: "center",
+                color: COLORS._5E5E5E,
+                marginTop: 32,
+              }}
+            >
+              No posts yet.
+            </Text>
           ) : (
             posts.map((post: any) => {
               const postId = post.id?.toString?.() ?? String(post.id);
-              const currentReaction = (post.currentUserReaction ?? null) as ReactionType | null;
-              const reactionSummary = (post.reactionSummary ?? undefined) as Record<ReactionType, number> | undefined;
+              const currentReaction = (post.currentUserReaction ??
+                null) as ReactionType | null;
+              const reactionSummary = (post.reactionSummary ?? undefined) as
+                | Record<ReactionType, number>
+                | undefined;
               const totalReactions = post.totalReactions ?? post.likeCount ?? 0;
 
               return (
                 <View key={post.id} style={styles.postCard}>
-                <View style={styles.postHeader}>
-                  <View style={styles.avatarContainer}>
+                  <View style={styles.postHeader}>
+                    {/* <View style={styles.avatarContainer}>
                     {post.user?.imageUrl ? (
                       <Image source={{ uri: post.user.imageUrl }} style={styles.avatarImage} />
                     ) : (
                       <Text style={styles.avatarText}>{post.user?.displayName?.charAt(0) || 'U'}</Text>
                     )}
-                  </View>
-                  <View style={styles.postHeaderInfo}>
+                  </View> */}
+                    {/* <View style={styles.postHeaderInfo}>
                     <Text style={styles.postUserName}>{post.user?.displayName || 'User'}</Text>
                     <Text style={styles.postTimestamp}>{post.createdAt ? new Date(post.createdAt).toLocaleDateString() : ''}</Text>
-                  </View>
-                  {isOwnProfile && (
-                    <View>
+                  </View> */}
+                    <View style={{ flex: 1 }} />
+                    {isOwnProfile && (
                       <TouchableOpacity
                         style={styles.postMenuButton}
                         onPress={() => handlePostMenuPress(postId)}
                       >
-                        <Text style={styles.postMenuDots}>⋯</Text>
+                        <Image source={ThreeDots} style={styles.postMenuDots} />
                       </TouchableOpacity>
-                      {openPostMenuId === postId && (
-                        <View style={styles.postMenuDropdown}>
-                          <TouchableOpacity
-                            onPress={() => handleEditPostPress(postId, post.title || '')}
-                            style={styles.postMenuOption}
-                          >
-                            <Text style={styles.postMenuOptionText}>Edit</Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            onPress={() => handleDeletePostPress(postId)}
-                            style={styles.postMenuOption}
-                          >
-                            <Text style={styles.postMenuOptionText}>Delete</Text>
-                          </TouchableOpacity>
-                        </View>
-                      )}
+                    )}
+                  </View>
+
+                  {isOwnProfile && openPostMenuId === postId && (
+                    <View style={styles.postMenuDropdown}>
+                      <TouchableOpacity
+                        onPress={() =>
+                          handleEditPostPress(postId, post.title || "")
+                        }
+                        style={styles.postMenuOption}
+                      >
+                        <Text style={styles.postMenuOptionText}>Edit</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => handleDeletePostPress(postId)}
+                        style={styles.postMenuOption}
+                      >
+                        <Text style={styles.postMenuOptionText}>Delete</Text>
+                      </TouchableOpacity>
                     </View>
                   )}
-                </View>
 
-                <Text style={styles.postContent}>{post.title || post.content}</Text>
+                  {/* Workout Information */}
+                  {post.workout && (
+                    <View style={styles.postWorkoutBadge}>
+                      <Text style={styles.postWorkoutIcon}>💪</Text>
+                      <View style={styles.postWorkoutInfo}>
+                        <Text style={styles.postWorkoutTitle}>
+                          {post.workout.title}
+                        </Text>
+                        <Text style={styles.postWorkoutDetails}>
+                          {post.workout.totalDuration} min •{" "}
+                          {post.workout.difficulty}
+                        </Text>
+                      </View>
+                    </View>
+                  )}
 
-                {/* Workout Information */}
-                {post.workout && (
-                  <View style={styles.postWorkoutBadge}>
-                    <Text style={styles.postWorkoutIcon}>💪</Text>
-                    <View style={styles.postWorkoutInfo}>
-                      <Text style={styles.postWorkoutTitle}>{post.workout.title}</Text>
-                      <Text style={styles.postWorkoutDetails}>
-                        {post.workout.totalDuration} min • {post.workout.difficulty}
+                  {/* Achievement Information */}
+                  {post.achievement && (
+                    <View style={styles.postAchievementBadge}>
+                      <Text style={styles.postAchievementIcon}>
+                        {post.achievement.icon || "🏆"}
                       </Text>
+                      <View style={styles.postAchievementInfo}>
+                        <Text style={styles.postAchievementTitle}>
+                          {post.achievement.title}
+                        </Text>
+                        <Text style={styles.postAchievementDescription}>
+                          {post.achievement.description}
+                        </Text>
+                      </View>
                     </View>
-                  </View>
-                )}
+                  )}
 
-                {/* Achievement Information */}
-                {post.achievement && (
-                  <View style={styles.postAchievementBadge}>
-                    <Text style={styles.postAchievementIcon}>{post.achievement.icon || '🏆'}</Text>
-                    <View style={styles.postAchievementInfo}>
-                      <Text style={styles.postAchievementTitle}>{post.achievement.title}</Text>
-                      <Text style={styles.postAchievementDescription}>{post.achievement.description}</Text>
-                    </View>
-                  </View>
-                )}
+                  {post.mediaUrl && (
+                    <Image
+                      source={{ uri: post.mediaUrl }}
+                      style={styles.postImagePlaceholder}
+                      resizeMode="cover"
+                    />
+                  )}
 
-                {post.mediaUrl && (
-                  <Image source={{ uri: post.mediaUrl }} style={styles.postImagePlaceholder} resizeMode="cover" />
-                )}
+                  <Text style={styles.postContent}>
+                    {post.title || post.content}
+                  </Text>
 
-                <View style={styles.postMetaRow}>
-                  <Text style={styles.postTimestampLeft}>{post.createdAt ? new Date(post.createdAt).toLocaleDateString() : ''}</Text>
-                  <View style={styles.postMetaIconsRight}>
-                    <TouchableOpacity
-                      style={styles.postMetaItem}
-                      onPress={() => handleQuickLike(postId)}
-                      disabled={likingPostId === postId}
-                    >
-                      {likingPostId === postId ? (
-                        <ActivityIndicator size="small" color={COLORS.primary} />
-                      ) : (
-                        <>
-                          <Image
-                            source={Like}
-                            style={[
-                              styles.postMetaIconImage,
-                              {
-                                tintColor:
-                                  currentReaction === 'like'
-                                    ? COLORS.gradient1
-                                    : '#888888',
-                              },
-                            ]}
+                  <View style={styles.postMetaRow}>
+                    <Text style={styles.postTimestampLeft}>
+                      {post.createdAt
+                        ? new Date(post.createdAt).toLocaleDateString()
+                        : ""}
+                    </Text>
+                    <View style={styles.postMetaIconsRight}>
+                      <TouchableOpacity
+                        style={styles.postMetaItem}
+                        onPress={() => handleQuickLike(postId)}
+                        disabled={likingPostId === postId}
+                      >
+                        {likingPostId === postId ? (
+                          <ActivityIndicator
+                            size="small"
+                            color={COLORS.primary}
                           />
-                          <Text style={styles.postMetaText}>{post.likeCount || 0}</Text>
-                        </>
-                      )}
-                    </TouchableOpacity>
-                    <TouchableOpacity 
-                      style={styles.postMetaItem}
-                      onPress={() => handleOpenComments(postId)}
-                    >
-                      <Image source={CommentIcon} style={styles.postMetaIconImage} />
-                      <Text style={styles.postMetaText}>{post.commentCount || 0}</Text>
-                    </TouchableOpacity>
+                        ) : (
+                          <>
+                            <Image
+                              source={Like}
+                              style={[
+                                styles.postMetaIconImage,
+                                {
+                                  tintColor: COLORS.gradient1,
+                                },
+                              ]}
+                            />
+                            <Text style={styles.postMetaText}>
+                              {post.likeCount || 0}
+                            </Text>
+                          </>
+                        )}
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.postMetaItem}
+                        onPress={() => handleOpenComments(postId)}
+                      >
+                        <Image
+                          source={CommentIcon}
+                          style={[
+                            styles.postMetaIconImage,
+                            {
+                              tintColor: COLORS.gradient1,
+                            },
+                          ]}
+                        />
+                        <Text style={styles.postMetaText}>
+                          {post.commentCount || 0}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
-                </View>
-                {/* <View style={styles.postReactionsRow}>
+                  {/* <View style={styles.postReactionsRow}>
                   <Text style={styles.postReactionsLabel}>Reactions</Text>
                   {reactingPostId === postId && likingPostId !== postId ? (
                     <ActivityIndicator size="small" color={COLORS.primary} />
@@ -329,7 +418,10 @@ const MyPosts: React.FC = ({ navigation, route }: any) => {
 
       <ReactionPicker
         visible={Boolean(reactionPickerPostId)}
-        currentReaction={(reactionPickerPost?.currentUserReaction ?? null) as ReactionType | null}
+        currentReaction={
+          (reactionPickerPost?.currentUserReaction ??
+            null) as ReactionType | null
+        }
         onSelect={(reaction) => {
           if (!reactionPickerPostId) {
             return;
@@ -338,8 +430,11 @@ const MyPosts: React.FC = ({ navigation, route }: any) => {
         }}
         onClose={handleCloseReactionPicker}
         onRemoveReaction={() => {
-          const activePostId = reactionPickerPostId ?? (reactionPickerPost?.id ? String(reactionPickerPost.id) : null);
-          const activeReaction = (reactionPickerPost?.currentUserReaction ?? null) as ReactionType | null;
+          const activePostId =
+            reactionPickerPostId ??
+            (reactionPickerPost?.id ? String(reactionPickerPost.id) : null);
+          const activeReaction = (reactionPickerPost?.currentUserReaction ??
+            null) as ReactionType | null;
 
           if (!activePostId || !activeReaction) {
             return;
@@ -368,7 +463,7 @@ const MyPosts: React.FC = ({ navigation, route }: any) => {
         onRequestClose={handleCancelEditPost}
       >
         <KeyboardAvoidingView
-          // behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={styles.editPostModalContainer}
         >
           <TouchableOpacity
@@ -406,7 +501,8 @@ const MyPosts: React.FC = ({ navigation, route }: any) => {
               <TouchableOpacity
                 style={[
                   styles.editPostSaveButton,
-                  (!editPostText.trim() || isUpdating) && styles.editPostSaveButtonDisabled
+                  (!editPostText.trim() || isUpdating) &&
+                    styles.editPostSaveButtonDisabled,
                 ]}
                 onPress={handleSaveEditPost}
                 disabled={!editPostText.trim() || isUpdating}
@@ -453,8 +549,8 @@ const styles = StyleSheet.create({
   createPostButton: {
     backgroundColor: COLORS.primary,
     borderRadius: 4,
-    paddingVertical: 16,
-    alignItems: 'center',
+    paddingVertical: 14,
+    alignItems: "center",
     marginBottom: 16,
     marginTop: 8,
     shadowColor: COLORS.black,
@@ -465,7 +561,7 @@ const styles = StyleSheet.create({
   },
   createPostButtonText: {
     color: COLORS.white,
-    fontSize: 16,
+    fontSize: 14,
     fontFamily: FontWeight.Medium,
   },
   postsList: {
@@ -482,32 +578,34 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 2,
+    overflow: "visible",
   },
   postHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    // marginBottom: 12,
   },
   avatarContainer: {
     width: 40,
     height: 40,
     borderRadius: 20,
     backgroundColor: COLORS.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginRight: 12,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   avatarImage: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    resizeMode: 'cover',
+    resizeMode: "cover",
   },
   avatarText: {
     color: COLORS.surface,
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   postHeaderInfo: {
     flex: 1,
@@ -523,49 +621,54 @@ const styles = StyleSheet.create({
     fontFamily: FontWeight.Regular,
   },
   postMenuButton: {
-    padding: 4,
-    marginLeft: 8,
+    position: "relative",
+    overflow: "visible",
   },
   postMenuDots: {
-    fontSize: 18,
-    color: COLORS.textSecondary,
+    width: 20,
+    height: 20,
+    top: 2,
+    position: "absolute",
+    end: -15,
+    tintColor: COLORS._5E5E5E,
   },
   postContent: {
     fontSize: 15,
     color: COLORS.text,
     fontFamily: FontWeight.Regular,
     marginBottom: 8,
+    zIndex: 1,
   },
   postImagePlaceholder: {
-    width: '100%',
+    width: "98.2%",
     height: 120,
     backgroundColor: COLORS._E2E2E2,
     borderRadius: 12,
     marginBottom: 8,
   },
   postMetaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginTop: 8,
   },
   postTimestampLeft: {
     fontSize: 12,
-    color: COLORS.textSecondary,
+    color: COLORS._616888,
     fontFamily: FontWeight.Regular,
   },
   postMetaIconsRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 20,
   },
   postReactionWrapper: {
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   postReactionsRow: {
     marginTop: DIMENSIONS.spacing.xs,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: DIMENSIONS.spacing.sm,
   },
   postReactionsLabel: {
@@ -574,8 +677,8 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
   },
   postMetaItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
   },
   postMetaIconImage: {
@@ -584,12 +687,12 @@ const styles = StyleSheet.create({
     tintColor: COLORS.gradient1,
   },
   postMetaText: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-    fontFamily: FontWeight.Medium,
+    fontSize: 12,
+    color: COLORS._616888,
+    fontFamily: FontWeight.Regular,
   },
   postActions: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: DIMENSIONS.spacing.lg,
     paddingTop: DIMENSIONS.spacing.sm,
     borderTopWidth: 1,
@@ -597,14 +700,14 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   postAction: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
   },
   postActionIcon: {
     width: 20,
     height: 20,
-    tintColor: '#888888',
+    tintColor: "#888888",
   },
   postActionText: {
     fontSize: 14,
@@ -612,15 +715,15 @@ const styles = StyleSheet.create({
     fontFamily: FontWeight.Medium,
   },
   fab: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 32,
     right: 32,
     width: 56,
     height: 56,
     borderRadius: 28,
     backgroundColor: COLORS.secondary,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     shadowColor: COLORS.black,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.16,
@@ -630,23 +733,23 @@ const styles = StyleSheet.create({
   fabIcon: {
     color: COLORS.white,
     fontSize: 32,
-    fontWeight: '600',
+    fontWeight: "600",
     marginTop: -2,
   },
   postMenuDropdown: {
-    position: 'absolute',
-    top: 35,
-    right: 0,
+    position: "absolute",
+    top: 50,
+    right: 16,
     backgroundColor: COLORS.surface,
     borderRadius: 8,
     paddingVertical: DIMENSIONS.spacing.xs,
-    minWidth: 120,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-    zIndex: 1000,
+    minWidth: 140,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 999,
+    zIndex: 9999,
   },
   postMenuOption: {
     paddingVertical: DIMENSIONS.spacing.sm,
@@ -654,13 +757,13 @@ const styles = StyleSheet.create({
   },
   postMenuOptionText: {
     fontSize: 14,
-    color: '#FF3B30',
-    fontWeight: '500',
+    color: "#FF3B30",
+    fontWeight: "500",
   },
   editPostModalContainer: {
     flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: "flex-end",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   editPostModalOverlay: {
     flex: 1,
@@ -670,12 +773,12 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: DIMENSIONS.spacing.lg,
-    maxHeight: '70%',
+    maxHeight: "70%",
   },
   editPostModalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: DIMENSIONS.spacing.lg,
   },
   editPostModalTitle: {
@@ -696,11 +799,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: COLORS.text,
     minHeight: 120,
-    textAlignVertical: 'top',
+    textAlignVertical: "top",
   },
   editPostModalActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginTop: DIMENSIONS.spacing.lg,
   },
   editPostCancelButton: {
@@ -708,7 +811,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.border,
     borderRadius: 8,
     paddingVertical: DIMENSIONS.spacing.md,
-    alignItems: 'center',
+    alignItems: "center",
     marginRight: DIMENSIONS.spacing.sm,
   },
   editPostCancelButtonText: {
@@ -721,7 +824,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     borderRadius: 8,
     paddingVertical: DIMENSIONS.spacing.md,
-    alignItems: 'center',
+    alignItems: "center",
     marginLeft: DIMENSIONS.spacing.sm,
   },
   editPostSaveButtonDisabled: {
@@ -734,13 +837,13 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: DIMENSIONS.spacing.xl,
   },
   workoutBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: COLORS._D2E7FF,
     borderRadius: 12,
     padding: DIMENSIONS.spacing.md,
@@ -765,8 +868,8 @@ const styles = StyleSheet.create({
     color: COLORS._616888,
   },
   achievementBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: COLORS._FFF5E9,
     borderRadius: 12,
     padding: DIMENSIONS.spacing.md,
@@ -791,12 +894,14 @@ const styles = StyleSheet.create({
     color: COLORS._616888,
   },
   postWorkoutBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: COLORS._D2E7FF,
     borderRadius: 12,
+    marginRight: 5,
+
     padding: DIMENSIONS.spacing.md,
-    marginTop: DIMENSIONS.spacing.sm,
+    marginBottom: 10,
   },
   postWorkoutIcon: {
     fontSize: 20,
@@ -817,12 +922,13 @@ const styles = StyleSheet.create({
     color: COLORS._616888,
   },
   postAchievementBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: COLORS._FFF5E9,
     borderRadius: 12,
     padding: DIMENSIONS.spacing.md,
-    marginTop: DIMENSIONS.spacing.sm,
+    marginRight: 5,
+    marginBottom: 10,
   },
   postAchievementIcon: {
     fontSize: 20,

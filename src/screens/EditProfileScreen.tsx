@@ -66,6 +66,9 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
     user?.imageUrl || null
   );
   const [imageFile, setImageFile] = useState<any>(null);
+  const [videoFile, setVideoFile] = useState<any>(null);
+  const [workExperience, setWorkExperience] = useState<string>("");
+
   const [deleteImage, setDeleteImage] = useState(false);
   const [isLocationFocused, setIsLocationFocused] = useState(false);
   const [isBioFocused, setIsBioFocused] = useState(false);
@@ -189,6 +192,12 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
           type: mimeType,
           name: asset.fileName || `profile_${Date.now()}.${fileExtension}`,
         });
+        console.log("Picked image file:", asset.uri);
+        console.log("MIME type:", mimeType);
+        console.log(
+          "File name:",
+          asset.fileName || `profile_${Date.now()}.${fileExtension}`
+        );
         setDeleteImage(false); // Reset delete flag when new image is selected
       }
     } catch (error) {
@@ -268,12 +277,14 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
       let response;
 
       // If there's an image file, use FormData mutation
-      if (imageFile) {
+      if (imageFile || videoFile) {
         const payload: any = {
           displayName: name.trim(),
           bio: bio.trim(),
           location: location.trim(),
+          workExperience: workExperience.trim(),
           imageFile: imageFile,
+          videoFile: videoFile,
         };
 
         response = await updateProfileWithImage(payload).unwrap();
@@ -283,6 +294,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
           displayName: name.trim(),
           bio: bio.trim(),
           location: location.trim(),
+          workExperience: workExperience.trim(),
           imageUrl: "", // Send empty string to delete image
         };
 
@@ -293,6 +305,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
           displayName: name.trim(),
           bio: bio.trim(),
           location: location.trim(),
+          workExperience: workExperience.trim(),
         };
 
         response = await updateProfile(payload).unwrap();
@@ -472,7 +485,20 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
         {renderProfileAvatar()}
         <View style={styles.formWrapper}>
           {renderProfileForm()}
-          {user?.role === "trainer" && <TrainerProfileDetails />}
+          {user?.role === "trainer" && (
+            <TrainerProfileDetails
+              workExperience={user?.workExperience || ""}
+              videoFile={user?.introVideo || null}
+              onVideoFileChange={(file) => {
+                console.log("Edit Profile Trainer", file);
+                setVideoFile(file);
+              }}
+              onWorkExperienceChange={(value) => {
+                console.log("Work Experience:", value);
+                setWorkExperience(value);
+              }}
+            />
+          )}
           <TouchableOpacity
             style={[styles.saveBtn, isLoading && styles.saveBtnDisabled]}
             onPress={handleSave}
@@ -515,7 +541,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     width: "100%",
     paddingHorizontal: 10,
-    paddingTop: 10,
+    paddingTop: DIMENSIONS.spacing.xxl,
     marginBottom: 16,
   },
   editProfileTitle: {

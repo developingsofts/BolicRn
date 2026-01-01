@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -16,20 +16,20 @@ import {
   RefreshControl,
   Dimensions,
   TouchableWithoutFeedback,
-} from 'react-native';
-import { COLORS, DIMENSIONS } from '../config/constants';
+} from "react-native";
+import { COLORS, DIMENSIONS } from "../config/constants";
 
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 const MODAL_HEIGHT = SCREEN_HEIGHT * 0.7;
-import { Send } from '../../assets';
-import ConfirmationDialog from './ConfirmationDialog';
-import { useAuth } from '../contexts/AuthContext';
+import { Send } from "../../assets";
+import ConfirmationDialog from "./ConfirmationDialog";
+import { useAuth } from "../contexts/AuthContext";
 import {
   useGetPostCommentsQuery,
   useCreateCommentMutation,
   useDeleteCommentMutation,
   useUpdateCommentMutation,
-} from '../services/api/likesCommentsApi';
+} from "../services/api/likesCommentsApi";
 
 interface CommentsModalProps {
   visible: boolean;
@@ -54,17 +54,31 @@ interface Comment {
   replies?: Comment[];
 }
 
-const CommentsModal: React.FC<CommentsModalProps> = ({ visible, postId, onClose }) => {
+const CommentsModal: React.FC<CommentsModalProps> = ({
+  visible,
+  postId,
+  onClose,
+}) => {
   const { user, isAuthenticated } = useAuth();
-  const [commentText, setCommentText] = useState('');
-  const [replyingTo, setReplyingTo] = useState<{ id: number; name: string } | null>(null);
-  const [editingComment, setEditingComment] = useState<{ id: number; content: string } | null>(null);
+  const [commentText, setCommentText] = useState("");
+  const [replyingTo, setReplyingTo] = useState<{
+    id: number;
+    name: string;
+  } | null>(null);
+  const [editingComment, setEditingComment] = useState<{
+    id: number;
+    content: string;
+  } | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [commentToDelete, setCommentToDelete] = useState<number | null>(null);
   const [openMenuId, setOpenMenuId] = useState<number | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  const { data: commentsData, isLoading, refetch } = useGetPostCommentsQuery(
+  const {
+    data: commentsData,
+    isLoading,
+    refetch,
+  } = useGetPostCommentsQuery(
     { postId, page: 1, limit: 50 },
     { skip: !visible || !isAuthenticated }
   );
@@ -73,9 +87,9 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ visible, postId, onClose 
   const [deleteComment, { isLoading: isDeleting }] = useDeleteCommentMutation();
   const [updateComment, { isLoading: isUpdating }] = useUpdateCommentMutation();
 
-  const comments: Comment[] = 
-    (commentsData?.status && commentsData?.data?.comments) 
-      ? commentsData.data.comments 
+  const comments: Comment[] =
+    commentsData?.status && commentsData?.data?.comments
+      ? commentsData.data.comments
       : [];
 
   const handleSendComment = async () => {
@@ -83,7 +97,7 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ visible, postId, onClose 
 
     // Store the comment text and clear immediately to prevent duplicates
     const textToSend = commentText.trim();
-    setCommentText('');
+    setCommentText("");
 
     try {
       if (editingComment) {
@@ -105,10 +119,15 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ visible, postId, onClose 
 
       refetch();
     } catch (error) {
-      console.error('Failed to post comment:', error);
+      console.error("Failed to post comment:", error);
       // Restore the comment text on error
       setCommentText(textToSend);
-      Alert.alert('Error', `Failed to ${editingComment ? 'update' : 'post'} comment. Please try again.`);
+      Alert.alert(
+        "Error",
+        `Failed to ${
+          editingComment ? "update" : "post"
+        } comment. Please try again.`
+      );
     }
   };
 
@@ -131,20 +150,20 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ visible, postId, onClose 
 
   const handleCancelEdit = () => {
     setEditingComment(null);
-    setCommentText('');
+    setCommentText("");
   };
 
   const confirmDeleteComment = async () => {
     if (!commentToDelete) return;
-    
+
     try {
       await deleteComment(commentToDelete.toString()).unwrap();
       refetch();
       setShowDeleteDialog(false);
       setCommentToDelete(null);
     } catch (error) {
-      console.error('Failed to delete comment:', error);
-      Alert.alert('Error', 'Failed to delete comment.');
+      console.error("Failed to delete comment:", error);
+      Alert.alert("Error", "Failed to delete comment.");
       setShowDeleteDialog(false);
       setCommentToDelete(null);
     }
@@ -170,35 +189,43 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ visible, postId, onClose 
     const now = new Date();
     const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
-    if (seconds < 60) return 'just now';
+    if (seconds < 60) return "just now";
     if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
     if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
     if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
     return `${Math.floor(seconds / 604800)}w ago`;
   };
 
-  const renderComment = ({ item, isReply = false }: { item: Comment; isReply?: boolean }) => {
-    const userName = item.user.displayName || item.user.userName || 'Anonymous';
+  const renderComment = ({
+    item,
+    isReply = false,
+  }: {
+    item: Comment;
+    isReply?: boolean;
+  }) => {
+    const userName = item.user.displayName || item.user.userName || "Anonymous";
     const initials = userName
-      .split(' ')
+      .split(" ")
       .map((n: string) => n[0])
-      .join('')
+      .join("")
       .toUpperCase()
       .substring(0, 2);
 
     // Add cache busting parameter to force image refresh on pull-to-refresh
-    const avatarUri = item.user.imageUrl 
-      ? item.user.imageUrl.includes('?') 
-        ? item.user.imageUrl 
-        : `${item.user.imageUrl}?v=${new Date(item.updatedAt || item.createdAt).getTime()}`
+    const avatarUri = item.user.imageUrl
+      ? item.user.imageUrl.includes("?")
+        ? item.user.imageUrl
+        : `${item.user.imageUrl}?v=${new Date(
+            item.updatedAt || item.createdAt
+          ).getTime()}`
       : null;
 
     return (
       <View style={[styles.commentContainer, isReply && styles.replyContainer]}>
         <View style={styles.commentAvatar}>
           {avatarUri ? (
-            <Image 
-              source={{ uri: avatarUri }} 
+            <Image
+              source={{ uri: avatarUri }}
               style={styles.commentAvatarImage}
             />
           ) : (
@@ -209,11 +236,13 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ visible, postId, onClose 
           <View style={styles.commentHeader}>
             <View style={styles.commentHeaderLeft}>
               <Text style={styles.commentUserName}>{userName}</Text>
-              <Text style={styles.commentTime}>{getTimeAgo(item.createdAt)}</Text>
+              <Text style={styles.commentTime}>
+                {getTimeAgo(item.createdAt)}
+              </Text>
             </View>
             {user?.id && Number(user.id) === item.userId && (
               <View>
-                <TouchableOpacity 
+                <TouchableOpacity
                   onPress={() => handleMenuPress(item.id)}
                   style={styles.commentMenuButton}
                 >
@@ -221,13 +250,13 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ visible, postId, onClose 
                 </TouchableOpacity>
                 {openMenuId === item.id && (
                   <View style={styles.menuDropdown}>
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       onPress={() => handleEditPress(item.id, item.content)}
                       style={styles.menuOption}
                     >
                       <Text style={styles.menuOptionText}>Edit</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       onPress={() => handleDeletePress(item.id)}
                       style={styles.menuOption}
                     >
@@ -249,7 +278,9 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ visible, postId, onClose 
           {item.replies && item.replies.length > 0 && (
             <View style={styles.repliesContainer}>
               {item.replies.map((reply) => (
-                <View key={reply.id}>{renderComment({ item: reply, isReply: true })}</View>
+                <View key={reply.id}>
+                  {renderComment({ item: reply, isReply: true })}
+                </View>
               ))}
             </View>
           )}
@@ -259,16 +290,21 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ visible, postId, onClose 
   };
 
   return (
-    <Modal 
-      visible={visible} 
-      animationType="slide" 
+    <Modal
+      visible={visible}
+      animationType="slide"
       onRequestClose={onClose}
       transparent={true}
     >
-      <TouchableWithoutFeedback onPress={onClose}>
-        <View style={styles.modalOverlay}>
-          <TouchableWithoutFeedback>
-            <View style={styles.modalContainer}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.keyboardAvoidingContainer}
+        enabled={true}
+      >
+        <TouchableWithoutFeedback onPress={onClose}>
+          <View style={styles.modalOverlay}>
+            <TouchableWithoutFeedback>
+              <View style={styles.modalContainer}>
               {/* Drag Handle */}
               <View style={styles.dragHandleContainer}>
                 <View style={styles.dragHandle} />
@@ -282,18 +318,16 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ visible, postId, onClose 
                 </TouchableOpacity>
               </View>
 
-              <KeyboardAvoidingView
-                style={styles.keyboardView}
-                // behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                keyboardVerticalOffset={0}
-              >
+              <View style={styles.keyboardView}>
                 {isLoading ? (
                   <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color={COLORS.primary} />
                   </View>
                 ) : comments.length === 0 ? (
                   <View style={styles.emptyContainer}>
-                    <Text style={styles.emptyText}>No comments yet. Be the first to comment!</Text>
+                    <Text style={styles.emptyText}>
+                      No comments yet. Be the first to comment!
+                    </Text>
                   </View>
                 ) : (
                   <FlatList
@@ -324,7 +358,9 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ visible, postId, onClose 
                   )}
                   {replyingTo && !editingComment && (
                     <View style={styles.replyingToContainer}>
-                      <Text style={styles.replyingToText}>Replying to {replyingTo.name}</Text>
+                      <Text style={styles.replyingToText}>
+                        Replying to {replyingTo.name}
+                      </Text>
                       <TouchableOpacity onPress={() => setReplyingTo(null)}>
                         <Text style={styles.cancelReplyText}>Cancel</Text>
                       </TouchableOpacity>
@@ -334,11 +370,11 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ visible, postId, onClose 
                     <TextInput
                       style={styles.input}
                       placeholder={
-                        editingComment 
-                          ? 'Edit your comment...' 
-                          : replyingTo 
-                            ? 'Write a reply...' 
-                            : 'Write a comment...'
+                        editingComment
+                          ? "Edit your comment..."
+                          : replyingTo
+                          ? "Write a reply..."
+                          : "Write a comment..."
                       }
                       placeholderTextColor={COLORS.textSecondary}
                       value={commentText}
@@ -347,11 +383,15 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ visible, postId, onClose 
                       maxLength={500}
                     />
                     <TouchableOpacity
-                      style={[styles.sendButton, (!commentText.trim() || isCreating || isUpdating) && styles.sendButtonDisabled]}
+                      style={[
+                        styles.sendButton,
+                        (!commentText.trim() || isCreating || isUpdating) &&
+                          styles.sendButtonDisabled,
+                      ]}
                       onPress={handleSendComment}
                       disabled={!commentText.trim() || isCreating || isUpdating}
                     >
-                      {(isCreating || isUpdating) ? (
+                      {isCreating || isUpdating ? (
                         <ActivityIndicator size="small" color={COLORS.white} />
                       ) : (
                         <Image source={Send} style={styles.sendIcon} />
@@ -359,11 +399,12 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ visible, postId, onClose 
                     </TouchableOpacity>
                   </View>
                 </View>
-              </KeyboardAvoidingView>
+              </View>
             </View>
-          </TouchableWithoutFeedback>
-        </View>
-      </TouchableWithoutFeedback>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
 
       <ConfirmationDialog
         visible={showDeleteDialog}
@@ -380,17 +421,20 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ visible, postId, onClose 
 };
 
 const styles = StyleSheet.create({
+  keyboardAvoidingContainer: {
+    flex: 1,
+  },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
   },
   modalContainer: {
     height: MODAL_HEIGHT,
     backgroundColor: COLORS.background,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: -4,
@@ -400,7 +444,7 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   dragHandleContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: DIMENSIONS.spacing.sm,
   },
   dragHandle: {
@@ -410,9 +454,9 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   headerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: DIMENSIONS.spacing.lg,
     paddingBottom: DIMENSIONS.spacing.md,
     borderBottomWidth: 1,
@@ -420,14 +464,14 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     color: COLORS.text,
   },
   closeButton: {
     width: 32,
     height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     borderRadius: 16,
   },
   closeButtonText: {
@@ -448,19 +492,19 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   emptyContainer: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     padding: DIMENSIONS.spacing.xl,
   },
   emptyText: {
     fontSize: 14,
     color: COLORS.textSecondary,
-    textAlign: 'center',
+    textAlign: "center",
   },
   commentsList: {
     padding: DIMENSIONS.spacing.lg,
@@ -468,7 +512,7 @@ const styles = StyleSheet.create({
     paddingTop: DIMENSIONS.spacing.md,
   },
   commentContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     marginBottom: DIMENSIONS.spacing.lg,
     backgroundColor: COLORS.surface,
     padding: DIMENSIONS.spacing.md,
@@ -484,8 +528,8 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 18,
     backgroundColor: COLORS.secondary,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginRight: DIMENSIONS.spacing.sm,
   },
   commentAvatarImage: {
@@ -495,26 +539,26 @@ const styles = StyleSheet.create({
   },
   commentAvatarText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: COLORS.white,
   },
   commentContent: {
     flex: 1,
   },
   commentHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: DIMENSIONS.spacing.xs,
   },
   commentHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     flex: 1,
   },
   commentUserName: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: COLORS.text,
     marginRight: DIMENSIONS.spacing.sm,
   },
@@ -529,17 +573,17 @@ const styles = StyleSheet.create({
   commentMenuIcon: {
     fontSize: 20,
     color: COLORS.textSecondary,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   menuDropdown: {
-    position: 'absolute',
+    position: "absolute",
     top: 30,
     right: 0,
     backgroundColor: COLORS.surface,
     borderRadius: 8,
     paddingVertical: DIMENSIONS.spacing.xs,
     minWidth: 120,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
@@ -552,8 +596,8 @@ const styles = StyleSheet.create({
   },
   menuOptionText: {
     fontSize: 14,
-    color: '#FF3B30',
-    fontWeight: '500',
+    color: "#FF3B30",
+    fontWeight: "500",
   },
   commentText: {
     fontSize: 14,
@@ -562,12 +606,12 @@ const styles = StyleSheet.create({
     marginBottom: DIMENSIONS.spacing.xs,
   },
   commentActions: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: DIMENSIONS.spacing.md,
   },
   commentActionText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: "600",
     color: COLORS.primary,
   },
   commentActionDelete: {
@@ -580,12 +624,12 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surface,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
-    paddingBottom: Platform.OS === 'ios' ? 30 : DIMENSIONS.spacing.md,
+    paddingBottom: Platform.OS === "ios" ? 30 : DIMENSIONS.spacing.md,
   },
   replyingToContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: DIMENSIONS.spacing.lg,
     paddingVertical: DIMENSIONS.spacing.sm,
     backgroundColor: COLORS._E6E6E7,
@@ -596,12 +640,12 @@ const styles = StyleSheet.create({
   },
   cancelReplyText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: "600",
     color: COLORS.primary,
   },
   inputRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
+    flexDirection: "row",
+    alignItems: "flex-end",
     paddingHorizontal: DIMENSIONS.spacing.lg,
     paddingTop: DIMENSIONS.spacing.md,
   },
@@ -621,8 +665,8 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
     backgroundColor: COLORS.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   sendButtonDisabled: {
     backgroundColor: COLORS.border,

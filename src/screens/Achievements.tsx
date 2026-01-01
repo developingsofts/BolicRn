@@ -23,7 +23,13 @@ const Achievements: React.FC = ({ navigation, route }: any) => {
   const isOwnProfile =
     !route?.params?.userId || route?.params?.userId === user?.id;
   const handleBookSession = () => {
-    navigation.navigate("ScheduledSessions");
+    navigation.navigate("Main", {
+      screen: "Find",
+      params: {
+        screen: "FindMain",
+        params: { tab: "FindTrainers" },
+      },
+    });
   };
 
   // Pull to refresh state and handler
@@ -196,7 +202,7 @@ const styles = StyleSheet.create({
   bookButton: {
     width: "100%",
     backgroundColor: COLORS.primary,
-    paddingVertical: 18,
+    paddingVertical: 14,
     borderRadius: 4,
     alignItems: "center",
     marginBottom: 20,
@@ -209,8 +215,8 @@ const styles = StyleSheet.create({
   },
   bookButtonText: {
     color: COLORS.white,
-    fontFamily: FontWeight.SemiBold,
-    fontSize: 16,
+    fontFamily: FontWeight.Medium,
+    fontSize: 14,
     letterSpacing: 0.2,
   },
   achievementsGrid: {

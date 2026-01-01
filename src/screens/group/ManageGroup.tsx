@@ -168,7 +168,7 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
     if (!Array.isArray(joinRequests)) return [];
     return joinRequests.map((request: any) => getRequestId(request));
   }, [joinRequests]);
-  
+
   useEffect(() => {
     if (currentRequestIds.length === 0) {
       return;
@@ -554,7 +554,11 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
                     <Menu.Item
                       key={option}
                       style={{ width: "100%" }}
-                      titleStyle={{ color: COLORS.gradient1 }}
+                      titleStyle={{
+                        color: COLORS.gradient1,
+                        fontFamily: FontWeight.Medium,
+                        fontSize: 14,
+                      }}
                       onPress={() => {
                         setLocation(option);
                         setLocationMenuVisible(false);
@@ -595,7 +599,11 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
                   {groupTypeOptions.map((option) => (
                     <Menu.Item
                       key={option}
-                      titleStyle={{ color: COLORS.gradient1 }}
+                      titleStyle={{
+                        color: COLORS.gradient1,
+                        fontFamily: FontWeight.Medium,
+                        fontSize: 14,
+                      }}
                       onPress={() => {
                         setGroupType(option);
                         setGroupTypeMenuVisible(false);
@@ -645,7 +653,11 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
               {privacyOptions.map((option) => (
                 <Menu.Item
                   key={option}
-                  titleStyle={{ color: COLORS.gradient1 }}
+                  titleStyle={{
+                    color: COLORS.gradient1,
+                    fontFamily: FontWeight.Medium,
+                    fontSize: 14,
+                  }}
                   onPress={() => {
                     setPrivacy(option);
                     setPrivacyMenuVisible(false);
@@ -910,6 +922,7 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     padding: r(8),
+    marginTop: DIMENSIONS.spacing.lg,
   },
   heroTags: {
     flexDirection: "row",
@@ -968,7 +981,8 @@ const styles = StyleSheet.create({
   textInput: {
     borderRadius: r(8),
     padding: r(12),
-    fontSize: 16,
+    fontSize: 14,
+    fontFamily: FontWeight.Medium,
     color: COLORS.gradient1,
     backgroundColor: COLORS.background,
   },

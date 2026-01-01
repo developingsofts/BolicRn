@@ -11,7 +11,7 @@ import {
   Modal,
   ActivityIndicator,
 } from "react-native";
-import RefreshableScrollView from '../../components/RefreshableScrollView';
+import RefreshableScrollView from "../../components/RefreshableScrollView";
 import { Menu, Button, Divider, FAB } from "react-native-paper";
 import { COLORS, DIMENSIONS } from "../../config/constants";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -22,8 +22,8 @@ import { r } from "../../designing/responsiveDesigns";
 import GroupDetails from "./GroupDetails";
 import STRINGS from "../../config/strings";
 import BasicTopBar from "../../components/BasicTopBar";
-import { useGetAllGroupsQuery } from '../../services/api/groupsApi';
-import { useAuth } from '../../contexts/AuthContext';
+import { useGetAllGroupsQuery } from "../../services/api/groupsApi";
+import { useAuth } from "../../contexts/AuthContext";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -38,19 +38,33 @@ const GroupsScreen: React.FC<GroupsScreenProps> = ({ navigation }) => {
   const [showGroupDetails, setShowGroupDetails] = useState(false);
   const [page, setPage] = useState(1);
   const [refreshing, setRefreshing] = useState(false);
-  
+
   const { isAuthenticated } = useAuth();
-  
+
   const categories = ["All", "Gym", "Running", "Cycling", "Yoga", "Swimming"];
-  
+
   // Fetch all groups (visible to everyone) with pagination and filter
-  const { data: groupsData, isLoading, isFetching, refetch } = useGetAllGroupsQuery({ 
-    page, 
-    limit: 10,
-    type: selectedCategory 
-  }, { skip: !isAuthenticated });
-  const userGroups = (groupsData?.status && groupsData?.data?.groups) ? groupsData.data.groups : [];
-  const pagination = (groupsData?.status && groupsData?.data?.pagination) ? groupsData.data.pagination : null;
+  const {
+    data: groupsData,
+    isLoading,
+    isFetching,
+    refetch,
+  } = useGetAllGroupsQuery(
+    {
+      page,
+      limit: 10,
+      type: selectedCategory,
+    },
+    { skip: !isAuthenticated }
+  );
+  const userGroups =
+    groupsData?.status && groupsData?.data?.groups
+      ? groupsData.data.groups
+      : [];
+  const pagination =
+    groupsData?.status && groupsData?.data?.pagination
+      ? groupsData.data.pagination
+      : null;
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -61,7 +75,7 @@ const GroupsScreen: React.FC<GroupsScreenProps> = ({ navigation }) => {
 
   const handleLoadMore = () => {
     if (!isFetching && pagination?.hasNextPage) {
-      setPage(prevPage => prevPage + 1);
+      setPage((prevPage) => prevPage + 1);
     }
   };
 
@@ -86,7 +100,7 @@ const GroupsScreen: React.FC<GroupsScreenProps> = ({ navigation }) => {
         </Text>
       </View>
       <Text style={styles.groupCategory}>
-        {group.type || 'General'}
+        {group.type || "General"}
         {"  "}•{"  "}
         {group.location}
       </Text>
@@ -171,9 +185,9 @@ const GroupsScreen: React.FC<GroupsScreenProps> = ({ navigation }) => {
           <Text style={styles.emptyText}>
             Create your first group to start building your fitness community!
           </Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.createButton}
-            onPress={() => navigation.navigate('ManageGroup')}
+            onPress={() => navigation.navigate("ManageGroup")}
           >
             <Text style={styles.createButtonText}>Create Group</Text>
           </TouchableOpacity>
@@ -192,12 +206,12 @@ const GroupsScreen: React.FC<GroupsScreenProps> = ({ navigation }) => {
             </React.Fragment>
           ))}
           {isFetching && page > 1 && (
-            <View style={{ padding: 10, alignItems: 'center' }}>
+            <View style={{ padding: 10, alignItems: "center" }}>
               <ActivityIndicator size="small" color={COLORS.primary} />
             </View>
           )}
           {pagination?.hasNextPage && !isFetching && (
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.loadMoreButton}
               onPress={handleLoadMore}
             >
@@ -207,9 +221,9 @@ const GroupsScreen: React.FC<GroupsScreenProps> = ({ navigation }) => {
         </RefreshableScrollView>
       )}
 
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.fab}
-        onPress={() => navigation.navigate('ManageGroup')}
+        onPress={() => navigation.navigate("ManageGroup")}
       >
         <Image source={Add} style={{ width: 16, height: 16 }} />
       </TouchableOpacity>
@@ -296,12 +310,13 @@ const styles = StyleSheet.create({
   },
   menuItemText: {
     fontSize: 16,
-    color: COLORS.text,
+    color: COLORS.app_black,
+    fontFamily: FontWeight.Medium,
     textAlign: "left",
   },
   menuItemTextActive: {
     color: COLORS.primary,
-    fontWeight: "600",
+    fontFamily: FontWeight.Medium,
     textAlign: "left",
   },
   groupsContainer: {
@@ -372,8 +387,8 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     padding: DIMENSIONS.spacing.xl,
   },
   loadingText: {
@@ -384,8 +399,8 @@ const styles = StyleSheet.create({
   },
   emptyContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     padding: DIMENSIONS.spacing.xl,
   },
   emptyTitle: {
@@ -397,7 +412,7 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 14,
     color: COLORS._5E5E5E,
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: DIMENSIONS.spacing.lg,
     fontFamily: FontWeight.Regular,
   },
@@ -410,7 +425,7 @@ const styles = StyleSheet.create({
   createButtonText: {
     color: COLORS.white,
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     fontFamily: FontWeight.SemiBold,
   },
   loadMoreButton: {
@@ -418,7 +433,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 8,
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: 10,
     marginBottom: 10,
     marginHorizontal: DIMENSIONS.spacing.lg,
@@ -426,7 +441,7 @@ const styles = StyleSheet.create({
   loadMoreText: {
     color: COLORS.white,
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     fontFamily: FontWeight.SemiBold,
   },
 });

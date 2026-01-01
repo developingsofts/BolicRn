@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { use, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -22,12 +22,16 @@ import BasicTopBar from "../components/BasicTopBar";
 import {
   matchingApi,
   useGetPotentialMatchesQuery,
+  useGetPotentialTrainersQuery,
+  useGetPotentialUsersQuery,
+  useSwipeUserMutation,
 } from "../services/api/matchingApi";
 import {
   useFollowUserMutation,
   useGetFollowingQuery,
   useUnfollowUserMutation,
 } from "../services/api/followsApi";
+import FontWeight from "../hooks/useInterFonts";
 
 // Helper to map API user to SwipeableItem
 function mapToSwipeableItem(item: any): SwipeableItem {
@@ -79,9 +83,10 @@ interface FindScreenProps {
   route: any;
 }
 
-const FindScreen: React.FC<FindScreenProps> = ({ navigation,route }) => {
+const FindScreen: React.FC<FindScreenProps> = ({ navigation, route }) => {
   const [selectedFilters, setSelectedFilters] = useState<string[]>(["All"]);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [removedIds, setRemovedIds] = useState<number[]>([]);
   const tab = route?.params?.tab || "FindPartners";
   const [activeTab, setActiveTab] = useState<"partners" | "trainers">(
     tab === "FindTrainers" ? "trainers" : "partners"
@@ -94,36 +99,78 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation,route }) => {
   } | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
+  const [partnersPage, setPartnersPage] = useState(1);
+  const [trainersPage, setTrainersPage] = useState(1);
+
   const [followUser] = useFollowUserMutation();
   const [unfollowUser] = useUnfollowUserMutation();
 
-  const {
-    data: potentialData,
-    refetch,
-    isLoading,
-    isFetching,
-    error,
-  } = useGetPotentialMatchesQuery();
+  // const {
+  //   data: potentialData,
+  //   refetch,
+  //   isLoading,
+  //   isFetching,
+  //   error,
+  // } = useGetPotentialMatchesQuery();
 
-  const partnersData =
-    potentialData?.status === true
-      ? potentialData.data.filter((item: any) => item.role === "user")
-      : [];
-  const trainersData =
-    potentialData?.status === true
-      ? potentialData.data.filter((item: any) => item.role === "trainer")
-      : [];
+  const {
+    data: partners,
+    refetch: refetchPartners,
+    isLoading: isLoadingPartners,
+    isFetching: isFetchingPartners,
+  } = useGetPotentialUsersQuery({ page: 1, limit: 10 });
+
+  const {
+    data: trainers,
+    refetch: refetchTrainers,
+    isLoading: isLoadingTrainers,
+    isFetching: isFetchingTrainers,
+  } = useGetPotentialTrainersQuery({ page: 1, limit: 10 });
+
+  const partnersData = partners?.status === true ? partners?.data?.users : [];
+
+  const trainersData = trainers?.status === true ? trainers?.data?.users : [];
+
+  // const getCurrentData = () => {
+  //   if (!potentialData || potentialData.status !== true) return [];
+  //   let data = potentialData.data.filter(
+  //     (item: any) =>
+  //       item && item.id && item.role && !removedIds.includes(item.id)
+  //   ); // Filter out invalid items and removed
+  //   if (activeTab === "partners") {
+  //     data = data.filter((item: any) => item.role === "user");
+  //   } else {
+  //     data = data.filter((item: any) => item.role === "trainer");
+  //   }
+  //   if (selectedFilters.includes("All") || selectedFilters.length === 0) {
+  //     return data;
+  //   }
+  //   return data.filter((item: any) => {
+  //     const type =
+  //       activeTab === "partners"
+  //         ? item.trainingTypes?.join(", ")
+  //         : item.specialty || item.trainingTypes?.join(", ");
+  //     return selectedFilters.some((filter) =>
+  //       type?.toLowerCase().includes(filter.toLowerCase())
+  //     );
+  //   });
+  // };
 
   const getCurrentData = () => {
-    if (!potentialData || potentialData.status !== true) return [];
-    let data = potentialData.data.filter(
-      (item: any) => item && item.id && item.role
-    ); // Filter out invalid items
+    // Use the correct data source based on the active tab
+    let data: any[] = [];
     if (activeTab === "partners") {
-      data = data.filter((item: any) => item.role === "user");
+      data = partnersData ?? [];
     } else {
-      data = data.filter((item: any) => item.role === "trainer");
+      data = trainersData ?? [];
     }
+
+    // Filter out removed and invalid items
+    data = data.filter(
+      (item: any) => item && item.id && !removedIds.includes(item.id)
+    );
+
+    // Apply filters
     if (selectedFilters.includes("All") || selectedFilters.length === 0) {
       return data;
     }
@@ -137,6 +184,20 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation,route }) => {
       );
     });
   };
+
+  useEffect(() => {
+    const currentData = getCurrentData();
+    const remainingCards = currentData.length - currentIndex;
+
+    // Fetch more data when we're down to the last 2 cards
+    if (remainingCards <= 2 && remainingCards > 0) {
+      if (activeTab === "partners" && !isFetchingPartners) {
+        setPartnersPage((prev) => prev + 1);
+      } else if (activeTab === "trainers" && !isFetchingTrainers) {
+        setTrainersPage((prev) => prev + 1);
+      }
+    }
+  }, [currentIndex, activeTab, getCurrentData().length]);
 
   const handleFollow = async () => {
     const targetUserId = currentItem?.id;
@@ -160,7 +221,14 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation,route }) => {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await refetch();
+    setRemovedIds([]);
+    if (activeTab === "partners") {
+      setPartnersPage(1);
+      await refetchPartners();
+    } else {
+      setTrainersPage(1);
+      await refetchTrainers();
+    }
     setCurrentIndex(0);
     setRefreshing(false);
   };
@@ -332,66 +400,100 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation,route }) => {
   //   const currentData = activeTab === "partners" ? mockPartners : mockTrainers;
   //   setCurrentIndex((prev) => Math.min(prev + 1, currentData.length - 1));
   // };
-  const handleSwipeLeft = (item: SwipeableItem) => {
-    const currentData = getCurrentData();
-    setCurrentIndex((prev) => Math.min(prev + 1, currentData.length - 1));
+  const [swipeUser, { isLoading: isSwipingUser }] = useSwipeUserMutation();
+
+  const handleSwipeLeft = async (item: SwipeableItem) => {
+    try {
+      const response = await swipeUser({
+        swipedToId: item.id,
+        type: "Disliked",
+      });
+      if (response?.data?.status === true) {
+        setRemovedIds((prev) => [...prev, item.id]);
+        setCurrentIndex((prev) => Math.min(prev, getCurrentData().length - 1));
+      }
+    } catch (error) {
+      console.error("Swipe left error:", error);
+      // setCurrentIndex((prev) => Math.min(prev + 1, getCurrentData().length - 1));
+    }
   };
 
-  const handleSwipeRight = (item: SwipeableItem) => {
-    const message =
-      activeTab === "partners"
-        ? `${STRINGS.FIND.alerts.youAnd} ${item.name} ${STRINGS.FIND.alerts.matchMessage}`
-        : `${STRINGS.FIND.alerts.greatChoice} ${item.name} ${STRINGS.FIND.alerts.bookTrainerMessage}`;
+  const handleSwipeRight = async (item: SwipeableItem) => {
+    try {
+      const response = await swipeUser({ swipedToId: item.id, type: "Liked" });
+      // Only show alert if API call is successful and status is true
+      if (response?.data?.status === true) {
+        const message =
+          activeTab === "partners"
+            ? `${STRINGS.FIND.alerts.youAnd} ${item.name} ${STRINGS.FIND.alerts.matchMessage}`
+            : `${STRINGS.FIND.alerts.greatChoice} ${item.name} ${STRINGS.FIND.alerts.bookTrainerMessage}`;
 
-    Alert.alert(
-      activeTab === "partners"
-        ? STRINGS.FIND.alerts.matchTitle
-        : STRINGS.FIND.alerts.bookTrainerTitle,
-      message,
-      [
-        {
-          text: STRINGS.FIND.alerts.notNow,
-          style: "cancel",
-        },
-        {
-          text: STRINGS.FIND.alerts.rateExperience,
-          onPress: () => {
-            setSelectedUserForRating({
-              name: item.name,
-              type: activeTab === "partners" ? "partner" : "trainer",
-            });
-            setRatingModalVisible(true);
-          },
-        },
-        {
-          text:
-            activeTab === "partners"
-              ? STRINGS.FIND.alerts.startChat
-              : STRINGS.FIND.alerts.bookSession,
-          onPress: () => {
-            if (activeTab === "partners") {
-              navigation.navigate("Chat", {
-                partnerId: item.id.toString(),
-                partnerName: item.name,
-              });
-            } else {
-              navigation?.navigate?.("BookTrainer", {
-                trainerId: String(item.id),
-                trainerName: item.name,
-                trainerAddress: item.location || "",
-              });
-              // Handle trainer booking
-              // Alert.alert(
-              //   STRINGS.FIND.alerts.bookingTitle,
-              //   `${STRINGS.FIND.alerts.bookingMessage} ${item.name}`
-              // );
-            }
-          },
-        },
-      ]
-    );
-    const currentData = activeTab === "partners" ? mockPartners : mockTrainers;
-    setCurrentIndex((prev) => Math.min(prev + 1, currentData.length - 1));
+        Alert.alert(
+          activeTab === "partners"
+            ? STRINGS.FIND.alerts.matchTitle
+            : STRINGS.FIND.alerts.bookTrainerTitle,
+          message,
+          [
+            {
+              text: STRINGS.FIND.alerts.notNow,
+              style: "cancel",
+              onPress: () => {
+                setRemovedIds((prev) => [...prev, item.id]);
+                setCurrentIndex((prev) =>
+                  Math.min(prev, getCurrentData().length - 1)
+                );
+              },
+            },
+            {
+              text: STRINGS.FIND.alerts.rateExperience,
+              onPress: () => {
+                setSelectedUserForRating({
+                  name: item.name,
+                  type: activeTab === "partners" ? "partner" : "trainer",
+                });
+                setRatingModalVisible(true);
+                setRemovedIds((prev) => [...prev, item.id]);
+                setCurrentIndex((prev) =>
+                  Math.min(prev, getCurrentData().length - 1)
+                );
+              },
+            },
+            {
+              text:
+                activeTab === "partners"
+                  ? STRINGS.FIND.alerts.startChat
+                  : STRINGS.FIND.alerts.bookSession,
+              onPress: () => {
+                if (activeTab === "partners") {
+                  navigation.navigate("Chat", {
+                    partnerId: item.id.toString(),
+                    partnerName: item.name,
+                  });
+                } else {
+                  navigation?.navigate?.("BookTrainer", {
+                    trainerId: String(item.id),
+                    trainerName: item.name,
+                    trainerAddress: item.location || "",
+                  });
+                  // Handle trainer booking
+                  // Alert.alert(
+                  //   STRINGS.FIND.alerts.bookingTitle,
+                  //   `${STRINGS.FIND.alerts.bookingMessage} ${item.name}`
+                  // );
+                }
+                setRemovedIds((prev) => [...prev, item.id]);
+                setCurrentIndex((prev) =>
+                  Math.min(prev, getCurrentData().length - 1)
+                );
+              },
+            },
+          ]
+        );
+      }
+    } catch (error) {
+      console.error("Swipe right error:", error);
+      // setCurrentIndex((prev) => Math.min(prev + 1, getCurrentData().length - 1));
+    }
   };
 
   const resetCards = () => {
@@ -428,6 +530,9 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation,route }) => {
   const currentData = getCurrentData();
   const currentItem = currentData[currentIndex];
   const hasMoreCards = currentIndex < currentData.length - 1;
+  const isLoading = isLoadingPartners || isLoadingTrainers;
+
+  const isFetching = isFetchingPartners || isFetchingTrainers;
 
   return (
     <SafeAreaView edges={[]} style={styles.container}>
@@ -502,7 +607,7 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation,route }) => {
 
         {/* Cards Section */}
         <View style={styles.cardsSection}>
-          {isLoading ? (
+          {isLoading && currentData.length === 0 ? (
             <View
               style={{
                 padding: 20,
@@ -517,23 +622,31 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation,route }) => {
               </Text>
             </View>
           ) : currentItem && currentItem.id ? (
-            <SwipeableCard
-              partner={mapToSwipeableItem(currentItem)}
-              onPress={() =>
-                navigation.navigate("UserProfile", {
-                  user: currentItem,
-                  isGuest: true,
-                })
-              }
-              onSwipeLeft={handleSwipeLeft}
-              onSwipeRight={handleSwipeRight}
-              onSkip={handleSwipeLeft}
-              isFirst={true}
-              isFollowing={currentItem.isFollowing}
-              navigation={navigation}
-              onFollow={handleFollow}
-              onUnfollow={handleUnfollow}
-            />
+            <>
+              <SwipeableCard
+                partner={mapToSwipeableItem(currentItem)}
+                onPress={() =>
+                  navigation.navigate("UserProfile", {
+                    user: currentItem,
+                    isGuest: true,
+                  })
+                }
+                onSwipeLeft={handleSwipeLeft}
+                onSwipeRight={handleSwipeRight}
+                onSkip={handleSwipeLeft}
+                isFirst={true}
+                isFollowing={currentItem.isFollowing}
+                navigation={navigation}
+                onFollow={handleFollow}
+                onUnfollow={handleUnfollow}
+              />
+              {isFetching && currentData.length - currentIndex <= 3 && (
+                <View style={styles.loadingMoreContainer}>
+                  <ActivityIndicator size="small" color={COLORS.primary} />
+                  <Text style={styles.loadingMoreText}>Loading more...</Text>
+                </View>
+              )}
+            </>
           ) : (
             <View style={styles.noMoreCards}>
               <Text style={styles.noMoreCardsTitle}>
@@ -543,9 +656,9 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation,route }) => {
                 {STRINGS.FIND.noMoreCardsText} {activeTab}{" "}
                 {STRINGS.FIND.forThisFilter}
               </Text>
-              <TouchableOpacity style={styles.resetButton} onPress={resetCards}>
+              {/* <TouchableOpacity style={styles.resetButton} onPress={resetCards}>
                 <Text style={styles.resetButtonText}>{STRINGS.FIND.reset}</Text>
-              </TouchableOpacity>
+              </TouchableOpacity> */}
             </View>
           )}
         </View>
@@ -580,7 +693,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     backgroundColor: COLORS.surface,
     borderRadius: 50,
-    padding: 6,
+
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -591,8 +704,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "transparent",
     borderRadius: 50,
-    paddingVertical: DIMENSIONS.spacing.sm,
-    marginHorizontal: 2,
+    paddingVertical: 13,
     alignItems: "center",
   },
   tabButtonActivePartners: {
@@ -602,13 +714,14 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
   },
   tabText: {
-    fontSize: 14,
-    color: COLORS.text,
-    fontWeight: "500",
+    fontSize: 16,
+    color: COLORS._5E5E5E,
+    fontFamily: FontWeight.Medium,
   },
   tabTextActive: {
     color: COLORS.white,
-    fontWeight: "600",
+    fontFamily: FontWeight.Medium,
+    fontSize: 16,
   },
   filtersSection: {
     paddingHorizontal: DIMENSIONS.spacing.lg,
@@ -700,6 +813,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.text,
     fontWeight: "600",
+  },
+  loadingMoreContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: DIMENSIONS.spacing.md,
+    padding: DIMENSIONS.spacing.sm,
+  },
+  loadingMoreText: {
+    marginLeft: DIMENSIONS.spacing.sm,
+    fontSize: 14,
+    color: COLORS.textSecondary,
   },
 });
 

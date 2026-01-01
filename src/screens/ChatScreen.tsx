@@ -674,8 +674,8 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontWeight: "bold",
     color: COLORS.white,
+    fontFamily: FontWeight.SemiBold,
     marginBottom: DIMENSIONS.spacing.sm,
     textAlign: "left",
     justifyContent: "center",

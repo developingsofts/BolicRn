@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
   startButton: {
     width: '100%',
     backgroundColor: '#0D8AFF',
-    paddingVertical: 20,
+    paddingVertical: 15,
     borderRadius: 4,
     alignItems: 'center',
     marginBottom: 20,
@@ -196,8 +196,8 @@ const styles = StyleSheet.create({
   },
   startButtonText: {
     color: COLORS.white,
-    fontFamily: FontWeight.SemiBold,
-    fontSize: 16,
+    fontFamily: FontWeight.Medium,
+    fontSize: 14,
     letterSpacing: 0.2,
   },
   workoutList: {
@@ -255,7 +255,7 @@ const styles = StyleSheet.create({
     fontFamily: FontWeight.Regular,
   },
   postButton: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 5,
     paddingVertical: 8,
     borderRadius: 10,
     borderWidth: 1,

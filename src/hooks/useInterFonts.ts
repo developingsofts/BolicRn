@@ -7,7 +7,7 @@ export function useInterFonts() {
     Inter_700Bold,
     Inter_600SemiBold,
     Inter_800ExtraBold,
-
+ 
   });
 
   return fontsLoaded;

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef } from "react";
 import {
   View,
   Text,
@@ -8,13 +8,13 @@ import {
   Dimensions,
   TouchableOpacity,
   ScrollView,
-} from 'react-native';
-import { PanGestureHandler, State } from 'react-native-gesture-handler';
-import { COLORS, DIMENSIONS } from '../config/constants';
-import RatingStars from './RatingStars';
-import FontWeight from '../hooks/useInterFonts';
+} from "react-native";
+import { PanGestureHandler, State } from "react-native-gesture-handler";
+import { COLORS, DIMENSIONS } from "../config/constants";
+import RatingStars from "./RatingStars";
+import FontWeight from "../hooks/useInterFonts";
 
-const { width: screenWidth } = Dimensions.get('window');
+const { width: screenWidth } = Dimensions.get("window");
 const SWIPE_THRESHOLD = screenWidth * 0.25;
 
 export interface TrainingPartner {
@@ -79,14 +79,14 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
   onUnfollow,
   followLoading = false,
 }) => {
-  console.log('SwipeableCard partner:', partner);
+  console.log("SwipeableCard partner:", partner);
   const translateX = useRef(new Animated.Value(0)).current;
   const scale = useRef(new Animated.Value(1)).current;
   const rotate = useRef(new Animated.Value(0)).current;
 
   const [isAnimating, setIsAnimating] = useState(false);
   const [imageError, setImageError] = useState(false);
-  const isTrainer = 'specialty' in partner || 'hourlyRate' in partner;
+  const isTrainer = "specialty" in partner || "hourlyRate" in partner;
 
   const handleGestureEvent = Animated.event(
     [{ nativeEvent: { translationX: translateX } }],
@@ -96,11 +96,14 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
   const handleStateChange = (event: any) => {
     if (event.nativeEvent.state === State.END) {
       const { translationX, translationY } = event.nativeEvent;
-      
+
       // Check if it's more of a horizontal swipe than vertical
-      if (Math.abs(translationX) > Math.abs(translationY) && Math.abs(translationX) > SWIPE_THRESHOLD) {
+      if (
+        Math.abs(translationX) > Math.abs(translationY) &&
+        Math.abs(translationX) > SWIPE_THRESHOLD
+      ) {
         // Swipe threshold met for horizontal swipe
-        const direction = translationX > 0 ? 'right' : 'left';
+        const direction = translationX > 0 ? "right" : "left";
         animateSwipe(direction);
       } else {
         // Return to center
@@ -109,12 +112,13 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
     }
   };
 
-  const animateSwipe = (direction: 'left' | 'right') => {
+  const animateSwipe = (direction: "left" | "right") => {
     if (isAnimating) return;
     setIsAnimating(true);
 
-    const targetX = direction === 'right' ? screenWidth * 1.5 : -screenWidth * 1.5;
-    const targetRotation = direction === 'right' ? 30 : -30;
+    const targetX =
+      direction === "right" ? screenWidth * 1.5 : -screenWidth * 1.5;
+    const targetRotation = direction === "right" ? 30 : -30;
 
     Animated.parallel([
       Animated.timing(translateX, {
@@ -134,12 +138,12 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
       }),
     ]).start(() => {
       // Call the appropriate callback
-      if (direction === 'right') {
+      if (direction === "right") {
         onSwipeRight(partner);
       } else {
         onSwipeLeft(partner);
       }
-      
+
       // Reset for next card
       resetPosition();
       setIsAnimating(false);
@@ -165,19 +169,19 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
 
   const rotateInterpolate = rotate.interpolate({
     inputRange: [-1, 0, 1],
-    outputRange: ['-10deg', '0deg', '10deg'],
+    outputRange: ["-10deg", "0deg", "10deg"],
   });
 
   const likeOpacity = translateX.interpolate({
     inputRange: [0, screenWidth * 0.25],
     outputRange: [0, 1],
-    extrapolate: 'clamp',
+    extrapolate: "clamp",
   });
 
   const nopeOpacity = translateX.interpolate({
     inputRange: [-screenWidth * 0.25, 0],
     outputRange: [1, 0],
-    extrapolate: 'clamp',
+    extrapolate: "clamp",
   });
 
   return (
@@ -206,19 +210,29 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
           {/* Background Image */}
           <View style={styles.imageContainer}>
             {partner.imageUrl && !imageError ? (
-              <Image 
-                source={{ uri: partner.imageUrl }} 
-                style={styles.profileImage} 
+              <Image
+                source={{ uri: partner.imageUrl }}
+                style={styles.profileImage}
                 onError={() => {
-                  console.log('Image load error for', partner.name, partner.imageUrl);
+                  console.log(
+                    "Image load error for",
+                    partner.name,
+                    partner.imageUrl
+                  );
                   setImageError(true);
                 }}
-                onLoad={() => console.log('Image loaded for', partner.name, partner.imageUrl)}
+                onLoad={() =>
+                  console.log(
+                    "Image loaded for",
+                    partner.name,
+                    partner.imageUrl
+                  )
+                }
               />
             ) : (
               <View style={styles.placeholderImage}>
                 <Text style={styles.placeholderText}>
-                  {(partner?.name?.charAt(0) || '?').toUpperCase()}
+                  {(partner?.name?.charAt(0) || "?").toUpperCase()}
                 </Text>
               </View>
             )}
@@ -229,32 +243,40 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
             <View style={styles.cardInfoContent}>
               {/* Name and Age */}
               <View style={styles.nameAgeContainer}>
-                <Text style={styles.name}>{partner.name || 'Unknown'}</Text>
+                <Text style={styles.name}>{partner.name || "Unknown"}</Text>
                 {partner.age && <Text style={styles.age}>{partner.age}</Text>}
               </View>
-              
+
               {/* Location */}
               <View style={styles.locationContainer}>
-                {partner.location && <Text style={styles.location}>{partner.location}</Text>}
-                {partner.distance && <Text style={styles.distance}>{partner.distance}</Text>}
+                {partner.location && (
+                  <Text style={styles.location}>{partner.location}</Text>
+                )}
+                {/* {partner.distance && <Text style={styles.distance}>{partner.distance}</Text>} */}
               </View>
-              
+
               {/* Training Types */}
               {partner.trainingTypes && partner.trainingTypes.length > 0 && (
                 <View style={styles.trainingTypesContainer}>
-                  {partner.trainingTypes.slice(0, 3).map((trainingType, index) => (
-                    <View key={index} style={styles.trainingTypeTag}>
-                      <Text style={styles.trainingTypeText}>{trainingType}</Text>
-                    </View>
-                  ))}
+                  {partner.trainingTypes
+                    .slice(0, 3)
+                    .map((trainingType, index) => (
+                      <View key={index} style={styles.trainingTypeTag}>
+                        <Text style={styles.trainingTypeText}>
+                          {trainingType}
+                        </Text>
+                      </View>
+                    ))}
                   {partner.trainingTypes.length > 3 && (
-                    <Text style={styles.moreTypesText}>+{partner.trainingTypes.length - 3} more</Text>
+                    <Text style={styles.moreTypesText}>
+                      +{partner.trainingTypes.length - 3} more
+                    </Text>
                   )}
                 </View>
               )}
 
               {/* Rating Stars */}
-              <View style={styles.ratingSection}>
+              {/* <View style={styles.ratingSection}>
                 <View style={styles.ratingStarsRow}>
                   <RatingStars 
                     rating={partner.rating || 0} 
@@ -266,27 +288,36 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
                     {partner.rating ? partner.rating.toFixed(1) : '0.0'} ({partner.totalRatings || 0} Reviews)
                   </Text>
                 </View>
-              </View>
+              </View> */}
 
               {/* Tags/Badges */}
               <View style={styles.tagsContainer}>
                 {/* Specialty/Type Badge */}
-               { (('specialty' in partner && partner.specialty) || ('type' in partner && partner.type)) && <View style={styles.tag}>
-                  <Text style={styles.tagText}>
-                    {'specialty' in partner ? partner.specialty : ('type' in partner ? partner.type : '')}
-                  </Text>
-                </View>}
-                
+                {(("specialty" in partner && partner.specialty) ||
+                  ("type" in partner && partner.type)) && (
+                  <View style={styles.tag}>
+                    <Text style={styles.tagText}>
+                      {"specialty" in partner
+                        ? partner.specialty
+                        : "type" in partner
+                        ? partner.type
+                        : ""}
+                    </Text>
+                  </View>
+                )}
+
                 {/* Match/Rate Badge */}
                 <View style={[styles.tag, styles.tagAccent]}>
                   <Text style={styles.tagTextAccent}>
-                    {'compatibility' in partner && partner.compatibility !== undefined
-                      ? `${partner.compatibility}% Match` 
-                      : ('hourlyRate' in partner ? (partner.hourlyRate || 'Contact for rates') : 'Contact for rates')
-                    }
+                    {"compatibility" in partner &&
+                    partner.compatibility !== undefined
+                      ? `${partner.compatibility}% Match`
+                      : "hourlyRate" in partner
+                      ? partner.hourlyRate || "Contact for rates"
+                      : "Contact for rates"}
                   </Text>
                 </View>
-                
+
                 {/* Experience Badge */}
                 {partner.experience && (
                   <View style={styles.tag}>
@@ -295,7 +326,7 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
                 )}
               </View>
               <View style={styles.actionButtons}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.outlineButton}
                   onPress={(e) => {
                     e.stopPropagation();
@@ -305,19 +336,21 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
                 >
                   <Text style={styles.outlineButtonText}>View Profile</Text>
                 </TouchableOpacity>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={[
                     styles.primaryButton,
-                    !isTrainer && isFollowing ? { backgroundColor: '#E6E6E6' } : {},
+                    !isTrainer && isFollowing
+                      ? { backgroundColor: "#E6E6E6" }
+                      : {},
                   ]}
                   onPress={(e) => {
                     e.stopPropagation();
 
                     if (isTrainer) {
-                      navigation?.navigate?.('BookTrainer', {
+                      navigation?.navigate?.("BookTrainer", {
                         trainerId: String(partner.id),
                         trainerName: partner.name,
-                        trainerAddress: partner.location || '',
+                        trainerAddress: partner.location || "",
                       });
                       return;
                     }
@@ -335,14 +368,20 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
                   activeOpacity={0.7}
                   disabled={!isTrainer && followLoading}
                 >
-                  <Text style={isTrainer || !isFollowing ? styles.primaryButtonText : styles.outlineButtonText}>
+                  <Text
+                    style={
+                      isTrainer || !isFollowing
+                        ? styles.primaryButtonText
+                        : styles.outlineButtonText
+                    }
+                  >
                     {isTrainer
-                      ? 'Book Session'
+                      ? "Book Session"
                       : followLoading
-                        ? '...'
-                        : isFollowing
-                          ? 'Unfollow'
-                          : 'Follow'}
+                      ? "..."
+                      : isFollowing
+                      ? "Unfollow"
+                      : "Follow"}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -350,11 +389,15 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
           </View>
 
           {/* Swipe Indicators */}
-          <Animated.View style={[styles.likeIndicator, { opacity: likeOpacity }]}>
+          <Animated.View
+            style={[styles.likeIndicator, { opacity: likeOpacity }]}
+          >
             <Text style={styles.likeText}>LIKE</Text>
           </Animated.View>
-          
-          <Animated.View style={[styles.nopeIndicator, { opacity: nopeOpacity }]}>
+
+          <Animated.View
+            style={[styles.nopeIndicator, { opacity: nopeOpacity }]}
+          >
             <Text style={styles.nopeText}>NOPE</Text>
           </Animated.View>
         </TouchableOpacity>
@@ -376,50 +419,49 @@ const styles = StyleSheet.create({
   },
   cardContent: {
     borderRadius: 16,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   imageContainer: {
     height: 224,
-    width: '100%',
+    width: "100%",
   },
   profileImage: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
     borderRadius: 16,
   },
   placeholderImage: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#E5E7EB',
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: "100%",
+    height: "100%",
+    backgroundColor: "#E5E7EB",
+    justifyContent: "center",
+    alignItems: "center",
   },
   placeholderText: {
     fontSize: 48,
-    fontWeight: 'bold',
-    color: '#9CA3AF',
+    fontWeight: "bold",
+    color: "#9CA3AF",
   },
   cardInfo: {
     padding: 24,
   },
-  cardInfoContent: {
-  },
+  cardInfoContent: {},
   nameAgeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 4,
   },
   name: {
     fontSize: 18,
-    fontWeight: 600,
+    fontFamily: FontWeight.SemiBold,
     color: COLORS.gradient1,
     marginRight: 8,
   },
   age: {
     fontSize: 16,
     fontWeight: 400,
-    fontFamily: FontWeight.Regular ,
+    fontFamily: FontWeight.Regular,
     color: COLORS._616888,
   },
   location: {
@@ -435,60 +477,60 @@ const styles = StyleSheet.create({
   distance: {
     fontSize: 12,
     color: COLORS._616888,
-    fontWeight: '400',
+    fontWeight: "400",
   },
   bio: {
     fontSize: 13,
-    color: '#374151',
+    color: "#374151",
     lineHeight: 18,
     marginBottom: 6,
   },
   trainingTypesContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     marginBottom: 12,
     gap: 6,
   },
   trainingTypeTag: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: "#F3F4F6",
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
   },
   trainingTypeText: {
-    fontSize: 11,
-    color: '#374151',
-    fontWeight: '500',
+    fontSize: 12,
+    color: COLORS._5E5E5E,
+    fontFamily: FontWeight.Medium,
   },
   moreTypesText: {
     fontSize: 11,
-    color: '#6B7280',
-    fontWeight: '400',
-    alignSelf: 'center',
+    color: COLORS._5E5E5E,
+    fontFamily: FontWeight.Medium,
+    alignSelf: "center",
   },
   fitnessLevelContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 6,
   },
   fitnessLevelLabel: {
     fontSize: 12,
-    color: '#6B7280',
+    color: "#6B7280",
     marginRight: 4,
   },
   fitnessLevel: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#3B82F6',
-    textTransform: 'capitalize',
+    fontWeight: "600",
+    color: "#3B82F6",
+    textTransform: "capitalize",
   },
   interestsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     marginBottom: 6,
   },
   interestTag: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: "#F3F4F6",
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
@@ -497,33 +539,33 @@ const styles = StyleSheet.create({
   },
   interestText: {
     fontSize: 10,
-    color: '#374151',
-    fontWeight: '500',
+    color: "#374151",
+    fontWeight: "500",
   },
   bottomRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginTop: 8,
   },
   ratingSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 12,
   },
   ratingStarsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   ratingText: {
     fontSize: 14,
     color: COLORS._616888,
-    fontWeight: '600',
+    fontWeight: "600",
     marginLeft: 8,
   },
   tagsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     marginBottom: 16,
     gap: 8,
   },
@@ -536,18 +578,18 @@ const styles = StyleSheet.create({
   tagText: {
     fontSize: 12,
     color: COLORS.white,
-    fontWeight: '600',
+    fontFamily: FontWeight.SemiBold,
   },
   tagAccent: {
-    backgroundColor: '#84FF8D',
+    backgroundColor: "#84FF8D",
   },
   tagTextAccent: {
     fontSize: 12,
-    color: '#374151',
-    fontWeight: '600',
+    color: COLORS.app_black,
+    fontFamily: FontWeight.SemiBold,
   },
   actionButtons: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 12,
   },
   outlineButton: {
@@ -555,8 +597,8 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 4,
     backgroundColor: COLORS.white,
-    alignItems: 'center',
-    shadowColor: '#767676',
+    alignItems: "center",
+    shadowColor: "#767676",
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.15,
     shadowRadius: 12,
@@ -564,12 +606,12 @@ const styles = StyleSheet.create({
   },
   outlineButtonText: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#383838',
+    fontFamily: FontWeight.Medium,
+    color: COLORS._383838,
   },
   blueButtonText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontFamily: FontWeight.Medium,
     color: COLORS.white,
   },
   primaryButton: {
@@ -577,76 +619,76 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 4,
     backgroundColor: COLORS.primary,
-    alignItems: 'center',
+    alignItems: "center",
   },
   primaryButtonText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontFamily: FontWeight.Medium,
     color: COLORS.white,
   },
   safetyContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   safetyLabel: {
     fontSize: 12,
-    color: '#6B7280',
+    color: "#6B7280",
     marginRight: 4,
   },
   safetyStars: {
-    flexDirection: 'row',
+    flexDirection: "row",
   },
   safetyStar: {
     fontSize: 12,
-    color: '#D1D5DB',
+    color: "#D1D5DB",
   },
   safetyStarFilled: {
-    color: '#F59E0B',
+    color: "#F59E0B",
   },
   likeIndicator: {
-    position: 'absolute',
+    position: "absolute",
     top: 50,
     right: 40,
-    transform: [{ rotate: '15deg' }],
+    transform: [{ rotate: "15deg" }],
     borderWidth: 4,
-    borderColor: '#10B981',
+    borderColor: "#10B981",
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
   },
   likeText: {
     fontSize: 32,
-    fontWeight: 'bold',
-    color: '#10B981',
+    fontWeight: "bold",
+    color: "#10B981",
   },
   nopeIndicator: {
-    position: 'absolute',
+    position: "absolute",
     top: 50,
     left: 40,
-    transform: [{ rotate: '-15deg' }],
+    transform: [{ rotate: "-15deg" }],
     borderWidth: 4,
-    borderColor: '#EF4444',
+    borderColor: "#EF4444",
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
   },
   nopeText: {
     fontSize: 32,
-    fontWeight: 'bold',
-    color: '#EF4444',
+    fontWeight: "bold",
+    color: "#EF4444",
   },
   skipButton: {
     paddingHorizontal: 20,
     paddingVertical: 8,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: "#F3F4F6",
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#D1D5DB',
+    borderColor: "#D1D5DB",
   },
   skipButtonText: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#374151',
+    fontWeight: "600",
+    color: "#374151",
   },
 });
 

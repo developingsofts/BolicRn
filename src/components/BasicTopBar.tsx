@@ -119,7 +119,12 @@ const BasicTopBar: React.FC<BasicTopBarProps> = ({
   backgroundColor = COLORS.gradient3,
 }) => {
   return (
-    <LinearGradient  colors={[COLORS.gradient1, COLORS.gradient2,COLORS.gradient3]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }}  style={[styles.container, { backgroundColor }, containerStyle]}>
+    <LinearGradient
+      colors={[COLORS.gradient1, COLORS.gradient2, COLORS.gradient3]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 0, y: 1 }}
+      style={[styles.container, { backgroundColor }, containerStyle]}
+    >
       {/* Main content row */}
       <View style={[styles.contentRow, contentStyle]}>
         {/* Start view (custom left content or back button) */}
@@ -167,9 +172,11 @@ const styles = StyleSheet.create({
   backButton: {
     paddingVertical: 6,
     marginRight: DIMENSIONS.spacing.sm,
+    marginTop: DIMENSIONS.spacing.lg,
   },
   titleContainer: {
     flex: 1,
+    marginTop: DIMENSIONS.spacing.lg,
   },
   title: {
     fontSize: 24,

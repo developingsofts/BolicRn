@@ -110,6 +110,7 @@ const baseStyles = StyleSheet.create({
   dropdownButton: {
     top: 0,
     padding: r(8),
+    marginTop: DIMENSIONS.spacing.lg,
   },
   heroContent: {
     alignItems: "flex-start",
@@ -717,7 +718,10 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
     data: groupData,
     isLoading: isLoadingGroup,
     refetch: refetchGroup,
-  } = useGetGroupByIdQuery({ groupId: groupId! }, { skip: !groupId || !isAuthenticated });
+  } = useGetGroupByIdQuery(
+    { groupId: groupId! },
+    { skip: !groupId || !isAuthenticated }
+  );
   // Fetch group members
   const {
     data: membersData,
@@ -740,7 +744,8 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
   );
   // Join group mutation
   const [joinGroup, { isLoading: isJoining }] = useJoinGroupMutation();
-  const [requestJoinGroup, { isLoading: isRequestingJoin }] = useRequestJoinGroupMutation();
+  const [requestJoinGroup, { isLoading: isRequestingJoin }] =
+    useRequestJoinGroupMutation();
   // Delete group mutation
   const [deleteGroup, { isLoading: isDeleting }] = useDeleteGroupMutation();
   // Like mutation
@@ -784,7 +789,11 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
 
     const fetchError = membersError as FetchBaseQueryError | undefined;
 
-    if (fetchError && typeof fetchError === "object" && "status" in fetchError) {
+    if (
+      fetchError &&
+      typeof fetchError === "object" &&
+      "status" in fetchError
+    ) {
       const statusValue = fetchError.status;
       const status = typeof statusValue === "number" ? statusValue : null;
 
@@ -808,7 +817,8 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
     return { status: null as number | null, message: null as string | null };
   }, [isMembersError, membersError]);
 
-  const { status: membersErrorStatus, message: membersErrorMessage } = membersErrorDetails;
+  const { status: membersErrorStatus, message: membersErrorMessage } =
+    membersErrorDetails;
 
   const membersListEmptyMessage = useMemo(() => {
     const cleanedMessage =
@@ -893,7 +903,9 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
   const isMember = group?.isMember || isCreator;
 
   const joinRequestStatus = (group as any)?.joinRequestStatus ?? null;
-  const requiresApproval = Boolean(group?.privacy && group.privacy !== "Public");
+  const requiresApproval = Boolean(
+    group?.privacy && group.privacy !== "Public"
+  );
 
   const joinButtonState = useMemo<
     "manage" | "member" | "pending" | "request" | "join"
@@ -905,7 +917,8 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
     return "join";
   }, [isCreator, isMember, joinRequestStatus, requiresApproval]);
 
-  const joinButtonLoading = joinButtonState === "request" ? isRequestingJoin : isJoining;
+  const joinButtonLoading =
+    joinButtonState === "request" ? isRequestingJoin : isJoining;
   const joinButtonDisabled = joinButtonState === "pending" || joinButtonLoading;
 
   const joinButtonLabel = useMemo(() => {
@@ -913,7 +926,9 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
       case "pending":
         return "Request Pending";
       case "request":
-        return joinRequestStatus === "rejected" ? "Request Again" : "Request to Join";
+        return joinRequestStatus === "rejected"
+          ? "Request Again"
+          : "Request to Join";
       default:
         return "Join Group";
     }
@@ -930,13 +945,18 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
   };
 
   const renderMemberListItem = ({ item: member }: { item: any }) => {
-    const displayName = member.displayName || member.userName || member.name || "Unknown";
-    const location = member.userAddress?.city || member.location || "Unknown location";
-    const imageUrl = member.imageUrl || member.avatar || member.profilePhoto || null;
-    const initial = (member.displayName?.charAt(0)
-      || member.userName?.charAt(0)
-      || member.name?.charAt(0)
-      || "U").toUpperCase();
+    const displayName =
+      member.displayName || member.userName || member.name || "Unknown";
+    const location =
+      member.userAddress?.city || member.location || "Unknown location";
+    const imageUrl =
+      member.imageUrl || member.avatar || member.profilePhoto || null;
+    const initial = (
+      member.displayName?.charAt(0) ||
+      member.userName?.charAt(0) ||
+      member.name?.charAt(0) ||
+      "U"
+    ).toUpperCase();
 
     return (
       <TouchableOpacity
@@ -945,7 +965,10 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
       >
         <View style={styles.membersModalAvatar}>
           {imageUrl ? (
-            <Image source={{ uri: imageUrl }} style={styles.membersModalAvatarImage} />
+            <Image
+              source={{ uri: imageUrl }}
+              style={styles.membersModalAvatarImage}
+            />
           ) : (
             <Text style={styles.membersModalAvatarText}>{initial}</Text>
           )}
@@ -1158,15 +1181,23 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
   // Handle scroll for infinite loading
   const handleScroll = (event: any) => {
     const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
-    const distanceFromBottom = contentSize.height - layoutMeasurement.height - contentOffset.y;
-    
+    const distanceFromBottom =
+      contentSize.height - layoutMeasurement.height - contentOffset.y;
+
     // Load more when within 100 pixels of bottom
-    if (distanceFromBottom < 100 && !isLoadingMorePosts && accumulatedPosts.length > 0) {
+    if (
+      distanceFromBottom < 100 &&
+      !isLoadingMorePosts &&
+      accumulatedPosts.length > 0
+    ) {
       handleLoadMorePosts();
     }
   };
 
-  const handleContentSizeChange = (contentWidth: number, contentHeight: number) => {
+  const handleContentSizeChange = (
+    contentWidth: number,
+    contentHeight: number
+  ) => {
     setContentHeight(contentHeight);
   };
 

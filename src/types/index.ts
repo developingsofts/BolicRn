@@ -1,6 +1,15 @@
 // User Types
 export interface User {
   id: string;
+  weeklyActivity?: {
+    Mon: boolean;
+    Tue: boolean;
+    Wed: boolean;
+    Thu: boolean;
+    Fri: boolean;
+    Sat: boolean;
+    Sun: boolean;
+  };
   email: string;
   displayName: string;
   phoneNumber?: string;
@@ -13,7 +22,7 @@ export interface User {
   notificationEnabled?: boolean;
   profileVisibility?: boolean;
   matchingEnabled?: boolean;
-  matchingPreference?: 'Strength' | 'Cardio' | 'CrossFit' | null;
+  matchingPreference?: "Strength" | "Cardio" | "CrossFit" | null;
   isDeleted?: boolean;
   deletedAt?: string | null;
   profilePicture?: string;
@@ -24,18 +33,40 @@ export interface User {
   availability?: string;
   onboardingStep?: number;
   trainerOnboardingStep?: number;
-  role?: 'user' | 'trainer';
+  role?: "user" | "trainer";
   createdAt: Date;
   updatedAt: Date;
   workExperience?: string;
-  introVideo?: string; // URL or file path to intro video
+  introVideo?: string;
   isFollowing?: boolean;
-  booking_request?:BookingData[]
-  today_schedule?:BookingData[]
+  booking_request?: BookingData[];
+  today_schedule?: BookingData[];
+  totalWorkouts?: number;
+  partnersCount?: number;
+  awardsCount?: number;
+  currentStreak?: number;
+  longestStreak?: number;
+  clientCount?: number;
+  totalWeeklySessions?: number;
+  completedWeeklySessions?: number;
+}
+
+export interface PotentialUsers{
+  users: User[];
+  totalPages: number;
 }
 
 export interface UserProfile {
   userId: string;
+  weeklyActivity?: {
+    Mon: boolean;
+    Tue: boolean;
+    Wed: boolean;
+    Thu: boolean;
+    Fri: boolean;
+    Sat: boolean;
+    Sun: boolean;
+  };
   displayName: string;
   bio: string;
   trainingTypes: string[];
@@ -48,6 +79,14 @@ export interface UserProfile {
   gym: string;
   photo?: string;
   verified: boolean;
+  totalWorkouts?: number;
+  partnersCount?: number;
+  awardsCount?: number;
+  currentStreak?: number;
+  longestStreak?: number;
+  clientCount?: number;
+  totalWeeklySessions?: number;
+  completedWeeklySessions?: number;
 }
 
 export interface UserStats {
@@ -88,7 +127,7 @@ export interface Workout {
   title: string;
   description: string;
   type: string;
-  difficulty: 'Easy' | 'Medium' | 'Hard';
+  difficulty: "Easy" | "Medium" | "Hard";
   totalDuration: number; // in seconds
   totalCalories: number;
   exerciseCount: number;
@@ -104,7 +143,7 @@ export interface Exercise {
   name: string;
   description: string;
   type: string;
-  difficulty: 'Easy' | 'Medium' | 'Hard';
+  difficulty: "Easy" | "Medium" | "Hard";
   duration: number; // in seconds
   calories: number;
   muscleGroups: string[]; // JSON parsed
@@ -146,7 +185,7 @@ export interface UserWorkoutSession {
   completedAt?: Date;
   totalDuration: number; // in seconds
   totalCaloriesBurned: number;
-  status: 'in_progress' | 'completed' | 'paused' | 'cancelled';
+  status: "in_progress" | "completed" | "paused" | "cancelled";
   workout?: Workout; // populated when needed
   progress?: UserExerciseProgress[];
 }
@@ -224,7 +263,7 @@ export interface Group {
   location: string;
   privacy?: string;
   isMember?: boolean;
-  joinRequestStatus?: 'pending' | 'approved' | 'rejected' | null;
+  joinRequestStatus?: "pending" | "approved" | "rejected" | null;
   creatorId?: number | string;
   createdAt: Date;
 }
@@ -387,7 +426,7 @@ export interface Notification {
   data?: any;
 }
 
-export * from './chat';
+export * from "./chat";
 
 // Navigation Types
 export type RootStackParamList = {
@@ -406,7 +445,11 @@ export type RootStackParamList = {
     initialMessage?: string;
   };
   SelectWorkout: undefined;
-  WorkoutSession: { sessionId?: string; workoutType?: string; workoutName?: string };
+  WorkoutSession: {
+    sessionId?: string;
+    workoutType?: string;
+    workoutName?: string;
+  };
   CreatePost: undefined;
   Settings: undefined;
   ForgotPassword: undefined;
@@ -415,9 +458,32 @@ export type RootStackParamList = {
   ShareWorkout: undefined;
   EditProfile: { userId?: string; isGuest?: boolean } | undefined;
   BookTrainer: { trainerId?: string; trainerName?: string } | undefined;
-  SelectDateTime: { trainerId?: string; trainerName?: string; packageTitle?: string; price?: number } | undefined;
-  BookingConfirmation: { trainerId?: string; trainerName?: string; packageTitle?: string; price?: number; date?: string; time?: string } | undefined;
-  BookingSuccess: { trainerId?: string; trainerName?: string; dateTime?: string; location?: string } | undefined;
+  SelectDateTime:
+    | {
+        trainerId?: string;
+        trainerName?: string;
+        packageTitle?: string;
+        price?: number;
+      }
+    | undefined;
+  BookingConfirmation:
+    | {
+        trainerId?: string;
+        trainerName?: string;
+        packageTitle?: string;
+        price?: number;
+        date?: string;
+        time?: string;
+      }
+    | undefined;
+  BookingSuccess:
+    | {
+        trainerId?: string;
+        trainerName?: string;
+        dateTime?: string;
+        location?: string;
+      }
+    | undefined;
   MyPosts: undefined;
   WorkoutHistory: undefined;
   Connections: undefined;
@@ -443,12 +509,10 @@ export type MainTabParamList = {
 export type FindStackParams = {
   FindMain: undefined;
   UserProfile: { userId: string; isGuest: boolean };
-
 };
 
 export type HomeStackParams = {
   HomeFeed: undefined;
   CreatePost: undefined;
   ShareWorkout: undefined;
-
 };

@@ -202,6 +202,7 @@ export const baseApi = createApi({
     "Workout",
     "Exercise",
     "WorkoutSession",
+    "FindMain",
     "UserWorkout",
     "Matching",
     "Messaging",

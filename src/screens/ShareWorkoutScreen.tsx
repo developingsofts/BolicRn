@@ -642,7 +642,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   textInputContainer: {
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.white,
     borderRadius: 10,
     paddingHorizontal: 10,
     height: 130,
@@ -671,7 +671,7 @@ const styles = StyleSheet.create({
     fontFamily: FontWeight.Medium,
     textAlign: "center",
     alignSelf: "center",
-    color: COLORS._5E5E5E,
+    color: COLORS.gradient1,
   },
   actionButtonImage: {
     width: 25,

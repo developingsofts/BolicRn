@@ -208,12 +208,13 @@ const styles = StyleSheet.create({
   },
   conversationName: {
     fontSize: 18,
-    fontWeight: "600",
-    color: COLORS.text,
+    fontFamily: FontWeight.SemiBold,
+    color: COLORS.app_black,
   },
   conversationTime: {
     fontSize: 12,
-    color: COLORS.textSecondary,
+    color: COLORS._5E5E5E,
+    fontFamily: FontWeight.Medium,
   },
   conversationContent: {
     flexDirection: "row",
@@ -242,7 +243,8 @@ const styles = StyleSheet.create({
   },
   lastMessage: {
     fontSize: 14,
-    color: COLORS.textSecondary,
+    color: COLORS._5E5E5E,
+    fontFamily: FontWeight.Medium,
     flex: 1,
   },
   unreadBadge: {
@@ -256,8 +258,8 @@ const styles = StyleSheet.create({
   },
   unreadText: {
     fontSize: 12,
-    color: COLORS.surface,
-    fontWeight: "600",
+    color: COLORS.white,
+    fontFamily: FontWeight.SemiBold,
   },
   footer: {
     paddingHorizontal: DIMENSIONS.spacing.lg,

@@ -166,7 +166,7 @@ const ScheduledSessions: React.FC = ({ navigation }: any) => {
               };
               return (
                 <View key={booking.id} style={styles.sessionCard}>
-                  {/* Header with date/time and trainer */}
+                  {/* Header with date/time on left and trainer on right */}
                   <View style={styles.sessionHeader}>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.sessionDate}>{displayDate}</Text>
@@ -179,12 +179,14 @@ const ScheduledSessions: React.FC = ({ navigation }: any) => {
                       </Text>
                     </View>
                   </View>
-                  {/* Session type row */}
+
+                  {/* Location row */}
                   <View style={styles.sessionLocationRow}>
                     <Text style={styles.sessionLocation}>
                       {booking.price?.title || "Session"}
                     </Text>
                   </View>
+
                   {/* Actions row */}
                   <View style={styles.sessionActions}>
                     <TouchableOpacity
@@ -194,7 +196,11 @@ const ScheduledSessions: React.FC = ({ navigation }: any) => {
                       <Text style={styles.actionButtonText}>Reschedule</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                      style={[styles.actionButton, styles.cancelButton]}
+                      style={[
+                        styles.actionButton,
+                        { borderWidth: 0 },
+                        styles.cancelButton,
+                      ]}
                       onPress={() => handleCancel(booking.id)}
                     >
                       <Text
@@ -233,7 +239,7 @@ const styles = StyleSheet.create({
   bookButton: {
     width: "100%",
     backgroundColor: COLORS.primary,
-    paddingVertical: 18,
+    paddingVertical: 14,
     borderRadius: 4,
     alignItems: "center",
     marginBottom: 20,
@@ -246,18 +252,18 @@ const styles = StyleSheet.create({
   },
   bookButtonText: {
     color: COLORS.white,
-    fontFamily: FontWeight.SemiBold,
-    fontSize: 16,
+    fontFamily: FontWeight.Medium,
+    fontSize: 14,
     letterSpacing: 0.2,
   },
   sessionList: {
-    gap: 20,
+    gap: 10,
   },
   sessionCard: {
     width: "100%",
     backgroundColor: "#fff",
     borderRadius: 16,
-    padding: 24,
+    padding: 18,
     marginBottom: 8,
     borderWidth: 1,
     borderColor: COLORS.border,
@@ -271,27 +277,29 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     justifyContent: "space-between",
-    marginBottom: 12,
+    marginBottom: 8,
   },
   sessionDate: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
+    fontSize: 16,
+    fontFamily: FontWeight.SemiBold,
+    color: COLORS.gradient1,
     marginBottom: 2,
   },
   sessionTime: {
-    fontSize: 24,
-    fontWeight: "600",
+    fontSize: 16,
+    fontFamily: FontWeight.SemiBold,
     color: COLORS.primary,
     marginBottom: 2,
   },
   sessionWith: {
     fontSize: 12,
-    color: COLORS.textSecondary,
+    fontFamily: FontWeight.Medium,
+    color: COLORS._5E5E5E,
   },
   sessionInstructor: {
-    fontSize: 15,
-    fontWeight: "500",
-    color: COLORS.text,
+    fontSize: 16,
+    fontFamily: FontWeight.SemiBold,
+    color: COLORS.gradient1,
   },
   sessionLocationRow: {
     flexDirection: "row",
@@ -300,8 +308,9 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   sessionLocationIcon: {
-    fontSize: 16,
-    color: COLORS.textSecondary,
+    fontSize: 12,
+    fontFamily: FontWeight.Medium,
+    color: COLORS._5E5E5E,
   },
   sessionLocation: {
     fontSize: 13,
@@ -309,28 +318,29 @@ const styles = StyleSheet.create({
   },
   sessionActions: {
     flexDirection: "row",
-    gap: 8,
-    marginTop: 8,
+    gap: 12,
+    marginTop: 5,
   },
   actionButton: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#00000033",
+    borderColor: COLORS.border,
     backgroundColor: COLORS.white,
+    alignItems: "center",
   },
   actionButtonText: {
-    color: COLORS.app_black,
+    color: COLORS._383838,
     fontFamily: FontWeight.Medium,
-    fontSize: 13,
+    fontSize: 14,
   },
   cancelButton: {
-    backgroundColor: COLORS._FF1616,
-    borderColor: COLORS._FF1616,
+    backgroundColor: COLORS.white,
   },
   cancelButtonText: {
-    color: COLORS.white,
+    color: COLORS._EB3434,
   },
   emptyState: {
     alignItems: "center",
@@ -338,8 +348,9 @@ const styles = StyleSheet.create({
     paddingVertical: 60,
   },
   emptyStateText: {
-    color: COLORS.textSecondary,
-    fontSize: 16,
+    color: COLORS._5E5E5E,
+    fontSize: 14,
+    fontFamily: FontWeight.Medium,
   },
   loadingContainer: {
     alignItems: "center",
