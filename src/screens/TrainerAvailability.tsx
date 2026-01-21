@@ -6,12 +6,10 @@ import {
   ScrollView,
   StyleSheet,
   Alert,
-  Platform,
   ActivityIndicator,
   Image,
-  Modal,
 } from "react-native";
-import DateTimePicker from "@react-native-community/datetimepicker";
+import TimePickerModal from "../components/TimePickerModal";
 import { SafeAreaView } from "react-native-safe-area-context";
 import BasicTopBar from "../components/BasicTopBar";
 import { COLORS, DIMENSIONS, toUtc, toLocalTime } from "../config/constants";
@@ -53,14 +51,12 @@ const TrainerAvailability: React.FC<{ navigation: any }> = ({ navigation }) => {
     day: string;
     mode: "start" | "end";
   } | null>(null);
-  const [pickerValue, setPickerValue] = useState(new Date());
-  const [tempPickerValue, setTempPickerValue] = useState(new Date());
   const [updateAvailability, { isLoading: isUpdating }] =
     useUpdateAvailabilityMutation();
   const [deleteAvailability] = useDeleteAvailabilityMutation();
 
   // Fetch slots from API
-  const { data, isLoading, isFetching } = useGetAvailabilityQuery(
+  const { data, isLoading, isFetching, refetch } = useGetAvailabilityQuery(
     user?.id ? { trainerId: user.id } : { trainerId: "" },
     { skip: !user?.id }
   );
@@ -178,65 +174,16 @@ const TrainerAvailability: React.FC<{ navigation: any }> = ({ navigation }) => {
   };
 
   const openPicker = (day: string, mode: "start" | "end") => {
-    const dayObj = availability[day] || { start_time: "", end_time: "" };
-    const timeStr = mode === "start" ? dayObj.start_time : dayObj.end_time;
-
-    let h = 9,
-      m = 0;
-    if (timeStr) {
-      // Accept both 09:00 AM and 09:00, and handle Unicode/extra whitespace in AM/PM
-      // Remove all non-breaking spaces and normalize whitespace
-      const cleaned = timeStr.replace(/[\u202F\u00A0\s]+/g, " ").trim();
-      const match = cleaned.match(/(\d{1,2}):(\d{2}) ?([AP]M)?/i);
-      if (match) {
-        h = parseInt(match[1], 10);
-        m = parseInt(match[2], 10);
-        if (match[3]) {
-          const ampm = match[3].toUpperCase();
-          if (ampm === "PM" && h < 12) h += 12;
-          if (ampm === "AM" && h === 12) h = 0;
-        }
-      }
-    }
-    const date = new Date();
-    date.setHours(h, m, 0, 0);
-    setPickerValue(date);
-    setTempPickerValue(date);
     setPicker({ day, mode });
   };
 
-  const onTimeChange = (event: any, selectedDate?: Date) => {
-    if (event.type === "dismissed") {
-      setPicker(null);
-      return;
-    }
-    if (selectedDate) {
-      setTempPickerValue(selectedDate);
-      // On Android, immediately update. On iOS, wait for OK button
-      if (Platform.OS === "android" && picker) {
-        let newTime = formatTime(selectedDate);
-        newTime = newTime.replace(/am|pm/, (match) => match.toUpperCase());
-        setAvailability((prev) => ({
-          ...prev,
-          [picker.day]: {
-            ...prev[picker.day],
-            [picker.mode === "start" ? "start_time" : "end_time"]: newTime,
-          },
-        }));
-        setPicker(null);
-      }
-    }
-  };
-
-  const handlePickerConfirm = () => {
+  const handleTimeConfirm = (time: string) => {
     if (picker) {
-      let newTime = formatTime(tempPickerValue);
-      newTime = newTime.replace(/am|pm/, (match) => match.toUpperCase());
       setAvailability((prev) => ({
         ...prev,
         [picker.day]: {
           ...prev[picker.day],
-          [picker.mode === "start" ? "start_time" : "end_time"]: newTime,
+          [picker.mode === "start" ? "start_time" : "end_time"]: time,
         },
       }));
     }
@@ -293,16 +240,12 @@ const TrainerAvailability: React.FC<{ navigation: any }> = ({ navigation }) => {
           id: data.data[0]?.id ?? "",
           slots,
         }).unwrap();
-        // Reset UI to default (show local times to user)
-        const week: WeekAvailability = {};
-        daysOfWeek.forEach((day) => {
-          week[day] = { start_time: "09:00 AM", end_time: "05:00 PM" };
-        });
-        setAvailability(week);
-        setInitialAvailability(week);
+        
+        // Refetch to get updated data from server
+        await refetch();
+        
+        Alert.alert("Success", "Changes discarded and reset to default");
       }
-
-      Alert.alert("Success", "Changes discarded and reset to default");
     } catch (e) {
       Alert.alert("Error", "Failed to reset availability.");
     }
@@ -461,59 +404,18 @@ const TrainerAvailability: React.FC<{ navigation: any }> = ({ navigation }) => {
             })}
           </View>
 
-          {/* Only render the picker once, outside the map */}
-          {picker && Platform.OS === "android" && (
-            <DateTimePicker
-              value={tempPickerValue}
-              mode="time"
-              is24Hour={false}
-              display="default"
-              onChange={onTimeChange}
-            />
-          )}
-
-          {picker && Platform.OS === "ios" && (
-            <Modal
-              visible={true}
-              transparent={true}
-              animationType="slide"
-              onRequestClose={() => setPicker(null)}
-            >
-              <View style={styles.iosPickerOverlay}>
-                <View style={styles.iosPickerContainer}>
-                  <View style={styles.iosPickerHeader}>
-                    <TouchableOpacity
-                      style={styles.iosPickerHeaderButton}
-                      onPress={() => setPicker(null)}
-                    >
-                      <Text style={styles.iosPickerCancel}>Cancel</Text>
-                    </TouchableOpacity>
-                    <Text
-                      style={[
-                        styles.iosPickerTitle,
-                        styles.iosPickerHeaderTitle,
-                      ]}
-                    >
-                      Select Time
-                    </Text>
-                    <TouchableOpacity
-                      style={styles.iosPickerHeaderButton}
-                      onPress={handlePickerConfirm}
-                    >
-                      <Text style={styles.iosPickerOk}>OK</Text>
-                    </TouchableOpacity>
-                  </View>
-                  <DateTimePicker
-                    value={tempPickerValue}
-                    mode="time"
-                    is24Hour={false}
-                    display="spinner"
-                    onChange={onTimeChange}
-                  />
-                </View>
-              </View>
-            </Modal>
-          )}
+          <TimePickerModal
+            visible={!!picker}
+            initialTime={
+              picker
+                ? picker.mode === "start"
+                  ? availability[picker.day]?.start_time || "09:00 AM"
+                  : availability[picker.day]?.end_time || "05:00 PM"
+                : "09:00 AM"
+            }
+            onConfirm={handleTimeConfirm}
+            onCancel={() => setPicker(null)}
+          />
 
           {/* Action Buttons */}
           <View style={styles.actionRow}>
@@ -774,53 +676,6 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontFamily: FontWeight.Medium,
     fontSize: 14,
-  },
-  iosPickerOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "flex-end",
-  },
-  iosPickerContainer: {
-    backgroundColor: "#F9F9F9",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingBottom: 20,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  iosPickerHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E5E5",
-    width: "100%",
-  },
-  iosPickerHeaderTitle: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    textAlign: "center",
-  },
-  iosPickerHeaderButton: {
-    zIndex: 1,
-  },
-  iosPickerCancel: {
-    fontSize: 16,
-    color: COLORS.error,
-    fontWeight: "600",
-  },
-  iosPickerTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: COLORS.text,
-  },
-  iosPickerOk: {
-    fontSize: 16,
-    color: COLORS.primary,
-    fontWeight: "600",
   },
 });
 

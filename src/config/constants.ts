@@ -2,7 +2,7 @@
 
 // App Configuration
 export const APP_CONFIG = {
-  name: "BolicBuddy",
+  name: "Bolic",
   version: "1.0.0",
   description: "Find your perfect training partner",
 };

@@ -12,7 +12,11 @@ import {
   Linking,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation, useRoute, CommonActions } from "@react-navigation/native";
+import {
+  useNavigation,
+  useRoute,
+  CommonActions,
+} from "@react-navigation/native";
 import FontWeight from "../hooks/useInterFonts";
 import { COLORS } from "../config/constants";
 import STRINGS from "../config/strings";
@@ -20,7 +24,10 @@ import { useResponsive } from "../hooks/responsiveDesignHook";
 import PasswordInput from "../components/PasswordInput";
 import MaskedView from "@react-native-masked-view/masked-view";
 import { LinearGradient } from "expo-linear-gradient";
-import { useForgotPasswordMutation, useResetPasswordMutation } from "../services/api/authApi";
+import {
+  useForgotPasswordMutation,
+  useResetPasswordMutation,
+} from "../services/api/authApi";
 import { Toast } from "../components/ToastManager";
 
 type ForgotPasswordStep = "email" | "waiting" | "resetPassword" | "success";
@@ -29,7 +36,9 @@ interface ForgotPasswordProps {
   navigation?: any;
 }
 
-const ForgotPassword: React.FC<ForgotPasswordProps> = ({ navigation: navProp }) => {
+const ForgotPassword: React.FC<ForgotPasswordProps> = ({
+  navigation: navProp,
+}) => {
   const styles = useResponsive(baseStyles);
   const route = useRoute();
   const navigation = useNavigation();
@@ -40,17 +49,19 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ navigation: navProp }) 
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [resetToken, setResetToken] = useState<string>("");
-  
-  const [forgotPassword, { isLoading: isSendingEmail }] = useForgotPasswordMutation();
-  const [resetPassword, { isLoading: isResettingPassword }] = useResetPasswordMutation();
+
+  const [forgotPassword, { isLoading: isSendingEmail }] =
+    useForgotPasswordMutation();
+  const [resetPassword, { isLoading: isResettingPassword }] =
+    useResetPasswordMutation();
 
   // Check if there's a token in the route params (from deep link)
   useEffect(() => {
     const params = route.params as any;
-    console.log('📱 Route params:', params);
-    
+    console.log("📱 Route params:", params);
+
     if (params?.token) {
-      console.log('✅ Token found in params:', params.token);
+      console.log("✅ Token found in params:", params.token);
       setResetToken(params.token);
       setCurrentStep("resetPassword");
       Toast.success("Please enter your new password");
@@ -60,15 +71,15 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ navigation: navProp }) 
   // Also handle deep links via Linking API
   useEffect(() => {
     const handleDeepLink = (event: { url: string }) => {
-      console.log('🔗 Deep link received:', event.url);
-      
+      console.log("🔗 Deep link received:", event.url);
+
       // Parse URL to extract token
       const url = event.url;
       const tokenMatch = url.match(/[?&]token=([^&]+)/);
-      
+
       if (tokenMatch && tokenMatch[1]) {
         const token = tokenMatch[1];
-        console.log('✅ Token extracted from deep link:', token);
+        console.log("✅ Token extracted from deep link:", token);
         setResetToken(token);
         setCurrentStep("resetPassword");
         Toast.success("Please enter your new password");
@@ -78,13 +89,13 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ navigation: navProp }) 
     // Handle initial URL (if app was opened from a link)
     Linking.getInitialURL().then((url) => {
       if (url) {
-        console.log('🔗 Initial URL:', url);
+        console.log("🔗 Initial URL:", url);
         handleDeepLink({ url });
       }
     });
 
     // Handle URL while app is running
-    const subscription = Linking.addEventListener('url', handleDeepLink);
+    const subscription = Linking.addEventListener("url", handleDeepLink);
 
     return () => {
       subscription.remove();
@@ -104,20 +115,22 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ navigation: navProp }) 
 
     try {
       const result = await forgotPassword(email).unwrap();
-      
+
       if (result.status) {
         Toast.success("Password reset link sent! Check your email.");
         setCurrentStep("waiting");
       } else {
-        Toast.error(result.message || STRINGS.FORGOT_PASSWORD.errors.failedToSend);
+        Toast.error(
+          result.message || STRINGS.FORGOT_PASSWORD.errors.failedToSend,
+        );
       }
     } catch (error: any) {
       console.error("Forgot password error:", error);
-      Toast.error(error?.data?.message || STRINGS.FORGOT_PASSWORD.errors.failedToSend);
+      Toast.error(
+        error?.data?.message || STRINGS.FORGOT_PASSWORD.errors.failedToSend,
+      );
     }
   };
-
- 
 
   const handleResetPassword = async () => {
     if (!newPassword.trim()) {
@@ -141,25 +154,34 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ navigation: navProp }) 
     }
 
     try {
-      const result = await resetPassword({ token: resetToken, newPassword }).unwrap();
-      
+      const result = await resetPassword({
+        token: resetToken,
+        newPassword,
+      }).unwrap();
+
       if (result.status) {
         Toast.success("Password reset successfully!");
         setCurrentStep("success");
       } else {
-        Toast.error(result.message || STRINGS.FORGOT_PASSWORD.errors.failedToUpdate);
+        Toast.error(
+          result.message || STRINGS.FORGOT_PASSWORD.errors.failedToUpdate,
+        );
       }
     } catch (error: any) {
       console.error("Reset password error:", error);
-      Toast.error(error?.data?.message || STRINGS.FORGOT_PASSWORD.errors.failedToUpdate);
+      Toast.error(
+        error?.data?.message || STRINGS.FORGOT_PASSWORD.errors.failedToUpdate,
+      );
     }
   };
 
   const handleBackToLogin = () => {
-    navigation.dispatch(CommonActions.reset({
-      index: 0,
-      routes: [{ name: 'Auth' }],
-    }));
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [{ name: "Auth" }],
+      }),
+    );
   };
 
   const renderEmailStep = () => (
@@ -306,10 +328,16 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ navigation: navProp }) 
         style={styles.keyboardAvoid}
       >
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.dispatch(CommonActions.reset({
-            index: 0,
-            routes: [{ name: 'Auth' }],
-          }))}>
+          <TouchableOpacity
+            onPress={() =>
+              navigation.dispatch(
+                CommonActions.reset({
+                  index: 0,
+                  routes: [{ name: "Auth" }],
+                }),
+              )
+            }
+          >
             <Ionicons
               name="chevron-back"
               size={24}
@@ -321,14 +349,16 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ navigation: navProp }) 
 
         <View style={styles.content}>
           <MaskedView
-            maskElement={<Text style={styles.logo}>BolicBuddy</Text>}
+            maskElement={<Text style={styles.logo}>{STRINGS.appName}</Text>}
           >
             <LinearGradient
               colors={[COLORS.gradient1, COLORS.gradient2, COLORS.gradient3]}
               start={{ x: 0, y: 0 }}
               end={{ x: 0, y: 0 }}
             >
-              <Text style={[styles.logo, { opacity: 0 }]}>BolicBuddy</Text>
+              <Text style={[styles.logo, { opacity: 0 }]}>
+                {STRINGS.appName}
+              </Text>
             </LinearGradient>
           </MaskedView>
           <Text style={styles.logoSubtitle}>Reset your password</Text>

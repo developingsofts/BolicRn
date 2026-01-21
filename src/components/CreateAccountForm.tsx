@@ -106,7 +106,7 @@ const CreateAccountForm = React.forwardRef<{
         <Text style={styles.label}>Confirm Password</Text>
         <TextInput
           style={[styles.input, errors.confirmPassword && styles.inputError]}
-          placeholder="reenter your pass"
+          placeholder="Re-enter your password"
           value={confirmPassword}
           onChangeText={setConfirmPassword}
           secureTextEntry

@@ -1,5 +1,5 @@
-import React from 'react';
-import { ScrollView, RefreshControl, ScrollViewProps } from 'react-native';
+import React from "react";
+import { ScrollView, RefreshControl, ScrollViewProps } from "react-native";
 
 interface RefreshableScrollViewProps extends ScrollViewProps {
   refreshing: boolean;
@@ -15,10 +15,10 @@ const RefreshableScrollView: React.FC<RefreshableScrollViewProps> = ({
 }) => {
   return (
     <ScrollView
+      {...props}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
-      {...props}
     >
       {children}
     </ScrollView>

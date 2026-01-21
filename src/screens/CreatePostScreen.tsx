@@ -13,6 +13,8 @@ import {
   Pressable,
   ActivityIndicator,
 } from "react-native";
+import { Checkbox } from "expo-checkbox";
+
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS, DIMENSIONS } from "../config/constants";
@@ -58,47 +60,25 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<any>(null);
   const [selectedAchievement, setSelectedAchievement] =
-    useState< AchievementType | null>(null);
+    useState<AchievementType | null>(null);
   const [showAchievementModal, setShowAchievementModal] = useState(false);
   const [showUnlockedModal, setShowUnlockedModal] = useState(false);
   const { data: achievementsData, isLoading: achievementsLoading } =
     useGetUserAchievementsQuery(
       { userId: undefined },
-      { skip: !isAuthenticated }
+      { skip: !isAuthenticated },
     );
+  const [isShareCommunityChecked, setShareCommunityChecked] = useState(false);
 
   const achievements: AchievementType[] =
     achievementsData?.status && achievementsData?.data
       ? achievementsData.data
       : [];
 
-  // Mock achievements data
-  // const achievements: Achievement[] = [
-  //   {
-  //     id: "1",
-  //     title: "First Steps",
-  //     description: "Complete first workout",
-  //     icon: "🏃‍♂️",
-  //   },
-  //   {
-  //     id: "2",
-  //     title: "Century Club",
-  //     description: "Reach the 100 workout",
-  //     icon: "💯",
-  //   },
-  //   {
-  //     id: "3",
-  //     title: "Community Leader",
-  //     description: "Create your first group",
-  //     icon: "👥",
-  //   },
-  // ];
-
   const handleBack = () => {
     if (navigation.canGoBack()) {
       navigation.goBack();
     } else {
-      // Fallback to navigate to home
       navigation.navigate("HomeFeed");
     }
   };
@@ -107,7 +87,7 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({
     Linking.openSettings().catch(() => {
       Alert.alert(
         STRINGS.COMMON.error,
-        STRINGS.CREATE_POST.errors.unableToOpenSettings
+        STRINGS.CREATE_POST.errors.unableToOpenSettings,
       );
     });
   };
@@ -120,7 +100,7 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({
       if (status !== "granted") {
         Alert.alert(
           "Permission Required",
-          "Please grant permission to access your photos to upload media."
+          "Please grant permission to access your photos to upload media.",
         );
         return;
       }
@@ -179,7 +159,7 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({
     if (!postText.trim() && !selectedImage) {
       Toast.error(
         STRINGS.CREATE_POST.errors.addContent ||
-          "Please add some content to your post"
+          "Please add some content to your post",
       );
       return;
     }
@@ -189,19 +169,20 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({
         title: postText.trim(),
       };
 
-      // Add achievement ID if selected
       if (selectedAchievement) {
         payload.achievementId = parseInt(selectedAchievement.id.toString());
       }
 
-      // Add media file if selected
       if (imageFile) {
         payload.mediaFile = imageFile;
       }
 
-      // Add group ID if creating post for a group
       if (groupId) {
         payload.groupId = groupId;
+      }
+
+      if (isShareCommunityChecked) {
+        payload.shareToCommunity = true;
       }
 
       const response = await createPost(payload).unwrap();
@@ -209,14 +190,12 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({
       if (response.status) {
         Toast.success(
           STRINGS.CREATE_POST.success.postCreated ||
-            "Post created successfully!"
+            "Post created successfully!",
         );
 
-        // If this was a group post, navigate to GroupDetails screen
         if (groupId) {
           navigation.replace("GroupDetails", { group: { id: groupId } });
         } else {
-          // Navigate back to previous screen (Home)
           handleBack();
         }
       } else {
@@ -248,26 +227,31 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({
         titleStyle={styles.headerTitle}
         subtitleStyle={styles.subtitle}
       />
-
-      <View style={{ paddingHorizontal: 20 }}>
-        <Pressable
-          style={styles.shareWorkoutCard}
-          onPress={() => {
-            navigation.navigate("ShareWorkout");
-          }}
-        >
-          <Text style={styles.shareWorkoutText}>
-            {STRINGS.CREATE_POST.shareWorkout}
-          </Text>
-          <Ionicons name="chevron-forward" size={24} color={COLORS.app_black} />
-        </Pressable>
-
-        <View style={styles.content}>
-          <ScrollView
-            style={styles.scrollView}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ borderRadius: 10 }}
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
+        contentContainerStyle={{ borderRadius: 10 }}
+      >
+        <View style={{ paddingHorizontal: 20 }}>
+          <Pressable
+            style={styles.shareWorkoutCard}
+            onPress={() => {
+              navigation.navigate("ShareWorkout");
+            }}
           >
+            <Text style={styles.shareWorkoutText}>
+              {STRINGS.CREATE_POST.shareWorkout}
+            </Text>
+            <Ionicons
+              name="chevron-forward"
+              size={24}
+              color={COLORS.app_black}
+            />
+          </Pressable>
+
+          <View style={styles.content}>
             {/* Text Input */}
             <View style={styles.textInputContainer}>
               <TextInput
@@ -372,80 +356,93 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({
                 </View>
               </View>
             )}
-          </ScrollView>
 
-          {/* Achievement Selection Modal */}
-          <Modal
-            visible={showAchievementModal}
-            transparent
-            navigationBarTranslucent
-            statusBarTranslucent
-            animationType="slide"
-            onRequestClose={() => setShowAchievementModal(false)}
-          >
-            <View style={styles.modalOverlay}>
-              <View style={styles.modalContent}>
-                <View style={styles.modalHeader}>
-                  <Text style={styles.modalTitle}>
-                    {STRINGS.CREATE_POST.selectAchievement}
-                  </Text>
-                  <TouchableOpacity
-                    onPress={() => setShowAchievementModal(false)}
-                  >
-                    <Image source={Close} style={styles.closeIcon} />
-                  </TouchableOpacity>
-                </View>
-                <Divider
-                  style={{
-                    height: 1.5,
-                    backgroundColor: COLORS._C9C9C9,
-                    marginHorizontal: 22,
-                    marginBottom: 10,
-                  }}
-                />
-
-                <ScrollView>
-                  {achievements.map((achievement) => (
-                    <Pressable
-                      key={achievement.id}
-                      style={styles.achievementOption}
-                      onPress={() => handleAchievementSelect(achievement)}
-                    >
-                      <View style={[styles.achievementOptionIcon]}>
-                        <Text style={styles.achievementOptionEmoji}>
-                          {achievement.icon}
-                        </Text>
-                      </View>
-                      <View style={styles.achievementOptionDetails}>
-                        <Text style={styles.achievementOptionTitle}>
-                          {achievement.title}
-                        </Text>
-                        <Text style={styles.achievementDescription}>
-                          {achievement.description}
-                        </Text>
-                      </View>
-                    </Pressable>
-                  ))}
-                </ScrollView>
-              </View>
-            </View>
-          </Modal>
-
-          <TouchableOpacity
-            style={[styles.postButton, isLoading && styles.postButtonDisabled]}
-            onPress={handlePost}
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <ActivityIndicator size="small" color={COLORS.white} />
-            ) : (
-              <Text style={styles.postButtonText}>
-                {STRINGS.CREATE_POST.post}
+            <View style={styles.section}>
+              <Checkbox
+                style={styles.checkbox}
+                value={isShareCommunityChecked}
+                onValueChange={setShareCommunityChecked}
+              />
+              <Text style={styles.communityText}>
+                {STRINGS.CREATE_POST.shareToCommunity}
               </Text>
-            )}
-          </TouchableOpacity>
+            </View>
+
+            <Modal
+              visible={showAchievementModal}
+              transparent
+              navigationBarTranslucent
+              statusBarTranslucent
+              animationType="slide"
+              onRequestClose={() => setShowAchievementModal(false)}
+            >
+              <View style={styles.modalOverlay}>
+                <View style={styles.modalContent}>
+                  <View style={styles.modalHeader}>
+                    <Text style={styles.modalTitle}>
+                      {STRINGS.CREATE_POST.selectAchievement}
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() => setShowAchievementModal(false)}
+                    >
+                      <Image source={Close} style={styles.closeIcon} />
+                    </TouchableOpacity>
+                  </View>
+                  <Divider
+                    style={{
+                      height: 1.5,
+                      backgroundColor: COLORS._C9C9C9,
+                      marginHorizontal: 22,
+                      marginBottom: 10,
+                    }}
+                  />
+
+                  <ScrollView>
+                    {achievements.map((achievement) => (
+                      <Pressable
+                        key={achievement.id}
+                        style={styles.achievementOption}
+                        onPress={() => handleAchievementSelect(achievement)}
+                      >
+                        <View style={[styles.achievementOptionIcon]}>
+                          <Text style={styles.achievementOptionEmoji}>
+                            {achievement.icon}
+                          </Text>
+                        </View>
+                        <View style={styles.achievementOptionDetails}>
+                          <Text style={styles.achievementOptionTitle}>
+                            {achievement.title}
+                          </Text>
+                          <Text style={styles.achievementDescription}>
+                            {achievement.description}
+                          </Text>
+                        </View>
+                      </Pressable>
+                    ))}
+                  </ScrollView>
+                </View>
+              </View>
+            </Modal>
+
+            <TouchableOpacity
+              style={[
+                styles.postButton,
+                isLoading && styles.postButtonDisabled,
+              ]}
+              onPress={handlePost}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator size="small" color={COLORS.white} />
+              ) : (
+                <Text style={styles.postButtonText}>
+                  {STRINGS.CREATE_POST.post}
+                </Text>
+              )}
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -454,6 +451,17 @@ const baseStyles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+  },
+  section: {
+    marginVertical: 20,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  communityText: {
+    fontSize: 16,
+    fontFamily: FontWeight.SemiBold,
+    color: COLORS.app_black,
   },
   header: {
     paddingTop: DIMENSIONS.spacing.xxl,
@@ -599,7 +607,6 @@ const baseStyles = StyleSheet.create({
   },
   imageWrapper: {
     position: "relative",
-    marginRight: 10,
   },
   selectedImage: {
     width: "100%",
@@ -608,7 +615,6 @@ const baseStyles = StyleSheet.create({
   },
   postButton: {
     backgroundColor: COLORS.primary,
-    marginTop: 10,
     paddingVertical: 13,
     borderRadius: 5,
     alignItems: "center",

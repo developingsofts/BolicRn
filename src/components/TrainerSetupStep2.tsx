@@ -5,11 +5,10 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Platform,
   Image,
   Alert,
 } from "react-native";
-import DateTimePicker from "@react-native-community/datetimepicker";
+import TimePickerModal from "./TimePickerModal";
 import { COLORS, DIMENSIONS, toUtc } from "../config/constants";
 import FontWeight from "../hooks/useInterFonts";
 import { Close } from "../../assets";
@@ -36,27 +35,11 @@ const TrainerSetupStep2: React.FC<TrainerSetupStep2Props> = ({
 }) => {
   const [schedule, setSchedule] = useState(defaultSchedule);
   const [picker, setPicker] = useState<{
-    visible: boolean;
     mode: "start" | "end";
     dayIdx: number;
   } | null>(null);
-  const [pickerValue, setPickerValue] = useState<Date>(new Date());
   const [createAvailability, { isLoading: isCreating }] =
     useCreateAvailabilityMutation();
-
-  // Helper to format time as 12-hour with leading zero and AM/PM in caps
-  const formatTime = (date: Date) => {
-    let [time, ampm] = date
-      .toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: true,
-      })
-      .split(" ");
-    let [hour, minute] = time.split(":");
-    if (hour.length === 1) hour = "0" + hour;
-    return `${hour}:${minute} ${ampm ? ampm.toUpperCase() : ""}`.trim();
-  };
 
   // Toggle OFF/ON for a day
   const handleToggleOff = (dayIdx: number) => {
@@ -75,63 +58,14 @@ const TrainerSetupStep2: React.FC<TrainerSetupStep2Props> = ({
 
   // Open picker for a slot
   const openPicker = (dayIdx: number, mode: "start" | "end") => {
-    const timeStr = schedule[dayIdx][mode];
-    console.log(
-      "[openPicker] timeStr:",
-      JSON.stringify(timeStr),
-      "mode:",
-      mode,
-      "dayIdx:",
-      dayIdx
-    );
-    let h = 9,
-      m = 0;
-    if (timeStr) {
-      // Remove Unicode spaces and normalize whitespace
-      const cleaned = timeStr
-        .replace(
-          /[\u202F\u00A0\u2007\u2060\u2009\u200A\u200B\u200C\u200D\uFEFF\s]+/g,
-          " "
-        )
-        .trim();
-      // Accept both 09:00 AM and 09:00
-      const match = cleaned.match(/(\d{1,2}):(\d{2}) ?([AP]M)?/i);
-      console.log(
-        "[openPicker] cleaned:",
-        JSON.stringify(cleaned),
-        "match:",
-        match
-      );
-      if (match) {
-        h = parseInt(match[1], 10);
-        m = parseInt(match[2], 10);
-        if (match[3]) {
-          // If AM/PM present, convert to 24-hour
-          if (match[3].toUpperCase() === "PM" && h < 12) h += 12;
-          if (match[3].toUpperCase() === "AM" && h === 12) h = 0;
-        }
-      }
-    }
-    const date = new Date();
-    date.setHours(h, m, 0, 0);
-    console.log("[openPicker] Setting pickerValue to:", date);
-    setPickerValue(date);
-    setPicker({ visible: true, mode, dayIdx });
+    setPicker({ mode, dayIdx });
   };
 
-  // Handle picker change
-  const onTimeChange = (event: any, selectedDate?: Date) => {
-    if (event.type === "dismissed") {
-      setPicker(null);
-      return;
-    }
-    if (selectedDate && picker) {
-      let newTime = formatTime(selectedDate);
-      // Ensure AM/PM is uppercase
-      newTime = newTime.replace(/am|pm/, (match) => match.toUpperCase());
+  const handleTimeConfirm = (time: string) => {
+    if (picker) {
       setSchedule((prev) =>
         prev.map((slot, idx) =>
-          idx === picker.dayIdx ? { ...slot, [picker.mode]: newTime } : slot
+          idx === picker.dayIdx ? { ...slot, [picker.mode]: time } : slot
         )
       );
     }
@@ -192,7 +126,7 @@ const TrainerSetupStep2: React.FC<TrainerSetupStep2Props> = ({
                   <>
                     <TouchableOpacity
                       style={{
-                        width: "30%",
+                        width: "40%",
                       }}
                       onPress={() => handleToggleOff(index)}
                     >
@@ -203,7 +137,7 @@ const TrainerSetupStep2: React.FC<TrainerSetupStep2Props> = ({
                     <Text style={styles.dash}>-</Text>
                     <TouchableOpacity
                       style={{
-                        width: "30%",
+                        width: "40%",
                       }}
                       onPress={() => handleToggleOff(index)}
                     >
@@ -218,9 +152,9 @@ const TrainerSetupStep2: React.FC<TrainerSetupStep2Props> = ({
                       style={{
                         borderWidth: 0.5,
                         borderColor: "#0000001F",
-                        paddingHorizontal: 12,
+                        paddingHorizontal: 5,
                         paddingVertical: 9,
-                        width: "30%",
+                        width: "40%",
                         borderRadius: 32,
                       }}
                       onPress={() => openPicker(index, "start")}
@@ -234,10 +168,9 @@ const TrainerSetupStep2: React.FC<TrainerSetupStep2Props> = ({
                       style={{
                         borderWidth: 0.5,
                         borderColor: "#0000001F",
-                        paddingHorizontal: 12,
+                        paddingHorizontal: 5,
                         paddingVertical: 9,
-                        width: "30%",
-
+                        width: "40%",
                         borderRadius: 32,
                       }}
                       onPress={() => openPicker(index, "end")}
@@ -246,7 +179,7 @@ const TrainerSetupStep2: React.FC<TrainerSetupStep2Props> = ({
                     </TouchableOpacity>
                     {!isOff && (
                       <TouchableOpacity
-                        style={{ right: 0 }}
+                        style={{ position: "absolute", right: 0 }}
                         onPress={() => handleToggleOff(index)}
                       >
                         <Image
@@ -266,15 +199,18 @@ const TrainerSetupStep2: React.FC<TrainerSetupStep2Props> = ({
           );
         })}
       </View>
-      {picker && (
-        <DateTimePicker
-          value={pickerValue}
-          mode="time"
-          is24Hour={false}
-          display={Platform.OS === "ios" ? "spinner" : "default"}
-          onChange={onTimeChange}
-        />
-      )}
+
+      <TimePickerModal
+        visible={!!picker}
+        initialTime={
+          picker
+            ? schedule[picker.dayIdx][picker.mode] || "09:00 AM"
+            : "09:00 AM"
+        }
+        onConfirm={handleTimeConfirm}
+        onCancel={() => setPicker(null)}
+      />
+
       <View style={styles.actionRow}>
         <TouchableOpacity
           style={[styles.actionBtn, styles.outlineBtn]}
@@ -325,7 +261,10 @@ const styles = StyleSheet.create({
     marginBottom: 18,
     borderWidth: 1,
     borderColor: "#EDEDED",
-    boxShadow: "0px 0px 8px 0px #6B6B6B26",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
     elevation: 2,
   },
   scheduleRow: {
@@ -346,6 +285,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flex: 1,
     gap: 2,
+    justifyContent: "flex-start",
   },
   badgeOff: {
     backgroundColor: "#E6E6E6",

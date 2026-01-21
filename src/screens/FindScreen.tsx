@@ -40,7 +40,7 @@ function mapToSwipeableItem(item: any): SwipeableItem {
     item,
     item.name,
     item.imageUrl,
-    item.profilePicture
+    item.profilePicture,
   );
   if (item.role === "user") {
     return {
@@ -89,7 +89,7 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation, route }) => {
   const [removedIds, setRemovedIds] = useState<number[]>([]);
   const tab = route?.params?.tab || "FindPartners";
   const [activeTab, setActiveTab] = useState<"partners" | "trainers">(
-    tab === "FindTrainers" ? "trainers" : "partners"
+    tab === "FindTrainers" ? "trainers" : "partners",
   );
   const [menuVisible, setMenuVisible] = useState(false);
   const [ratingModalVisible, setRatingModalVisible] = useState(false);
@@ -167,7 +167,7 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation, route }) => {
 
     // Filter out removed and invalid items
     data = data.filter(
-      (item: any) => item && item.id && !removedIds.includes(item.id)
+      (item: any) => item && item.id && !removedIds.includes(item.id),
     );
 
     // Apply filters
@@ -180,7 +180,7 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation, route }) => {
           ? item.trainingTypes?.join(", ")
           : item.specialty || item.trainingTypes?.join(", ");
       return selectedFilters.some((filter) =>
-        type?.toLowerCase().includes(filter.toLowerCase())
+        type?.toLowerCase().includes(filter.toLowerCase()),
       );
     });
   };
@@ -418,6 +418,11 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation, route }) => {
     }
   };
 
+  const handleSkip = async (item: SwipeableItem) => {
+    setRemovedIds((prev) => [...prev, item.id]);
+    setCurrentIndex((prev) => Math.min(prev, getCurrentData().length - 1));
+  };
+
   const handleSwipeRight = async (item: SwipeableItem) => {
     try {
       const response = await swipeUser({ swipedToId: item.id, type: "Liked" });
@@ -440,7 +445,7 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation, route }) => {
               onPress: () => {
                 setRemovedIds((prev) => [...prev, item.id]);
                 setCurrentIndex((prev) =>
-                  Math.min(prev, getCurrentData().length - 1)
+                  Math.min(prev, getCurrentData().length - 1),
                 );
               },
             },
@@ -454,7 +459,7 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation, route }) => {
                 setRatingModalVisible(true);
                 setRemovedIds((prev) => [...prev, item.id]);
                 setCurrentIndex((prev) =>
-                  Math.min(prev, getCurrentData().length - 1)
+                  Math.min(prev, getCurrentData().length - 1),
                 );
               },
             },
@@ -483,11 +488,11 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation, route }) => {
                 }
                 setRemovedIds((prev) => [...prev, item.id]);
                 setCurrentIndex((prev) =>
-                  Math.min(prev, getCurrentData().length - 1)
+                  Math.min(prev, getCurrentData().length - 1),
                 );
               },
             },
-          ]
+          ],
         );
       }
     } catch (error) {
@@ -505,7 +510,7 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation, route }) => {
       Alert.alert(
         STRINGS.FIND.alerts.ratingSubmittedTitle,
         `${STRINGS.FIND.alerts.ratingSubmittedMessage} ${selectedUserForRating.name} ${STRINGS.FIND.alerts.withStars} ${rating} ${STRINGS.FIND.alerts.stars}`,
-        [{ text: STRINGS.COMMON.ok }]
+        [{ text: STRINGS.COMMON.ok }],
       );
       // Here you would typically save the rating to your backend
     }
@@ -633,7 +638,7 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation, route }) => {
                 }
                 onSwipeLeft={handleSwipeLeft}
                 onSwipeRight={handleSwipeRight}
-                onSkip={handleSwipeLeft}
+                onSkip={handleSkip}
                 isFirst={true}
                 isFollowing={currentItem.isFollowing}
                 navigation={navigation}
@@ -775,7 +780,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: DIMENSIONS.spacing.lg,
-    marginTop: DIMENSIONS.spacing.lg,
   },
   noMoreCards: {
     alignItems: "center",

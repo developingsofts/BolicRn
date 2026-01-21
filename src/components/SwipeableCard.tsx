@@ -13,6 +13,7 @@ import { PanGestureHandler, State } from "react-native-gesture-handler";
 import { COLORS, DIMENSIONS } from "../config/constants";
 import RatingStars from "./RatingStars";
 import FontWeight from "../hooks/useInterFonts";
+import STRINGS from "../config/strings";
 
 const { width: screenWidth } = Dimensions.get("window");
 const SWIPE_THRESHOLD = screenWidth * 0.25;
@@ -90,7 +91,7 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
 
   const handleGestureEvent = Animated.event(
     [{ nativeEvent: { translationX: translateX } }],
-    { useNativeDriver: true }
+    { useNativeDriver: true },
   );
 
   const handleStateChange = (event: any) => {
@@ -217,7 +218,7 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
                   console.log(
                     "Image load error for",
                     partner.name,
-                    partner.imageUrl
+                    partner.imageUrl,
                   );
                   setImageError(true);
                 }}
@@ -225,7 +226,7 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
                   console.log(
                     "Image loaded for",
                     partner.name,
-                    partner.imageUrl
+                    partner.imageUrl,
                   )
                 }
               />
@@ -300,8 +301,8 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
                       {"specialty" in partner
                         ? partner.specialty
                         : "type" in partner
-                        ? partner.type
-                        : ""}
+                          ? partner.type
+                          : ""}
                     </Text>
                   </View>
                 )}
@@ -313,8 +314,8 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
                     partner.compatibility !== undefined
                       ? `${partner.compatibility}% Match`
                       : "hourlyRate" in partner
-                      ? partner.hourlyRate || "Contact for rates"
-                      : "Contact for rates"}
+                        ? partner.hourlyRate || "Contact for rates"
+                        : "Contact for rates"}
                   </Text>
                 </View>
 
@@ -378,13 +379,27 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
                     {isTrainer
                       ? "Book Session"
                       : followLoading
-                      ? "..."
-                      : isFollowing
-                      ? "Unfollow"
-                      : "Follow"}
+                        ? "..."
+                        : isFollowing
+                          ? "Unfollow"
+                          : "Follow"}
                   </Text>
                 </TouchableOpacity>
               </View>
+
+              {/* Skip Button */}
+              {onSkip && (
+                <TouchableOpacity
+                  style={styles.skipButton}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    onSkip(partner);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.skipButtonText}>{STRINGS.FIND.skip}</Text>
+                </TouchableOpacity>
+              )}
             </View>
           </View>
 
@@ -678,12 +693,8 @@ const styles = StyleSheet.create({
     color: "#EF4444",
   },
   skipButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    backgroundColor: "#F3F4F6",
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "#D1D5DB",
+    alignSelf: "center",
+    marginTop: 15,
   },
   skipButtonText: {
     fontSize: 13,

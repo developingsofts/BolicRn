@@ -4,7 +4,6 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  ScrollView,
   Animated,
   StyleSheet,
   Dimensions,
@@ -12,6 +11,7 @@ import {
   Platform,
   ActivityIndicator,
 } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import MaskedView from "@react-native-masked-view/masked-view";
 import { LinearGradient } from "expo-linear-gradient";
 import { Formik } from "formik";
@@ -1631,7 +1631,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
                 maxHeight: 300,
               }}
             >
-              <ScrollView style={styles.trainingTypesContainer}>
+              <KeyboardAwareScrollView style={styles.trainingTypesContainer}>
                 {TRAINING_TYPES.map((type) => (
                   <TouchableOpacity
                     key={type}
@@ -1658,7 +1658,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
                     </Text>
                   </TouchableOpacity>
                 ))}
-              </ScrollView>
+              </KeyboardAwareScrollView>
             </View>
             {errors.trainingTypes && touched.trainingTypes && (
               <Text style={styles.errorText}>{errors.trainingTypes}</Text>
@@ -1682,7 +1682,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
         return (
           <View style={styles.stepContainer}>
             <Text style={styles.fieldLabel}>{STRINGS.AUTH.yourGender}</Text>
-            <ScrollView
+            <KeyboardAwareScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
               style={styles.optionsContainer}
@@ -1706,7 +1706,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
                   </Text>
                 </TouchableOpacity>
               ))}
-            </ScrollView>
+            </KeyboardAwareScrollView>
             {errors.userGender && touched.userGender && (
               <Text style={styles.errorText}>{errors.userGender}</Text>
             )}
@@ -1714,7 +1714,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
             <Text style={styles.fieldLabel}>
               {STRINGS.AUTH.trainingPartnerPreference}
             </Text>
-            <ScrollView
+            <KeyboardAwareScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
               style={styles.optionsContainer}
@@ -1740,7 +1740,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
                   </Text>
                 </TouchableOpacity>
               ))}
-            </ScrollView>
+            </KeyboardAwareScrollView>
             {errors.genderPreference && touched.genderPreference && (
               <Text style={styles.errorText}>{errors.genderPreference}</Text>
             )}
@@ -1786,10 +1786,13 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
         // behavior={Platform.OS === "ios" ? "position" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
       >
-        <ScrollView
+        <KeyboardAwareScrollView
           style={styles.container}
           contentContainerStyle={styles.contentContainer}
           keyboardShouldPersistTaps="handled"
+          enableOnAndroid={true}
+          enableAutomaticScroll={true}
+          extraScrollHeight={20}
         >
           <Animated.View
             style={[
@@ -1815,7 +1818,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
                   end={{ x: 0, y: 0 }}
                 >
                   <Text style={[styles.brandName, { opacity: 0 }]}>
-                    BolicBuddy
+                    {STRINGS.appName}
                   </Text>
                 </LinearGradient>
               </MaskedView>
@@ -1892,7 +1895,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
               </TouchableOpacity>
             </View>
           </Animated.View>
-        </ScrollView>
+        </KeyboardAwareScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

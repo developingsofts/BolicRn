@@ -11,6 +11,7 @@ import {
   Alert,
   Keyboard,
   Platform,
+  KeyboardAvoidingView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
@@ -63,7 +64,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
   const [location, setLocation] = useState(user?.location || "");
   const [bio, setBio] = useState(user?.bio || user?.currentPRs || "");
   const [selectedImage, setSelectedImage] = useState<string | null>(
-    user?.imageUrl || null
+    user?.imageUrl || null,
   );
   const [imageFile, setImageFile] = useState<any>(null);
   const [videoFile, setVideoFile] = useState<any>(null);
@@ -125,23 +126,25 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
 
   const handleBioFocus = () => {
     setIsBioFocused(true);
-    // Measure the bio input position and scroll to it
-    console.log("Bio field focused");
+    // Scroll to bio field with a delay to ensure keyboard is shown
     setTimeout(() => {
       bioInputRef.current?.measureLayout(
         scrollViewRef.current,
         (x: number, y: number, width: number, height: number) => {
           scrollViewRef.current?.scrollTo({
-            y: y - 50, // Scroll to position with some offset
+            y: Math.max(0, y - 400), // Scroll with more offset to prevent going to status bar
             animated: true,
           });
         },
         () => {
-          // Fallback to scrollToEnd if measure fails
-          scrollViewRef.current?.scrollToEnd({ animated: true });
+          // Fallback - scroll less aggressively
+          scrollViewRef.current?.scrollTo({
+            y: 200,
+            animated: true,
+          });
         }
       );
-    }, 100);
+    }, 300); // Increased delay to let keyboard settle
   };
 
   const handleBioBlur = () => {
@@ -156,7 +159,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
       if (status !== "granted") {
         Alert.alert(
           "Permission Required",
-          "Please grant permission to access your photos to upload a profile picture."
+          "Please grant permission to access your photos to upload a profile picture.",
         );
         return;
       }
@@ -196,7 +199,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
         console.log("MIME type:", mimeType);
         console.log(
           "File name:",
-          asset.fileName || `profile_${Date.now()}.${fileExtension}`
+          asset.fileName || `profile_${Date.now()}.${fileExtension}`,
         );
         setDeleteImage(false); // Reset delete flag when new image is selected
       }
@@ -223,8 +226,8 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
     try {
       const response = await fetch(
         `${LOCATION_CONFIG.geocodeSuggestUrl}?text=${encodeURIComponent(
-          trimmed
-        )}&f=json`
+          trimmed,
+        )}&f=json`,
       );
       const data = await response.json();
 
@@ -408,7 +411,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
       <View style={styles.inputGroup}>
         <Text style={styles.inputLabel}>{STRINGS.EDIT_PROFILE.location}</Text>
         <TextInput
-          style={styles.inputField}
+          style={styles.inputFieldLocation}
           value={location}
           onChangeText={handleLocationChange}
           placeholder={
@@ -416,6 +419,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
           }
           placeholderTextColor={COLORS._D9D9D9}
           editable={!isLoading}
+          multiline
           onFocus={() => {
             setIsLocationFocused(true);
             if (location.trim().length >= 3) {
@@ -472,48 +476,52 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
   );
   return (
     <SafeAreaView edges={[]} style={styles.container}>
-      <ScrollView
-        ref={scrollViewRef}
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingBottom: keyboardVisible ? 180 : 0 },
-        ]}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="on-drag"
-        showsVerticalScrollIndicator={false}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
       >
-        {renderProfileAvatar()}
-        <View style={styles.formWrapper}>
-          {renderProfileForm()}
-          {user?.role === "trainer" && (
-            <TrainerProfileDetails
-              workExperience={user?.workExperience || ""}
-              videoFile={user?.introVideo || null}
-              onVideoFileChange={(file) => {
-                console.log("Edit Profile Trainer", file);
-                setVideoFile(file);
-              }}
-              onWorkExperienceChange={(value) => {
-                console.log("Work Experience:", value);
-                setWorkExperience(value);
-              }}
-            />
-          )}
-          <TouchableOpacity
-            style={[styles.saveBtn, isLoading && styles.saveBtnDisabled]}
-            onPress={handleSave}
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <ActivityIndicator size="small" color={COLORS.white} />
-            ) : (
-              <Text style={styles.saveBtnText}>
-                {STRINGS.EDIT_PROFILE.saveChanges}
-              </Text>
+        <ScrollView
+          ref={scrollViewRef}
+          contentContainerStyle={[
+            styles.scrollContent,
+          ]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {renderProfileAvatar()}
+          <View style={styles.formWrapper}>
+            {renderProfileForm()}
+            {user?.role === "trainer" && (
+              <TrainerProfileDetails
+                workExperience={user?.workExperience || ""}
+                videoFile={user?.introVideo || null}
+                onVideoFileChange={(file) => {
+                  console.log("Edit Profile Trainer", file);
+                  setVideoFile(file);
+                }}
+                onWorkExperienceChange={(value) => {
+                  console.log("Work Experience:", value);
+                  setWorkExperience(value);
+                }}
+              />
             )}
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
+            <TouchableOpacity
+              style={[styles.saveBtn, isLoading && styles.saveBtnDisabled]}
+              onPress={handleSave}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator size="small" color={COLORS.white} />
+              ) : (
+                <Text style={styles.saveBtnText}>
+                  {STRINGS.EDIT_PROFILE.saveChanges}
+                </Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
@@ -667,6 +675,21 @@ const styles = StyleSheet.create({
     paddingLeft: 10,
     textAlign: "left",
     justifyContent: "center",
+    fontFamily: FontWeight.Medium,
+    backgroundColor: COLORS.background,
+    opacity: 1,
+    fontSize: 16,
+    color: COLORS.app_black,
+    marginBottom: 10,
+  },
+  inputFieldLocation: {
+    minHeight: 45,
+    borderRadius: 4,
+    paddingRight: 10,
+    paddingLeft: 10,
+    paddingTop: 12,
+    paddingBottom: 12,
+    textAlign: "left",
     fontFamily: FontWeight.Medium,
     backgroundColor: COLORS.background,
     opacity: 1,

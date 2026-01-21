@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import { COLORS, DIMENSIONS } from '../config/constants';
+import STRINGS from '../config/strings';
 
 interface LoadingScreenProps {
   message?: string;
@@ -10,7 +11,7 @@ const LoadingScreen: React.FC<LoadingScreenProps> = ({ message = 'Loading...' })
   return (
     <View style={styles.container}>
       <View style={styles.content}>
-        <Text style={styles.brandName}>BolicBuddy</Text>
+        <Text style={styles.brandName}>{STRINGS.appName}</Text>
         <Text style={styles.brandTagline}>Find your perfect training partner</Text>
         <ActivityIndicator size="large" color={COLORS.primary} style={styles.spinner} />
         <Text style={styles.message}>{message}</Text>

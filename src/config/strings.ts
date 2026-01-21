@@ -4,6 +4,7 @@
  */
 
 export const STRINGS = {
+  appName: "Bolic",
   // Auth Screen
   AUTH: {
     signIn: "Sign In",
@@ -49,7 +50,8 @@ export const STRINGS = {
       step7: "Step 7 of 7",
     },
     labels: {
-      verificationMessage: "We'll send a verification code to verify your phone number",
+      verificationMessage:
+        "We'll send a verification code to verify your phone number",
       enterCodeMessage: "Enter the 6-digit code sent to",
     },
     errors: {
@@ -207,15 +209,16 @@ export const STRINGS = {
     matchingPreferences: "Matching Preferences",
     enablePreferences: "Enable Preferences?",
     deactivateAccount: "Deactivate Account?",
-  saving: "Saving",
-  updateSuccess: "Settings updated",
-  updateError: "Unable to update settings",
-  confirmDeactivateTitle: "Deactivate Account",
-  confirmDeactivateMessage: "Are you sure you want to deactivate your account? You can log in again to reactivate it.",
-  confirmDeactivateConfirm: "Yes, deactivate",
-  confirmDeactivateCancel: "Cancel",
-  deleteSuccess: "Your account has been deactivated",
-  deleteError: "Failed to deactivate account",
+    saving: "Saving",
+    updateSuccess: "Settings updated",
+    updateError: "Unable to update settings",
+    confirmDeactivateTitle: "Deactivate Account",
+    confirmDeactivateMessage:
+      "Are you sure you want to deactivate your account? You can log in again to reactivate it.",
+    confirmDeactivateConfirm: "Yes, deactivate",
+    confirmDeactivateCancel: "Cancel",
+    deleteSuccess: "Your account has been deactivated",
+    deleteError: "Failed to deactivate account",
     account: "Account",
     privacy: "Privacy",
     help: "Help & Support",
@@ -255,6 +258,7 @@ export const STRINGS = {
     achievementUnlocked: "ACHIEVEMENT UNLOCKED!",
     selectAchievement: "Select an Achievement",
     uploadedImage: "Uploaded Image",
+    shareToCommunity: "Share also on community highlights?",
     errors: {
       unableToOpenSettings: "Unable to open settings",
       addContent: "Please add some content to your post",
@@ -288,12 +292,14 @@ export const STRINGS = {
     noMoreCardsText: "You've seen all available",
     forThisFilter: "for this filter.",
     progressOf: "of",
-    skip: "Skip",
+    skip: "Skip Profile",
     alerts: {
       matchTitle: "Match! 🎉",
       bookTrainerTitle: "Book Trainer! 💪",
-      matchMessage: "are a great match! Would you like to start a conversation?",
-      bookTrainerMessage: "is available for training. Would you like to book a session?",
+      matchMessage:
+        "are a great match! Would you like to start a conversation?",
+      bookTrainerMessage:
+        "is available for training. Would you like to book a session?",
       notNow: "Not Now",
       rateExperience: "Rate Experience",
       startChat: "Start Chat",
@@ -330,7 +336,8 @@ export const STRINGS = {
     completed: "Completed",
     inProgress: "In Progress",
     comingSoon: "Coming Soon!",
-    description: "This screen will allow users to track their workouts, log exercises, sets, reps, and monitor their progress.",
+    description:
+      "This screen will allow users to track their workouts, log exercises, sets, reps, and monitor their progress.",
   },
 
   // Forgot Password Screen
