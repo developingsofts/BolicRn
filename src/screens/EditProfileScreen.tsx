@@ -21,7 +21,7 @@ import FontWeight from "../hooks/useInterFonts";
 import { useAuth } from "../contexts/AuthContext";
 import { Trash, Close } from "../../assets";
 import { LinearGradient } from "expo-linear-gradient";
-import { r } from "../designing/responsiveDesigns";
+import { r, SCALE } from "../designing/responsiveDesigns";
 import {
   useUpdateMyProfileWithImageMutation,
   useUpdateMyProfileMutation,
@@ -611,7 +611,7 @@ const styles = StyleSheet.create({
   uploadBtn: {
     backgroundColor: COLORS.white,
     paddingHorizontal: 10,
-    paddingVertical: 12,
+    paddingVertical:r(11),
     justifyContent: "center",
     alignItems: "center",
     borderRadius: 4,
@@ -623,13 +623,13 @@ const styles = StyleSheet.create({
   },
   deleteBtn: {
     backgroundColor: COLORS.white,
-    paddingHorizontal: 10,
-    paddingVertical: 10,
+    paddingHorizontal: r(11),
+    paddingVertical: r(11),
     borderRadius: 4,
   },
   deleteIcon: {
-    width: 20,
-    height: 20,
+    width: SCALE.icon.sm,
+    height: SCALE.icon.sm,
   },
   iconSize: {
     width: 24,

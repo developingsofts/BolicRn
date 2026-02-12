@@ -610,6 +610,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
       validationSchema={loginSchema}
       onSubmit={handleLogin}
       validateOnChange={true}
+      
       validateOnBlur={true}
     >
       {({
@@ -1781,18 +1782,16 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
 
   return (
     <SafeAreaView style={{ flex: 1 }} edges={[]}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        // behavior={Platform.OS === "ios" ? "position" : "height"}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
-      >
         <KeyboardAwareScrollView
           style={styles.container}
           contentContainerStyle={styles.contentContainer}
           keyboardShouldPersistTaps="handled"
           enableOnAndroid={true}
+          showsVerticalScrollIndicator={false}
           enableAutomaticScroll={true}
-          extraScrollHeight={20}
+          extraScrollHeight={Platform.OS === "android" ? 150 : 0}
+          extraHeight={Platform.OS === "android" ? 150 : 0}
+          enableResetScrollToCoords={false}
         >
           <Animated.View
             style={[
@@ -1896,7 +1895,6 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
             </View>
           </Animated.View>
         </KeyboardAwareScrollView>
-      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
@@ -1910,7 +1908,6 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingTop: height * 0.15,
     paddingHorizontal: DIMENSIONS.spacing.lg,
-    paddingBottom: DIMENSIONS.spacing.lg,
   },
   animatedContainer: {
     width: "100%",
@@ -2179,7 +2176,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    marginTop: DIMENSIONS.spacing.lg,
+    marginTop: DIMENSIONS.spacing.sm,
   },
   footerText: {
     fontSize: 14,

@@ -29,6 +29,7 @@ import {
   useResetPasswordMutation,
 } from "../services/api/authApi";
 import { Toast } from "../components/ToastManager";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 type ForgotPasswordStep = "email" | "waiting" | "resetPassword" | "success";
 
@@ -323,9 +324,16 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
+      <KeyboardAwareScrollView
         // behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.keyboardAvoid}
+        contentContainerStyle={styles.keyboardAvoid}
+        keyboardShouldPersistTaps="handled"
+        enableOnAndroid={true}
+        showsVerticalScrollIndicator={false}
+        enableAutomaticScroll={true}
+        extraScrollHeight={Platform.OS === "android" ? 150 : 40}
+        extraHeight={Platform.OS === "android" ? 150 : 40}
+        enableResetScrollToCoords={false}
       >
         <View style={styles.header}>
           <TouchableOpacity
@@ -364,7 +372,7 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({
           <Text style={styles.logoSubtitle}>Reset your password</Text>
           <View style={styles.mainContent}>{renderCurrentStep()}</View>
         </View>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 };
