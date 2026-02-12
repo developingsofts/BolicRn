@@ -42,20 +42,28 @@ const baseQueryWithErrorHandling: BaseQueryFn<
   const method = typeof args === "string" ? "GET" : args.method || "GET";
   const body = typeof args === "string" ? undefined : (args as FetchArgs).body;
 
-  console.log("🌐 API Request:", {
-    url: `${API_CONFIG.baseUrl}${url}`,
-    method,
-    body:
-      body instanceof FormData
-        ? "[FormData]"
-        : body
+ console.log("🌐 API Request:", {
+  url: `${API_CONFIG.baseUrl}${url}`,
+  method,
+  body:
+    body instanceof FormData
+      ? (() => {
+          const formDataEntries: Record<string, any> = {};
+          body.forEach((value, key) => {
+            formDataEntries[key] = value;
+          });
+          return {
+            _type: "FormData",
+            entries: formDataEntries,
+          };
+        })()
+      : body
         ? typeof body === "string"
           ? body
           : JSON.stringify(body, null, 2)
         : undefined,
-    timestamp: new Date().toISOString(),
-  });
-
+  timestamp: new Date().toISOString(),
+});
   const startTime = Date.now();
   let result = await baseQuery(args, api, extraOptions);
   const coerceEmptyMembers404 = () => {
@@ -104,7 +112,7 @@ const baseQueryWithErrorHandling: BaseQueryFn<
     } catch (parseError) {
       console.warn(
         "Failed to parse members URL for pagination defaults",
-        parseError
+        parseError,
       );
     }
 

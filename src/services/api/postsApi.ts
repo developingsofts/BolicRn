@@ -18,6 +18,7 @@ interface CreatePostPayload {
     type: string;
     name: string;
   };
+  shareToCommunity?: boolean;
 }
 
 interface CommentPayload {
@@ -95,6 +96,7 @@ export const postsApi = baseApi.injectEndpoints({
         if (payload.achievementId) formData.append('achievementId', payload.achievementId.toString());
         formData.append('type', payload.type || 'normal');
         if (payload.workoutId) formData.append('workoutId', payload.workoutId);
+        if(payload.shareToCommunity) formData.append('shareToCommunity', payload.shareToCommunity);
         
         // Add media file if present
         if (payload.mediaFile) {

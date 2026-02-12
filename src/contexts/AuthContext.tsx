@@ -85,7 +85,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const storedToken = await storageService.getAuthToken();
 
         if (storedToken) {
-          console.log("🔑 Token found, fetching fresh profile...");
+          console.log("🔑 Token found, fetching fresh profile...",storedToken);
 
           // Fetch fresh profile from API
           const profileResponse = await fetchProfile().unwrap();

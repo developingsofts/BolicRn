@@ -181,9 +181,7 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({
         payload.groupId = groupId;
       }
 
-      if (isShareCommunityChecked) {
-        payload.shareToCommunity = true;
-      }
+      payload.shareToCommunity = isShareCommunityChecked;
 
       const response = await createPost(payload).unwrap();
 
