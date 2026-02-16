@@ -80,6 +80,7 @@ const CreateAccountForm = React.forwardRef<{
           placeholder="youremail@example.com"
           value={email}
           onChangeText={setEmail}
+          placeholderTextColor={COLORS._5E5E5E}
           keyboardType="email-address"
           autoCapitalize="none"
           autoCorrect={false}
@@ -92,8 +93,9 @@ const CreateAccountForm = React.forwardRef<{
         <Text style={styles.label}>Password</Text>
         <TextInput
           style={[styles.input, errors.password && styles.inputError]}
-          placeholder="minimum 8 char"
+          placeholder="Minimum 8 characters"
           value={password}
+          placeholderTextColor={COLORS._5E5E5E}
           onChangeText={setPassword}
           secureTextEntry
           autoCapitalize="none"
@@ -107,7 +109,9 @@ const CreateAccountForm = React.forwardRef<{
         <TextInput
           style={[styles.input, errors.confirmPassword && styles.inputError]}
           placeholder="Re-enter your password"
+          placeholderTextColor={COLORS._5E5E5E}
           value={confirmPassword}
+          
           onChangeText={setConfirmPassword}
           secureTextEntry
           autoCapitalize="none"
@@ -137,6 +141,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 8,
     padding: 12,
+    color: COLORS.black,
     fontSize: 15,
   },
   inputError: { borderColor: "#ef4444" },

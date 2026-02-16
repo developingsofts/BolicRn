@@ -610,8 +610,8 @@ const styles = StyleSheet.create({
   },
   uploadBtn: {
     backgroundColor: COLORS.white,
-    paddingHorizontal: 10,
-    paddingVertical:r(11),
+    paddingHorizontal: r(11),
+    paddingVertical: r(11),
     justifyContent: "center",
     alignItems: "center",
     borderRadius: 4,
@@ -626,10 +626,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: r(11),
     paddingVertical: r(11),
     borderRadius: 4,
+    justifyContent: "center",
+    alignItems: "center",
   },
   deleteIcon: {
-    width: SCALE.icon.sm,
-    height: SCALE.icon.sm,
+    width: r(18),
+    height: r(18),
   },
   iconSize: {
     width: 24,

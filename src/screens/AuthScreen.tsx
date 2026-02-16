@@ -93,7 +93,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
     string | null
   >(null);
   const [verifiedPhoneNumber, setVerifiedPhoneNumber] = useState<string | null>(
-    null
+    null,
   );
   const [authToken, setAuthToken] = useState<string | null>(null);
   const [signUpStep, setSignUpStep] = useState(0);
@@ -215,7 +215,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
 
   const hydrateUser = async (
     payload: { user: User; token: string },
-    successMessage?: string
+    successMessage?: string,
   ) => {
     // Only save token, not user profile
     await storageService.setAuthToken(payload.token);
@@ -233,7 +233,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
         }).unwrap();
         if (!registrationResponse.status) {
           throw new Error(
-            registrationResponse.message || ERROR_MESSAGES.authenticationError
+            registrationResponse.message || ERROR_MESSAGES.authenticationError,
           );
         }
 
@@ -255,7 +255,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
         await storageService.setAuthToken(token);
 
         console.log(
-          "✅ Account created, token saved. Now collecting additional info..."
+          "✅ Account created, token saved. Now collecting additional info...",
         );
         // Don't show toast here - only show on final step
 
@@ -282,21 +282,21 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
           "Email already exists. Please use a different email or sign in.";
         console.log(
           "✅ Using consistent duplicate email message for status:",
-          error.status
+          error.status,
         );
       } else if (error?.data?.message) {
         // Backend error response
         message = error.data.message;
         console.log(
           "✅ Using backend message from error.data.message:",
-          message
+          message,
         );
       } else if (error?.data?.error) {
         // Alternative backend error format
         message = error.data.error;
         console.log(
           "✅ Using alternative backend error from error.data.error:",
-          message
+          message,
         );
       } else if (error?.message) {
         // Standard Error object
@@ -443,7 +443,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
             if (hasDisplayName && hasBio) {
               // Resume from avatar
               console.log(
-                "🔄 Detected incomplete trainer onboarding - resuming from avatar step"
+                "🔄 Detected incomplete trainer onboarding - resuming from avatar step",
               );
               setIsSignUp(true);
               setSignUpStep(3);
@@ -467,13 +467,13 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
               });
 
               Toast.success(
-                "Welcome back! Please upload your profile picture."
+                "Welcome back! Please upload your profile picture.",
               );
               return;
             } else {
               // Resume from profile
               console.log(
-                "🔄 Detected incomplete trainer onboarding - resuming from profile step"
+                "🔄 Detected incomplete trainer onboarding - resuming from profile step",
               );
               setIsSignUp(true);
               setSignUpStep(2);
@@ -497,7 +497,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
               });
 
               Toast.success(
-                "Welcome back! Please complete your profile setup."
+                "Welcome back! Please complete your profile setup.",
               );
               return;
             }
@@ -508,7 +508,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
           if (onboardingStep > 0 && onboardingStep < finalStep) {
             console.log(
               "🔄 Resuming user onboarding from step:",
-              onboardingStep + 1
+              onboardingStep + 1,
             );
             setIsSignUp(true);
             setSignUpStep(onboardingStep + 1);
@@ -544,7 +544,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
         // User has completed onboarding - proceed with normal login
         await hydrateUser(
           { user: sanitizedUser, token },
-          response.message || STRINGS.AUTH.success.loggedIn
+          response.message || STRINGS.AUTH.success.loggedIn,
         );
       } else {
         throw new Error(response.message || ERROR_MESSAGES.authenticationError);
@@ -610,7 +610,6 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
       validationSchema={loginSchema}
       onSubmit={handleLogin}
       validateOnChange={true}
-      
       validateOnBlur={true}
     >
       {({
@@ -721,7 +720,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
 
                   if (!registerResponse.status) {
                     throw new Error(
-                      registerResponse.message || "Registration failed"
+                      registerResponse.message || "Registration failed",
                     );
                   }
 
@@ -741,7 +740,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
                   console.log("Error message:", error.message);
                   console.log(
                     "Full error object:",
-                    JSON.stringify(error, null, 2)
+                    JSON.stringify(error, null, 2),
                   );
 
                   let message = "Registration failed";
@@ -756,19 +755,19 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
                       "Email already exists. Please use a different email or sign in.";
                     console.log(
                       "✅ Using consistent duplicate email message for status:",
-                      error.status
+                      error.status,
                     );
                   } else if (error?.data?.message) {
                     message = error.data.message;
                     console.log(
                       "✅ Using backend message from error.data.message:",
-                      message
+                      message,
                     );
                   } else if (error?.data?.error) {
                     message = error.data.error;
                     console.log(
                       "✅ Using alternative backend error from error.data.error:",
-                      message
+                      message,
                     );
                   } else if (error?.message) {
                     message = error.message;
@@ -779,7 +778,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
                       message = "Server error. Please try again later.";
                       console.log(
                         "✅ Using status-based message for 500:",
-                        message
+                        message,
                       );
                     }
                   } else if (typeof error === "string") {
@@ -835,7 +834,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
 
                   if (!updateResponse.status) {
                     throw new Error(
-                      updateResponse.message || "Profile update failed"
+                      updateResponse.message || "Profile update failed",
                     );
                   }
 
@@ -851,7 +850,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
                   console.log("Error message:", error.message);
                   console.log(
                     "Full error object:",
-                    JSON.stringify(error, null, 2)
+                    JSON.stringify(error, null, 2),
                   );
 
                   let message = "Profile update failed";
@@ -859,13 +858,13 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
                     message = error.data.message;
                     console.log(
                       "✅ Using backend message from error.data.message:",
-                      message
+                      message,
                     );
                   } else if (error?.data?.error) {
                     message = error.data.error;
                     console.log(
                       "✅ Using alternative backend error from error.data.error:",
-                      message
+                      message,
                     );
                   } else if (error?.message) {
                     message = error.message;
@@ -879,13 +878,13 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
                         "Email already exists. Please use a different email or sign in.";
                       console.log(
                         "✅ Using status-based message for 409/400:",
-                        message
+                        message,
                       );
                     } else if (error.status === 500) {
                       message = "Server error. Please try again later.";
                       console.log(
                         "✅ Using status-based message for 500:",
-                        message
+                        message,
                       );
                     }
                   } else if (typeof error === "string") {
@@ -961,7 +960,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
 
                   await hydrateUser(
                     { user: (updateResponse as any).data, token: authToken! },
-                    "Account created successfully!"
+                    "Account created successfully!",
                   );
                   navigation.navigate("Main");
                 } catch (error: any) {
@@ -970,7 +969,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
                   console.log("Error message:", error.message);
                   console.log(
                     "Full error object:",
-                    JSON.stringify(error, null, 2)
+                    JSON.stringify(error, null, 2),
                   );
 
                   let message = "Profile update failed";
@@ -978,13 +977,13 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
                     message = error.data.message;
                     console.log(
                       "✅ Using backend message from error.data.message:",
-                      message
+                      message,
                     );
                   } else if (error?.data?.error) {
                     message = error.data.error;
                     console.log(
                       "✅ Using alternative backend error from error.data.error:",
-                      message
+                      message,
                     );
                   } else if (error?.message) {
                     message = error.message;
@@ -998,13 +997,13 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
                         "Email already exists. Please use a different email or sign in.";
                       console.log(
                         "✅ Using status-based message for 409/400:",
-                        message
+                        message,
                       );
                     } else if (error.status === 500) {
                       message = "Server error. Please try again later.";
                       console.log(
                         "✅ Using status-based message for 500:",
-                        message
+                        message,
                       );
                     }
                   } else if (typeof error === "string") {
@@ -1099,7 +1098,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
                 setIsPhoneVerified,
                 setIsSendingCode,
                 setIsVerifyingCode,
-                nextStep
+                nextStep,
               )
             }
           </Formik>
@@ -1122,11 +1121,11 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
     setIsPhoneVerified: (verified: boolean) => void,
     setIsSendingCode: (sending: boolean) => void,
     setIsVerifyingCode: (verifying: boolean) => void,
-    nextStep: () => void
+    nextStep: () => void,
   ) => {
     const convertGenderPreference = (
       preference: string,
-      userGender: string
+      userGender: string,
     ): string => {
       if (preference === "All") return "all";
       if (preference === "Same Gender Only") {
@@ -1176,12 +1175,12 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
       }
 
       const hasErrors = fieldsToValidate.some(
-        (field) => validationErrors[field]
+        (field) => validationErrors[field],
       );
 
       if (hasErrors) {
         const firstError = fieldsToValidate.find(
-          (field) => validationErrors[field]
+          (field) => validationErrors[field],
         );
         if (firstError) {
           Toast.error(validationErrors[firstError]);
@@ -1200,7 +1199,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
 
           if (!registrationResponse.status) {
             throw new Error(
-              registrationResponse.message || ERROR_MESSAGES.authenticationError
+              registrationResponse.message ||
+                ERROR_MESSAGES.authenticationError,
             );
           }
 
@@ -1223,7 +1223,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
               values.phoneNumber.trim() !== verifiedPhoneNumber
             ) {
               Toast.error(
-                "Please send verification code to this phone number first"
+                "Please send verification code to this phone number first",
               );
               return;
             }
@@ -1245,7 +1245,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
             updateData.userGender = values.userGender.toLowerCase();
             updateData.genderPreference = convertGenderPreference(
               values.genderPreference,
-              values.userGender
+              values.userGender,
             );
             if (values.currentPRs) updateData.currentPRs = values.currentPRs;
             updateData.onboardingStep = 7;
@@ -1256,7 +1256,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
 
         if (!updateResponse.status) {
           throw new Error(
-            updateResponse.message || ERROR_MESSAGES.authenticationError
+            updateResponse.message || ERROR_MESSAGES.authenticationError,
           );
         }
 
@@ -1267,7 +1267,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
           const sanitizedUser = updateResponse.data as User;
           await hydrateUser(
             { user: sanitizedUser, token: authToken! },
-            "Account created successfully!"
+            "Account created successfully!",
           );
         }
       } catch (error: any) {
@@ -1285,14 +1285,14 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
           message = error.data.message;
           console.log(
             "✅ Using backend message from error.data.message:",
-            message
+            message,
           );
         } else if (error?.data?.error) {
           // Alternative backend error format
           message = error.data.error;
           console.log(
             "✅ Using alternative backend error from error.data.error:",
-            message
+            message,
           );
         } else if (
           error?.status &&
@@ -1308,7 +1308,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
           }
           console.log(
             "✅ Using status-based fallback message for status:",
-            error.status
+            error.status,
           );
         } else if (error?.message) {
           // Standard Error object
@@ -1347,6 +1347,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
               ]}
               placeholder={STRINGS.AUTH.email}
               value={values.email}
+              placeholderTextColor={COLORS._5E5E5E}
               onChangeText={handleChange("email")}
               onBlur={handleBlur("email")}
               keyboardType="email-address"
@@ -1361,6 +1362,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
                 styles.input,
                 errors.password && touched.password && styles.inputError,
               ]}
+              placeholderTextColor={COLORS._5E5E5E}
               placeholder={STRINGS.AUTH.password}
               value={values.password}
               onChangeText={handleChange("password")}
@@ -1419,7 +1421,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
                   setExpectedVerificationCode,
                   setVerifiedPhoneNumber,
                   setIsPhoneVerified,
-                  setIsSendingCode
+                  setIsSendingCode,
                 )
               }
               disabled={isSendingCode}
@@ -1497,7 +1499,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
                   expectedVerificationCode,
                   setIsPhoneVerified,
                   setIsVerifyingCode,
-                  nextStep
+                  nextStep,
                 )
               }
               disabled={isVerifyingCode}
@@ -1524,7 +1526,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
                   setExpectedVerificationCode,
                   setVerifiedPhoneNumber,
                   setIsPhoneVerified,
-                  setIsSendingCode
+                  setIsSendingCode,
                 )
               }
               disabled={isSendingCode}
@@ -1782,119 +1784,110 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
 
   return (
     <SafeAreaView style={{ flex: 1 }} edges={[]}>
-        <KeyboardAwareScrollView
-          style={styles.container}
-          contentContainerStyle={styles.contentContainer}
-          keyboardShouldPersistTaps="handled"
-          enableOnAndroid={true}
-          showsVerticalScrollIndicator={false}
-          enableAutomaticScroll={true}
-          extraScrollHeight={Platform.OS === "android" ? 150 : 0}
-          extraHeight={Platform.OS === "android" ? 150 : 0}
-          enableResetScrollToCoords={false}
+      <KeyboardAwareScrollView
+        style={styles.container}
+        contentContainerStyle={styles.contentContainer}
+        keyboardShouldPersistTaps="handled"
+        enableOnAndroid={true}
+        showsVerticalScrollIndicator={false}
+        enableAutomaticScroll={true}
+        extraScrollHeight={Platform.OS === "android" ? 150 : 0}
+        extraHeight={Platform.OS === "android" ? 150 : 0}
+        enableResetScrollToCoords={false}
+      >
+        <Animated.View
+          style={[
+            styles.animatedContainer,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }, { scale: scaleAnim }],
+            },
+          ]}
         >
-          <Animated.View
-            style={[
-              styles.animatedContainer,
-              {
-                opacity: fadeAnim,
-                transform: [{ translateY: slideAnim }, { scale: scaleAnim }],
-              },
-            ]}
-          >
-            {/* Header */}
-            <View style={styles.header}>
-              <MaskedView
-                maskElement={<Text style={styles.brandName}>BolicBuddy</Text>}
+          {/* Header */}
+          <View style={styles.header}>
+            <MaskedView
+              maskElement={<Text style={styles.brandName}>BolicBuddy</Text>}
+            >
+              <LinearGradient
+                colors={[COLORS.gradient1, COLORS.gradient2, COLORS.gradient3]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 0, y: 0 }}
               >
-                <LinearGradient
-                  colors={[
-                    COLORS.gradient1,
-                    COLORS.gradient2,
-                    COLORS.gradient3,
-                  ]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 0, y: 0 }}
-                >
-                  <Text style={[styles.brandName, { opacity: 0 }]}>
-                    {STRINGS.appName}
-                  </Text>
-                </LinearGradient>
-              </MaskedView>
-              <Text style={styles.brandTagline}>
-                Find your perfect training partner
+                <Text style={[styles.brandName, { opacity: 0 }]}>
+                  {STRINGS.appName}
+                </Text>
+              </LinearGradient>
+            </MaskedView>
+            <Text style={styles.brandTagline}>
+              Find your perfect training partner
+            </Text>
+          </View>
+
+          {/* Mode Toggle */}
+          <View style={styles.modeToggle}>
+            <TouchableOpacity
+              style={[styles.modeButton, !isSignUp && styles.modeButtonActive]}
+              onPress={() => {
+                resetFormStates();
+                setIsSignUp(false);
+              }}
+            >
+              <Text
+                style={[styles.modeText, !isSignUp && styles.modeTextActive]}
+              >
+                Sign In
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.modeButton, isSignUp && styles.modeButtonActive]}
+              onPress={() => {
+                resetFormStates();
+                setIsSignUp(true);
+              }}
+            >
+              <Text
+                style={[styles.modeText, isSignUp && styles.modeTextActive]}
+              >
+                Sign Up
+              </Text>
+            </TouchableOpacity>
+          </View>
+          {isSignUp && signUpStep === 0 && (
+            <View style={styles.stepTitleContainer}>
+              <Text style={styles.stepTitle}>
+                {getStepTitle(signUpStep, isTrainerFlow)}
               </Text>
             </View>
+          )}
+          {isSignUp && signUpStep !== 0 && (
+            <OnboardingStepHeader
+              title={getStepTitle(signUpStep, isTrainerFlow)}
+              stepText={`Step ${signUpStep} of ${isTrainerFlow ? 4 : 7}`}
+              progress={signUpStep / (isTrainerFlow ? 4 : 7)}
+            />
+          )}
+          {/* Form */}
+          {isSignUp ? renderSignUpForm() : renderLoginForm()}
 
-            {/* Mode Toggle */}
-            <View style={styles.modeToggle}>
-              <TouchableOpacity
-                style={[
-                  styles.modeButton,
-                  !isSignUp && styles.modeButtonActive,
-                ]}
-                onPress={() => {
-                  resetFormStates();
-                  setIsSignUp(false);
-                }}
-              >
-                <Text
-                  style={[styles.modeText, !isSignUp && styles.modeTextActive]}
-                >
-                  Sign In
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modeButton, isSignUp && styles.modeButtonActive]}
-                onPress={() => {
-                  resetFormStates();
-                  setIsSignUp(true);
-                }}
-              >
-                <Text
-                  style={[styles.modeText, isSignUp && styles.modeTextActive]}
-                >
-                  Sign Up
-                </Text>
-              </TouchableOpacity>
-            </View>
-            {isSignUp && signUpStep === 0 && (
-              <View style={styles.stepTitleContainer}>
-                <Text style={styles.stepTitle}>
-                  {getStepTitle(signUpStep, isTrainerFlow)}
-                </Text>
-              </View>
-            )}
-            {isSignUp && signUpStep !== 0 && (
-              <OnboardingStepHeader
-                title={getStepTitle(signUpStep, isTrainerFlow)}
-                stepText={`Step ${signUpStep} of ${isTrainerFlow ? 4 : 7}`}
-                progress={signUpStep / (isTrainerFlow ? 4 : 7)}
-              />
-            )}
-            {/* Form */}
-            {isSignUp ? renderSignUpForm() : renderLoginForm()}
-
-            {/* Footer */}
-            <View style={styles.footer}>
-              <Text style={styles.footerText}>
-                {isSignUp
-                  ? "Already have an account?"
-                  : "Don't have an account?"}
+          {/* Footer */}
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>
+              {isSignUp ? "Already have an account?" : "Don't have an account?"}
+            </Text>
+            <TouchableOpacity
+              onPress={() => {
+                resetFormStates();
+                setIsSignUp(!isSignUp);
+              }}
+            >
+              <Text style={styles.footerLink}>
+                {isSignUp ? "Sign In" : "Sign Up"}
               </Text>
-              <TouchableOpacity
-                onPress={() => {
-                  resetFormStates();
-                  setIsSignUp(!isSignUp);
-                }}
-              >
-                <Text style={styles.footerLink}>
-                  {isSignUp ? "Sign In" : "Sign Up"}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </Animated.View>
-        </KeyboardAwareScrollView>
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 };
@@ -2202,7 +2195,7 @@ const sendVerificationCode = async (
   setExpectedVerificationCode: (code: string) => void,
   setVerifiedPhoneNumber: (phone: string) => void,
   setIsPhoneVerified: (verified: boolean) => void,
-  setIsSendingCode: (sending: boolean) => void
+  setIsSendingCode: (sending: boolean) => void,
 ) => {
   const trimmedValue = phoneNumber.trim();
   if (!/^\+?\d{10,15}$/.test(trimmedValue)) {
@@ -2228,7 +2221,7 @@ const verifyCode = async (
   expectedVerificationCode: string | null,
   setIsPhoneVerified: (verified: boolean) => void,
   setIsVerifyingCode: (verifying: boolean) => void,
-  nextStep: () => void
+  nextStep: () => void,
 ) => {
   if (!verificationCode || verificationCode.length !== 6) {
     Toast.error(STRINGS.AUTH.errors.enterCode);
