@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -12,6 +12,8 @@ import {
   Linking,
   Pressable,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { Checkbox } from "expo-checkbox";
 
@@ -25,17 +27,23 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Achievement, Close, Media } from "../../assets";
 import { Divider } from "react-native-paper";
 import BasicTopBar from "../components/BasicTopBar";
-import { useCreatePostMutation } from "../services/api/postsApi";
+import { useCreatePostMutation, useUpdatePostMutation } from "../services/api/postsApi";
 import { Toast } from "../components/ToastManager";
 import type { Achievement as AchievementType } from "../types";
 import { useGetUserAchievementsQuery } from "../services/api";
 import { useAuth } from "../contexts/AuthContext";
+import { useAndroidNavBar } from "../hooks/useAndroidNavBar";
 
 interface CreatePostScreenProps {
   navigation: any;
   route?: {
     params?: {
       groupId?: string | number;
+      editingPost?: {
+        id: string;
+        title: string;
+      };
+      isEditing?: boolean;
     };
   };
 }
@@ -52,8 +60,13 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({
   route,
 }) => {
   const styles = useResponsive(baseStyles);
-  const [createPost, { isLoading }] = useCreatePostMutation();
+  const [createPost, { isLoading: isCreating }] = useCreatePostMutation();
+  const [updatePost, { isLoading: isUpdating }] = useUpdatePostMutation();
+  const { height: navBarHeight } = useAndroidNavBar();
+  console.log("Android NavBar Height:", navBarHeight);
   const groupId = route?.params?.groupId;
+  const editingPost = route?.params?.editingPost;
+  const isEditing = route?.params?.isEditing ?? false;
   const { user, isAuthenticated } = useAuth();
 
   const [postText, setPostText] = useState("");
@@ -63,6 +76,13 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({
     useState<AchievementType | null>(null);
   const [showAchievementModal, setShowAchievementModal] = useState(false);
   const [showUnlockedModal, setShowUnlockedModal] = useState(false);
+
+  // Populate form when editing
+  useEffect(() => {
+    if (isEditing && editingPost?.title) {
+      setPostText(editingPost.title);
+    }
+  }, [isEditing, editingPost]);
   const { data: achievementsData, isLoading: achievementsLoading } =
     useGetUserAchievementsQuery(
       { userId: undefined },
@@ -167,43 +187,61 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({
     }
 
     try {
-      const payload: any = {
-        title: postText.trim(),
-      };
+      if (isEditing && editingPost?.id) {
+        // Update post
+        const payload: any = {
+          postId: editingPost.id,
+          title: postText.trim(),
+        };
 
-      if (selectedAchievement) {
-        payload.achievementId = parseInt(selectedAchievement.id.toString());
-      }
+        const response = await updatePost(payload).unwrap();
 
-      if (imageFile) {
-        payload.mediaFile = imageFile;
-      }
-
-      if (groupId) {
-        payload.groupId = groupId;
-      }
-
-      payload.shareToCommunity = isShareCommunityChecked;
-
-      const response = await createPost(payload).unwrap();
-
-      if (response.status) {
-        Toast.success(
-          STRINGS.CREATE_POST.success.postCreated ||
-            "Post created successfully!",
-        );
-
-        if (groupId) {
-          navigation.replace("GroupDetails", { group: { id: groupId } });
-        } else {
+        if (response.status) {
+          Toast.success("Post updated successfully!");
           handleBack();
+        } else {
+          Toast.error(response.message || "Failed to update post");
         }
       } else {
-        Toast.error(response.message || "Failed to create post");
+        // Create post
+        const payload: any = {
+          title: postText.trim(),
+        };
+
+        if (selectedAchievement) {
+          payload.achievementId = parseInt(selectedAchievement.id.toString());
+        }
+
+        if (imageFile) {
+          payload.mediaFile = imageFile;
+        }
+
+        if (groupId) {
+          payload.groupId = groupId;
+        }
+
+        payload.shareToCommunity = isShareCommunityChecked;
+
+        const response = await createPost(payload).unwrap();
+
+        if (response.status) {
+          Toast.success(
+            STRINGS.CREATE_POST.success.postCreated ||
+              "Post created successfully!",
+          );
+
+          if (groupId) {
+            navigation.replace("GroupDetails", { group: { id: groupId } });
+          } else {
+            handleBack();
+          }
+        } else {
+          Toast.error(response.message || "Failed to create post");
+        }
       }
     } catch (error: any) {
-      console.error("Create post error:", error);
-      Toast.error(error?.data?.message || "Failed to create post");
+      console.error("Post error:", error);
+      Toast.error(error?.data?.message || "Failed to save post");
     }
   };
 
@@ -227,13 +265,16 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({
         titleStyle={styles.headerTitle}
         subtitleStyle={styles.subtitle}
       />
-      <ScrollView
-        style={styles.scrollView}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="interactive"
-        contentContainerStyle={{ borderRadius: 10 }}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
       >
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
+          contentContainerStyle={{ paddingBottom: 20 }}
+        >
         <View style={{ paddingHorizontal: 20 }}>
           <Pressable
             style={styles.shareWorkoutCard}
@@ -377,7 +418,7 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({
               onRequestClose={() => setShowAchievementModal(false)}
             >
               <View style={styles.modalOverlay}>
-                <View style={styles.modalContent}>
+                <View style={[styles.modalContent, { paddingBottom: 20 + navBarHeight }]}>
                   <View style={styles.modalHeader}>
                     <Text style={styles.modalTitle}>
                       {STRINGS.CREATE_POST.selectAchievement}
@@ -442,7 +483,8 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({
             </TouchableOpacity>
           </View>
         </View>
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };

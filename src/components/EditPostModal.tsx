@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,8 +9,11 @@ import {
   Platform,
   ActivityIndicator,
   StyleSheet,
+  TouchableWithoutFeedback,
+  Keyboard,
 } from 'react-native';
 import { COLORS, DIMENSIONS } from '../config/constants';
+import { useAndroidNavBar } from '../hooks/useAndroidNavBar';
 import FontWeight from '../hooks/useInterFonts';
 
 interface EditPostModalProps {
@@ -30,6 +33,24 @@ const EditPostModal: React.FC<EditPostModalProps> = ({
   onChangeText,
   isUpdating,
 }) => {
+  const { height: navBarHeight } = useAndroidNavBar();
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const keyboardDidShow = Keyboard.addListener(
+      Platform.OS === 'android' ? 'keyboardDidShow' : 'keyboardWillShow',
+      () => setIsKeyboardVisible(true),
+    );
+    const keyboardDidHide = Keyboard.addListener(
+      Platform.OS === 'android' ? 'keyboardDidHide' : 'keyboardWillHide',
+      () => setIsKeyboardVisible(false),
+    );
+
+    return () => {
+      keyboardDidShow.remove();
+      keyboardDidHide.remove();
+    };
+  }, []);
   return (
     <Modal
       visible={visible}
@@ -38,57 +59,59 @@ const EditPostModal: React.FC<EditPostModalProps> = ({
       onRequestClose={onClose}
     >
       <KeyboardAvoidingView
-        // behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={isKeyboardVisible ? (Platform.OS === 'ios' ? 'padding' : 'height') : undefined}
         style={styles.editPostModalContainer}
+        enabled={isKeyboardVisible}
       >
-        <TouchableOpacity
-          style={styles.editPostModalOverlay}
-          activeOpacity={1}
-          onPress={onClose}
-        />
-        <View style={styles.editPostModalContent}>
-          <View style={styles.editPostModalHeader}>
-            <Text style={styles.editPostModalTitle}>Edit Post</Text>
-            <TouchableOpacity onPress={onClose}>
-              <Text style={styles.editPostModalClose}>✕</Text>
-            </TouchableOpacity>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <View style={styles.editPostModalOverlay}>
+            <TouchableWithoutFeedback>
+              <View style={[styles.editPostModalContent, { paddingBottom: !isKeyboardVisible ? DIMENSIONS.spacing.lg + navBarHeight : DIMENSIONS.spacing.lg }]}>
+                <View style={styles.editPostModalHeader}>
+                  <Text style={styles.editPostModalTitle}>Edit Post</Text>
+                  <TouchableOpacity onPress={onClose}>
+                    <Text style={styles.editPostModalClose}>✕</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <TextInput
+                  style={styles.editPostInput}
+                  value={editText}
+                  onChangeText={onChangeText}
+                  placeholder="What's on your mind?"
+                  placeholderTextColor={COLORS.textSecondary}
+                  multiline
+                  autoFocus
+                  maxLength={500}
+                />
+
+                <View style={styles.editPostModalActions}>
+                  <TouchableOpacity
+                    style={styles.editPostCancelButton}
+                    onPress={onClose}
+                  >
+                    <Text style={styles.editPostCancelButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.editPostSaveButton,
+                      (!editText.trim() || isUpdating) && styles.editPostSaveButtonDisabled
+                    ]}
+                    onPress={onSave}
+                    disabled={!editText.trim() || isUpdating}
+                  >
+                    {isUpdating ? (
+                      <ActivityIndicator size="small" color={COLORS.white} />
+                    ) : (
+                      <Text style={styles.editPostSaveButtonText}>Save</Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </TouchableWithoutFeedback>
           </View>
-
-          <TextInput
-            style={styles.editPostInput}
-            value={editText}
-            onChangeText={onChangeText}
-            placeholder="What's on your mind?"
-            placeholderTextColor={COLORS.textSecondary}
-            multiline
-            autoFocus
-            maxLength={500}
-          />
-
-          <View style={styles.editPostModalActions}>
-            <TouchableOpacity
-              style={styles.editPostCancelButton}
-              onPress={onClose}
-            >
-              <Text style={styles.editPostCancelButtonText}>Cancel</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.editPostSaveButton,
-                (!editText.trim() || isUpdating) && styles.editPostSaveButtonDisabled
-              ]}
-              onPress={onSave}
-              disabled={!editText.trim() || isUpdating}
-            >
-              {isUpdating ? (
-                <ActivityIndicator size="small" color={COLORS.white} />
-              ) : (
-                <Text style={styles.editPostSaveButtonText}>Save</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        </View>
+        </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
     </Modal>
   );
@@ -97,11 +120,11 @@ const EditPostModal: React.FC<EditPostModalProps> = ({
 const styles = StyleSheet.create({
   editPostModalContainer: {
     flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   editPostModalOverlay: {
     flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
   },
   editPostModalContent: {
     backgroundColor: COLORS.surface,
@@ -109,6 +132,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 20,
     padding: DIMENSIONS.spacing.lg,
     maxHeight: '70%',
+    paddingBottom: DIMENSIONS.spacing.lg,
   },
   editPostModalHeader: {
     flexDirection: 'row',
@@ -140,34 +164,37 @@ const styles = StyleSheet.create({
   },
   editPostModalActions: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: DIMENSIONS.spacing.md,
+    justifyContent: 'space-between',
+    marginTop: DIMENSIONS.spacing.lg,
   },
   editPostCancelButton: {
-    paddingVertical: DIMENSIONS.spacing.md,
-    paddingHorizontal: DIMENSIONS.spacing.xl,
+    flex: 1,
+    backgroundColor: COLORS.border,
     borderRadius: 8,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    paddingVertical: DIMENSIONS.spacing.md,
+    alignItems: 'center',
+    marginRight: DIMENSIONS.spacing.sm,
   },
   editPostCancelButtonText: {
     fontSize: 16,
+    color: COLORS.text,
     fontFamily: FontWeight.Medium,
-    color: COLORS.textSecondary,
   },
   editPostSaveButton: {
-    paddingVertical: DIMENSIONS.spacing.md,
-    paddingHorizontal: DIMENSIONS.spacing.xl,
-    borderRadius: 8,
+    flex: 1,
     backgroundColor: COLORS.primary,
+    borderRadius: 8,
+    paddingVertical: DIMENSIONS.spacing.md,
+    alignItems: 'center',
+    marginLeft: DIMENSIONS.spacing.sm,
   },
   editPostSaveButtonDisabled: {
-    opacity: 0.5,
+    backgroundColor: COLORS.border,
   },
   editPostSaveButtonText: {
     fontSize: 16,
-    fontFamily: FontWeight.SemiBold,
     color: COLORS.white,
+    fontFamily: FontWeight.Medium,
   },
 });
 

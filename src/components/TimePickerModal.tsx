@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { COLORS } from "../config/constants";
+import { useAndroidNavBar } from "../hooks/useAndroidNavBar";
 
 interface TimePickerModalProps {
   visible: boolean;
@@ -113,6 +114,7 @@ const TimePickerModal: React.FC<TimePickerModalProps> = ({
   }
 
   // iOS: Show custom modal with spinner
+  const { height: navBarHeight } = useAndroidNavBar();
   return (
     <Modal
       visible={visible}
@@ -121,7 +123,7 @@ const TimePickerModal: React.FC<TimePickerModalProps> = ({
       onRequestClose={onCancel}
     >
       <View style={styles.iosPickerOverlay}>
-        <View style={styles.iosPickerContainer}>
+        <View style={[styles.iosPickerContainer, { paddingBottom: 20 + navBarHeight }]}>
           <View style={styles.iosPickerHeader}>
             <TouchableOpacity
               style={styles.iosPickerHeaderButton}

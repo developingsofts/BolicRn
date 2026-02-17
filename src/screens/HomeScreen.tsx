@@ -45,7 +45,6 @@ import type { ReactionType } from "../constants/reactions";
 import { Like, CommentRemove, ThreeDots } from "../../assets";
 import CommentsModal from "../components/CommentsModal";
 import ConfirmationDialog from "../components/ConfirmationDialog";
-import EditPostModal from "../components/EditPostModal";
 import { r } from "../designing/responsiveDesigns";
 import { ResizeMode } from "expo-av";
 import SelectWorkoutScreen from "./SelectWorkoutScreen";
@@ -118,11 +117,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const [openPostMenuId, setOpenPostMenuId] = useState<string | null>(null);
   const [showDeletePostDialog, setShowDeletePostDialog] = useState(false);
   const [postToDelete, setPostToDelete] = useState<string | null>(null);
-  const [editingPost, setEditingPost] = useState<{
-    id: string;
-    caption: string;
-  } | null>(null);
-  const [editPostText, setEditPostText] = useState("");
   const [showAllWorkoutExercises, setShowAllWorkoutExercises] = useState(false);
   const [noteBeingDeleted, setNoteBeingDeleted] = useState<string | null>(null);
   const [quickActionsExpanded, setQuickActionsExpanded] = useState(false);
@@ -212,7 +206,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   // Post reactions
   const [reactToPost] = useToggleLikeMutation();
   const [deletePost, { isLoading: isDeleting }] = useDeletePostMutation();
-  const [updatePost, { isLoading: isUpdating }] = useUpdatePostMutation();
   const [reactingPostId, setReactingPostId] = useState<string | null>(null);
   const [likingPostId, setLikingPostId] = useState<string | null>(null);
   const [reactionPickerPostId, setReactionPickerPostId] = useState<
@@ -321,33 +314,13 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
   const handleEditPostPress = (postId: string, caption: string) => {
     setOpenPostMenuId(null);
-    setEditingPost({ id: postId, caption });
-    setEditPostText(caption);
+    navigation.navigate("CreatePost", {
+      editingPost: { id: postId, title: caption },
+      isEditing: true,
+    });
   };
 
-  const handleSaveEditPost = async () => {
-    if (!editingPost || !editPostText.trim()) return;
 
-    try {
-      await updatePost({
-        postId: editingPost.id,
-        title: editPostText.trim(),
-      }).unwrap();
-
-      setEditingPost(null);
-      setEditPostText("");
-      refetchPosts();
-      Alert.alert("Success", "Post updated successfully!");
-    } catch (error) {
-      console.error("Failed to update post:", error);
-      Alert.alert("Error", "Failed to update post. Please try again.");
-    }
-  };
-
-  const handleCancelEditPost = () => {
-    setEditingPost(null);
-    setEditPostText("");
-  };
 
   const confirmDeletePost = async () => {
     if (!postToDelete) return;
@@ -1383,6 +1356,8 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                                 source={ThreeDots}
                                 style={{ width: 20, height: 20 }}
                                 resizeMode={ResizeMode.CONTAIN}
+                                tintColor={COLORS.black}
+
                               />
                             </TouchableOpacity>
                             {openPostMenuId === postId && (
@@ -1967,15 +1942,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         loading={isDeleting}
       />
 
-      {/* Edit Post Modal */}
-      <EditPostModal
-        visible={editingPost !== null}
-        onClose={handleCancelEditPost}
-        onSave={handleSaveEditPost}
-        editText={editPostText}
-        onChangeText={setEditPostText}
-        isUpdating={isUpdating}
-      />
+
     </SafeAreaView>
   );
 };

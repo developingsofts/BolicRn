@@ -24,27 +24,41 @@ const ReactionPicker: React.FC<ReactionPickerProps> = ({
   }
 
   return (
-    <Modal transparent animationType="fade" visible={visible} onRequestClose={onClose}>
-      <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onClose}>
+    <Modal
+      transparent
+      animationType="fade"
+      visible={visible}
+      onRequestClose={onClose}
+    >
+      <TouchableOpacity
+        style={styles.overlay}
+        activeOpacity={1}
+        onPress={onClose}
+      >
         <View style={styles.container}>
           <Text style={styles.heading}>React to post</Text>
           <View style={styles.reactionRow}>
-            {REACTION_OPTIONS.filter((option) => option.type !== "like").map((option) => {
-              const isSelected = currentReaction === option.type;
-              return (
-                <TouchableOpacity
-                  key={option.type}
-                  style={[styles.reactionButton, isSelected && styles.reactionButtonSelected]}
-                  onPress={() => {
-                    onSelect(option.type);
-                    onClose();
-                  }}
-                >
-                  <Text style={styles.reactionEmoji}>{option.emoji}</Text>
-                  <Text style={styles.reactionLabel}>{option.label}</Text>
-                </TouchableOpacity>
-              );
-            })}
+            {REACTION_OPTIONS.filter((option) => option.type !== "like").map(
+              (option) => {
+                const isSelected = currentReaction === option.type;
+                return (
+                  <TouchableOpacity
+                    key={option.type}
+                    style={[
+                      styles.reactionButton,
+                      isSelected && styles.reactionButtonSelected,
+                    ]}
+                    onPress={() => {
+                      onSelect(option.type);
+                      onClose();
+                    }}
+                  >
+                    <Text style={styles.reactionEmoji}>{option.emoji}</Text>
+                    <Text style={styles.reactionLabel}>{option.label}</Text>
+                  </TouchableOpacity>
+                );
+              },
+            )}
           </View>
           {currentReaction ? (
             <TouchableOpacity
@@ -75,7 +89,7 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: 360,
     backgroundColor: COLORS.white,
-  borderRadius: DIMENSIONS.borderRadius,
+    borderRadius: DIMENSIONS.borderRadius,
     padding: DIMENSIONS.spacing.lg,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
@@ -99,7 +113,7 @@ const styles = StyleSheet.create({
   reactionButton: {
     flexBasis: "48%",
     backgroundColor: COLORS.surface,
-  borderRadius: DIMENSIONS.borderRadius,
+    borderRadius: DIMENSIONS.borderRadius,
     paddingVertical: DIMENSIONS.spacing.md,
     paddingHorizontal: DIMENSIONS.spacing.sm,
     alignItems: "center",
@@ -120,7 +134,7 @@ const styles = StyleSheet.create({
   },
   removeButton: {
     marginTop: DIMENSIONS.spacing.lg,
-  borderRadius: DIMENSIONS.borderRadius,
+    borderRadius: DIMENSIONS.borderRadius,
     paddingVertical: DIMENSIONS.spacing.md,
     backgroundColor: COLORS.border,
   },

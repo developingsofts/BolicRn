@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   View,
   Text,
@@ -11,6 +11,8 @@ import {
   Platform,
   TextInput,
   ActivityIndicator,
+  TouchableWithoutFeedback,
+  Keyboard,
 } from "react-native";
 import RefreshableScrollView from "../components/RefreshableScrollView";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -30,9 +32,11 @@ import { useToggleLikeMutation } from "../services/api/likesCommentsApi";
 import CommentsModal from "../components/CommentsModal";
 import ConfirmationDialog from "../components/ConfirmationDialog";
 import type { ReactionType } from "../constants/reactions";
+import { useAndroidNavBar } from "../hooks/useAndroidNavBar";
 
 const MyPosts: React.FC = ({ navigation, route }: any) => {
   const { user } = useAuth();
+  const { height: navBarHeight } = useAndroidNavBar();
   // Accept userId from route params (if present)
   const userId = route?.params?.userId || user?.id;
   const isOwnProfile =
@@ -62,6 +66,24 @@ const MyPosts: React.FC = ({ navigation, route }: any) => {
   const [reactionPickerPostId, setReactionPickerPostId] = useState<
     string | null
   >(null);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const keyboardDidShow = Keyboard.addListener(
+      Platform.OS === "android" ? "keyboardDidShow" : "keyboardWillShow",
+      () => setIsKeyboardVisible(true),
+    );
+    const keyboardDidHide = Keyboard.addListener(
+      Platform.OS === "android" ? "keyboardDidHide" : "keyboardWillHide",
+      () => setIsKeyboardVisible(false),
+    );
+
+    return () => {
+      keyboardDidShow.remove();
+      keyboardDidHide.remove();
+    };
+  }, []);
+
   const posts =
     postsData && postsData.status && "data" in postsData
       ? postsData.data.posts
@@ -330,6 +352,7 @@ const MyPosts: React.FC = ({ navigation, route }: any) => {
                       </View>
                     </View>
                   )}
+                  {console.log("Post media URL:", post.mediaUrl)}
 
                   {post.mediaUrl && (
                     <Image
@@ -463,58 +486,60 @@ const MyPosts: React.FC = ({ navigation, route }: any) => {
         onRequestClose={handleCancelEditPost}
       >
         <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          behavior={isKeyboardVisible ? (Platform.OS === "ios" ? "padding" : "height") : undefined}
           style={styles.editPostModalContainer}
+          enabled={isKeyboardVisible}
         >
-          <TouchableOpacity
-            style={styles.editPostModalOverlay}
-            activeOpacity={1}
-            onPress={handleCancelEditPost}
-          />
-          <View style={styles.editPostModalContent}>
-            <View style={styles.editPostModalHeader}>
-              <Text style={styles.editPostModalTitle}>Edit Post</Text>
-              <TouchableOpacity onPress={handleCancelEditPost}>
-                <Text style={styles.editPostModalClose}>✕</Text>
-              </TouchableOpacity>
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <View style={styles.editPostModalOverlay}>
+              <TouchableWithoutFeedback>
+                <View style={[styles.editPostModalContent, { paddingBottom: !isKeyboardVisible ? DIMENSIONS.spacing.lg + navBarHeight : DIMENSIONS.spacing.lg }]}>
+                  <View style={styles.editPostModalHeader}>
+                    <Text style={styles.editPostModalTitle}>Edit Post</Text>
+                    <TouchableOpacity onPress={handleCancelEditPost}>
+                      <Text style={styles.editPostModalClose}>✕</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  <TextInput
+                    style={styles.editPostInput}
+                    value={editPostText}
+                    onChangeText={setEditPostText}
+                    placeholder="What's on your mind?"
+                    placeholderTextColor={COLORS.textSecondary}
+                    multiline
+                    autoFocus
+                    maxLength={500}
+                  />
+
+                  <View style={styles.editPostModalActions}>
+                    <TouchableOpacity
+                      style={styles.editPostCancelButton}
+                      onPress={handleCancelEditPost}
+                    >
+                      <Text style={styles.editPostCancelButtonText}>Cancel</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[
+                        styles.editPostSaveButton,
+                        (!editPostText.trim() || isUpdating) &&
+                          styles.editPostSaveButtonDisabled,
+                      ]}
+                      onPress={handleSaveEditPost}
+                      disabled={!editPostText.trim() || isUpdating}
+                    >
+                      {isUpdating ? (
+                        <ActivityIndicator size="small" color={COLORS.white} />
+                      ) : (
+                        <Text style={styles.editPostSaveButtonText}>Save</Text>
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </TouchableWithoutFeedback>
             </View>
-
-            <TextInput
-              style={styles.editPostInput}
-              value={editPostText}
-              onChangeText={setEditPostText}
-              placeholder="What's on your mind?"
-              placeholderTextColor={COLORS.textSecondary}
-              multiline
-              autoFocus
-              maxLength={500}
-            />
-
-            <View style={styles.editPostModalActions}>
-              <TouchableOpacity
-                style={styles.editPostCancelButton}
-                onPress={handleCancelEditPost}
-              >
-                <Text style={styles.editPostCancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.editPostSaveButton,
-                  (!editPostText.trim() || isUpdating) &&
-                    styles.editPostSaveButtonDisabled,
-                ]}
-                onPress={handleSaveEditPost}
-                disabled={!editPostText.trim() || isUpdating}
-              >
-                {isUpdating ? (
-                  <ActivityIndicator size="small" color={COLORS.white} />
-                ) : (
-                  <Text style={styles.editPostSaveButtonText}>Save</Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
+          </TouchableWithoutFeedback>
         </KeyboardAvoidingView>
       </Modal>
 
@@ -640,7 +665,7 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   postImagePlaceholder: {
-    width: "98.2%",
+    width: "100%",
     height: 120,
     backgroundColor: COLORS._E2E2E2,
     borderRadius: 12,
@@ -762,11 +787,11 @@ const styles = StyleSheet.create({
   },
   editPostModalContainer: {
     flex: 1,
-    justifyContent: "flex-end",
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   editPostModalOverlay: {
     flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
   },
   editPostModalContent: {
     backgroundColor: COLORS.surface,
@@ -774,6 +799,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 20,
     padding: DIMENSIONS.spacing.lg,
     maxHeight: "70%",
+    paddingBottom: DIMENSIONS.spacing.lg,
   },
   editPostModalHeader: {
     flexDirection: "row",

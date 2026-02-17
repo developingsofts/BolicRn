@@ -610,15 +610,16 @@ const styles = StyleSheet.create({
   },
   uploadBtn: {
     backgroundColor: COLORS.white,
-    paddingHorizontal: 10,
-    paddingVertical: 10,
+    paddingHorizontal: r(10),
+    paddingVertical: r(10),
     justifyContent: "center",
+    height: r(39),
     alignItems: "center",
     borderRadius: 4,
   },
   uploadBtnText: {
     fontFamily: FontWeight.Medium,
-    fontSize: 14,
+    fontSize: r(13),
     color: COLORS.black,
   },
   deleteBtn: {

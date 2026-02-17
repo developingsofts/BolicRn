@@ -630,7 +630,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
               errors.email && touched.email && styles.inputError,
             ]}
             placeholder="Email"
-            placeholderTextColor={COLORS.textSecondary}
+            placeholderTextColor={COLORS._5E5E5E}
             value={values.email}
             onChangeText={handleChange("email")}
             onBlur={handleBlur("email")}
@@ -648,7 +648,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
             ]}
             placeholder="Password"
             value={values.password}
-            placeholderTextColor={COLORS.textSecondary}
+            placeholderTextColor={COLORS._5E5E5E}
             onChangeText={handleChange("password")}
             onBlur={handleBlur("password")}
             secureTextEntry
@@ -1395,6 +1395,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
                 errors.phoneNumber && touched.phoneNumber && styles.inputError,
               ]}
               placeholder={STRINGS.AUTH.phoneNumber}
+              placeholderTextColor={COLORS._5E5E5E}
               value={values.phoneNumber}
               onChangeText={(text) => {
                 handleChange("phoneNumber")(text);
@@ -1478,6 +1479,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
                   styles.inputError,
               ]}
               placeholder={STRINGS.AUTH.verificationCode}
+              placeholderTextColor={COLORS._5E5E5E}
               value={values.verificationCode}
               onChangeText={handleChange("verificationCode")}
               onBlur={handleBlur("verificationCode")}
@@ -1572,6 +1574,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
                 errors.displayName && touched.displayName && styles.inputError,
               ]}
               placeholder={STRINGS.AUTH.displayName}
+              placeholderTextColor={COLORS._5E5E5E}
               value={values.displayName}
               onChangeText={handleChange("displayName")}
               onBlur={handleBlur("displayName")}
@@ -1603,6 +1606,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
                 errors.age && touched.age && styles.inputError,
               ]}
               placeholder={STRINGS.AUTH.age}
+              placeholderTextColor={COLORS._5E5E5E}
               value={values.age}
               onChangeText={handleChange("age")}
               onBlur={handleBlur("age")}

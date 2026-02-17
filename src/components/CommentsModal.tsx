@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -16,11 +16,13 @@ import {
   RefreshControl,
   Dimensions,
   TouchableWithoutFeedback,
+  Keyboard,
 } from "react-native";
 import { COLORS, DIMENSIONS } from "../config/constants";
+import { useAndroidNavBar } from "../hooks/useAndroidNavBar";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
-const MODAL_HEIGHT = SCREEN_HEIGHT * 0.7;
+const MODAL_HEIGHT = SCREEN_HEIGHT * 0.55;
 import { Send } from "../../assets";
 import ConfirmationDialog from "./ConfirmationDialog";
 import { useAuth } from "../contexts/AuthContext";
@@ -60,6 +62,7 @@ const CommentsModal: React.FC<CommentsModalProps> = ({
   onClose,
 }) => {
   const { user, isAuthenticated } = useAuth();
+  const { height: navBarHeight } = useAndroidNavBar();
   const [commentText, setCommentText] = useState("");
   const [replyingTo, setReplyingTo] = useState<{
     id: number;
@@ -73,6 +76,23 @@ const CommentsModal: React.FC<CommentsModalProps> = ({
   const [commentToDelete, setCommentToDelete] = useState<number | null>(null);
   const [openMenuId, setOpenMenuId] = useState<number | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const keyboardDidShow = Keyboard.addListener(
+      Platform.OS === "android" ? "keyboardDidShow" : "keyboardWillShow",
+      () => setIsKeyboardVisible(true),
+    );
+    const keyboardDidHide = Keyboard.addListener(
+      Platform.OS === "android" ? "keyboardDidHide" : "keyboardWillHide",
+      () => setIsKeyboardVisible(false),
+    );
+
+    return () => {
+      keyboardDidShow.remove();
+      keyboardDidHide.remove();
+    };
+  }, []);
 
   const {
     data: commentsData,
@@ -80,7 +100,7 @@ const CommentsModal: React.FC<CommentsModalProps> = ({
     refetch,
   } = useGetPostCommentsQuery(
     { postId, page: 1, limit: 50 },
-    { skip: !visible || !isAuthenticated }
+    { skip: !visible || !isAuthenticated },
   );
 
   const [createComment, { isLoading: isCreating }] = useCreateCommentMutation();
@@ -126,7 +146,7 @@ const CommentsModal: React.FC<CommentsModalProps> = ({
         "Error",
         `Failed to ${
           editingComment ? "update" : "post"
-        } comment. Please try again.`
+        } comment. Please try again.`,
       );
     }
   };
@@ -216,7 +236,7 @@ const CommentsModal: React.FC<CommentsModalProps> = ({
       ? item.user.imageUrl.includes("?")
         ? item.user.imageUrl
         : `${item.user.imageUrl}?v=${new Date(
-            item.updatedAt || item.createdAt
+            item.updatedAt || item.createdAt,
           ).getTime()}`
       : null;
 
@@ -297,125 +317,137 @@ const CommentsModal: React.FC<CommentsModalProps> = ({
       transparent={true}
     >
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={isKeyboardVisible ? (Platform.OS === "ios" ? "padding" : "height") : undefined}
         style={styles.keyboardAvoidingContainer}
-        enabled={true}
+        enabled={isKeyboardVisible}
       >
         <TouchableWithoutFeedback onPress={onClose}>
           <View style={styles.modalOverlay}>
             <TouchableWithoutFeedback>
               <View style={styles.modalContainer}>
-              {/* Drag Handle */}
-              <View style={styles.dragHandleContainer}>
-                <View style={styles.dragHandle} />
-              </View>
+                {/* Drag Handle */}
+                <View style={styles.dragHandleContainer}>
+                  <View style={styles.dragHandle} />
+                </View>
 
-              {/* Header */}
-              <View style={styles.headerContainer}>
-                <Text style={styles.headerTitle}>Comments</Text>
-                <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-                  <Text style={styles.closeButtonText}>✕</Text>
-                </TouchableOpacity>
-              </View>
+                {/* Header */}
+                <View style={styles.headerContainer}>
+                  <Text style={styles.headerTitle}>Comments</Text>
+                  <TouchableOpacity
+                    onPress={onClose}
+                    style={styles.closeButton}
+                  >
+                    <Text style={styles.closeButtonText}>✕</Text>
+                  </TouchableOpacity>
+                </View>
 
-              <View style={styles.keyboardView}>
-                {isLoading ? (
-                  <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color={COLORS.primary} />
-                  </View>
-                ) : comments.length === 0 ? (
-                  <View style={styles.emptyContainer}>
-                    <Text style={styles.emptyText}>
-                      No comments yet. Be the first to comment!
-                    </Text>
-                  </View>
-                ) : (
-                  <FlatList
-                    data={comments}
-                    keyExtractor={(item) => item.id.toString()}
-                    renderItem={({ item }) => renderComment({ item })}
-                    contentContainerStyle={styles.commentsList}
-                    onScrollBeginDrag={() => setOpenMenuId(null)}
-                    refreshControl={
-                      <RefreshControl
-                        refreshing={refreshing}
-                        onRefresh={handleRefresh}
-                        tintColor={COLORS.primary}
-                        colors={[COLORS.primary]}
-                      />
-                    }
-                  />
-                )}
-
-                <View style={styles.inputContainer}>
-                  {editingComment && (
-                    <View style={styles.replyingToContainer}>
-                      <Text style={styles.replyingToText}>Editing comment</Text>
-                      <TouchableOpacity onPress={handleCancelEdit}>
-                        <Text style={styles.cancelReplyText}>Cancel</Text>
-                      </TouchableOpacity>
+                <View style={styles.keyboardView}>
+                  {isLoading ? (
+                    <View style={styles.loadingContainer}>
+                      <ActivityIndicator size="large" color={COLORS.primary} />
                     </View>
-                  )}
-                  {replyingTo && !editingComment && (
-                    <View style={styles.replyingToContainer}>
-                      <Text style={styles.replyingToText}>
-                        Replying to {replyingTo.name}
+                  ) : comments.length === 0 ? (
+                    <View style={styles.emptyContainer}>
+                      <Text style={styles.emptyText}>
+                        No comments yet. Be the first to comment!
                       </Text>
-                      <TouchableOpacity onPress={() => setReplyingTo(null)}>
-                        <Text style={styles.cancelReplyText}>Cancel</Text>
+                    </View>
+                  ) : (
+                    <FlatList
+                      data={comments}
+                      keyExtractor={(item) => item.id.toString()}
+                      renderItem={({ item }) => renderComment({ item })}
+                      contentContainerStyle={styles.commentsList}
+                      onScrollBeginDrag={() => setOpenMenuId(null)}
+                      keyboardDismissMode="interactive"
+                      keyboardShouldPersistTaps="handled"
+                      refreshControl={
+                        <RefreshControl
+                          refreshing={refreshing}
+                          onRefresh={handleRefresh}
+                          tintColor={COLORS.primary}
+                          colors={[COLORS.primary]}
+                        />
+                      }
+                    />
+                  )}
+
+                  <View style={[styles.inputContainer, { paddingBottom: DIMENSIONS.spacing.lg + navBarHeight }]}>
+                    {editingComment && (
+                      <View style={styles.replyingToContainer}>
+                        <Text style={styles.replyingToText}>
+                          Editing comment
+                        </Text>
+                        <TouchableOpacity onPress={handleCancelEdit}>
+                          <Text style={styles.cancelReplyText}>Cancel</Text>
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                    {replyingTo && !editingComment && (
+                      <View style={styles.replyingToContainer}>
+                        <Text style={styles.replyingToText}>
+                          Replying to {replyingTo.name}
+                        </Text>
+                        <TouchableOpacity onPress={() => setReplyingTo(null)}>
+                          <Text style={styles.cancelReplyText}>Cancel</Text>
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                    <View style={styles.inputRow}>
+                      <TextInput
+                        style={styles.input}
+                        placeholder={
+                          editingComment
+                            ? "Edit your comment..."
+                            : replyingTo
+                              ? "Write a reply..."
+                              : "Write a comment..."
+                        }
+                        placeholderTextColor={COLORS.textSecondary}
+                        value={commentText}
+                        onChangeText={setCommentText}
+                        multiline
+                        maxLength={500}
+                      />
+                      <TouchableOpacity
+                        style={[
+                          styles.sendButton,
+                          (!commentText.trim() || isCreating || isUpdating) &&
+                            styles.sendButtonDisabled,
+                        ]}
+                        onPress={handleSendComment}
+                        disabled={
+                          !commentText.trim() || isCreating || isUpdating
+                        }
+                      >
+                        {isCreating || isUpdating ? (
+                          <ActivityIndicator
+                            size="small"
+                            color={COLORS.white}
+                          />
+                        ) : (
+                          <Image source={Send} style={styles.sendIcon} />
+                        )}
                       </TouchableOpacity>
                     </View>
-                  )}
-                  <View style={styles.inputRow}>
-                    <TextInput
-                      style={styles.input}
-                      placeholder={
-                        editingComment
-                          ? "Edit your comment..."
-                          : replyingTo
-                          ? "Write a reply..."
-                          : "Write a comment..."
-                      }
-                      placeholderTextColor={COLORS.textSecondary}
-                      value={commentText}
-                      onChangeText={setCommentText}
-                      multiline
-                      maxLength={500}
-                    />
-                    <TouchableOpacity
-                      style={[
-                        styles.sendButton,
-                        (!commentText.trim() || isCreating || isUpdating) &&
-                          styles.sendButtonDisabled,
-                      ]}
-                      onPress={handleSendComment}
-                      disabled={!commentText.trim() || isCreating || isUpdating}
-                    >
-                      {isCreating || isUpdating ? (
-                        <ActivityIndicator size="small" color={COLORS.white} />
-                      ) : (
-                        <Image source={Send} style={styles.sendIcon} />
-                      )}
-                    </TouchableOpacity>
                   </View>
                 </View>
               </View>
-            </View>
             </TouchableWithoutFeedback>
           </View>
         </TouchableWithoutFeedback>
-      </KeyboardAvoidingView>
 
-      <ConfirmationDialog
-        visible={showDeleteDialog}
-        title="Delete Comment"
-        message="Are you sure you want to delete this comment? This action cannot be undone."
-        confirmLabel="Delete"
-        cancelLabel="Cancel"
-        onConfirm={confirmDeleteComment}
-        onCancel={cancelDeleteComment}
-        loading={isDeleting}
-      />
+        <ConfirmationDialog
+          visible={showDeleteDialog}
+          title="Delete Comment"
+          message="Are you sure you want to delete this comment? This action cannot be undone."
+          confirmLabel="Delete"
+          cancelLabel="Cancel"
+          onConfirm={confirmDeleteComment}
+          onCancel={cancelDeleteComment}
+          loading={isDeleting}
+        />
+      </KeyboardAvoidingView>
     </Modal>
   );
 };
@@ -624,7 +656,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surface,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
-    paddingBottom: Platform.OS === "ios" ? 30 : DIMENSIONS.spacing.md,
   },
   replyingToContainer: {
     flexDirection: "row",

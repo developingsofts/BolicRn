@@ -8,6 +8,7 @@ import {
   SafeAreaView,
 } from 'react-native';
 import { COLORS, DIMENSIONS } from '../config/constants';
+import { useAndroidNavBar } from '../hooks/useAndroidNavBar';
 import { Close } from '../../assets';
 import FontWeight from '../hooks/useInterFonts';
 
@@ -27,6 +28,7 @@ const PaymentOptionsDialog: React.FC<PaymentOptionsDialogProps> = ({
   remainingSessions = 2,
 }) => {
   const [selectedPayment, setSelectedPayment] = useState<string>('credit');
+  const { height: navBarHeight } = useAndroidNavBar();
 
   const handleConfirm = () => {
     onConfirmPayment(selectedPayment);
@@ -72,7 +74,7 @@ const PaymentOptionsDialog: React.FC<PaymentOptionsDialogProps> = ({
     >
       <View style={styles.overlay}>
         <SafeAreaView style={styles.modalContainer}>
-          <View style={styles.dialogContent}>
+          <View style={[styles.dialogContent, { paddingBottom: DIMENSIONS.spacing.xl + navBarHeight }]}>
             {/* Header */}
             <View style={styles.header}>
               <Text style={styles.title}>Payment Options</Text>

@@ -31,6 +31,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { TextInput } from "react-native-gesture-handler";
 import FontWeight from "../hooks/useInterFonts";
 import { Add } from "../../assets";
+import { useAndroidNavBar } from "../hooks/useAndroidNavBar";
 
 interface Package {
   id: string;
@@ -43,6 +44,7 @@ interface Package {
 
 const TrainerPricing: React.FC<{ navigation: any }> = ({ navigation }) => {
   const { user } = useAuth();
+  const { height: navBarHeight } = useAndroidNavBar();
 
   // Replace with actual trainerId from auth/user context if needed
   const trainerId = user?.id || "";
@@ -267,7 +269,7 @@ const TrainerPricing: React.FC<{ navigation: any }> = ({ navigation }) => {
                 backgroundColor: "#fff",
                 paddingTop: 16,
                 paddingHorizontal: 20,
-                paddingBottom: 32,
+                paddingBottom: 32 + navBarHeight,
                 borderTopLeftRadius: 24,
                 borderTopRightRadius: 24,
                 width: "100%",

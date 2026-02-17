@@ -44,7 +44,7 @@ const Connections: React.FC = ({ navigation, route }: any) => {
       page,
       limit: 20,
     },
-    { skip: !isAuthenticated }
+    { skip: !isAuthenticated },
   );
 
   // Append new users to allFollowing on data change
@@ -76,7 +76,7 @@ const Connections: React.FC = ({ navigation, route }: any) => {
   // Pull-to-refresh handler
   const handleRefresh = async () => {
     setRefreshing(true);
-    setAllFollowing([]);
+    setPage(1);
     await refetchConnections();
   };
 
@@ -85,9 +85,9 @@ const Connections: React.FC = ({ navigation, route }: any) => {
     if (!Array.isArray(allFollowing)) return [];
     return allFollowing.map((user: any) => ({
       id: String(user?.id ?? user?._id ?? Math.random()),
-      name: user?.displayName || user?.name || "Unknown",
-      location: user?.location || "",
-      initial: (user?.displayName || user?.name || "?").charAt(0).toUpperCase(),
+      name: user?.displayName || user?.name || user?.userName || "Unknown",
+      location: user?.location || "Unknown",
+      initial: (user?.displayName || user?.name || user?.userName || "Unknown").charAt(0).toUpperCase(),
     }));
   }, [allFollowing]);
 
