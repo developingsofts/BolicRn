@@ -678,6 +678,7 @@ const styles = StyleSheet.create({
     fontFamily: FontWeight.SemiBold,
     marginBottom: DIMENSIONS.spacing.sm,
     textAlign: "left",
+    textAlignVertical: "center",
     justifyContent: "center",
     alignContent: "center",
   },

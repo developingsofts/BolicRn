@@ -74,6 +74,8 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({
     achievementsData?.status && achievementsData?.data
       ? achievementsData.data
       : [];
+      
+      console.log("User achievements:", achievements);
 
   const handleBack = () => {
     if (navigation.canGoBack()) {

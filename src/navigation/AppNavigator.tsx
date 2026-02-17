@@ -13,6 +13,7 @@ import WorkoutHistory from "../screens/WorkoutHistory";
 import Connections from "../screens/Connections";
 import ScheduledSessions from "../screens/ScheduledSessions";
 import { COLORS, DIMENSIONS, API_CONFIG } from "../config/constants";
+import BolicStripeProvider from "../components/stripe-provider";
 
 // Import screens
 import AuthScreen from "../screens/AuthScreen";
@@ -183,6 +184,7 @@ const AppNavigator: React.FC = () => {
   }
 console.log("API URL:", API_CONFIG.baseUrl,isAuthenticated);
   return (
+    <BolicStripeProvider>
     <NavigationContainer linking={linking}>
       {isAuthenticated ? (
         <Stack.Navigator
@@ -228,6 +230,7 @@ console.log("API URL:", API_CONFIG.baseUrl,isAuthenticated);
         </Stack.Navigator>
       )}
     </NavigationContainer>
+    </BolicStripeProvider>
   );
 };
 

@@ -16,8 +16,8 @@ Thumbs.db
 
 # Build output
 build/
-android/app/build/
-ios/build/
+/android
+/ios
 
 # IDE files
 .vscode/

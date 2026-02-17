@@ -155,14 +155,17 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     error: achievementsError,
   } = useGetUserAchievementsQuery(
     { userId: undefined },
-    { skip: !isAuthenticated }
+    { skip: !isAuthenticated },
   );
 
   const {
     data: potentialMatchesData,
     isLoading: potentialMatchesLoading,
     refetch: refetchPotentialMatches,
-  } = useGetPotentialMatchesQuery({page: 1, limit: 10}, { skip: !isAuthenticated });
+  } = useGetPotentialMatchesQuery(
+    { page: 1, limit: 10 },
+    { skip: !isAuthenticated },
+  );
 
   const {
     data: userPostsData,
@@ -170,7 +173,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     refetch: refetchUserPosts,
   } = useGetUserPostsQuery(
     { userId: String(user?.id ?? "") },
-    { skip: !isAuthenticated || !user?.id }
+    { skip: !isAuthenticated || !user?.id },
   );
 
   const {
@@ -180,7 +183,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     refetch: refetchFollowers,
   } = useGetFollowersQuery(
     { userId: String(user?.id ?? ""), page: 1, limit: 10 },
-    { skip: !isAuthenticated || !user?.id }
+    { skip: !isAuthenticated || !user?.id },
   );
 
   const {
@@ -229,7 +232,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
           refetchPotentialMatches(),
           refetchUserPosts(),
           refetchFollowers(),
-          refetchNotes()
+          refetchNotes(),
         );
 
         if (workoutOfTheDayId) {
@@ -247,17 +250,16 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     if (!reactionPickerPostId) {
       return null;
     }
-
     return (
       communityPosts.find(
-        (post: any) => String(post?.id) === String(reactionPickerPostId)
+        (post: any) => String(post?.id) === String(reactionPickerPostId),
       ) ?? null
     );
   }, [communityPosts, reactionPickerPostId]);
 
   const handleReactToPost = async (
     postId: string,
-    reactionType: ReactionType
+    reactionType: ReactionType,
   ) => {
     try {
       setReactingPostId(postId);
@@ -272,7 +274,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
   const handleRemoveReaction = async (
     postId: string,
-    currentReaction: ReactionType | null | undefined
+    currentReaction: ReactionType | null | undefined,
   ) => {
     if (!currentReaction) {
       return;
@@ -406,10 +408,10 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
       const completedAt = session.completedAt
         ? new Date(session.completedAt)
         : session.updatedAt
-        ? new Date(session.updatedAt)
-        : session.startedAt
-        ? new Date(session.startedAt)
-        : null;
+          ? new Date(session.updatedAt)
+          : session.startedAt
+            ? new Date(session.startedAt)
+            : null;
 
       if (!completedAt || Number.isNaN(completedAt.getTime())) {
         return false;
@@ -463,7 +465,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     }
 
     const baseWorkout = workouts.find(
-      (workout: any) => String(workout?.id) === String(workoutOfTheDayId)
+      (workout: any) => String(workout?.id) === String(workoutOfTheDayId),
     ) as any;
 
     const detailedWorkout =
@@ -509,7 +511,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
       });
 
     const durationSeconds = Number(
-      detailedWorkout?.totalDuration ?? sourceWorkout?.totalDuration ?? 0
+      detailedWorkout?.totalDuration ?? sourceWorkout?.totalDuration ?? 0,
     );
     const durationMinutes = durationSeconds
       ? Math.max(1, Math.round(durationSeconds / 60))
@@ -528,10 +530,10 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
       const completionDate = session?.completedAt
         ? new Date(session.completedAt)
         : session?.updatedAt
-        ? new Date(session.updatedAt)
-        : session?.startedAt
-        ? new Date(session.startedAt)
-        : null;
+          ? new Date(session.updatedAt)
+          : session?.startedAt
+            ? new Date(session.startedAt)
+            : null;
 
       if (!completionDate || Number.isNaN(completionDate.getTime())) {
         return false;
@@ -551,11 +553,11 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         sourceWorkout?.description ??
         "Stay consistent and give your best effort today!",
       type: String(
-        sourceWorkout?.type ?? detailedWorkout?.type ?? "mixed"
+        sourceWorkout?.type ?? detailedWorkout?.type ?? "mixed",
       ).toLowerCase(),
       duration: durationMinutes,
       difficulty: String(
-        sourceWorkout?.difficulty ?? detailedWorkout?.difficulty ?? "medium"
+        sourceWorkout?.difficulty ?? detailedWorkout?.difficulty ?? "medium",
       ).toLowerCase(),
       exercises,
       completed: completedToday,
@@ -578,7 +580,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         achievement?.id ??
           achievement?.achivenmentId ??
           achievement?.title ??
-          Math.random()
+          Math.random(),
       ),
       title: achievement?.title ?? "Achievement unlocked",
       description: achievement?.description ?? "Keep progressing!",
@@ -645,10 +647,10 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
       const completionDateRaw = session?.completedAt
         ? new Date(session.completedAt)
         : session?.updatedAt
-        ? new Date(session.updatedAt)
-        : session?.startedAt
-        ? new Date(session.startedAt)
-        : null;
+          ? new Date(session.updatedAt)
+          : session?.startedAt
+            ? new Date(session.startedAt)
+            : null;
 
       const completionDate =
         completionDateRaw && !Number.isNaN(completionDateRaw.getTime())
@@ -728,7 +730,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
           });
 
         const workoutPosts = sortedPosts.filter(
-          (post) => post?.workout || post?.type === "workout_share"
+          (post) => post?.workout || post?.type === "workout_share",
         );
 
         const prioritizedPosts = [
@@ -759,7 +761,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
           const workoutDetails = relevantPost?.workout ?? {};
           const isWorkoutShare = Boolean(
-            workoutDetails?.title || workoutDetails?.totalDuration
+            workoutDetails?.title || workoutDetails?.totalDuration,
           );
 
           const baseTitle =
@@ -956,7 +958,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             console.error("Error deleting note:", error);
             Alert.alert(
               "Error",
-              "We couldn't delete the note. Please try again."
+              "We couldn't delete the note. Please try again.",
             );
           } finally {
             setNoteBeingDeleted(null);
@@ -984,7 +986,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   };
 
   const formatExerciseDetails = (
-    exercise: WorkoutOfTheDay["exercises"][number]
+    exercise: WorkoutOfTheDay["exercises"][number],
   ) => {
     const detailParts: string[] = [];
 
@@ -1126,7 +1128,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                         weeklyGoal.target
                           ? Math.min(
                               (weeklyGoal.current / weeklyGoal.target) * 100,
-                              100
+                              100,
                             )
                           : 0
                       }%`,
@@ -1222,7 +1224,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                               {formatExerciseDetails(exercise)}
                             </Text>
                           </View>
-                        )
+                        ),
                       )}
                       {workoutOfTheDayExercises.hiddenCount > 0 && (
                         <TouchableOpacity
@@ -1302,7 +1304,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                     "workout:",
                     post?.workout,
                     "achievement:",
-                    post?.achievement
+                    post?.achievement,
                   );
 
                   const postUser = post.user || {};
@@ -1337,7 +1339,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                             typeof count === "number" ? count : 0;
                           return acc + safeCount;
                         },
-                        0
+                        0,
                       )
                     : 0;
                   const userHasNonLikeReaction =
@@ -1389,7 +1391,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                                   onPress={() =>
                                     handleEditPostPress(
                                       postId,
-                                      post.title || ""
+                                      post.title || "",
                                     )
                                   }
                                   style={styles.postMenuOption}
@@ -1824,8 +1826,8 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                   const progressLabel = showFraction
                     ? `${achievement.progress}/${achievement.maxProgress}`
                     : achievement.unlocked
-                    ? "Unlocked"
-                    : `${Math.round(progressPercentage)}%`;
+                      ? "Unlocked"
+                      : `${Math.round(progressPercentage)}%`;
 
                   return (
                     <View key={achievement.id} style={styles.achievementCard}>

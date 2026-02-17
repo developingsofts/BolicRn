@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
   },
   titleContainer: {
     flex: 1,
-    marginTop: DIMENSIONS.spacing.lg,
+    marginTop: DIMENSIONS.spacing.xs,
   },
   title: {
     fontSize: 24,
