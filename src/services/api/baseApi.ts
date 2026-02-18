@@ -20,6 +20,8 @@ const baseQuery = fetchBaseQuery({
       "updateMyProfileWithImage",
       "createPost",
       "updatePost",
+      "sendMessage",
+      "createConversation",
     ];
     if (!formDataEndpoints.includes(endpoint as string)) {
       if (!headers.has("Content-Type")) {

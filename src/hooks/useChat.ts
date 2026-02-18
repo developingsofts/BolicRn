@@ -118,7 +118,7 @@ interface UseChatOptions {
 interface SendMessageArgs {
   conversationId: string | number;
   content?: string;
-  attachmentUrl?: string;
+  attachmentUrl?: string | { uri: string; type: string; name: string };
   messageType?: MessageType;
 }
 
@@ -127,7 +127,7 @@ interface CreateConversationArgs {
   name?: string;
   participantIds?: Array<number | string>;
   initialMessage?: string;
-  attachmentUrl?: string;
+  attachmentUrl?: string | { uri: string; type: string; name: string };
   messageType?: MessageType;
 }
 
@@ -919,6 +919,18 @@ export const useChat = ({
     };
 
     const handleNewMessage = (incoming: ChatMessage) => {
+      console.log("📨 New message received from socket:", {
+        messageId: incoming.id,
+        conversationId: incoming.conversationId,
+        senderId: incoming.senderId,
+        messageType: incoming.messageType,
+        content: incoming.content,
+        hasAttachment: !!incoming.attachmentUrl,
+        attachmentUrl: incoming.attachmentUrl,
+        createdAt: incoming.createdAt,
+        isFromReceiver: incoming.senderId !== userIdNumeric,
+      });
+
       integrateMessage(incoming, { finalize: true });
 
       const incomingConversationId = Number(incoming.conversationId);
@@ -928,6 +940,10 @@ export const useChat = ({
         userIdNumeric != null &&
         incoming.senderId !== userIdNumeric
       ) {
+        console.log("✅ Marking message as read:", {
+          messageId: incoming.id,
+          conversationId: incomingConversationId,
+        });
         instance.emit("mark_as_read", {
           conversationId: incomingConversationId,
           messageIds: [incoming.id],
@@ -1227,12 +1243,17 @@ export const useChat = ({
       const timestamp = new Date().toISOString();
       const tempId = generateTemporaryMessageId();
 
+      const attachmentUrlString = typeof attachmentUrl === 'string' ? attachmentUrl : attachmentUrl?.uri ?? null;
+      
+      // Check if this is a file attachment
+      const isFileAttachment = typeof attachmentUrl === 'object' && attachmentUrl !== null;
+
       const optimisticMessage: ChatMessage = {
         id: tempId,
         conversationId: payloadConversationId,
         senderId: userIdNumeric,
         content: normalizedContent ? normalizedContent : null,
-        attachmentUrl: attachmentUrl ?? null,
+        attachmentUrl: attachmentUrlString,
         messageType,
         createdAt: timestamp,
         updatedAt: timestamp,
@@ -1246,21 +1267,25 @@ export const useChat = ({
       pendingMessagesRef.current.set(tempId, {
         conversationId: payloadConversationId,
         content: normalizedContent,
-        attachmentUrl: attachmentUrl ?? null,
+        attachmentUrl: attachmentUrlString,
         messageType,
         createdAt: timestamp,
       });
 
-      integrateMessage(optimisticMessage, { skipPendingResolution: true });
+      // Only show optimistic message for text messages, not for file attachments
+      // For files, we'll show the image only after server uploads it
+      if (!isFileAttachment) {
+        integrateMessage(optimisticMessage, { skipPendingResolution: true });
+      }
 
       const socket = socketRef.current;
       const socketIsActive = socket?.connected ?? false;
 
-      if (socket && socketIsActive) {
+      if (socket && socketIsActive && !isFileAttachment) {
         socket.emit("send_message", {
           conversationId: payloadConversationId,
           content: normalizedContent ? normalizedContent : null,
-          attachmentUrl: attachmentUrl ?? null,
+          attachmentUrl: attachmentUrlString,
           messageType,
         });
         return;
@@ -1275,6 +1300,8 @@ export const useChat = ({
         }).unwrap();
 
         if (isSuccessResponse(response) && response.data) {
+          // Always integrate the message from server response
+          // For file attachments, this is the first time they appear (after upload)
           integrateMessage(
             {
               ...response.data,
@@ -1283,6 +1310,7 @@ export const useChat = ({
             },
             { finalize: true }
           );
+          pendingMessagesRef.current.delete(tempId);
         } else {
           markMessageAsFailed(payloadConversationId, tempId);
           setChatError(response?.message ?? "Failed to send message");

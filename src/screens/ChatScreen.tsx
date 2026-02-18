@@ -411,14 +411,19 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
         console.log("Image selected - Original URI:", asset.uri);
         console.log("Image selected - Formatted URI:", imageUri);
 
-        // Send image with local URI as attachment
+        // Show sending indicator
+        Toast.info("Sending image...");
+
+        // Send image as form data
         await sendMessage({
           conversationId: resolvedConversationId,
-          attachmentUrl: imageUri,
           messageType: "image",
+          attachmentUrl: {
+            uri: imageUri,
+            type: "image/jpeg",
+            name: `image_${Date.now()}.jpg`,
+          },
         });
-
-        Toast.success("Image sent successfully!");
       }
     } catch (error) {
       console.error("Error picking image:", error);

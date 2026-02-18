@@ -19,7 +19,7 @@ interface FetchMessagesPayload {
 interface SendMessagePayload {
   conversationId: string | number;
   content?: string;
-  attachmentUrl?: string;
+  attachmentUrl?: string | { uri: string; type: string; name: string };
   messageType?: MessageType;
 }
 
@@ -42,7 +42,7 @@ interface CreateConversationPayload {
   name?: string;
   participantIds?: Array<number | string>;
   initialMessage?: string;
-  attachmentUrl?: string;
+  attachmentUrl?: string | { uri: string; type: string; name: string };
   messageType?: MessageType;
 }
 
@@ -67,11 +67,36 @@ export const messagingApi = baseApi.injectEndpoints({
       providesTags: ['Messaging'],
     }),
     sendMessage: builder.mutation<ApiResponse<ChatMessage>, SendMessagePayload>({
-      query: ({ conversationId, ...body }) => ({
-        url: API_END_POINTS.messages.sendMessage(conversationId),
-        method: 'POST',
-        body,
-      }),
+      query: ({ conversationId, content, attachmentUrl, messageType }) => {
+        // If attachmentUrl is a file object, use FormData
+        if (attachmentUrl && typeof attachmentUrl === 'object' && 'uri' in attachmentUrl) {
+          const formData = new FormData();
+          if (content) formData.append('content', content);
+          formData.append('messageType', messageType || 'image');
+          formData.append('attachmentUrl', {
+            uri: attachmentUrl.uri,
+            type: attachmentUrl.type,
+            name: attachmentUrl.name,
+          } as any);
+          
+          return {
+            url: API_END_POINTS.messages.sendMessage(conversationId),
+            method: 'POST',
+            body: formData,
+          };
+        }
+        
+        // Otherwise use regular JSON payload
+        return {
+          url: API_END_POINTS.messages.sendMessage(conversationId),
+          method: 'POST',
+          body: {
+            content,
+            attachmentUrl,
+            messageType,
+          },
+        };
+      },
     }),
     markConversationAsRead: builder.mutation<ApiResponse<{ updatedCount: number }>, MarkConversationAsReadPayload>({
       query: ({ conversationId, messageIds }) => ({
@@ -101,11 +126,39 @@ export const messagingApi = baseApi.injectEndpoints({
       ApiResponse<{ conversation: Conversation; initialMessage?: ChatMessage | null }>,
       CreateConversationPayload
     >({
-      query: (body) => ({
-        url: API_END_POINTS.messages.conversations,
-        method: 'POST',
-        body,
-      }),
+      query: (payload) => {
+        // If attachmentUrl is a file object, use FormData
+        if (payload.attachmentUrl && typeof payload.attachmentUrl === 'object' && 'uri' in payload.attachmentUrl) {
+          const formData = new FormData();
+          if (payload.type) formData.append('type', payload.type);
+          if (payload.name) formData.append('name', payload.name);
+          if (payload.participantIds && payload.participantIds.length > 0) {
+            payload.participantIds.forEach((id) => {
+              formData.append('participantIds[]', String(id));
+            });
+          }
+          if (payload.initialMessage) formData.append('initialMessage', payload.initialMessage);
+          formData.append('messageType', payload.messageType || 'image');
+          formData.append('attachmentUrl', {
+            uri: payload.attachmentUrl.uri,
+            type: payload.attachmentUrl.type,
+            name: payload.attachmentUrl.name,
+          } as any);
+          
+          return {
+            url: API_END_POINTS.messages.conversations,
+            method: 'POST',
+            body: formData,
+          };
+        }
+        
+        // Otherwise use regular JSON payload
+        return {
+          url: API_END_POINTS.messages.conversations,
+          method: 'POST',
+          body: payload,
+        };
+      },
     }),
   }),
   overrideExisting: false,
