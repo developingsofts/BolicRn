@@ -260,8 +260,14 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({
         containerStyle={styles.header}
         showBackButton={true}
         onBackPress={handleBack}
-        title={STRINGS.CREATE_POST.title}
-        subtitle={groupId ? "Posting to group" : STRINGS.CREATE_POST.subtitle}
+        title={isEditing ? "Edit Post" : STRINGS.CREATE_POST.title}
+        subtitle={
+          isEditing
+            ? "Update your post"
+            : groupId
+              ? "Posting to group"
+              : STRINGS.CREATE_POST.subtitle
+        }
         titleStyle={styles.headerTitle}
         subtitleStyle={styles.subtitle}
       />
@@ -303,7 +309,7 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({
                 onChangeText={setPostText}
                 multiline
                 textAlignVertical="top"
-                editable={!isLoading}
+                editable={!isCreating}
               />
             </View>
 
@@ -312,7 +318,7 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({
               <TouchableOpacity
                 style={styles.actionButton}
                 onPress={handleSelectPhoto}
-                disabled={isLoading}
+                disabled={isCreating}
               >
                 <Image source={Media} style={styles.actionButtonImage} />
                 <Text style={[styles.actionButtonText, { marginLeft: 5 }]}>
@@ -323,7 +329,7 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({
               <TouchableOpacity
                 style={styles.actionButton}
                 onPress={handleSelectAchievement}
-                disabled={isLoading}
+                disabled={isCreating}
               >
                 <Image source={Achievement} style={styles.actionButtonImage} />
                 <Text style={[styles.actionButtonText, { marginLeft: 2 }]}>
@@ -468,12 +474,12 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({
             <TouchableOpacity
               style={[
                 styles.postButton,
-                isLoading && styles.postButtonDisabled,
+                isCreating && styles.postButtonDisabled,
               ]}
               onPress={handlePost}
-              disabled={isLoading}
+              disabled={isCreating}
             >
-              {isLoading ? (
+              {isCreating ? (
                 <ActivityIndicator size="small" color={COLORS.white} />
               ) : (
                 <Text style={styles.postButtonText}>

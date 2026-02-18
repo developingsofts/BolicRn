@@ -17,9 +17,11 @@ import {
   ActivityIndicator,
   NativeSyntheticEvent,
   NativeScrollEvent,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
+import * as ImagePicker from "expo-image-picker";
 import { COLORS, DIMENSIONS } from "../config/constants";
 import STRINGS from "../config/strings";
 import { useAuth } from "../contexts/AuthContext";
@@ -29,6 +31,7 @@ import { TextInput } from "react-native-gesture-handler";
 import { LinearGradient } from "expo-linear-gradient";
 import BasicTopBar from "../components/BasicTopBar";
 import { useChat } from "../hooks/useChat";
+import { Toast } from "../components/ToastManager";
 
 interface ChatScreenProps {
   navigation: any;
@@ -268,6 +271,16 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
         ? STRINGS.MESSAGES.attachmentPlaceholder
         : STRINGS.MESSAGES.noMessagesYet;
 
+      // Debug image messages
+      if (message.messageType === "image" || message.attachmentUrl) {
+        console.log("Image message:", {
+          id: message.id,
+          messageType: message.messageType,
+          attachmentUrl: message.attachmentUrl,
+          content: message.content,
+        });
+      }
+
       return {
         id: message.id.toString(),
         text,
@@ -360,6 +373,58 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
       typingTimeoutRef.current = null;
     }
   }, [messageInput, resolvedConversationId, sendMessage, emitTyping]);
+
+  const handleSelectImage = useCallback(async () => {
+    if (resolvedConversationId === undefined) {
+      Toast.error("Please wait for conversation to load");
+      return;
+    }
+
+    try {
+      const { status } =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (status !== "granted") {
+        Alert.alert(
+          "Permission Required",
+          "Please grant permission to access your photos to send images.",
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        const asset = result.assets[0];
+        isUserNearBottomRef.current = true;
+
+        // Ensure proper URI format for React Native Image component
+        const imageUri = asset.uri.startsWith("file://")
+          ? asset.uri
+          : `file://${asset.uri}`;
+
+        console.log("Image selected - Original URI:", asset.uri);
+        console.log("Image selected - Formatted URI:", imageUri);
+
+        // Send image with local URI as attachment
+        await sendMessage({
+          conversationId: resolvedConversationId,
+          attachmentUrl: imageUri,
+          messageType: "image",
+        });
+
+        Toast.success("Image sent successfully!");
+      }
+    } catch (error) {
+      console.error("Error picking image:", error);
+      Toast.error("Failed to send image");
+    }
+  }, [resolvedConversationId, sendMessage]);
 
   useEffect(
     () => () => {
@@ -571,18 +636,51 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
                           style={[
                             styles.messageContainer,
                             item.isMe ? styles.myMessage : styles.theirMessage,
+                            item.messageType === "image" && styles.imageMessageContainer,
                           ]}
                         >
-                          <Text
-                            style={[
-                              styles.messageText,
-                              item.isMe
-                                ? styles.myMessageText
-                                : styles.theirMessageText,
-                            ]}
-                          >
-                            {item.text}
-                          </Text>
+                          {item.messageType === "image" && item.attachmentUrl ? (
+                            <>
+                              {console.log("Rendering image:", {
+                                messageType: item.messageType,
+                                attachmentUrl: item.attachmentUrl,
+                                isConditionMet:
+                                  item.messageType === "image" &&
+                                  item.attachmentUrl,
+                              })}
+                              <Image
+                                source={{ uri: item.attachmentUrl }}
+                                style={styles.messageImage}
+                                onError={(error) =>
+                                  console.log("Image load error:", error)
+                                }
+                                onLoad={() =>
+                                  console.log(
+                                    "Image loaded successfully:",
+                                    item.attachmentUrl
+                                  )
+                                }
+                              />
+                            </>
+                          ) : (
+                            <>
+                              {console.log("Rendering text:", {
+                                messageType: item.messageType,
+                                attachmentUrl: item.attachmentUrl,
+                                text: item.text,
+                              })}
+                              <Text
+                                style={[
+                                  styles.messageText,
+                                  item.isMe
+                                    ? styles.myMessageText
+                                    : styles.theirMessageText,
+                                ]}
+                              >
+                                {item.text}
+                              </Text>
+                            </>
+                          )}
                         </View>
                       </TouchableOpacity>
                       {item.reactionCount > 0 && !item.isMe ? (
@@ -613,9 +711,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
                   onSubmitEditing={handleSend}
                 />
                 <TouchableOpacity
-                  onPress={() => {
-                    // handle image upload
-                  }}
+                  onPress={handleSelectImage}
                   style={styles.imageButton}
                 >
                   <Image source={ImageFile} style={styles.imageIcon} />
@@ -969,6 +1065,19 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     tintColor: COLORS.gradient1,
+  },
+  imageMessageContainer: {
+    maxWidth: 250,
+    minHeight: 200,
+    padding: 0,
+    borderRadius: 9,
+    overflow: "hidden",
+  },
+  messageImage: {
+    width: 220,
+    height: 220,
+    borderRadius: 9,
+    resizeMode: "contain",
   },
 });
 
