@@ -2,6 +2,8 @@ import { useStripe } from "@stripe/stripe-react-native";
 import { API_CONFIG } from "../config/constants";
 import * as Linking from "expo-linking";
 import Constants from "expo-constants";
+import { storageService } from "../services/storage";
+import { API_END_POINTS } from "../services/endPoints";
 
 // Types for the payment sheet parameters
 export interface PaymentSheetParams {
@@ -44,31 +46,46 @@ export const fetchPaymentSheetParams = async (
   paymentRequest: PaymentRequest,
 ): Promise<PaymentSheetParamsWithoutSavingPaymentOptions> => {
   try {
-    const response = await fetch(`${API_CONFIG.baseUrl}/payment-sheet`, {
+    const token = await storageService.getAuthToken();
+    
+    if (!token) {
+      throw new Error("No authentication token found");
+    }
+
+    const url = `${API_CONFIG.baseUrl}${API_END_POINTS.payments.paymentSheet}`;
+    console.log("Fetching payment sheet params from:", url);
+
+    const response = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
       },
       body: JSON.stringify({
         amount: paymentRequest.amount,
+        sessionId: paymentRequest.metadata?.sessionId || "",
+        trainerId:paymentRequest.metadata?.trainerId || "",
       }),
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const errorText = await response.text();
+      console.error("Payment sheet params error:", {
+        status: response.status,
+        errorText,
+        url,
+      });
+      throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
+    console.log("Payment sheet params received:", { 
+      hasPaymentIntent: !!data.paymentIntent,
+      hasCustomer: !!data.customer,
+      hasPublishableKey: !!data.publishableKey,
+    });
 
-
-    // return {
-    //   paymentIntent: data.paymentIntent,
-    //   ephemeralKey: data.ephemeralKey,
-    //   customer: data.customer,
-    //   publishableKey: data.publishableKey,
-    // };
-
-     return {
+    return {
       paymentIntent: data.paymentIntent,
       customer: data.customer,
       publishableKey: data.publishableKey,
@@ -94,11 +111,20 @@ export const useStripePayment = () => {
     paymentRequest: PaymentRequest,
   ): Promise<{ error?: string }> => {
     try {
+      console.log("Initializing payment sheet with request:", paymentRequest);
+      
       const { paymentIntent, customer } =
         await fetchPaymentSheetParams(paymentRequest);
 
       const urlScheme = getAppUrlScheme();
       const returnURL = `${urlScheme}://payment-return`;
+
+      console.log("Payment sheet params received, initializing with:", {
+        merchantDisplayName: "Bolic",
+        customerId: customer,
+        paymentIntentClientSecret: paymentIntent ? "***" : "MISSING",
+        returnURL,
+      });
 
       const { error } = await initPaymentSheet({
         merchantDisplayName: "Bolic",
@@ -121,10 +147,11 @@ export const useStripePayment = () => {
       });
 
       if (error) {
-        console.error("Error initializing payment sheet:", error);
+        console.error("Stripe payment sheet initialization error:", error);
         return { error: error.message };
       }
 
+      console.log("Payment sheet initialized successfully");
       return {};
     } catch (error) {
       console.error("Error in initializePaymentSheet:", error);

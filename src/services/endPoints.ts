@@ -83,6 +83,10 @@ export const API_END_POINTS = {
     join: (groupId: string) => `/groups/${groupId}/join`,
     leave: (groupId: string) => `/groups/${groupId}/leave`,
   },
+
+  payments: {
+    paymentSheet: "/payment/create-payment-intent",
+  },
   trainingTypes: {
     all: "/training-type/all",
   },

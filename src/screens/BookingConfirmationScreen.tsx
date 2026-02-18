@@ -7,6 +7,7 @@ import React, {
 } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Image,
   SafeAreaView,
   ScrollView,
@@ -39,8 +40,10 @@ import { r } from "../designing/responsiveDesigns";
 import FontWeight from "../hooks/useInterFonts";
 import { LeftArrow } from "../../assets";
 import { useCreateBookingMutation } from "../services/api/bookingApi";
+import { formatAmountToCents, useStripePayment } from "../utils/stripeUtils";
 
 type BookingConfirmationParams = {
+  sessionId?: string;
   priceId?: string;
   trainerId?: string;
   trainerName?: string;
@@ -60,6 +63,7 @@ const BookingConfirmationScreen: React.FC = () => {
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [createBooking] = useCreateBookingMutation();
+  const { initializePaymentSheet, openPaymentSheet } = useStripePayment();
 
   // Get data from route params or use defaults
   const {
@@ -133,14 +137,104 @@ const BookingConfirmationScreen: React.FC = () => {
     Toast.info("Going back to session selection");
   }, [navigation]);
 
-  const handleProceedToPayment = useCallback(() => {
+  const handleProceedToPayment = useCallback(async () => {
     if (isProcessing) {
       return;
     }
 
-    // Show payment options dialog instead of processing directly
-    setShowPaymentDialog(true);
-  }, [isProcessing]);
+    setIsProcessing(true);
+    Toast.info("Initializing payment...", 1500);
+
+    try {
+      // Initialize the Stripe payment sheet
+      const { error: initError } = await initializePaymentSheet({
+        amount: formatAmountToCents(sessionData.total),
+        metadata: {
+          trainerId: trainerId || "",
+          sessionId: priceId || "",
+        },
+      });
+
+      if (initError) {
+        Alert.alert("Error", initError);
+        setIsProcessing(false);
+        return;
+      }
+
+      // Present the payment sheet
+      const { error: paymentError, success } = await openPaymentSheet();
+
+      if (paymentError) {
+        Alert.alert("Payment Cancelled", paymentError);
+        setIsProcessing(false);
+        return;
+      }
+
+      if (success) {
+        // Payment successful - create the booking
+        try {
+          // Get local date and time
+          const localDateStr = selectedSlots[0]?.date || date;
+          const localTimeStr = selectedSlots[0]?.time || time;
+
+          // Convert local to UTC using utility function
+          const { utcDate, utcTime } = convertLocaDatemmddyyyylToUTC(
+            localDateStr,
+            localTimeStr,
+          );
+
+          if (!utcDate || !utcTime) {
+            throw new Error("Failed to convert date/time to UTC");
+          }
+
+          await createBooking({
+            trainer_id: trainerId || "",
+            price_id: priceId || "",
+            date: utcDate,
+            time: utcTime,
+            status: "upcomming",
+          }).unwrap();
+
+          Toast.success("Payment successful! Your session is booked.", 2500);
+          setIsProcessing(false);
+
+          // Navigate to success screen
+          navigation.navigate("BookingSuccess", {
+            trainerId,
+            trainerName,
+            dateTime: sessionData.dateTime,
+            location: sessionData.location,
+          });
+        } catch (error: any) {
+          console.error("[BookingConfirmation] Booking failed:", error);
+          Toast.error(
+            error?.data?.message ||
+              "Failed to create booking. Please try again.",
+            2500,
+          );
+          setIsProcessing(false);
+        }
+      }
+    } catch (error) {
+      console.error("[BookingConfirmation] Payment error:", error);
+      Alert.alert("Error", "Failed to process payment. Please try again.");
+      setIsProcessing(false);
+    }
+  }, [
+    isProcessing,
+    initializePaymentSheet,
+    openPaymentSheet,
+    sessionData.total,
+    packageTitle,
+    trainerName,
+    trainerId,
+    priceId,
+    selectedSlots,
+    date,
+    time,
+    createBooking,
+    navigation,
+  ]);
 
   const handleConfirmPayment = useCallback(
     (paymentMethod: string) => {
