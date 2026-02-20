@@ -78,6 +78,7 @@ const SelectDateTimeScreen: React.FC<SelectDateTimeScreenProps> = ({
         buttonText="Continue"
         trainerId={trainerId}
         sessionPrice={price.toString()}
+        sessionPriceDesc={`$${price}/hr`}
         sessionTitle={packageName}
         sessionDescription={description}
         onButtonPress={handleContinue}

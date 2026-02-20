@@ -9,7 +9,7 @@ import LoadingScreen from "./src/components/LoadingScreen";
 import { Platform, StatusBar } from "react-native";
 import { store } from "./src/store/store";
 import ToastWrapper from "./src/components/ToastWrapper";
-import { initializeStripe } from "./src/config/StripeConfig";
+import BolicStripeProvider from "./src/components/stripe-provider";
 
 const STRIPE_PUBLISHABLE_KEY = "pk_test_XXXXXX"; // Replace with your actual key
 
@@ -22,8 +22,6 @@ export default function App() {
       StatusBar.setBarStyle("light-content");
       StatusBar.setBackgroundColor("transparent");
     }
-
-    // initializeStripe(STRIPE_PUBLISHABLE_KEY); // Initialize analytics on app start
   }, []);
 
   if (!fontsLoaded) {
@@ -31,22 +29,17 @@ export default function App() {
   }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <ReduxProvider store={store}>
-        <PaperProvider>
-          <AuthProvider>
-            {/* <StripeProvider
-              publishableKey={STRIPE_PUBLISHABLE_KEY}
-              merchantIdentifier="merchant.com.yourapp"
-              urlScheme="yourapp"
-            >
-             
-            </StripeProvider> */}
-             <AppNavigator />
+    <BolicStripeProvider>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <ReduxProvider store={store}>
+          <PaperProvider>
+            <AuthProvider>
+              <AppNavigator />
               <ToastWrapper />
-          </AuthProvider>
-        </PaperProvider>
-      </ReduxProvider>
-    </GestureHandlerRootView>
+            </AuthProvider>
+          </PaperProvider>
+        </ReduxProvider>
+      </GestureHandlerRootView>
+    </BolicStripeProvider>
   );
 }

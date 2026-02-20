@@ -184,7 +184,6 @@ const AppNavigator: React.FC = () => {
   }
 console.log("API URL:", API_CONFIG.baseUrl,isAuthenticated);
   return (
-    <BolicStripeProvider>
     <NavigationContainer linking={linking}>
       {isAuthenticated ? (
         <Stack.Navigator
@@ -230,7 +229,6 @@ console.log("API URL:", API_CONFIG.baseUrl,isAuthenticated);
         </Stack.Navigator>
       )}
     </NavigationContainer>
-    </BolicStripeProvider>
   );
 };
 

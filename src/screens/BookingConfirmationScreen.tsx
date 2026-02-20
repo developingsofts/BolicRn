@@ -143,12 +143,11 @@ const BookingConfirmationScreen: React.FC = () => {
     }
 
     setIsProcessing(true);
-    Toast.info("Initializing payment...", 1500);
-
+    console.log("priceSending", sessionData.total);
     try {
-      // Initialize the Stripe payment sheet
+      // Initialize the Stripe payment sheet (send amount in dollars, backend converts to cents)
       const { error: initError } = await initializePaymentSheet({
-        amount: formatAmountToCents(sessionData.total),
+        amount: sessionData.total,
         metadata: {
           trainerId: trainerId || "",
           sessionId: priceId || "",
@@ -165,7 +164,7 @@ const BookingConfirmationScreen: React.FC = () => {
       const { error: paymentError, success } = await openPaymentSheet();
 
       if (paymentError) {
-        Alert.alert("Payment Cancelled", paymentError);
+        Alert.alert("Payment Cancelled");
         setIsProcessing(false);
         return;
       }

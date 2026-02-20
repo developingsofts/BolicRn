@@ -26,6 +26,9 @@
         "CFBundleAllowMixedLocalizations": true,
         "CFBundleLocalizations": ["fr"]
       },
+      "entitlements": {
+        "com.apple.developer.in-app-payments": ["merchant.com.bolicbuddy.app"]
+      },
       "associatedDomains": ["applinks:api.bolicbuddy.com"]
     },
     "android": {
@@ -75,14 +78,6 @@
               "NSAllowsArbitraryLoads": true
             }
           }
-        }
-      ],
-      [
-        "@stripe/stripe-react-native",
-        {
-          "merchantIdentifier": "merchant.com.bolicbuddy.app",
-          "publisherKey": "pk_test_51SsUbeLP5ap60ajZIVao6us4umfDAipoTkvCx8fgJQNC1C6UKxNjM91NZfncS4fZ89mliMmiO3NUA7g5s757EavB00t4qxnxpW",
-          "enableGooglePay": true
         }
       ],
       "expo-location",
