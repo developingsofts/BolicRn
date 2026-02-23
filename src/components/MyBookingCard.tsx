@@ -48,7 +48,7 @@ const MyBookingCard = ({
     if (navigation && typeof navigation.navigate === "function") {
       console.log(
         "Navigating to RescheduleSessionScreen with bookingId:",
-        clientName
+        clientName,
       );
       if (booking) {
         navigation.navigate("RescheduleSession", {

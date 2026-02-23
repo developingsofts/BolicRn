@@ -391,6 +391,75 @@ export const STRINGS = {
     member: "Member",
   },
 
+  // Booking Confirmation Screen
+  BOOKING_CONFIRMATION: {
+    title: "Confirm Your Session",
+    subtitle: "Go through before you finalize",
+    infoCards: {
+      trainer: "Trainer",
+      dateTime: "Date & Time",
+      location: "Location",
+    },
+    cancellationPolicy: {
+      title: "Cancellation Policy",
+      description:
+        "In the event of session cancellation, a processing fee of 3% will be deducted from the refund amount. The remaining balance will be returned to your original payment method within 5-7 business days.",
+      processingFee: "3%",
+      refundTimeline: "5-7 business days",
+      details: [
+        "Applies to cancellations by both clients and trainers",
+        "No refund within 2 hours of session start time",
+      ],
+    },
+    buttons: {
+      proceedToPayment: "Proceed to Payment",
+      processing: "Processing...",
+    },
+    messages: {
+      goingBack: "Going back to session selection",
+      paymentSuccess: "Payment successful! Your session is booked.",
+      bookingFailed: "Failed to create booking. Please try again.",
+      paymentError: "Failed to process payment. Please try again.",
+      paymentCancelled: "Payment Cancelled",
+    },
+    errors: {
+      bookingFailed: "Failed to create booking. Please try again.",
+      paymentError: "Failed to process payment. Please try again.",
+      dateConversionError: "Failed to convert date/time to UTC",
+    },
+  },
+
+  // Scheduled Sessions Screen
+  SCHEDULED_SESSIONS: {
+    title: "Scheduled Sessions",
+    subtitle: "Your upcoming sessions with trainers",
+    bookNewSession: "Book New Session",
+    noUpcomingSessions: "No upcoming sessions",
+    reschedule: "Reschedule",
+    cancel: "Cancel",
+    with: "with",
+    messages: {
+      sessionCancelled: "Session cancelled successfully",
+      cancellationFailed: "Failed to cancel session",
+    },
+    cancellationModal: {
+      title: "Cancel Session",
+      subtitle:
+        "Are you sure you want to cancel this session?",
+      refundTerms: "Refund Breakdown",
+      refundLabels: {
+        sessionAmount: "Session Amount:",
+        processingFee: "Processing Fee (3%):",
+        refundableAmount: "Refundable Amount:",
+      },
+      details: [
+        "You will receive the refund within 5-7 business days",
+        "A 3% processing fee will be deducted from your refund",
+      ],
+      confirmButton: "Confirm Cancellation",
+    },
+  },
+
   // Common
   COMMON: {
     save: "Save",

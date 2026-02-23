@@ -36,6 +36,7 @@ import {
   DIMENSIONS,
   convertLocaDatemmddyyyylToUTC,
 } from "../config/constants";
+import { STRINGS } from "../config/strings";
 import { r } from "../designing/responsiveDesigns";
 import FontWeight from "../hooks/useInterFonts";
 import { LeftArrow } from "../../assets";
@@ -47,7 +48,7 @@ type BookingConfirmationParams = {
   priceId?: string;
   trainerId?: string;
   trainerName?: string;
-  packageTitle?: string;
+  packageName?: string;
   price?: number;
   date?: string;
   time?: string;
@@ -70,7 +71,7 @@ const BookingConfirmationScreen: React.FC = () => {
     priceId = "",
     trainerId,
     trainerName = "Alex",
-    packageTitle = "Single Session",
+    packageName = "Single Session",
     price = 75,
     date = "Sunday, Oct 14, 2025",
     time = "9:00 AM",
@@ -114,27 +115,27 @@ const BookingConfirmationScreen: React.FC = () => {
       };
     }
   }, [selectedSlots, date, time]);
-
+  console.log("Constructing sessionData with:", packageName);
   const sessionData = useMemo(
     () => ({
       trainer: trainerName,
       dateTime: formatDateTimeDisplay.dateTime,
       location: trainerAddress,
       priceItems: [
-        { label: packageTitle, amount: price },
+        { label: packageName, amount: price },
         // { label: "First-Time Discount", amount: 15, isDiscount: true },
       ] as PriceItem[],
       // total: price - 15,
       total: price,
     }),
-    [trainerName, packageTitle, price, trainerAddress, formatDateTimeDisplay],
+    [trainerName, packageName, price, trainerAddress, formatDateTimeDisplay],
   );
 
   const handleBack = useCallback(() => {
     if (navigation.canGoBack()) {
       navigation.goBack();
     }
-    Toast.info("Going back to session selection");
+    Toast.info(STRINGS.BOOKING_CONFIRMATION.messages.goingBack);
   }, [navigation]);
 
   const handleProceedToPayment = useCallback(async () => {
@@ -155,7 +156,7 @@ const BookingConfirmationScreen: React.FC = () => {
       });
 
       if (initError) {
-        Alert.alert("Error", initError);
+        Alert.alert(STRINGS.COMMON.error, initError);
         setIsProcessing(false);
         return;
       }
@@ -164,7 +165,7 @@ const BookingConfirmationScreen: React.FC = () => {
       const { error: paymentError, success } = await openPaymentSheet();
 
       if (paymentError) {
-        Alert.alert("Payment Cancelled");
+        Alert.alert(STRINGS.BOOKING_CONFIRMATION.messages.paymentCancelled);
         setIsProcessing(false);
         return;
       }
@@ -183,7 +184,9 @@ const BookingConfirmationScreen: React.FC = () => {
           );
 
           if (!utcDate || !utcTime) {
-            throw new Error("Failed to convert date/time to UTC");
+            throw new Error(
+              STRINGS.BOOKING_CONFIRMATION.errors.dateConversionError,
+            );
           }
 
           await createBooking({
@@ -194,7 +197,10 @@ const BookingConfirmationScreen: React.FC = () => {
             status: "upcomming",
           }).unwrap();
 
-          Toast.success("Payment successful! Your session is booked.", 2500);
+          Toast.success(
+            STRINGS.BOOKING_CONFIRMATION.messages.paymentSuccess,
+            2500,
+          );
           setIsProcessing(false);
 
           // Navigate to success screen
@@ -208,7 +214,7 @@ const BookingConfirmationScreen: React.FC = () => {
           console.error("[BookingConfirmation] Booking failed:", error);
           Toast.error(
             error?.data?.message ||
-              "Failed to create booking. Please try again.",
+              STRINGS.BOOKING_CONFIRMATION.messages.bookingFailed,
             2500,
           );
           setIsProcessing(false);
@@ -216,7 +222,10 @@ const BookingConfirmationScreen: React.FC = () => {
       }
     } catch (error) {
       console.error("[BookingConfirmation] Payment error:", error);
-      Alert.alert("Error", "Failed to process payment. Please try again.");
+      Alert.alert(
+        STRINGS.COMMON.error,
+        STRINGS.BOOKING_CONFIRMATION.messages.paymentError,
+      );
       setIsProcessing(false);
     }
   }, [
@@ -224,7 +233,7 @@ const BookingConfirmationScreen: React.FC = () => {
     initializePaymentSheet,
     openPaymentSheet,
     sessionData.total,
-    packageTitle,
+    packageName,
     trainerName,
     trainerId,
     priceId,
@@ -257,7 +266,9 @@ const BookingConfirmationScreen: React.FC = () => {
           );
 
           if (!utcDate || !utcTime) {
-            throw new Error("Failed to convert date/time to UTC");
+            throw new Error(
+              STRINGS.BOOKING_CONFIRMATION.errors.dateConversionError,
+            );
           }
 
           console.log("[BookingConfirmation] Creating booking with:");
@@ -274,7 +285,10 @@ const BookingConfirmationScreen: React.FC = () => {
             status: "upcomming",
           }).unwrap();
 
-          Toast.success("Payment successful! Your session is booked.", 2500);
+          Toast.success(
+            STRINGS.BOOKING_CONFIRMATION.messages.paymentSuccess,
+            2500,
+          );
           setIsProcessing(false);
 
           // Navigate to success screen
@@ -288,7 +302,7 @@ const BookingConfirmationScreen: React.FC = () => {
           console.error("[BookingConfirmation] Booking failed:", error);
           Toast.error(
             error?.data?.message ||
-              "Failed to create booking. Please try again.",
+              STRINGS.BOOKING_CONFIRMATION.messages.bookingFailed,
             2500,
           );
           setIsProcessing(false);
@@ -329,8 +343,8 @@ const BookingConfirmationScreen: React.FC = () => {
             resizeMode="contain"
           />
         }
-        title="Confirm Your Session"
-        subtitle="Go through before you finalize"
+        title={STRINGS.BOOKING_CONFIRMATION.title}
+        subtitle={STRINGS.BOOKING_CONFIRMATION.subtitle}
         titleStyle={styles.topBarTitle}
         subtitleStyle={styles.topBarSubtitle}
       />
@@ -342,13 +356,13 @@ const BookingConfirmationScreen: React.FC = () => {
       >
         <View style={styles.cardsContainer}>
           <InfoCard
-            label="Trainer"
+            label={STRINGS.BOOKING_CONFIRMATION.infoCards.trainer}
             value={sessionData.trainer}
             icon={<Feather name="user" size={r(18)} color={COLORS.primary} />}
           />
 
           <InfoCard
-            label="Date & Time"
+            label={STRINGS.BOOKING_CONFIRMATION.infoCards.dateTime}
             value={sessionData.dateTime}
             icon={
               <Feather name="calendar" size={r(18)} color={COLORS.primary} />
@@ -356,7 +370,7 @@ const BookingConfirmationScreen: React.FC = () => {
           />
 
           <InfoCard
-            label="Location"
+            label={STRINGS.BOOKING_CONFIRMATION.infoCards.location}
             value={sessionData.location}
             icon={
               <Feather name="map-pin" size={r(18)} color={COLORS.primary} />
@@ -367,6 +381,46 @@ const BookingConfirmationScreen: React.FC = () => {
             items={sessionData.priceItems}
             total={sessionData.total}
           />
+
+          {/* Cancellation Policy Section */}
+          <View style={styles.policyContainer}>
+            <View style={styles.policyIconContainer}>
+              <Feather
+                name="alert-circle"
+                size={r(20)}
+                color={COLORS.primary}
+              />
+            </View>
+            <View style={styles.policyContentContainer}>
+              <Text style={styles.policyTitle}>
+                {STRINGS.BOOKING_CONFIRMATION.cancellationPolicy.title}
+              </Text>
+              <Text style={styles.policyDescription}>
+                In the event of session cancellation, a processing fee of{" "}
+                <Text style={styles.policyHighlight}>
+                  {
+                    STRINGS.BOOKING_CONFIRMATION.cancellationPolicy
+                      .processingFee
+                  }
+                </Text>{" "}
+                will be deducted from the refund amount. The remaining balance
+                will be returned to your original payment method within{" "}
+                <Text style={styles.policyHighlight}>
+                  {
+                    STRINGS.BOOKING_CONFIRMATION.cancellationPolicy
+                      .refundTimeline
+                  }
+                </Text>
+                .
+              </Text>
+              <View style={styles.policyDetailRow}>
+                <View style={styles.policyDetailDot} />
+                <Text style={styles.policyDetail}>
+                  {STRINGS.BOOKING_CONFIRMATION.cancellationPolicy.details[0]}
+                </Text>
+              </View>
+            </View>
+          </View>
         </View>
 
         <View style={styles.buttonContainer}>
@@ -380,11 +434,15 @@ const BookingConfirmationScreen: React.FC = () => {
               {isProcessing ? (
                 <>
                   <ActivityIndicator color={COLORS.white} size="small" />
-                  <Text style={styles.buttonText}>Processing...</Text>
+                  <Text style={styles.buttonText}>
+                    {STRINGS.BOOKING_CONFIRMATION.buttons.processing}
+                  </Text>
                 </>
               ) : (
                 <>
-                  <Text style={styles.buttonText}>Proceed to Payment</Text>
+                  <Text style={styles.buttonText}>
+                    {STRINGS.BOOKING_CONFIRMATION.buttons.proceedToPayment}
+                  </Text>
                   <Feather
                     name="arrow-right"
                     size={r(18)}
@@ -444,6 +502,69 @@ const styles = StyleSheet.create({
   },
   cardsContainer: {
     gap: r(16, "height"),
+  },
+  policyContainer: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    padding: r(16),
+    gap: r(14),
+    borderRadius: r(16),
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    shadowColor: COLORS.black,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  policyIconContainer: {
+    width: r(40),
+    height: r(40),
+    borderRadius: r(20),
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: `${COLORS.primary}15`,
+    marginTop: r(2),
+  },
+  policyContentContainer: {
+    flex: 1,
+    gap: r(10, "height"),
+  },
+  policyTitle: {
+    fontFamily: FontWeight.SemiBold,
+    fontSize: r(15, "font"),
+    color: COLORS.text,
+  },
+  policyDescription: {
+    fontFamily: FontWeight.Regular,
+    fontSize: r(13, "font"),
+    color: COLORS.textSecondary,
+    lineHeight: r(20),
+  },
+  policyHighlight: {
+    fontFamily: FontWeight.SemiBold,
+    color: COLORS.primary,
+  },
+  policyDetailRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: r(8),
+    marginTop: r(2, "height"),
+  },
+  policyDetailDot: {
+    width: r(4),
+    height: r(4),
+    borderRadius: r(2),
+    backgroundColor: COLORS.primary,
+    marginTop: r(6),
+  },
+  policyDetail: {
+    flex: 1,
+    fontFamily: FontWeight.Regular,
+    fontSize: r(12, "font"),
+    color: COLORS.textSecondary,
+    lineHeight: r(18),
   },
   buttonContainer: {
     marginTop: r(12, "height"),

@@ -10,11 +10,13 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import BasicTopBar from "../components/BasicTopBar";
+import CancellationConfirmationModal from "../components/CancellationConfirmationModal";
 import {
   COLORS,
   DIMENSIONS,
   formatUTCToDisplayDateTime,
 } from "../config/constants";
+import { STRINGS } from "../config/strings";
 import FontWeight from "../hooks/useInterFonts";
 import {
   BookingData,
@@ -24,33 +26,15 @@ import {
 import { useAuth } from "../contexts/AuthContext";
 import { Toast } from "../components/ToastManager";
 
-const sessions = [
-  {
-    id: "1",
-    icon: "📅",
-    title: "Session with Alex",
-    description: "Sunday, Oct 14, 2025 at 9:00 AM\nDowntown Fitness Club",
-    progress: 1,
-    maxProgress: 1,
-    status: "upcoming",
-    trainerName: "Alex",
-  },
-  {
-    id: "2",
-    icon: "📅",
-    title: "Session with Jordan",
-    description: "Monday, Oct 15, 2025 at 10:30 AM\nCity Gym",
-    progress: 0,
-    maxProgress: 1,
-    status: "upcoming",
-    trainerName: "Jordan",
-  },
-];
-
 const ScheduledSessions: React.FC = ({ navigation }: any) => {
   const { user } = useAuth();
   const [deleteBooking] = useDeleteBookingMutation();
   const [refreshing, setRefreshing] = useState(false);
+  const [cancellationModalVisible, setCancellationModalVisible] =
+    useState(false);
+  const [selectedBookingForCancellation, setSelectedBookingForCancellation] =
+    useState<BookingData | null>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   // Fetch user's upcoming bookings
   const {
@@ -94,13 +78,34 @@ const ScheduledSessions: React.FC = ({ navigation }: any) => {
     }
   };
 
-  const handleCancel = async (id: number) => {
-    try {
-      await deleteBooking({ id, status: "canceled" }).unwrap();
-      Toast.success("Session canceled successfully");
-    } catch (error) {
-      Toast.error("Failed to cancel session");
+  const handleCancel = (booking: BookingData) => {
+    if (booking.status === "upcomming") {
+      setSelectedBookingForCancellation(booking);
+      setCancellationModalVisible(true);
     }
+  };
+
+  const handleConfirmCancellation = async () => {
+    if (!selectedBookingForCancellation) return;
+    
+    setIsCancelling(true);
+    try {
+      await deleteBooking({
+        id: selectedBookingForCancellation.id,
+        status: "canceled",
+      }).unwrap();
+      Toast.success(STRINGS.SCHEDULED_SESSIONS.messages.sessionCancelled);
+      closeCancellationModal();
+    } catch (error) {
+      Toast.error(STRINGS.SCHEDULED_SESSIONS.messages.cancellationFailed);
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
+  const closeCancellationModal = () => {
+    setCancellationModalVisible(false);
+    setSelectedBookingForCancellation(null);
   };
 
   const handleRefresh = async () => {
@@ -118,8 +123,8 @@ const ScheduledSessions: React.FC = ({ navigation }: any) => {
     <SafeAreaView edges={[]} style={styles.container}>
       <BasicTopBar
         onBackPress={() => navigation.goBack()}
-        title="Scheduled Sessions"
-        subtitle="Your upcoming sessions with trainers"
+        title={STRINGS.SCHEDULED_SESSIONS.title}
+        subtitle={STRINGS.SCHEDULED_SESSIONS.subtitle}
         containerStyle={{
           paddingTop: DIMENSIONS.spacing.xxl,
           paddingBottom: DIMENSIONS.spacing.lg,
@@ -138,7 +143,9 @@ const ScheduledSessions: React.FC = ({ navigation }: any) => {
         }
       >
         <TouchableOpacity style={styles.bookButton} onPress={handleBookNew}>
-          <Text style={styles.bookButtonText}>Book New Session</Text>
+          <Text style={styles.bookButtonText}>
+            {STRINGS.SCHEDULED_SESSIONS.bookNewSession}
+          </Text>
         </TouchableOpacity>
 
         {isLoading && (
@@ -149,7 +156,9 @@ const ScheduledSessions: React.FC = ({ navigation }: any) => {
 
         {!isLoading && bookings.length === 0 && (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyStateText}>No upcoming sessions</Text>
+            <Text style={styles.emptyStateText}>
+              {STRINGS.SCHEDULED_SESSIONS.noUpcomingSessions}
+            </Text>
           </View>
         )}
 
@@ -173,7 +182,9 @@ const ScheduledSessions: React.FC = ({ navigation }: any) => {
                       <Text style={styles.sessionTime}>{displayTime}</Text>
                     </View>
                     <View style={{ alignItems: "flex-end" }}>
-                      <Text style={styles.sessionWith}>with</Text>
+                      <Text style={styles.sessionWith}>
+                        {STRINGS.SCHEDULED_SESSIONS.with}
+                      </Text>
                       <Text style={styles.sessionInstructor}>
                         {booking.trainer?.name || "Trainer"}
                       </Text>
@@ -193,7 +204,9 @@ const ScheduledSessions: React.FC = ({ navigation }: any) => {
                       style={styles.actionButton}
                       onPress={() => handleReschedule(currentBooking)}
                     >
-                      <Text style={styles.actionButtonText}>Reschedule</Text>
+                      <Text style={styles.actionButtonText}>
+                        {STRINGS.SCHEDULED_SESSIONS.reschedule}
+                      </Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={[
@@ -201,7 +214,7 @@ const ScheduledSessions: React.FC = ({ navigation }: any) => {
                         { borderWidth: 0 },
                         styles.cancelButton,
                       ]}
-                      onPress={() => handleCancel(booking.id)}
+                      onPress={() => handleCancel(booking)}
                     >
                       <Text
                         style={[
@@ -209,7 +222,7 @@ const ScheduledSessions: React.FC = ({ navigation }: any) => {
                           styles.cancelButtonText,
                         ]}
                       >
-                        Cancel
+                        {STRINGS.SCHEDULED_SESSIONS.cancel}
                       </Text>
                     </TouchableOpacity>
                   </View>
@@ -219,7 +232,17 @@ const ScheduledSessions: React.FC = ({ navigation }: any) => {
           </View>
         )}
       </ScrollView>
-    </SafeAreaView>
+
+      {/* Cancellation Confirmation Modal */}
+      <CancellationConfirmationModal
+        visible={cancellationModalVisible}
+        booking={selectedBookingForCancellation}
+        isLoading={isCancelling}
+        onClose={closeCancellationModal}
+        onConfirm={handleConfirmCancellation}
+      />
+
+      </SafeAreaView>
   );
 };
 
