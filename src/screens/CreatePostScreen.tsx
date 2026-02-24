@@ -285,7 +285,7 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({
           <Pressable
             style={styles.shareWorkoutCard}
             onPress={() => {
-              navigation.navigate("ShareWorkout");
+              navigation.replace("ShareWorkout");
             }}
           >
             <Text style={styles.shareWorkoutText}>

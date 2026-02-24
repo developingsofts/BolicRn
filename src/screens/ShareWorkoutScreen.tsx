@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   View,
   Text,
@@ -14,6 +14,7 @@ import {
   FlatList,
   KeyboardAvoidingView,
   Platform,
+  RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { COLORS, DIMENSIONS } from "../config/constants";
@@ -55,6 +56,8 @@ const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
   // Pagination state
   const [page, setPage] = useState(1);
   const [allWorkouts, setAllWorkouts] = useState<UserWorkout[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+  const isInitialMount = useRef(true);
 
   // Fetch user workouts with pagination
   const {
@@ -70,18 +73,22 @@ const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
   const [createPost, { isLoading: isCreating }] = useCreatePostMutation();
 
   // Use API data - accumulate workouts from all pages
-  const currentPageWorkouts =
-    workoutsData?.status && workoutsData?.data?.workouts
-      ? workoutsData.data.workouts
-      : [];
+  const currentPageWorkouts = useMemo(
+    () =>
+      workoutsData?.status && workoutsData?.data?.workouts
+        ? workoutsData.data.workouts
+        : [],
+    [workoutsData],
+  );
 
   // Effect to accumulate workouts when new page data arrives
   useEffect(() => {
-    if (page === 1) {
-      // Reset list on initial load
+    if (isInitialMount.current && page === 1) {
+      // Initial load - replace the list
       setAllWorkouts(currentPageWorkouts);
+      isInitialMount.current = false;
     } else {
-      // Append new workouts for subsequent pages
+      // Pagination or refresh - append workouts
       setAllWorkouts((prevWorkouts) => {
         // Avoid duplicates by checking if workouts already exist
         const existingIds = new Set(prevWorkouts.map((w) => w.id));
@@ -106,6 +113,14 @@ const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
     if (!isFetching && pagination?.hasMore) {
       setPage((prevPage) => prevPage + 1);
     }
+  };
+
+  // Handle refresh
+  const handleRefresh = () => {
+    setRefreshing(true);
+    setPage(1);
+    // Workouts will be concatenated with existing ones via the useEffect
+    setTimeout(() => setRefreshing(false), 300);
   };
 
   // Render footer with loading indicator
@@ -239,7 +254,16 @@ const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
           behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={styles.mainScrollView}
         >
-          <ScrollView showsVerticalScrollIndicator={false}>
+          <ScrollView 
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+                tintColor={COLORS.primary}
+              />
+            }
+          >
             {/* Loading State */}
             {workoutsLoading && page === 1 && (
               <View style={{ padding: 20, alignItems: "center" }}>
