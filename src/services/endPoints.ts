@@ -102,6 +102,7 @@ export const API_END_POINTS = {
     delete: "/booking/delete",
     userBookings: "/booking/user",
     trainerBookings: "/booking/trainer",
+    initiateRefund: "/payment/refund-payment"
   },
   posts: {
     list: (page: number = 1, limit: number = 20) =>

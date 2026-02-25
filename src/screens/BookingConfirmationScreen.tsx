@@ -147,11 +147,27 @@ const BookingConfirmationScreen: React.FC = () => {
     console.log("priceSending", sessionData.total);
     try {
       // Initialize the Stripe payment sheet (send amount in dollars, backend converts to cents)
+      const localDateStr = selectedSlots[0]?.date || date;
+      const localTimeStr = selectedSlots[0]?.time || time;
+
+      // Convert local to UTC using utility function
+      const { utcDate, utcTime } = convertLocaDatemmddyyyylToUTC(
+        localDateStr,
+        localTimeStr,
+      );
+
+      if (!utcDate || !utcTime) {
+        throw new Error(
+          STRINGS.BOOKING_CONFIRMATION.errors.dateConversionError,
+        );
+      }
       const { error: initError } = await initializePaymentSheet({
         amount: sessionData.total,
         metadata: {
           trainerId: trainerId || "",
           sessionId: priceId || "",
+          date: utcDate,
+          time: utcTime,
         },
       });
 
@@ -161,7 +177,6 @@ const BookingConfirmationScreen: React.FC = () => {
         return;
       }
 
-      // Present the payment sheet
       const { error: paymentError, success } = await openPaymentSheet();
 
       if (paymentError) {
@@ -171,54 +186,18 @@ const BookingConfirmationScreen: React.FC = () => {
       }
 
       if (success) {
-        // Payment successful - create the booking
-        try {
-          // Get local date and time
-          const localDateStr = selectedSlots[0]?.date || date;
-          const localTimeStr = selectedSlots[0]?.time || time;
+        Toast.success(
+          STRINGS.BOOKING_CONFIRMATION.messages.paymentSuccess,
+          2500,
+        );
+        setIsProcessing(false);
 
-          // Convert local to UTC using utility function
-          const { utcDate, utcTime } = convertLocaDatemmddyyyylToUTC(
-            localDateStr,
-            localTimeStr,
-          );
-
-          if (!utcDate || !utcTime) {
-            throw new Error(
-              STRINGS.BOOKING_CONFIRMATION.errors.dateConversionError,
-            );
-          }
-
-          await createBooking({
-            trainer_id: trainerId || "",
-            price_id: priceId || "",
-            date: utcDate,
-            time: utcTime,
-            status: "upcomming",
-          }).unwrap();
-
-          Toast.success(
-            STRINGS.BOOKING_CONFIRMATION.messages.paymentSuccess,
-            2500,
-          );
-          setIsProcessing(false);
-
-          // Navigate to success screen
-          navigation.navigate("BookingSuccess", {
-            trainerId,
-            trainerName,
-            dateTime: sessionData.dateTime,
-            location: sessionData.location,
-          });
-        } catch (error: any) {
-          console.error("[BookingConfirmation] Booking failed:", error);
-          Toast.error(
-            error?.data?.message ||
-              STRINGS.BOOKING_CONFIRMATION.messages.bookingFailed,
-            2500,
-          );
-          setIsProcessing(false);
-        }
+        navigation.navigate("BookingSuccess", {
+          trainerId,
+          trainerName,
+          dateTime: sessionData.dateTime,
+          location: sessionData.location,
+        });
       }
     } catch (error) {
       console.error("[BookingConfirmation] Payment error:", error);
@@ -302,7 +281,7 @@ const BookingConfirmationScreen: React.FC = () => {
           console.error("[BookingConfirmation] Booking failed:", error);
           Toast.error(
             error?.data?.message ||
-              STRINGS.BOOKING_CONFIRMATION.messages.bookingFailed,
+            STRINGS.BOOKING_CONFIRMATION.messages.bookingFailed,
             2500,
           );
           setIsProcessing(false);

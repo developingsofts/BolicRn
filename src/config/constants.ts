@@ -311,9 +311,9 @@ export const convertLocaDatemmddyyyylToUTC = (
 
     console.log(
       "[convertLocalToUTC] Local time in 24-hour format: " +
-        hours +
-        ":" +
-        String(minutes).padStart(2, "0")
+      hours +
+      ":" +
+      String(minutes).padStart(2, "0")
     );
 
     // Get timezone offset in minutes
@@ -716,6 +716,8 @@ export const TRAINING_TYPES = [
   "Running",
   "Cycling",
   "Swimming",
+  "Strength",
+  "Cardio"
 ];
 
 // Gender Options

@@ -7,6 +7,7 @@ import {
   Switch,
   Image,
   ActivityIndicator,
+  ScrollView,
 } from "react-native";
 import RefreshableScrollView from "../components/RefreshableScrollView";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -26,14 +27,40 @@ import ConfirmationDialog from "../components/ConfirmationDialog";
 
 type PreferenceOption = {
   label: string;
-  value: "Strength" | "Cardio" | "CrossFit";
+  value: "Strength" | "Cardio" | "CrossFit"|"Powerlifting"|"BodyBuilding"|"Lifestyle"|"Hybrid"|"Olympic Lifting"|"Functional Fitness"|"Yoga"|"Pilates"|"Running"|"Cycling"|"Swimming";
 };
 
 const PREFERENCE_OPTIONS: PreferenceOption[] = [
   { label: "Strength", value: "Strength" },
   { label: "Cardio", value: "Cardio" },
   { label: "CrossFit", value: "CrossFit" },
+  { label: "Powerlifting", value: "Powerlifting" },
+  { label: "Bodybuilding", value: "BodyBuilding" },
+  { label: "Lifestyle", value: "Lifestyle" },
+  { label: "Hybrid", value: "Hybrid" },
+  { label: "Olympic Lifting", value: "Olympic Lifting" },
+  { label: "Functional Fitness", value: "Functional Fitness" },
+  { label: "Yoga", value: "Yoga" },
+  { label: "Pilates", value: "Pilates" },
+  { label: "Running", value: "Running" },
+  { label: "Cycling", value: "Cycling" },
+  { label: "Swimming", value: "Swimming" },
 ];
+
+// Helper function to safely parse matchingPreference
+const parseMatchingPreference = (pref: any): PreferenceOption["value"][] => {
+  if (!pref) return [];
+  if (Array.isArray(pref)) return pref;
+  if (typeof pref === 'string') {
+    try {
+      const parsed = JSON.parse(pref);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+};
 
 interface SettingsScreenProps {
   navigation: any;
@@ -68,9 +95,10 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
   const [preferencesEnabled, setPreferencesEnabled] = useState<boolean>(
     user?.matchingEnabled ?? true
   );
-  const [selectedPreference, setSelectedPreference] = useState<
-    PreferenceOption["value"] | null
-  >((user?.matchingPreference as PreferenceOption["value"]) ?? null);
+  
+  const [selectedPreferences, setSelectedPreferences] = useState<
+    PreferenceOption["value"][]
+  >(parseMatchingPreference(user?.matchingPreference));
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showDeactivateDialog, setShowDeactivateDialog] = useState(false);
 
@@ -82,24 +110,22 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
     setNotificationsEnabled(user.notificationEnabled ?? true);
     setProfileVisibilityEnabled(user.profileVisibility ?? true);
     setPreferencesEnabled(user.matchingEnabled ?? true);
-    setSelectedPreference(
-      (user.matchingPreference as PreferenceOption["value"]) ?? null
-    );
+    console.log("User preference from API:", user);
+    setSelectedPreferences(parseMatchingPreference(user.matchingPreference));
   }, [user]);
 
   const syncLocalState = useCallback((nextUser: User) => {
     setNotificationsEnabled(nextUser.notificationEnabled ?? true);
     setProfileVisibilityEnabled(nextUser.profileVisibility ?? true);
     setPreferencesEnabled(nextUser.matchingEnabled ?? true);
-    setSelectedPreference(
-      (nextUser.matchingPreference as PreferenceOption["value"]) ?? null
-    );
+    setSelectedPreferences(parseMatchingPreference(nextUser.matchingPreference));
   }, []);
 
   const persistSettings = useCallback(
     async (payload: Partial<User>, rollback: () => void) => {
       try {
         setIsSubmitting(true);
+        console.log("📤 Sending payload to API:", JSON.stringify(payload, null, 2));
         const response = await updateProfile(payload).unwrap();
 
         if (!response.status || !response.data) {
@@ -185,34 +211,44 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
 
   const handleMatchingToggle = async (value: boolean) => {
     const previousEnabled = preferencesEnabled;
-    const previousPreference = selectedPreference;
+    const previousPreferences = selectedPreferences;
     setPreferencesEnabled(value);
     if (!value) {
-      setSelectedPreference(null);
+      setSelectedPreferences([]);
     }
 
     await persistSettings(
       {
         matchingEnabled: value,
-        matchingPreference: value ? selectedPreference : null,
+        matchingPreference: value ? selectedPreferences : [],
       },
       () => {
         setPreferencesEnabled(previousEnabled);
-        setSelectedPreference(previousPreference ?? null);
+        setSelectedPreferences(previousPreferences);
       }
     );
   };
 
   const handlePreferenceSelect = async (option: PreferenceOption) => {
-    if (!preferencesEnabled || selectedPreference === option.value) {
+    if (!preferencesEnabled) {
       return;
     }
 
-    const previousPreference = selectedPreference;
-    setSelectedPreference(option.value);
+    const previousPreferences = selectedPreferences;
+    let newPreferences: PreferenceOption["value"][];
+    
+    if (selectedPreferences.includes(option.value)) {
+      // Remove the preference if already selected
+      newPreferences = selectedPreferences.filter(p => p !== option.value);
+    } else {
+      // Add the preference if not selected
+      newPreferences = [...selectedPreferences, option.value];
+    }
+    
+    setSelectedPreferences(newPreferences);
 
-    await persistSettings({ matchingPreference: option.value }, () =>
-      setSelectedPreference(previousPreference ?? null)
+    await persistSettings({ matchingPreference: newPreferences }, () =>
+      setSelectedPreferences(previousPreferences)
     );
   };
 
@@ -296,9 +332,14 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
               disabled={isBusy}
             />
           </View>
-          <View style={styles.preferenceRow}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.preferenceScrollView}
+            contentContainerStyle={styles.preferenceRow}
+          >
             {PREFERENCE_OPTIONS.map((item) => {
-              const isSelected = selectedPreference === item.value;
+              const isSelected = selectedPreferences.includes(item.value);
               return (
                 <TouchableOpacity
                   key={item.value}
@@ -325,18 +366,18 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
                 </TouchableOpacity>
               );
             })}
-          </View>
+          </ScrollView>
         </View>
 
         <View style={styles.lineSeparator} />
 
-        <TouchableOpacity
+        {/* <TouchableOpacity
           onPress={handleLogout}
           style={styles.deactivateBtn}
           disabled={isBusy}
         >
           <Text style={styles.logoutText}>{STRINGS.SETTINGS.logout}</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
 
         <TouchableOpacity
           onPress={handleDeactivatePress}
@@ -438,10 +479,11 @@ const styles = StyleSheet.create({
     color: COLORS._EB3434,
     fontFamily: FontWeight.Medium,
   },
+  preferenceScrollView: {
+    marginTop: DIMENSIONS.spacing.md,
+  },
   preferenceRow: {
     flexDirection: "row",
-    justifyContent: "flex-start",
-    marginTop: DIMENSIONS.spacing.md,
     gap: DIMENSIONS.spacing.sm,
   },
   preferenceBtn: {

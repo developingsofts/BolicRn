@@ -91,8 +91,7 @@ const ScheduledSessions: React.FC = ({ navigation }: any) => {
     setIsCancelling(true);
     try {
       await deleteBooking({
-        id: selectedBookingForCancellation.id,
-        status: "canceled",
+        sessionId: selectedBookingForCancellation.id,
       }).unwrap();
       Toast.success(STRINGS.SCHEDULED_SESSIONS.messages.sessionCancelled);
       closeCancellationModal();

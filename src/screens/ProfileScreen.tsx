@@ -54,7 +54,7 @@ import { Calendar } from "react-native-calendars";
 import BookingCard from "../components/BookingCard";
 import BookingList from "../components/BookingList";
 import ScheduleList from "../components/ScheduleList";
-import { useDeleteBookingMutation } from "../services/api/bookingApi";
+import { useDeleteBookingMutation, useUpdateBookingMutation } from "../services/api/bookingApi";
 import { Toast } from "../components/ToastManager";
 import { ResizeMode } from "expo-av";
 
@@ -108,7 +108,8 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
 
   const [followUser] = useFollowUserMutation();
   const [unfollowUser] = useUnfollowUserMutation();
-  const [updateBooking] = useDeleteBookingMutation();
+  const [deleteBooking] = useDeleteBookingMutation();
+  const [updateBooking] = useUpdateBookingMutation()
 
   // Use correct profile data based on context
   const profileData: User | UserProfile | undefined | null = isOwnProfile
@@ -116,8 +117,8 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
       ? myProfileData.data
       : user
     : userProfileData && userProfileData.status === true && userProfileData.data
-    ? userProfileData.data
-    : passedUser;
+      ? userProfileData.data
+      : passedUser;
 
   useEffect(() => {
     if (!isOwnProfile && profileData && "isFollowing" in profileData) {
@@ -261,41 +262,41 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
     ? isTrainer
       ? trainerMenuItems
       : [
-          {
-            id: "posts",
-            label: showOwnProfileFeatures ? "My Posts" : STRINGS.PROFILE.posts,
-            icon: Posts,
-          },
-          {
-            id: "connections",
-            label: "Connections",
-            icon: Connections,
-          },
-          ...(showOwnProfileFeatures
-            ? [
-                {
-                  id: "schedule-session",
-                  label: "Schedule Sessions",
-                  icon: Availabilituy,
-                },
-                {
-                  id: "workout-history",
-                  label: "Workout History",
-                  icon: Workout,
-                },
-              ]
-            : []),
-          {
-            id: "achievements",
-            label: STRINGS.PROFILE.achievements,
-            icon: Achievements,
-          },
-          // {
-          //   id: "rating",
-          //   label: showOwnProfileFeatures ? "My Ratings" : "Rating",
-          //   icon: Rating,
-          // },
-        ]
+        {
+          id: "posts",
+          label: showOwnProfileFeatures ? "My Posts" : STRINGS.PROFILE.posts,
+          icon: Posts,
+        },
+        {
+          id: "connections",
+          label: "Connections",
+          icon: Connections,
+        },
+        ...(showOwnProfileFeatures
+          ? [
+            {
+              id: "schedule-session",
+              label: "Schedule Sessions",
+              icon: Availabilituy,
+            },
+            {
+              id: "workout-history",
+              label: "Workout History",
+              icon: Workout,
+            },
+          ]
+          : []),
+        {
+          id: "achievements",
+          label: STRINGS.PROFILE.achievements,
+          icon: Achievements,
+        },
+        // {
+        //   id: "rating",
+        //   label: showOwnProfileFeatures ? "My Ratings" : "Rating",
+        //   icon: Rating,
+        // },
+      ]
     : guestMenuItems;
 
   const handleLogout = async () => {
@@ -313,7 +314,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
     if (!id) return;
 
     try {
-      await updateBooking({ id, status: "canceled" }).unwrap();
+      await deleteBooking({ sessionId: id }).unwrap();
       Toast.success("Booking removed successfully");
       await refetchMyProfile(); // Refresh profile data
     } catch (error) {
@@ -399,7 +400,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
             />
           </TouchableOpacity>
           {isGuest ? (
-            <TouchableOpacity onPress={() => {}} style={styles.commentIcon}>
+            <TouchableOpacity onPress={() => { }} style={styles.commentIcon}>
               <Image
                 source={CircleComment}
                 resizeMode="contain"
@@ -517,9 +518,8 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
               <View style={styles.weeklyGoalSection}>
                 <View style={styles.weeklyGoalHeader}>
                   <Text style={styles.weeklyGoalLabel}>Weekly Goal</Text>
-                  <Text style={styles.weeklyGoalValue}>{`${
-                    profileData?.completedWeeklySessions || 0
-                  }/${profileData?.totalWeeklySessions || 0} Workouts`}</Text>
+                  <Text style={styles.weeklyGoalValue}>{`${profileData?.completedWeeklySessions || 0
+                    }/${profileData?.totalWeeklySessions || 0} Workouts`}</Text>
                 </View>
                 <View style={styles.progressBarContainer}>
                   <View
@@ -533,7 +533,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
                               profileData?.totalWeeklySessions || 1,
                               1
                             )) *
-                            100
+                          100
                         )}%`,
                       },
                     ]}

@@ -51,6 +51,10 @@ export interface DeleteBookingRequest {
   id: number | string;
   status?: "canceled"|"upcomming";
 }
+export interface RefundRequest {
+  sessionId: number;
+}
+
 
 export interface PaginationInfo {
   page: number;
@@ -97,9 +101,9 @@ export const bookingApi = baseApi.injectEndpoints({
       invalidatesTags: ["MyBookings","UserProfile"],
     }),
 
-    deleteBooking: builder.mutation<ApiResponse<any>, DeleteBookingRequest>({
+    deleteBooking: builder.mutation<ApiResponse<any>, RefundRequest>({
       query: (body) => ({
-        url: API_END_POINTS.bookings.update,
+        url: API_END_POINTS.bookings.initiateRefund,
         method: "POST",
         body,
       }),

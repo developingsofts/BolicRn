@@ -157,7 +157,7 @@ const MyBookingsScreen = ({ navigation }: any) => {
   const handleDecline = useCallback(
     async (bookingId: number) => {
       try {
-        await deleteBooking({ id: bookingId, status: "canceled" }).unwrap();
+        await deleteBooking({ sessionId: bookingId}).unwrap();
         Toast.success("Booking declined successfully");
 
         // Remove from local state

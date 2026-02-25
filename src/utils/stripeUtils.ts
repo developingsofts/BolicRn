@@ -95,6 +95,8 @@ export const fetchPaymentSheetParams = async (
         amount: paymentRequest.amount,
         sessionId: paymentRequest.metadata?.sessionId || "",
         trainerId: paymentRequest.metadata?.trainerId || "",
+        date: paymentRequest.metadata?.date || "",
+        time: paymentRequest.metadata?.time || "",
       }),
     });
 

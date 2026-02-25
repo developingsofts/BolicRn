@@ -22,7 +22,7 @@ export interface User {
   notificationEnabled?: boolean;
   profileVisibility?: boolean;
   matchingEnabled?: boolean;
-  matchingPreference?: "Strength" | "Cardio" | "CrossFit" | null;
+  matchingPreference?: ("Strength" | "Cardio" | "CrossFit" | "Powerlifting" | "BodyBuilding" | "Lifestyle" | "Hybrid" | "Olympic Lifting" | "Functional Fitness" | "Yoga" | "Pilates" | "Running" | "Cycling" | "Swimming")[];
   isDeleted?: boolean;
   deletedAt?: string | null;
   profilePicture?: string;
