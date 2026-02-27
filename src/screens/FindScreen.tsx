@@ -1,4 +1,4 @@
-import React, { use, useEffect, useState } from "react";
+import React, { use, useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   Alert,
   ActivityIndicator,
 } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import RefreshableScrollView from "../components/RefreshableScrollView";
 import { Menu, Button, Chip } from "react-native-paper";
 import { COLORS, DIMENSIONS } from "../config/constants";
@@ -124,6 +125,17 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation, route }) => {
   const partnersData = partners?.status === true ? partners?.data?.users : [];
 
   const trainersData = trainers?.status === true ? trainers?.data?.users : [];
+
+  // Refetch data whenever the screen comes into focus based on active tab
+  useFocusEffect(
+    useCallback(() => {
+      if (activeTab === "partners") {
+        refetchPartners();
+      } else {
+        refetchTrainers();
+      }
+    }, [activeTab, refetchPartners, refetchTrainers])
+  );
 
   const getCurrentData = () => {
     // Use the correct data source based on the active tab

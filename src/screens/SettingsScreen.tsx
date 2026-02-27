@@ -93,7 +93,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
   const [profileVisibilityEnabled, setProfileVisibilityEnabled] =
     useState<boolean>(user?.profileVisibility ?? true);
   const [preferencesEnabled, setPreferencesEnabled] = useState<boolean>(
-    user?.matchingEnabled ?? true
+    user?.matchingEnabled ?? false
   );
   
   const [selectedPreferences, setSelectedPreferences] = useState<

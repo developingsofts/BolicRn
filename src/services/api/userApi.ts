@@ -46,7 +46,7 @@ export const userApi = baseApi.injectEndpoints({
         method: 'PUT',
         body: userData,
       }),
-      invalidatesTags: ['User'],
+      invalidatesTags: ['User',"FindMain"],
       async onQueryStarted(arg, { dispatch, queryFulfilled }) {
         try {
           const { data } = await queryFulfilled;
