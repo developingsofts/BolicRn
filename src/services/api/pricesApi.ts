@@ -2,7 +2,6 @@ import { API_END_POINTS } from '../endPoints';
 import { baseApi } from './baseApi';
 import type { ApiResponse } from './types';
 
-// Interface for a training price session
 export interface TrainingPriceSession {
   id: number | string;
   userId: number | string;

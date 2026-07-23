@@ -11,7 +11,7 @@ import { store } from "./src/store/store";
 import ToastWrapper from "./src/components/ToastWrapper";
 import BolicStripeProvider from "./src/components/stripe-provider";
 
-const STRIPE_PUBLISHABLE_KEY = "pk_test_XXXXXX"; // Replace with your actual key
+const STRIPE_PUBLISHABLE_KEY = "pk_test_XXXXXX";
 
 export default function App() {
   const fontsLoaded = useInterFonts();

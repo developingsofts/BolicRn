@@ -102,7 +102,7 @@ const EditPostModal: React.FC<EditPostModalProps> = ({
                     disabled={!editText.trim() || isUpdating}
                   >
                     {isUpdating ? (
-                      <ActivityIndicator size="small" color={COLORS.white} />
+                      <ActivityIndicator size="small" color={COLORS.black} />
                     ) : (
                       <Text style={styles.editPostSaveButtonText}>Save</Text>
                     )}
@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
   },
   editPostSaveButtonText: {
     fontSize: 16,
-    color: COLORS.white,
+    color: COLORS.black,
     fontFamily: FontWeight.Medium,
   },
 });

@@ -92,7 +92,7 @@ const baseStyles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: r(120), // Extra padding to ensure FAB doesn't overlap content
+    paddingBottom: r(120),
   },
   heroSection: {
     backgroundColor: COLORS.gradient3,
@@ -128,7 +128,7 @@ const baseStyles = StyleSheet.create({
   locationTag: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     paddingHorizontal: r(12),
     paddingVertical: r(6),
     borderRadius: r(20),
@@ -137,7 +137,7 @@ const baseStyles = StyleSheet.create({
   categoryTag: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     paddingHorizontal: r(12),
     paddingVertical: r(6),
     borderRadius: r(20),
@@ -170,7 +170,7 @@ const baseStyles = StyleSheet.create({
     justifyContent: "center",
     borderWidth: 1,
     borderColor: COLORS.primary,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     paddingHorizontal: r(20),
     paddingVertical: r(12),
     borderRadius: r(8),
@@ -184,7 +184,7 @@ const baseStyles = StyleSheet.create({
     zIndex: 10,
   },
   manageButtonText: {
-    color: COLORS.gradient1,
+    color: COLORS.text,
     fontSize: 14,
     fontFamily: FontWeight.Medium,
     marginLeft: r(8),
@@ -194,14 +194,16 @@ const baseStyles = StyleSheet.create({
     borderColor: COLORS.primary,
   },
   joinButtonText: {
-    color: COLORS.white,
+    color: COLORS.black,
   },
   joinButtonDisabled: {
     opacity: 0.7,
   },
 
   membersCard: {
-    backgroundColor: "white",
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
     marginHorizontal: 18,
     paddingHorizontal: r(16),
     borderRadius: r(12),
@@ -223,12 +225,12 @@ const baseStyles = StyleSheet.create({
   membersTitle: {
     fontSize: 16,
     fontFamily: FontWeight.SemiBold,
-    color: COLORS.gradient1,
+    color: COLORS.text,
   },
   membersCount: {
     fontSize: 14,
     fontFamily: FontWeight.Medium,
-    color: COLORS.gradient1,
+    color: COLORS.text,
   },
   membersContent: {
     flexDirection: "row",
@@ -249,7 +251,7 @@ const baseStyles = StyleSheet.create({
     borderColor: COLORS.white,
   },
   memberAvatarText: {
-    color: COLORS.white,
+    color: COLORS.black,
     fontSize: 22,
     fontFamily: FontWeight.SemiBold,
   },
@@ -257,7 +259,7 @@ const baseStyles = StyleSheet.create({
     backgroundColor: COLORS.primary,
   },
   memberCountText: {
-    color: COLORS.white,
+    color: COLORS.black,
     fontSize: 12,
     fontFamily: FontWeight.SemiBold,
   },
@@ -275,7 +277,7 @@ const baseStyles = StyleSheet.create({
     paddingHorizontal: r(16),
   },
   membersModalContent: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     borderRadius: r(16),
     width: "100%",
     maxHeight: "85%",
@@ -333,7 +335,7 @@ const baseStyles = StyleSheet.create({
     resizeMode: "cover",
   },
   membersModalAvatarText: {
-    color: COLORS.white,
+    color: COLORS.black,
     fontSize: 18,
     fontFamily: FontWeight.SemiBold,
   },
@@ -379,23 +381,25 @@ const baseStyles = StyleSheet.create({
     alignItems: "center",
   },
   membersModalCloseButtonText: {
-    color: COLORS.white,
+    color: COLORS.black,
     fontSize: 16,
     fontFamily: FontWeight.SemiBold,
   },
   postsSection: {
-    minHeight: 200, // Minimum height to show content
+    minHeight: 200,
   },
   postsTitle: {
     fontSize: 20,
     fontFamily: FontWeight.SemiBold,
     paddingHorizontal: r(16),
 
-    color: COLORS.gradient1,
+    color: COLORS.text,
     marginBottom: r(5),
   },
   postCard: {
-    backgroundColor: "white",
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
     borderRadius: r(12),
     marginHorizontal: r(16),
     padding: r(14),
@@ -423,7 +427,7 @@ const baseStyles = StyleSheet.create({
     marginRight: r(8),
   },
   authorAvatarText: {
-    color: COLORS.white,
+    color: COLORS.black,
     fontSize: 16,
     fontFamily: FontWeight.SemiBold,
   },
@@ -468,6 +472,7 @@ const baseStyles = StyleSheet.create({
   actionIcon: {
     width: 16,
     height: 16,
+    tintColor: COLORS.white,
   },
   actionText: {
     fontSize: 14,
@@ -490,7 +495,7 @@ const baseStyles = StyleSheet.create({
     alignItems: "center",
     borderRadius: r(8),
     paddingStart: r(10),
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     marginStart: r(16),
     marginEnd: r(10),
     borderTopLeftRadius: 15,
@@ -513,7 +518,7 @@ const baseStyles = StyleSheet.create({
     marginRight: r(5),
   },
   sendButtonContainer: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     borderRadius: r(8),
     marginEnd: r(16),
     top: -1,
@@ -539,7 +544,6 @@ const baseStyles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 4,
   },
-  // Modal Styles
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
@@ -547,7 +551,7 @@ const baseStyles = StyleSheet.create({
     alignItems: "center",
   },
   modalContent: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     borderRadius: r(12),
     padding: r(20),
     marginHorizontal: r(20),
@@ -601,7 +605,7 @@ const baseStyles = StyleSheet.create({
     zIndex: 2000,
   },
   deleteModalContent: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     borderRadius: r(12),
     padding: r(20),
     marginHorizontal: r(20),
@@ -671,7 +675,7 @@ const baseStyles = StyleSheet.create({
   },
   postMenuOptionText: {
     fontSize: 14,
-    color: "#FF3B30",
+    color: COLORS.error,
     fontWeight: "500",
   },
 });
@@ -709,11 +713,9 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
   const [contentHeight, setContentHeight] = useState(0);
   const [likingPostId, setLikingPostId] = useState<string | null>(null);
 
-  // Get group from props or route
   const passedGroup = propGroup || route?.params?.group;
   const groupId = passedGroup?.id?.toString();
 
-  // Fetch group details
   const {
     data: groupData,
     isLoading: isLoadingGroup,
@@ -722,7 +724,6 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
     { groupId: groupId! },
     { skip: !groupId || !isAuthenticated }
   );
-  // Fetch group members
   const {
     data: membersData,
     isLoading: isLoadingMembers,
@@ -733,7 +734,6 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
     { groupId: groupId!, page: membersPage, limit: 20 },
     { skip: !groupId || !isAuthenticated }
   );
-  // Fetch group posts
   const {
     data: postsData,
     isLoading: isLoadingPosts,
@@ -742,18 +742,14 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
     { groupId: groupId!, page: postsPage, limit: 10 },
     { skip: !groupId || !isAuthenticated }
   );
-  // Join group mutation
   const [joinGroup, { isLoading: isJoining }] = useJoinGroupMutation();
   const [requestJoinGroup, { isLoading: isRequestingJoin }] =
     useRequestJoinGroupMutation();
-  // Delete group mutation
   const [deleteGroup, { isLoading: isDeleting }] = useDeleteGroupMutation();
-  // Like mutation
   const [toggleLike, { isLoading: isLiking }] = useToggleLikeMutation();
   const [deletePost, { isLoading: isDeletingPost }] = useDeletePostMutation();
   const [updatePost, { isLoading: isUpdatingPost }] = useUpdatePostMutation();
 
-  // Use real data or fallback
   const group =
     groupData?.status && groupData?.data ? groupData.data : passedGroup;
   const members =
@@ -841,7 +837,6 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
     return "No members yet. Invite someone to join!";
   }, [isMembersError, membersErrorMessage, membersErrorStatus]);
 
-  // Exit group handler
   const [leaveGroup, { isLoading: isLeaving }] = useLeaveGroupMutation();
   const handleExitGroup = async () => {
     if (!group?.id) return;
@@ -896,10 +891,8 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
     }
   };
 
-  // Check if current user is the creator
   const isCreator =
     user?.id && group?.creatorId && Number(user.id) === Number(group.creatorId);
-  // Check if current user is a member (you may need to add this logic based on your data structure)
   const isMember = group?.isMember || isCreator;
 
   const joinRequestStatus = (group as any)?.joinRequestStatus ?? null;
@@ -934,7 +927,6 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
     }
   }, [joinButtonState, joinRequestStatus]);
 
-  // Handler for viewing a member's profile
   const handleViewProfile = (member: any) => {
     setMemberMenuVisible(null);
     setMembersModalVisible(false);
@@ -981,12 +973,10 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
     );
   };
 
-  // Post handlers
   const handleLikePost = async (postId: string) => {
     try {
       setLikingPostId(postId);
       await toggleLike({ postId }).unwrap();
-      // Posts will auto-refresh due to cache invalidation
     } catch (error) {
       console.error("Failed to toggle like:", error);
     } finally {
@@ -1002,7 +992,7 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
   const handleCloseComments = () => {
     setCommentsModalVisible(false);
     setSelectedPostId(null);
-    refetchPosts(); // Refresh posts to update comment counts
+    refetchPosts();
   };
 
   const handlePostMenuPress = (postId: string) => {
@@ -1066,7 +1056,6 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
     setPostToDelete(null);
   };
 
-  // Posts and pagination
   const posts =
     postsData?.status && postsData?.data?.posts ? postsData.data.posts : [];
   const postsPagination =
@@ -1105,16 +1094,12 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
     setAccumulatedMembers([]);
   }, [groupId]);
 
-  // Accumulate posts when new data arrives
   useEffect(() => {
     if (postsData && posts.length > 0) {
       if (postsPage === 1) {
-        // First page, replace all posts
         setAccumulatedPosts(posts);
       } else {
-        // Subsequent pages, append new posts
         setAccumulatedPosts((prevPosts) => {
-          // Avoid duplicates by checking post IDs
           const existingIds = new Set(prevPosts.map((p) => p.id));
           const newPosts = posts.filter((p) => !existingIds.has(p.id));
           return [...prevPosts, ...newPosts];
@@ -1124,7 +1109,6 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
     setIsLoadingMorePosts(false);
   }, [posts, postsPage, postsData]);
 
-  // Handle join group
   const handleJoinGroup = async () => {
     if (!groupId) return;
     try {
@@ -1156,17 +1140,14 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
     }
   };
 
-  // Handle refresh
   const handleRefresh = async () => {
     setRefreshing(true);
     setMembersPage(1);
     setPostsPage(1);
-    // Don't clear accumulatedPosts here - let the useEffect handle it when new data arrives
     await Promise.all([refetchGroup(), refetchMembers(), refetchPosts()]);
     setRefreshing(false);
   };
 
-  // Handle load more posts
   const handleLoadMorePosts = () => {
     if (
       postsPagination &&
@@ -1178,13 +1159,11 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
     }
   };
 
-  // Handle scroll for infinite loading
   const handleScroll = (event: any) => {
     const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
     const distanceFromBottom =
       contentSize.height - layoutMeasurement.height - contentOffset.y;
 
-    // Load more when within 100 pixels of bottom
     if (
       distanceFromBottom < 100 &&
       !isLoadingMorePosts &&
@@ -1205,15 +1184,12 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
     setScrollViewHeight(event.nativeEvent.layout.height);
   };
 
-  // Refresh posts when screen comes back into focus (e.g., after creating a post)
   useFocusEffect(
     React.useCallback(() => {
-      // Refresh posts when returning to this screen
       refetchPosts();
     }, [refetchPosts])
   );
 
-  // Render post
   const renderPost = ({ item: post, index }: { item: any; index: number }) => {
     const authorInitial =
       post.user?.displayName?.charAt(0) ||
@@ -1279,7 +1255,6 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
           </View>
           <Text style={styles.postContent}>{post.title}</Text>
 
-          {/* Workout Information */}
           {post.workout && (
             <View style={styles.workoutBadge}>
               <Text style={styles.workoutIcon}>💪</Text>
@@ -1292,7 +1267,6 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
             </View>
           )}
 
-          {/* Achievement Information */}
           {post.achievement && (
             <View style={styles.achievementBadge}>
               <Text style={styles.achievementIcon}>
@@ -1395,11 +1369,11 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
             <View style={styles.heroContent}>
               <View style={styles.heroTags}>
                 <View style={styles.locationTag}>
-                  <Image source={Location} style={{ width: 20, height: 20 }} />
+                  <Image source={Location} style={{ width: 20, height: 20, tintColor: COLORS.white }} />
                   <Text style={styles.tagText}>{group?.location || ""}</Text>
                 </View>
                 <View style={styles.categoryTag}>
-                  <Image source={Gym} style={{ width: 20, height: 20 }} />
+                  <Image source={Gym} style={{ width: 20, height: 20, tintColor: COLORS.white }} />
                   <Text style={styles.tagText}>
                     {group?.trainingTypes?.join(", ") ||
                       group?.type ||
@@ -1415,7 +1389,6 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
           }
         />
 
-        {/* Action Button - Manage Group or Join Group */}
         {joinButtonState === "manage" ? (
           <Pressable
             style={styles.manageButton}
@@ -1424,7 +1397,7 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
               navigation?.navigate("ManageGroup", { group, isEditing: true });
             }}
           >
-            <Image source={Edit} style={{ width: 16, height: 16 }} />
+            <Image source={Edit} style={{ width: 16, height: 16, tintColor: COLORS.white }} />
             <Text style={styles.manageButtonText}>Manage Group</Text>
           </Pressable>
         ) : joinButtonState === "member" ? (
@@ -1432,7 +1405,7 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
             style={[
               styles.manageButton,
               {
-                backgroundColor: COLORS.white,
+                backgroundColor: COLORS.surface,
                 borderColor: COLORS._EB3434,
                 borderWidth: 1,
                 marginTop: 10,
@@ -1465,7 +1438,7 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
             disabled={joinButtonDisabled}
           >
             {joinButtonLoading ? (
-              <ActivityIndicator size="small" color={COLORS.white} />
+              <ActivityIndicator size="small" color={COLORS.black} />
             ) : (
               <>
                 <Image
@@ -1473,7 +1446,7 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
                   style={{
                     width: 16,
                     height: 16,
-                    tintColor: COLORS.white,
+                    tintColor: COLORS.black,
                   }}
                 />
                 <Text style={[styles.manageButtonText, styles.joinButtonText]}>
@@ -1484,7 +1457,6 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
           </Pressable>
         )}
 
-        {/* Members Section */}
         <View style={styles.membersCard}>
           <View style={styles.membersHeader}>
             <Text style={styles.membersTitle}>Members</Text>
@@ -1521,10 +1493,11 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
                     </Text>
                   </TouchableOpacity>
                 }
-                contentStyle={{ minWidth: 140 }}
+                contentStyle={{ minWidth: 140, backgroundColor: COLORS.white }}
               >
                 <Menu.Item
                   onPress={() => handleViewProfile(member)}
+                  titleStyle={{ color: COLORS.black }}
                   title="View Profile"
                 />
               </Menu>
@@ -1554,7 +1527,6 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
           )}
         </View>
 
-        {/* Recent Posts Section */}
         <View style={styles.postsSection}>
           <Divider
             style={{
@@ -1664,11 +1636,10 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
             navigation?.navigate("CreatePost", { groupId: group?.id });
           }}
         >
-          <Image source={Add} style={{ width: 20, height: 20 }} />
+          <Image source={Add} style={{ width: 20, height: 20, tintColor: COLORS.black }} />
         </TouchableOpacity>
       )}
 
-      {/* Comments Modal */}
       {selectedPostId && (
         <CommentsModal
           visible={commentsModalVisible}
@@ -1677,7 +1648,6 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
         />
       )}
 
-      {/* Delete Post Confirmation Dialog */}
       <Modal
         visible={showDeletePostDialog}
         animationType="fade"
@@ -1714,7 +1684,6 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
         </View>
       </Modal>
 
-      {/* Edit Post Modal */}
       <EditPostModal
         visible={editingPost !== null}
         onClose={handleCancelEditPost}
@@ -1724,7 +1693,6 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
         isUpdating={isUpdatingPost}
       />
 
-      {/* Comments Modal */}
       {selectedPostId && (
         <CommentsModal
           visible={commentsModalVisible}
@@ -1733,7 +1701,6 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
         />
       )}
 
-      {/* Delete Post Confirmation Dialog */}
       <Modal
         visible={showDeletePostDialog}
         animationType="fade"

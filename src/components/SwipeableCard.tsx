@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -7,16 +7,14 @@ import {
   Animated,
   Dimensions,
   TouchableOpacity,
-  ScrollView,
 } from "react-native";
-import { PanGestureHandler, State } from "react-native-gesture-handler";
-import { COLORS, DIMENSIONS } from "../config/constants";
-import RatingStars from "./RatingStars";
+import { Ionicons } from "@expo/vector-icons";
+import { COLORS } from "../config/constants";
 import FontWeight from "../hooks/useInterFonts";
 import STRINGS from "../config/strings";
+import { r } from "../designing/responsiveDesigns";
 
 const { width: screenWidth } = Dimensions.get("window");
-const SWIPE_THRESHOLD = screenWidth * 0.25;
 
 export interface TrainingPartner {
   id: number;
@@ -55,11 +53,13 @@ export type SwipeableItem = TrainingPartner | Trainer;
 
 interface SwipeableCardProps {
   partner: SwipeableItem;
+  /** Called when the user taps Skip (previously a left swipe). */
   onSwipeLeft: (partner: SwipeableItem) => void;
+  /** Called when the user taps Connect (previously a right swipe). */
   onSwipeRight: (partner: SwipeableItem) => void;
   onPress?: (partner: SwipeableItem) => void;
+  /** Neutral "Skip Profile" — advance without recording a like/dislike. */
   onSkip?: (partner: SwipeableItem) => void;
-  isFirst?: boolean;
   navigation?: any;
   isFollowing?: boolean;
   onFollow?: (partner: SwipeableItem) => void;
@@ -73,364 +73,280 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
   onSwipeRight,
   onPress,
   onSkip,
-  isFirst = false,
   navigation,
   isFollowing = false,
   onFollow,
   onUnfollow,
   followLoading = false,
 }) => {
-  console.log("SwipeableCard partner:", partner);
-  const translateX = useRef(new Animated.Value(0)).current;
-  const scale = useRef(new Animated.Value(1)).current;
-  const rotate = useRef(new Animated.Value(0)).current;
-
-  const [isAnimating, setIsAnimating] = useState(false);
   const [imageError, setImageError] = useState(false);
   const isTrainer = "specialty" in partner || "hourlyRate" in partner;
 
-  const handleGestureEvent = Animated.event(
-    [{ nativeEvent: { translationX: translateX } }],
-    { useNativeDriver: true },
-  );
+  // Enter / dismiss animation
+  const translateX = useRef(new Animated.Value(0)).current;
+  const opacity = useRef(new Animated.Value(0)).current;
+  const isDismissing = useRef(false);
 
-  const handleStateChange = (event: any) => {
-    if (event.nativeEvent.state === State.END) {
-      const { translationX, translationY } = event.nativeEvent;
+  useEffect(() => {
+    Animated.timing(opacity, {
+      toValue: 1,
+      duration: 220,
+      useNativeDriver: true,
+    }).start();
+  }, [opacity]);
 
-      // Check if it's more of a horizontal swipe than vertical
-      if (
-        Math.abs(translationX) > Math.abs(translationY) &&
-        Math.abs(translationX) > SWIPE_THRESHOLD
-      ) {
-        // Swipe threshold met for horizontal swipe
-        const direction = translationX > 0 ? "right" : "left";
-        animateSwipe(direction);
-      } else {
-        // Return to center
-        resetPosition();
-      }
+  const dismissCard = (
+    direction: "left" | "right" | "none",
+    onDone: (partner: SwipeableItem) => void,
+  ) => {
+    if (isDismissing.current) return;
+    isDismissing.current = true;
+    const animations = [
+      Animated.timing(opacity, {
+        toValue: 0,
+        duration: 260,
+        useNativeDriver: true,
+      }),
+    ];
+    if (direction !== "none") {
+      animations.push(
+        Animated.timing(translateX, {
+          toValue: direction === "right" ? screenWidth : -screenWidth,
+          duration: 260,
+          useNativeDriver: true,
+        }),
+      );
     }
+    Animated.parallel(animations).start(() => onDone(partner));
   };
-
-  const animateSwipe = (direction: "left" | "right") => {
-    if (isAnimating) return;
-    setIsAnimating(true);
-
-    const targetX =
-      direction === "right" ? screenWidth * 1.5 : -screenWidth * 1.5;
-    const targetRotation = direction === "right" ? 30 : -30;
-
-    Animated.parallel([
-      Animated.timing(translateX, {
-        toValue: targetX,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-      Animated.timing(rotate, {
-        toValue: targetRotation,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-      Animated.timing(scale, {
-        toValue: 0.8,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      // Call the appropriate callback
-      if (direction === "right") {
-        onSwipeRight(partner);
-      } else {
-        onSwipeLeft(partner);
-      }
-
-      // Reset for next card
-      resetPosition();
-      setIsAnimating(false);
-    });
-  };
-
-  const resetPosition = () => {
-    Animated.parallel([
-      Animated.spring(translateX, {
-        toValue: 0,
-        useNativeDriver: true,
-      }),
-      Animated.spring(scale, {
-        toValue: 1,
-        useNativeDriver: true,
-      }),
-      Animated.spring(rotate, {
-        toValue: 0,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  };
-
-  const rotateInterpolate = rotate.interpolate({
-    inputRange: [-1, 0, 1],
-    outputRange: ["-10deg", "0deg", "10deg"],
-  });
-
-  const likeOpacity = translateX.interpolate({
-    inputRange: [0, screenWidth * 0.25],
-    outputRange: [0, 1],
-    extrapolate: "clamp",
-  });
-
-  const nopeOpacity = translateX.interpolate({
-    inputRange: [-screenWidth * 0.25, 0],
-    outputRange: [1, 0],
-    extrapolate: "clamp",
-  });
 
   return (
-    <PanGestureHandler
-      onGestureEvent={handleGestureEvent}
-      onHandlerStateChange={handleStateChange}
-      enabled={!isAnimating}
+    <Animated.View
+      style={[styles.card, { opacity, transform: [{ translateX }] }]}
     >
-      <Animated.View
-        style={[
-          styles.card,
-          {
-            transform: [
-              { translateX },
-              { scale },
-              { rotate: rotateInterpolate },
-            ],
-          },
-        ]}
+      <TouchableOpacity
+        style={styles.cardContent}
+        onPress={() => onPress && onPress(partner)}
+        activeOpacity={0.9}
       >
-        <TouchableOpacity
-          style={styles.cardContent}
-          onPress={() => onPress && onPress(partner)}
-          activeOpacity={0.9}
-        >
-          {/* Background Image */}
-          <View style={styles.imageContainer}>
-            {partner.imageUrl && !imageError ? (
-              <Image
-                source={{ uri: partner.imageUrl }}
-                style={styles.profileImage}
-                onError={() => {
-                  console.log(
-                    "Image load error for",
-                    partner.name,
-                    partner.imageUrl,
-                  );
-                  setImageError(true);
-                }}
-                onLoad={() =>
-                  console.log(
-                    "Image loaded for",
-                    partner.name,
-                    partner.imageUrl,
-                  )
-                }
-              />
-            ) : (
-              <View style={styles.placeholderImage}>
-                <Text style={styles.placeholderText}>
-                  {(partner?.name?.charAt(0) || "?").toUpperCase()}
-                </Text>
+        {/* Background Image */}
+        <View style={styles.imageContainer}>
+          {partner.imageUrl && !imageError ? (
+            <Image
+              source={{ uri: partner.imageUrl }}
+              style={styles.profileImage}
+              onError={() => setImageError(true)}
+            />
+          ) : (
+            <View style={styles.placeholderImage}>
+              <Text style={styles.placeholderText}>
+                {(partner?.name?.charAt(0) || "?").toUpperCase()}
+              </Text>
+            </View>
+          )}
+        </View>
+
+        {/* Card Info */}
+        <View style={styles.cardInfo}>
+          <View style={styles.cardInfoContent}>
+            {/* Name and Age */}
+            <View style={styles.nameAgeContainer}>
+              <Text style={styles.name}>{partner.name || "Unknown"}</Text>
+              {partner.age && <Text style={styles.age}>{partner.age}</Text>}
+            </View>
+
+            {/* Location */}
+            <View style={styles.locationContainer}>
+              {partner.location && (
+                <Text style={styles.location}>{partner.location}</Text>
+              )}
+            </View>
+
+            {/* Training Types */}
+            {partner.trainingTypes && partner.trainingTypes.length > 0 && (
+              <View style={styles.trainingTypesContainer}>
+                {partner.trainingTypes
+                  .slice(0, 3)
+                  .map((trainingType, index) => (
+                    <View key={index} style={styles.trainingTypeTag}>
+                      <Text style={styles.trainingTypeText}>
+                        {trainingType}
+                      </Text>
+                    </View>
+                  ))}
+                {partner.trainingTypes.length > 3 && (
+                  <Text style={styles.moreTypesText}>
+                    +{partner.trainingTypes.length - 3} more
+                  </Text>
+                )}
               </View>
             )}
-          </View>
 
-          {/* Card Info */}
-          <View style={styles.cardInfo}>
-            <View style={styles.cardInfoContent}>
-              {/* Name and Age */}
-              <View style={styles.nameAgeContainer}>
-                <Text style={styles.name}>{partner.name || "Unknown"}</Text>
-                {partner.age && <Text style={styles.age}>{partner.age}</Text>}
-              </View>
-
-              {/* Location */}
-              <View style={styles.locationContainer}>
-                {partner.location && (
-                  <Text style={styles.location}>{partner.location}</Text>
-                )}
-                {/* {partner.distance && <Text style={styles.distance}>{partner.distance}</Text>} */}
-              </View>
-
-              {/* Training Types */}
-              {partner.trainingTypes && partner.trainingTypes.length > 0 && (
-                <View style={styles.trainingTypesContainer}>
-                  {partner.trainingTypes
-                    .slice(0, 3)
-                    .map((trainingType, index) => (
-                      <View key={index} style={styles.trainingTypeTag}>
-                        <Text style={styles.trainingTypeText}>
-                          {trainingType}
-                        </Text>
-                      </View>
-                    ))}
-                  {partner.trainingTypes.length > 3 && (
-                    <Text style={styles.moreTypesText}>
-                      +{partner.trainingTypes.length - 3} more
-                    </Text>
-                  )}
+            {/* Tags/Badges */}
+            <View style={styles.tagsContainer}>
+              {/* Specialty/Type Badge */}
+              {(("specialty" in partner && partner.specialty) ||
+                ("type" in partner && partner.type)) && (
+                <View style={styles.tag}>
+                  <Text style={styles.tagText}>
+                    {"specialty" in partner
+                      ? partner.specialty
+                      : "type" in partner
+                        ? partner.type
+                        : ""}
+                  </Text>
                 </View>
               )}
 
-              {/* Rating Stars */}
-              {/* <View style={styles.ratingSection}>
-                <View style={styles.ratingStarsRow}>
-                  <RatingStars 
-                    rating={partner.rating || 0} 
-                    size="small" 
-                    readonly={true}
-                    showRating={false}
+              {/* Match/Rate Badge */}
+              <View style={[styles.tag, styles.tagAccent]}>
+                <Text style={styles.tagTextAccent}>
+                  {"compatibility" in partner &&
+                  partner.compatibility !== undefined
+                    ? `${partner.compatibility}% Match`
+                    : "hourlyRate" in partner
+                      ? partner.hourlyRate || "Contact for rates"
+                      : "Contact for rates"}
+                </Text>
+              </View>
+
+              {/* Experience Badge */}
+              {partner.experience && (
+                <View style={styles.tag}>
+                  <Text style={styles.tagText}>{partner.experience}</Text>
+                </View>
+              )}
+            </View>
+
+            {/* Secondary actions: View Profile + Follow / Book */}
+            <View style={styles.actionRow}>
+              <TouchableOpacity
+                style={styles.outlineBtn}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  onPress && onPress(partner);
+                }}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.outlineBtnText}>View Profile</Text>
+              </TouchableOpacity>
+
+              {isTrainer ? (
+                <TouchableOpacity
+                  style={styles.filledBtn}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    navigation?.navigate?.("BookTrainer", {
+                      trainerId: String(partner.id),
+                      trainerName: partner.name,
+                      trainerAddress: partner.location || "",
+                    });
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons
+                    name="calendar-outline"
+                    size={18}
+                    color={COLORS.black}
+                    style={styles.actionIcon}
                   />
-                  <Text style={styles.ratingText}>
-                    {partner.rating ? partner.rating.toFixed(1) : '0.0'} ({partner.totalRatings || 0} Reviews)
-                  </Text>
-                </View>
-              </View> */}
-
-              {/* Tags/Badges */}
-              <View style={styles.tagsContainer}>
-                {/* Specialty/Type Badge */}
-                {(("specialty" in partner && partner.specialty) ||
-                  ("type" in partner && partner.type)) && (
-                  <View style={styles.tag}>
-                    <Text style={styles.tagText}>
-                      {"specialty" in partner
-                        ? partner.specialty
-                        : "type" in partner
-                          ? partner.type
-                          : ""}
-                    </Text>
-                  </View>
-                )}
-
-                {/* Match/Rate Badge */}
-                <View style={[styles.tag, styles.tagAccent]}>
-                  <Text style={styles.tagTextAccent}>
-                    {"compatibility" in partner &&
-                    partner.compatibility !== undefined
-                      ? `${partner.compatibility}% Match`
-                      : "hourlyRate" in partner
-                        ? partner.hourlyRate || "Contact for rates"
-                        : "Contact for rates"}
-                  </Text>
-                </View>
-
-                {/* Experience Badge */}
-                {partner.experience && (
-                  <View style={styles.tag}>
-                    <Text style={styles.tagText}>{partner.experience}</Text>
-                  </View>
-                )}
-              </View>
-              <View style={styles.actionButtons}>
-                <TouchableOpacity
-                  style={styles.outlineButton}
-                  onPress={(e) => {
-                    e.stopPropagation();
-                    onPress && onPress(partner);
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.outlineButtonText}>View Profile</Text>
+                  <Text style={styles.filledBtnText}>Book</Text>
                 </TouchableOpacity>
+              ) : isFollowing ? (
                 <TouchableOpacity
-                  style={[
-                    styles.primaryButton,
-                    !isTrainer && isFollowing
-                      ? { backgroundColor: "#E6E6E6" }
-                      : {},
-                  ]}
+                  style={styles.outlineBtn}
                   onPress={(e) => {
                     e.stopPropagation();
-
-                    if (isTrainer) {
-                      navigation?.navigate?.("BookTrainer", {
-                        trainerId: String(partner.id),
-                        trainerName: partner.name,
-                        trainerAddress: partner.location || "",
-                      });
-                      return;
-                    }
-
-                    if (followLoading) {
-                      return;
-                    }
-
-                    if (isFollowing) {
-                      onUnfollow && onUnfollow(partner);
-                    } else {
-                      onFollow && onFollow(partner);
-                    }
+                    if (followLoading) return;
+                    onUnfollow && onUnfollow(partner);
                   }}
-                  activeOpacity={0.7}
-                  disabled={!isTrainer && followLoading}
+                  activeOpacity={0.8}
+                  disabled={followLoading}
                 >
-                  <Text
-                    style={
-                      isTrainer || !isFollowing
-                        ? styles.primaryButtonText
-                        : styles.outlineButtonText
-                    }
-                  >
-                    {isTrainer
-                      ? "Book Session"
-                      : followLoading
-                        ? "..."
-                        : isFollowing
-                          ? "Unfollow"
-                          : "Follow"}
+                  <Ionicons
+                    name="checkmark"
+                    size={18}
+                    color={COLORS.text}
+                    style={styles.actionIcon}
+                  />
+                  <Text style={styles.outlineBtnText}>
+                    {followLoading ? "..." : "Following"}
                   </Text>
                 </TouchableOpacity>
-              </View>
-
-              {/* Skip Button */}
-              {onSkip && (
+              ) : (
                 <TouchableOpacity
-                  style={styles.skipButton}
+                  style={styles.filledBtn}
                   onPress={(e) => {
                     e.stopPropagation();
-                    onSkip(partner);
+                    if (followLoading) return;
+                    onFollow && onFollow(partner);
                   }}
-                  activeOpacity={0.7}
+                  activeOpacity={0.8}
+                  disabled={followLoading}
                 >
-                  <Text style={styles.skipButtonText}>{STRINGS.FIND.skip}</Text>
+                  <Text style={styles.filledBtnText}>
+                    {followLoading ? "..." : "Follow"}
+                  </Text>
                 </TouchableOpacity>
               )}
             </View>
+            {/* Primary actions: Pass (left) + Connect (right) */}
+            <View style={styles.actionRow}>
+              <TouchableOpacity
+                style={styles.outlineBtn}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  dismissCard("left", onSwipeLeft);
+                }}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.outlineBtnText}>Pass</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.filledBtn}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  dismissCard("right", onSwipeRight);
+                }}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.filledBtnText}>{STRINGS.FIND.connect}</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Neutral skip — advance without recording a like/dislike */}
+            {onSkip && (
+              <TouchableOpacity
+                style={styles.skipProfileBtn}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  dismissCard("none", onSkip);
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.skipProfileText}>{STRINGS.FIND.skip}</Text>
+              </TouchableOpacity>
+            )}
           </View>
-
-          {/* Swipe Indicators */}
-          <Animated.View
-            style={[styles.likeIndicator, { opacity: likeOpacity }]}
-          >
-            <Text style={styles.likeText}>LIKE</Text>
-          </Animated.View>
-
-          <Animated.View
-            style={[styles.nopeIndicator, { opacity: nopeOpacity }]}
-          >
-            <Text style={styles.nopeText}>NOPE</Text>
-          </Animated.View>
-        </TouchableOpacity>
-      </Animated.View>
-    </PanGestureHandler>
+        </View>
+      </TouchableOpacity>
+    </Animated.View>
   );
 };
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
     borderRadius: 16,
     shadowColor: COLORS.black,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 12,
     elevation: 8,
-    width: screenWidth - 32, // Adjust for margins
+    width: screenWidth - 32,
   },
   cardContent: {
     borderRadius: 16,
@@ -449,14 +365,14 @@ const styles = StyleSheet.create({
   placeholderImage: {
     width: "100%",
     height: "100%",
-    backgroundColor: "#E5E7EB",
+    backgroundColor: COLORS.surface,
     justifyContent: "center",
     alignItems: "center",
   },
   placeholderText: {
     fontSize: 48,
     fontWeight: "bold",
-    color: "#9CA3AF",
+    color: COLORS.textSecondary,
   },
   cardInfo: {
     padding: 24,
@@ -470,34 +386,21 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 18,
     fontFamily: FontWeight.SemiBold,
-    color: COLORS.gradient1,
+    color: COLORS.text,
     marginRight: 8,
   },
   age: {
     fontSize: 16,
-    fontWeight: 400,
     fontFamily: FontWeight.Regular,
     color: COLORS._616888,
   },
   location: {
     fontSize: 14,
-    fontWeight: 500,
     fontFamily: FontWeight.Medium,
     color: COLORS._616888,
     marginBottom: 6,
   },
   locationContainer: {
-    marginBottom: 6,
-  },
-  distance: {
-    fontSize: 12,
-    color: COLORS._616888,
-    fontWeight: "400",
-  },
-  bio: {
-    fontSize: 13,
-    color: "#374151",
-    lineHeight: 18,
     marginBottom: 6,
   },
   trainingTypesContainer: {
@@ -507,7 +410,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   trainingTypeTag: {
-    backgroundColor: "#F3F4F6",
+    backgroundColor: COLORS.border,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
@@ -523,61 +426,6 @@ const styles = StyleSheet.create({
     fontFamily: FontWeight.Medium,
     alignSelf: "center",
   },
-  fitnessLevelContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 6,
-  },
-  fitnessLevelLabel: {
-    fontSize: 12,
-    color: "#6B7280",
-    marginRight: 4,
-  },
-  fitnessLevel: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#3B82F6",
-    textTransform: "capitalize",
-  },
-  interestsContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    marginBottom: 6,
-  },
-  interestTag: {
-    backgroundColor: "#F3F4F6",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginRight: 6,
-    marginBottom: 4,
-  },
-  interestText: {
-    fontSize: 10,
-    color: "#374151",
-    fontWeight: "500",
-  },
-  bottomRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 8,
-  },
-  ratingSection: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  ratingStarsRow: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  ratingText: {
-    fontSize: 14,
-    color: COLORS._616888,
-    fontWeight: "600",
-    marginLeft: 8,
-  },
   tagsContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -592,114 +440,67 @@ const styles = StyleSheet.create({
   },
   tagText: {
     fontSize: 12,
-    color: COLORS.white,
+    color: COLORS.black,
     fontFamily: FontWeight.SemiBold,
   },
   tagAccent: {
-    backgroundColor: "#84FF8D",
+    backgroundColor: COLORS.success,
   },
   tagTextAccent: {
     fontSize: 12,
-    color: COLORS.app_black,
+    color: COLORS.black,
     fontFamily: FontWeight.SemiBold,
   },
-  actionButtons: {
+  actionRow: {
     flexDirection: "row",
     gap: 12,
+    marginTop: 12,
   },
-  outlineButton: {
+  actionIcon: {
+    marginRight: 8,
+  },
+  outlineBtn: {
     flex: 1,
-    paddingVertical: 12,
-    borderRadius: 4,
-    backgroundColor: COLORS.white,
+    flexDirection: "row",
+    justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#767676",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 4,
+    
+    height: r(41, 'height'),
+    borderRadius: 12,
+    backgroundColor: COLORS.background,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
-  outlineButtonText: {
-    fontSize: 14,
-    fontFamily: FontWeight.Medium,
-    color: COLORS._383838,
+  outlineBtnText: {
+    fontSize: 15,
+    fontFamily: FontWeight.SemiBold,
+    color: COLORS.text,
   },
-  blueButtonText: {
-    fontSize: 14,
-    fontFamily: FontWeight.Medium,
-    color: COLORS.white,
-  },
-  primaryButton: {
+  filledBtn: {
     flex: 1,
-    paddingVertical: 12,
-    borderRadius: 4,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    height: r(38, 'height'),
+    borderRadius: 12,
     backgroundColor: COLORS.primary,
-    alignItems: "center",
   },
-  primaryButtonText: {
+  filledBtnText: {
+    fontSize: 15,
+    fontFamily: FontWeight.SemiBold,
+    color: COLORS.black,
+  },
+  skipProfileBtn: {
+    alignSelf: "center",
+    marginTop: 14,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+  skipProfileText: {
     fontSize: 14,
     fontFamily: FontWeight.Medium,
-    color: COLORS.white,
-  },
-  safetyContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  safetyLabel: {
-    fontSize: 12,
-    color: "#6B7280",
-    marginRight: 4,
-  },
-  safetyStars: {
-    flexDirection: "row",
-  },
-  safetyStar: {
-    fontSize: 12,
-    color: "#D1D5DB",
-  },
-  safetyStarFilled: {
-    color: "#F59E0B",
-  },
-  likeIndicator: {
-    position: "absolute",
-    top: 50,
-    right: 40,
-    transform: [{ rotate: "15deg" }],
-    borderWidth: 4,
-    borderColor: "#10B981",
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
-  likeText: {
-    fontSize: 32,
-    fontWeight: "bold",
-    color: "#10B981",
-  },
-  nopeIndicator: {
-    position: "absolute",
-    top: 50,
-    left: 40,
-    transform: [{ rotate: "-15deg" }],
-    borderWidth: 4,
-    borderColor: "#EF4444",
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
-  nopeText: {
-    fontSize: 32,
-    fontWeight: "bold",
-    color: "#EF4444",
-  },
-  skipButton: {
-    alignSelf: "center",
-    marginTop: 15,
-  },
-  skipButtonText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#374151",
+    color: COLORS.textSecondary,
+    textDecorationLine: "underline",
   },
 });
 

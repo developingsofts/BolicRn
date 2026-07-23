@@ -54,12 +54,11 @@ const SelectWorkoutScreen: React.FC<SelectWorkoutScreenProps> = ({ navigation })
     } else if (typeLower.includes('hiit')) {
       return StrengthTraining;
     } else {
-      return Man; // default
+      return Man;
     }
   };
 
   const handleWorkoutSelect = (workout: Workout) => {
-    // Navigate to workout session with selected workout
     navigation.navigate('WorkoutSession', {
       workout: workout,
     });
@@ -109,7 +108,7 @@ const SelectWorkoutScreen: React.FC<SelectWorkoutScreenProps> = ({ navigation })
         containerStyle={{ paddingTop: DIMENSIONS.spacing.xxl, paddingBottom: DIMENSIONS.spacing.lg }}
       />
 
-      <ScrollView 
+      <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -159,11 +158,13 @@ const styles = StyleSheet.create({
   },
   card: {
     width: cardWidth,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     borderRadius: 12,
     padding: DIMENSIONS.spacing.md,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.border,
     shadowColor: COLORS.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -178,12 +179,13 @@ const styles = StyleSheet.create({
   workoutImage: {
     width: 60,
     height: 60,
+    tintColor: COLORS.white,
   },
   cardTitle: {
     fontSize: 16,
     fontWeight: '600',
     fontFamily: FontWeight.SemiBold,
-    color: COLORS.gradient1,
+    color: COLORS.text,
     textAlign: 'center',
     width: '100%',
   },

@@ -13,7 +13,6 @@ import {
   KeyboardAvoidingView,
   Image,
 } from "react-native";
-// Pull to refresh state and handler
 
 import { SafeAreaView } from "react-native-safe-area-context";
 import BasicTopBar from "../components/BasicTopBar";
@@ -40,13 +39,10 @@ interface Package {
   price: number;
 }
 
-// No initialPackages, will fetch from APIx
-
 const TrainerPricing: React.FC<{ navigation: any }> = ({ navigation }) => {
   const { user } = useAuth();
   const { height: navBarHeight } = useAndroidNavBar();
 
-  // Replace with actual trainerId from auth/user context if needed
   const trainerId = user?.id || "";
   const [packages, setPackages] = useState<Package[]>([]);
   const {
@@ -76,7 +72,6 @@ const TrainerPricing: React.FC<{ navigation: any }> = ({ navigation }) => {
   };
 
   useEffect(() => {
-    // Type guard for ApiResponse<TrainingPriceSession[]>
     const mapped = sessions.map((s: any) => ({
       id: s.id || s._id,
       title: s.session_name || s.title || "",
@@ -86,7 +81,6 @@ const TrainerPricing: React.FC<{ navigation: any }> = ({ navigation }) => {
     setPackages(mapped);
   }, [pricesData]);
 
-  // Only one handleDeleteConfirm
   const handleDeleteConfirm = async () => {
     if (deleteId) {
       try {
@@ -99,8 +93,6 @@ const TrainerPricing: React.FC<{ navigation: any }> = ({ navigation }) => {
     setShowDeleteDialog(false);
     setDeleteId(null);
   };
-
-  // Remove duplicate modal logic and handlers below this point
 
   const openAddSession = () => {
     setModalMode("create");
@@ -119,7 +111,6 @@ const TrainerPricing: React.FC<{ navigation: any }> = ({ navigation }) => {
     setEditingSession(null);
   };
 
-  // Modal form state for create/edit
   const [modalForm, setModalForm] = useState<any>({
     session_name: "",
     description: "",
@@ -187,11 +178,11 @@ const TrainerPricing: React.FC<{ navigation: any }> = ({ navigation }) => {
       >
         <View style={styles.packagesList}>
           {loading ? (
-            <Text style={{ textAlign: "center", marginVertical: 24 }}>
+            <Text style={{ textAlign: "center", marginVertical: 24, color: COLORS.textSecondary }}>
               Loading...
             </Text>
           ) : packages.length === 0 ? (
-            <Text style={{ textAlign: "center", marginVertical: 24 }}>
+            <Text style={{ textAlign: "center", marginVertical: 24, color: COLORS.textSecondary }}>
               No sessions found.
             </Text>
           ) : (
@@ -266,7 +257,7 @@ const TrainerPricing: React.FC<{ navigation: any }> = ({ navigation }) => {
           >
             <View
               style={{
-                backgroundColor: "#fff",
+                backgroundColor: COLORS.surface,
                 paddingTop: 16,
                 paddingHorizontal: 20,
                 paddingBottom: 32 + navBarHeight,
@@ -295,6 +286,7 @@ const TrainerPricing: React.FC<{ navigation: any }> = ({ navigation }) => {
                     fontSize: 20,
                     textAlign: "center",
                     flex: 1,
+                    color: COLORS.text,
                   }}
                 >
                   {modalMode === "edit" ? "Edit Session" : "Create Session"}
@@ -303,7 +295,7 @@ const TrainerPricing: React.FC<{ navigation: any }> = ({ navigation }) => {
                   onPress={closeModal}
                   style={{ position: "absolute", right: 0, padding: 4 }}
                 >
-                  <Ionicons name="close" size={24} color="#222" />
+                  <Ionicons name="close" size={24} color={COLORS.text} />
                 </TouchableOpacity>
               </View>
               <View style={styles.sessionCard}>
@@ -357,7 +349,7 @@ const TrainerPricing: React.FC<{ navigation: any }> = ({ navigation }) => {
                 onPress={handleModalSubmit}
               >
                 <Text
-                  style={{ color: "#fff", fontFamily: FontWeight.Medium, fontSize: 14 }}
+                  style={{ color: COLORS.black, fontFamily: FontWeight.Medium, fontSize: 14 }}
                 >
                   {modalMode === "edit" ? "Update" : "Create"}
                 </Text>
@@ -396,6 +388,8 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surface,
     borderRadius: 16,
     marginBottom: 18,
+    borderWidth: 1,
+    borderColor: COLORS.border,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
@@ -418,7 +412,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 16,
     fontFamily: FontWeight.SemiBold,
-    color: COLORS.gradient1,
+    color: COLORS.text,
     marginBottom: 4,
   },
   cardDesc: {
@@ -455,7 +449,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   deleteBtn: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     boxShadow: "0px 0px 12px 0px #76767626",
   },
   editBtn: {
@@ -467,7 +461,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   editText: {
-    color: COLORS.white,
+    color: COLORS.black,
     fontFamily: FontWeight.Medium,
     fontSize: 14,
   },
@@ -476,7 +470,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 10,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     paddingVertical: 14,
     marginTop: 8,
   },
@@ -488,7 +482,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 12,
     fontFamily: FontWeight.Medium,
-    color: COLORS.gradient1,
+    color: COLORS.text,
     marginBottom: 2,
   },
   sessionCard: {
@@ -519,7 +513,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   inputField: {
-    backgroundColor: "#F5F5F5",
+    backgroundColor: COLORS.background,
     borderRadius: 8,
     paddingVertical: 10,
     paddingHorizontal: 12,

@@ -5,7 +5,6 @@ import Constants from "expo-constants";
 import { storageService } from "../services/storage";
 import { API_END_POINTS } from "../services/endPoints";
 
-// Types for the payment sheet parameters
 export interface PaymentSheetParams {
   paymentIntent: string;
   ephemeralKey: string;
@@ -19,18 +18,14 @@ export interface PaymentSheetParamsWithoutSavingPaymentOptions {
   publishableKey?: string;
 }
 
-// Types for the payment request
 export interface PaymentRequest {
-  amount: number; // Amount in cents (e.g., 1000 = $10.00)
-  currency?: string; // Default: 'usd'
-  customerId?: string; // Optional: existing customer ID
-  description?: string; // Optional: payment description
-  metadata?: Record<string, string>; // Optional: additional metadata
+  amount: number;
+  currency?: string;
+  customerId?: string;
+  description?: string;
+  metadata?: Record<string, string>;
 }
 
-/**
- * Get the app's URL scheme from expo config
- */
 const getAppUrlScheme = (): string => {
   const scheme = Constants.expoConfig?.scheme;
 
@@ -41,10 +36,6 @@ const getAppUrlScheme = (): string => {
   return scheme || "bolic";
 };
 
-/**
- * Validate if payment intent is in correct Stripe format
- * Valid format: pi_xxxxxxxxxxxxx_secret_yyyyyyyyyyyyy
- */
 const validatePaymentIntent = (paymentIntent: string): boolean => {
   if (!paymentIntent || typeof paymentIntent !== "string") {
     console.warn("❌ Payment intent is empty or not a string:", paymentIntent);
@@ -138,16 +129,10 @@ export const fetchPaymentSheetParams = async (
   }
 };
 
-/**
- * Hook to handle the complete payment flow
- */
 export const useStripePayment = () => {
   const { initPaymentSheet, presentPaymentSheet, isPlatformPaySupported } =
     useStripe();
 
-  /**
-   * Check if Google Pay (Android) or Apple Pay (iOS) is available on this device
-   */
   const checkPlatformPayAvailable = async (): Promise<boolean> => {
     try {
       const isSupported = await isPlatformPaySupported();
@@ -162,9 +147,6 @@ export const useStripePayment = () => {
     }
   };
 
-  /**
-   * Initialize the payment sheet with the parameters from your backend
-   */
   const initializePaymentSheet = async (
     paymentRequest: PaymentRequest
   ): Promise<{ error?: string }> => {
@@ -179,7 +161,6 @@ export const useStripePayment = () => {
       const urlScheme = getAppUrlScheme();
       const returnURL = `${urlScheme}://payment-return`;
 
-      // Check if Google Pay / Apple Pay is available on this device
       const platformPayAvailable = await checkPlatformPayAvailable();
       console.log(
         "Platform pay available, adding to payment sheet:",
@@ -205,7 +186,6 @@ export const useStripePayment = () => {
           email: paymentRequest.metadata?.customerEmail,
         },
         returnURL,
-        // Only include Apple Pay / Google Pay if supported on this device
         ...(platformPayAvailable && {
           applePay: {
             merchantCountryCode: "US",

@@ -92,7 +92,6 @@ export const ProgressTracker: React.FC<ProgressTrackerProps> = ({
   onSetGoal,
   onViewStats,
 }) => {
-  // Get progress statistics
   const getProgressStats = () => {
     const totalWorkouts = workoutSessions.length;
     const totalTime = workoutSessions.reduce((sum, session) => sum + session.duration, 0);
@@ -124,7 +123,6 @@ export const ProgressTracker: React.FC<ProgressTrackerProps> = ({
         </TouchableOpacity>
       </View>
       
-      {/* Progress Stats */}
       <View style={styles.progressSummary}>
         <View style={styles.progressItem}>
           <Text style={styles.progressNumber}>{progressStats.totalWorkouts}</Text>
@@ -144,7 +142,6 @@ export const ProgressTracker: React.FC<ProgressTrackerProps> = ({
         </View>
       </View>
       
-      {/* Active Goals Preview */}
       {progressGoals.filter(goal => !goal.completed).length > 0 && (
         <View style={styles.goalsPreview}>
           <Text style={styles.goalsPreviewTitle}>Active Goals</Text>
@@ -169,7 +166,6 @@ export const ProgressTracker: React.FC<ProgressTrackerProps> = ({
         </View>
       )}
       
-      {/* Quick Actions */}
       <View style={styles.progressActions}>
         <TouchableOpacity 
           style={styles.progressActionButton}
@@ -190,7 +186,6 @@ export const ProgressTracker: React.FC<ProgressTrackerProps> = ({
   );
 };
 
-// Progress Stats Component
 interface ProgressStatsProps {
   workoutSessions: WorkoutSession[];
   progressGoals: ProgressGoal[];
@@ -236,7 +231,6 @@ export const ProgressStats: React.FC<ProgressStatsProps> = ({
 
   return (
     <ScrollView style={styles.statsContainer}>
-      {/* Overview Stats */}
       <View style={styles.statsSection}>
         <Text style={styles.sectionTitle}>Overview</Text>
         <View style={styles.statsGrid}>
@@ -259,7 +253,6 @@ export const ProgressStats: React.FC<ProgressStatsProps> = ({
         </View>
       </View>
 
-      {/* Time-based Stats */}
       <View style={styles.statsSection}>
         <Text style={styles.sectionTitle}>This Period</Text>
         <View style={styles.statsGrid}>
@@ -282,7 +275,6 @@ export const ProgressStats: React.FC<ProgressStatsProps> = ({
         </View>
       </View>
 
-      {/* Goals Stats */}
       <View style={styles.statsSection}>
         <Text style={styles.sectionTitle}>Goals</Text>
         <View style={styles.statsGrid}>
@@ -305,7 +297,6 @@ export const ProgressStats: React.FC<ProgressStatsProps> = ({
         </View>
       </View>
 
-      {/* Recent Workouts */}
       <View style={styles.statsSection}>
         <Text style={styles.sectionTitle}>Recent Workouts</Text>
         {workoutSessions.slice(0, 5).map((session) => (
@@ -329,7 +320,7 @@ export const ProgressStats: React.FC<ProgressStatsProps> = ({
 
 const styles = StyleSheet.create({
   progressTrackerCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 20,
@@ -349,11 +340,11 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#374151',
+    color: COLORS.text,
   },
   viewAllText: {
     fontSize: 14,
-    color: '#3B82F6',
+    color: COLORS.primary,
     fontWeight: '500',
   },
   progressSummary: {
@@ -369,22 +360,21 @@ const styles = StyleSheet.create({
   progressNumber: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#3B82F6',
+    color: COLORS.primary,
     marginBottom: 4,
   },
   progressLabel: {
     fontSize: 12,
-    color: '#6B7280',
+    color: COLORS.textSecondary,
   },
   
-  // Enhanced progress tracking styles
   goalsPreview: {
     marginTop: 16,
   },
   goalsPreviewTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#374151',
+    color: COLORS.text,
     marginBottom: 12,
   },
   goalPreviewItem: {
@@ -399,21 +389,21 @@ const styles = StyleSheet.create({
   goalPreviewTitle: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#374151',
+    color: COLORS.text,
   },
   goalPreviewProgress: {
     fontSize: 12,
-    color: '#6B7280',
+    color: COLORS.textSecondary,
   },
   goalPreviewBar: {
     height: 6,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: COLORS.border,
     borderRadius: 3,
     overflow: 'hidden',
   },
   goalPreviewFill: {
     height: '100%',
-    backgroundColor: '#10B981',
+    backgroundColor: COLORS.success,
     borderRadius: 3,
   },
   progressActions: {
@@ -426,7 +416,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 8,
     paddingHorizontal: 16,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: COLORS.border,
     borderRadius: 20,
   },
   progressActionIcon: {
@@ -436,16 +426,15 @@ const styles = StyleSheet.create({
   progressActionText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#374151',
+    color: COLORS.text,
   },
   
-  // Stats styles
   statsContainer: {
     flex: 1,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: COLORS.background,
   },
   statsSection: {
-    backgroundColor: 'white',
+    backgroundColor: COLORS.surface,
     margin: 16,
     padding: 16,
     borderRadius: 12,
@@ -458,7 +447,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#374151',
+    color: COLORS.text,
     marginBottom: 16,
   },
   statsGrid: {
@@ -468,7 +457,7 @@ const styles = StyleSheet.create({
   },
   statCard: {
     width: '48%',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: COLORS.background,
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',
@@ -477,12 +466,12 @@ const styles = StyleSheet.create({
   statNumber: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#3B82F6',
+    color: COLORS.primary,
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 12,
-    color: '#6B7280',
+    color: COLORS.textSecondary,
     textAlign: 'center',
   },
   workoutItem: {
@@ -491,7 +480,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: COLORS.border,
   },
   workoutInfo: {
     flex: 1,
@@ -499,12 +488,12 @@ const styles = StyleSheet.create({
   workoutType: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#374151',
+    color: COLORS.text,
     textTransform: 'capitalize',
   },
   workoutDate: {
     fontSize: 12,
-    color: '#6B7280',
+    color: COLORS.textSecondary,
     marginTop: 2,
   },
   workoutStats: {
@@ -513,11 +502,11 @@ const styles = StyleSheet.create({
   workoutDuration: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#374151',
+    color: COLORS.text,
   },
   workoutCalories: {
     fontSize: 12,
-    color: '#6B7280',
+    color: COLORS.textSecondary,
     marginTop: 2,
   },
 }); 

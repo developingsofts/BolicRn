@@ -1,8 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { User } from '../types';
 
-
-// User State Interface
 interface UserState {
   user: User | null;
   token: string | null;
@@ -12,7 +10,6 @@ interface UserState {
   error: string | null;
 }
 
-// Initial State
 const initialState: UserState = {
   user: null,
   token: null,
@@ -48,7 +45,5 @@ const userSlice = createSlice({
   },
 });
 
-// Export actions
 export const {  updateUser,setUser, clearUser } = userSlice.actions;
-// Export reducer
 export default userSlice.reducer;

@@ -36,8 +36,7 @@ const SelectDateTimeScreen: React.FC<SelectDateTimeScreenProps> = ({
   const handleContinue = (selectedDate: string, selectedTime: string, selectedSlots?: { date: string; time: string }[]) => {
     console.log("Selected:", selectedDate, selectedTime);
     console.log("All Selected Slots:", selectedSlots);
-    
-    // Navigate to confirmation screen
+
     navigation.navigate("BookingConfirmation", {
       priceId,
       trainerId,

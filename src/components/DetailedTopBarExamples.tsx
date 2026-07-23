@@ -6,7 +6,6 @@ import { COLORS } from "../config/constants";
 import { r } from "../designing/responsiveDesigns";
 import FontWeight from "../hooks/useInterFonts";
 
-// Example 1: Profile Screen with Edit and Settings
 export const ProfileTopBar = ({ navigation }: any) => (
   <DetailedTopBar
     onBackPress={() => navigation.goBack()}
@@ -32,7 +31,6 @@ export const ProfileTopBar = ({ navigation }: any) => (
   />
 );
 
-// Example 2: User Profile with Following Button
 export const UserProfileTopBar = ({ navigation }: any) => (
   <DetailedTopBar
     onBackPress={() => navigation.goBack()}
@@ -53,7 +51,7 @@ export const UserProfileTopBar = ({ navigation }: any) => (
         </Text>
         <View style={styles.actionButtons}>
           <TouchableOpacity style={styles.followingButton}>
-            <Ionicons name="person-outline" size={18} color={COLORS.gradient1} />
+            <Ionicons name="person-outline" size={18} color={COLORS.text} />
             <Text style={styles.followingText}>Following</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.addButton}>
@@ -65,7 +63,6 @@ export const UserProfileTopBar = ({ navigation }: any) => (
   />
 );
 
-// Example 3: Custom Avatar Image
 export const CustomAvatarTopBar = ({ navigation }: any) => (
   <DetailedTopBar
     onBackPress={() => navigation.goBack()}
@@ -84,7 +81,6 @@ export const CustomAvatarTopBar = ({ navigation }: any) => (
   />
 );
 
-// Example 4: With Statistics
 export const ProfileWithStatsTopBar = ({ navigation }: any) => (
   <DetailedTopBar
     onBackPress={() => navigation.goBack()}
@@ -117,7 +113,6 @@ export const ProfileWithStatsTopBar = ({ navigation }: any) => (
   />
 );
 
-// Example 5: Minimal - No Back Button
 export const MinimalTopBar = () => (
   <DetailedTopBar
     showBackButton={false}
@@ -150,7 +145,7 @@ const styles = StyleSheet.create({
   followingButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     paddingHorizontal: r(24),
     paddingVertical: r(10),
     borderRadius: r(8),
@@ -161,7 +156,7 @@ const styles = StyleSheet.create({
   followingText: {
     fontSize: 16,
     fontFamily: FontWeight.SemiBold,
-    color: COLORS.gradient1,
+    color: COLORS.text,
   },
   addButton: {
     backgroundColor: COLORS.primary,

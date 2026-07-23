@@ -258,7 +258,7 @@ const styles = StyleSheet.create({
   },
   unreadText: {
     fontSize: 12,
-    color: COLORS.white,
+    color: COLORS.black,
     fontFamily: FontWeight.SemiBold,
   },
   footer: {

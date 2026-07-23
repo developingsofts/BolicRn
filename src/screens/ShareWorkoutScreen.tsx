@@ -50,16 +50,13 @@ const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
     useState<AchievementType | null>(null);
   const [showAchievementModal, setShowAchievementModal] = useState(false);
 
-  // Get current user
   const { user, isAuthenticated } = useAuth();
 
-  // Pagination state
   const [page, setPage] = useState(1);
   const [allWorkouts, setAllWorkouts] = useState<UserWorkout[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const isInitialMount = useRef(true);
 
-  // Fetch user workouts with pagination
   const {
     data: workoutsData,
     isLoading: workoutsLoading,
@@ -72,7 +69,6 @@ const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
     );
   const [createPost, { isLoading: isCreating }] = useCreatePostMutation();
 
-  // Use API data - accumulate workouts from all pages
   const currentPageWorkouts = useMemo(
     () =>
       workoutsData?.status && workoutsData?.data?.workouts
@@ -81,16 +77,12 @@ const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
     [workoutsData],
   );
 
-  // Effect to accumulate workouts when new page data arrives
   useEffect(() => {
     if (isInitialMount.current && page === 1) {
-      // Initial load - replace the list
       setAllWorkouts(currentPageWorkouts);
       isInitialMount.current = false;
     } else {
-      // Pagination or refresh - append workouts
       setAllWorkouts((prevWorkouts) => {
-        // Avoid duplicates by checking if workouts already exist
         const existingIds = new Set(prevWorkouts.map((w) => w.id));
         const newWorkouts = currentPageWorkouts.filter(
           (w) => !existingIds.has(w.id),
@@ -108,22 +100,18 @@ const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
       ? achievementsData.data
       : [];
 
-  // Handle load more
   const handleLoadMore = () => {
     if (!isFetching && pagination?.hasMore) {
       setPage((prevPage) => prevPage + 1);
     }
   };
 
-  // Handle refresh
   const handleRefresh = () => {
     setRefreshing(true);
     setPage(1);
-    // Workouts will be concatenated with existing ones via the useEffect
     setTimeout(() => setRefreshing(false), 300);
   };
 
-  // Render footer with loading indicator
   const renderFooter = () => {
     if (!isFetching) return null;
     return (
@@ -152,7 +140,6 @@ const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
       const asset = result.assets[0];
       setSelectedImage(asset.uri);
 
-      // Determine MIME type
       let mimeType = "image/jpeg";
       if (asset.uri.endsWith(".png")) mimeType = "image/png";
       else if (asset.uri.endsWith(".jpg") || asset.uri.endsWith(".jpeg"))
@@ -234,7 +221,6 @@ const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
 
   return (
     <SafeAreaView edges={[]} style={styles.container}>
-      {/* Top Bar */}
       <View
         style={{
           flex: 1,
@@ -254,7 +240,7 @@ const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
           behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={styles.mainScrollView}
         >
-          <ScrollView 
+          <ScrollView
             showsVerticalScrollIndicator={false}
             refreshControl={
               <RefreshControl
@@ -264,7 +250,6 @@ const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
               />
             }
           >
-            {/* Loading State */}
             {workoutsLoading && page === 1 && (
               <View style={{ padding: 20, alignItems: "center" }}>
                 <ActivityIndicator size="large" color={COLORS.primary} />
@@ -274,7 +259,6 @@ const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
               </View>
             )}
 
-            {/* Empty State */}
             {!workoutsLoading && allWorkouts.length === 0 && (
               <View
                 style={{
@@ -289,7 +273,6 @@ const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
               </View>
             )}
 
-            {/* Workout List */}
             {!workoutsLoading && allWorkouts.length > 0 && (
               <View style={styles.workoutListContainer}>
                 {allWorkouts.map((workout: UserWorkout) => (
@@ -309,7 +292,7 @@ const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
                     <View style={styles.workoutDetailsRow}>
                       <View
                         style={{
-                          backgroundColor: "rgba(11, 128, 255, 0.1)",
+                          backgroundColor: COLORS.surface,
                           paddingHorizontal: 8,
                           paddingVertical: 4,
                           borderRadius: 12,
@@ -341,7 +324,6 @@ const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
                   </TouchableOpacity>
                 ))}
 
-                {/* Load More Button */}
                 {pagination?.hasMore && !isFetching && (
                   <TouchableOpacity
                     style={styles.loadMoreButton}
@@ -351,7 +333,6 @@ const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
                   </TouchableOpacity>
                 )}
 
-                {/* Loading More Indicator */}
                 {isFetching && page > 1 && (
                   <View style={{ padding: 10, alignItems: "center" }}>
                     <ActivityIndicator size="small" color={COLORS.primary} />
@@ -360,9 +341,7 @@ const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
               </View>
             )}
 
-            {/* Post Area */}
             <View style={styles.content}>
-              {/* Text Input */}
               <View style={styles.textInputContainer}>
                 <TextInput
                   style={styles.textInput}
@@ -376,7 +355,6 @@ const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
                 />
               </View>
 
-              {/* Action Buttons */}
               <View style={styles.actionButtons}>
                 <TouchableOpacity
                   style={styles.actionButton}
@@ -404,7 +382,6 @@ const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
                 </TouchableOpacity>
               </View>
 
-              {/* Selected Achievement */}
               {selectedAchievement && (
                 <View style={styles.achievementContainer}>
                   <View style={styles.achievementHeader}>
@@ -441,7 +418,6 @@ const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
                 style={{ height: 1.5, backgroundColor: COLORS._C9C9C9 }}
               />
 
-              {/* Selected Images */}
               {selectedImage && (
                 <View style={styles.imagesContainer}>
                   <View
@@ -478,7 +454,7 @@ const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
                 disabled={isCreating}
               >
                 {isCreating ? (
-                  <ActivityIndicator color={COLORS.white} />
+                  <ActivityIndicator color={COLORS.black} />
                 ) : (
                   <Text style={styles.postButtonText}>
                     {STRINGS.CREATE_POST.post}
@@ -490,7 +466,6 @@ const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
         </KeyboardAvoidingView>
 
         {
-          /* Achievement Selection Modal */
           <Modal
             visible={showAchievementModal}
             transparent
@@ -587,7 +562,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   loadMoreText: {
-    color: COLORS.white,
+    color: COLORS.black,
     fontSize: 14,
     fontWeight: "600",
     fontFamily: FontWeight.SemiBold,
@@ -619,7 +594,7 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
   },
   workoutCard: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     borderRadius: 10,
     padding: 12,
     marginBottom: 10,
@@ -644,7 +619,7 @@ const styles = StyleSheet.create({
   },
   workoutType: {
     fontSize: 12,
-    color: "rgba(11, 128, 255, 1)",
+    color: COLORS.primary,
     fontWeight: "400",
     fontFamily: FontWeight.Medium,
   },
@@ -673,7 +648,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     borderColor: COLORS._D9D9D9,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     textAlignVertical: "top",
     padding: 10,
     fontSize: 14,
@@ -693,7 +668,7 @@ const styles = StyleSheet.create({
   },
   actionBtnText: {
     marginLeft: 6,
-    color: COLORS.black,
+    color: COLORS.text,
     fontWeight: "500",
     fontSize: 14,
   },
@@ -704,18 +679,19 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
   },
   postBtnText: {
-    color: COLORS.white,
+    color: COLORS.black,
     fontWeight: "700",
     fontSize: 16,
   },
-  // Post Area Styles (copied from CreatePostScreen)
   content: {
     padding: 12,
     borderRadius: 10,
     marginTop: 10,
     marginBottom: 10,
     marginHorizontal: DIMENSIONS.spacing.lg,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
     shadowOffset: {
       width: 0,
       height: 2,
@@ -728,7 +704,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   textInputContainer: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     borderRadius: 10,
     paddingHorizontal: 10,
     height: 130,
@@ -757,14 +733,15 @@ const styles = StyleSheet.create({
     fontFamily: FontWeight.Medium,
     textAlign: "center",
     alignSelf: "center",
-    color: COLORS.gradient1,
+    color: COLORS.text,
   },
   actionButtonImage: {
     width: 25,
     height: 25,
+    tintColor: COLORS.white,
   },
   achievementContainer: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     borderWidth: 1,
     paddingHorizontal: 15,
     paddingVertical: 10,
@@ -781,7 +758,7 @@ const styles = StyleSheet.create({
   achievementTitle: {
     fontSize: 16,
     fontFamily: FontWeight.SemiBold,
-    color: COLORS.gradient1,
+    color: COLORS.text,
     letterSpacing: 1,
   },
   achievementCard: {
@@ -842,7 +819,7 @@ const styles = StyleSheet.create({
   postButtonText: {
     fontSize: 14,
     fontFamily: FontWeight.Medium,
-    color: COLORS.white,
+    color: COLORS.black,
   },
   modalOverlay: {
     flex: 1,
@@ -850,7 +827,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   modalContent: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     minHeight: "40%",
@@ -897,6 +874,7 @@ const styles = StyleSheet.create({
   closeIcon: {
     width: 25,
     height: 25,
+    tintColor: COLORS.white,
   },
 });
 

@@ -25,8 +25,8 @@ export interface BookingData {
   id: number;
   trainer: TrainerInfo;
   user: UserInfo;
-  date: string; // ISO format: "2025-12-10T00:00:00.000Z"
-  time: string; // e.g., "10:00AM"
+  date: string;
+  time: string;
   price: PriceInfo;
   status: "upcomming" | "completed" | "canceled";
 }
@@ -34,8 +34,8 @@ export interface BookingData {
 export interface CreateBookingRequest {
   trainer_id: string | number;
   price_id: string | number;
-  date: string; // e.g., "12/10/2025"
-  time: string; // e.g., "10:00AM"
+  date: string;
+  time: string;
   status: "upcomming" | "completed" | "canceled";
 }
 
@@ -54,7 +54,6 @@ export interface DeleteBookingRequest {
 export interface RefundRequest {
   sessionId: number;
 }
-
 
 export interface PaginationInfo {
   page: number;

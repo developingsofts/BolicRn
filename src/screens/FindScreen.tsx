@@ -29,12 +29,10 @@ import {
 } from "../services/api/matchingApi";
 import {
   useFollowUserMutation,
-  useGetFollowingQuery,
   useUnfollowUserMutation,
 } from "../services/api/followsApi";
 import FontWeight from "../hooks/useInterFonts";
 
-// Helper to map API user to SwipeableItem
 function mapToSwipeableItem(item: any): SwipeableItem {
   console.log(
     "mapToSwipeableItem item:",
@@ -126,7 +124,6 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation, route }) => {
 
   const trainersData = trainers?.status === true ? trainers?.data?.users : [];
 
-  // Refetch data whenever the screen comes into focus based on active tab
   useFocusEffect(
     useCallback(() => {
       if (activeTab === "partners") {
@@ -138,7 +135,6 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation, route }) => {
   );
 
   const getCurrentData = () => {
-    // Use the correct data source based on the active tab
     let data: any[] = [];
     if (activeTab === "partners") {
       data = partnersData ?? [];
@@ -146,12 +142,10 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation, route }) => {
       data = trainersData ?? [];
     }
 
-    // Filter out removed and invalid items
     data = data.filter(
       (item: any) => item && item.id && !removedIds.includes(item.id),
     );
 
-    // Apply filters
     if (selectedFilters.includes("All") || selectedFilters.length === 0) {
       return data;
     }
@@ -170,7 +164,6 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation, route }) => {
     const currentData = getCurrentData();
     const remainingCards = currentData.length - currentIndex;
 
-    // Fetch more data when we're down to the last 2 cards
     if (remainingCards <= 2 && remainingCards > 0) {
       if (activeTab === "partners" && !isFetchingPartners) {
         console.log("useEffect 1 partners");
@@ -189,7 +182,6 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation, route }) => {
     const hasReachedEnd = currentData.length === 0 || !currentItem;
 
     if (hasReachedEnd && skippedCount > 0) {
-      // Auto refetch data when user reaches the end after skipping
       const refetchData = async () => {
         if (activeTab === "partners") {
           console.log("useEffect 2 partners");
@@ -208,6 +200,24 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation, route }) => {
       refetchData();
     }
   }, [currentIndex, skippedCount, activeTab, getCurrentData().length]);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    setRemovedIds([]);
+    setSkippedCount(0);
+
+    if (activeTab === "partners") {
+      setPartnersPage(1);
+      await refetchPartners();
+    } else {
+      setTrainersPage(1);
+      await refetchTrainers();
+    }
+    setCurrentIndex(0);
+    setRefreshing(false);
+  };
+
+  const [swipeUser, { isLoading: isSwipingUser }] = useSwipeUserMutation();
 
   const handleFollow = async () => {
     const targetUserId = currentItem?.id;
@@ -229,24 +239,6 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation, route }) => {
     }
   };
 
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    setRemovedIds([]);
-    setSkippedCount(0);
-
-    if (activeTab === "partners") {
-      setPartnersPage(1);
-      await refetchPartners();
-    } else {
-      setTrainersPage(1);
-      await refetchTrainers();
-    }
-    setCurrentIndex(0);
-    setRefreshing(false);
-  };
-
-  const [swipeUser, { isLoading: isSwipingUser }] = useSwipeUserMutation();
-
   const handleSwipeLeft = async (item: SwipeableItem) => {
     try {
       const response = await swipeUser({
@@ -262,6 +254,8 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation, route }) => {
     }
   };
 
+  // Neutral "Skip Profile" — advance to the next card without recording a
+  // like/dislike on the server.
   const handleSkip = async (item: SwipeableItem) => {
     setSkippedCount((prev) => prev + 1);
     setRemovedIds((prev) => [...prev, item.id]);
@@ -271,7 +265,6 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation, route }) => {
   const handleSwipeRight = async (item: SwipeableItem) => {
     try {
       const response = await swipeUser({ swipedToId: item.id, type: "Liked" });
-      // Only show alert if API call is successful and status is true
       if (response?.data?.status === true) {
         const message =
           activeTab === "partners"
@@ -352,7 +345,6 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation, route }) => {
         `${STRINGS.FIND.alerts.ratingSubmittedMessage} ${selectedUserForRating.name} ${STRINGS.FIND.alerts.withStars} ${rating} ${STRINGS.FIND.alerts.stars}`,
         [{ text: STRINGS.COMMON.ok }],
       );
-      // Here you would typically save the rating to your backend
     }
   };
 
@@ -389,7 +381,6 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation, route }) => {
         refreshing={refreshing}
         onRefresh={handleRefresh}
       >
-        {/* Header Section */}
         <View style={styles.headerContainer}>
           <BasicTopBar
             showBackButton={false}
@@ -453,7 +444,6 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation, route }) => {
           />
         </View>
 
-        {/* Cards Section */}
         <View style={styles.cardsSection}>
           {isLoading && currentData.length === 0 ? (
             <View
@@ -472,6 +462,7 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation, route }) => {
           ) : currentItem && currentItem.id ? (
             <>
               <SwipeableCard
+                key={currentItem?.id}
                 partner={mapToSwipeableItem(currentItem)}
                 onPress={() =>
                   navigation.navigate("UserProfile", {
@@ -482,7 +473,6 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation, route }) => {
                 onSwipeLeft={handleSwipeLeft}
                 onSwipeRight={handleSwipeRight}
                 onSkip={handleSkip}
-                isFirst={true}
                 isFollowing={currentItem.isFollowing}
                 navigation={navigation}
                 onFollow={handleFollow}
@@ -515,6 +505,7 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: COLORS.background,
   },
   scrollView: {
     flex: 1,
@@ -528,7 +519,6 @@ const styles = StyleSheet.create({
     zIndex: 20,
   },
   tabContainerWrapper: {
-    // position: "absolute",
     top: 25,
     left: 0,
     right: 0,
@@ -564,7 +554,7 @@ const styles = StyleSheet.create({
     fontFamily: FontWeight.Medium,
   },
   tabTextActive: {
-    color: COLORS.white,
+    color: COLORS.black,
     fontFamily: FontWeight.Medium,
     fontSize: 16,
   },
@@ -594,14 +584,6 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     fontWeight: "500",
   },
-  menuItemText: {
-    fontSize: 14,
-    color: COLORS.text,
-  },
-  menuItemTextActive: {
-    color: COLORS.primary,
-    fontWeight: "600",
-  },
   selectedChipsContainer: {
     paddingHorizontal: DIMENSIONS.spacing.lg,
     height: 40,
@@ -630,11 +612,13 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "bold",
     marginBottom: DIMENSIONS.spacing.md,
+    color: COLORS.text,
   },
   noMoreCardsText: {
     fontSize: 16,
     textAlign: "center",
     marginBottom: DIMENSIONS.spacing.lg,
+    color: COLORS.textSecondary,
   },
   resetButton: {
     borderRadius: DIMENSIONS.borderRadius,

@@ -66,7 +66,6 @@ const BookingConfirmationScreen: React.FC = () => {
   const [createBooking] = useCreateBookingMutation();
   const { initializePaymentSheet, openPaymentSheet } = useStripePayment();
 
-  // Get data from route params or use defaults
   const {
     priceId = "",
     trainerId,
@@ -79,11 +78,9 @@ const BookingConfirmationScreen: React.FC = () => {
     selectedSlots = [],
   } = route.params || {};
 
-  // Format date and time display based on selectedSlots
   const formatDateTimeDisplay = useMemo(() => {
     console.log("Selected Slots for formatting:", selectedSlots);
     if (selectedSlots && selectedSlots.length > 0) {
-      // Format date: "MMMM dd, yyyy"
       const firstDate = new Date(selectedSlots[0].date);
       const dateStr = firstDate.toLocaleDateString("en-US", {
         month: "long",
@@ -91,13 +88,10 @@ const BookingConfirmationScreen: React.FC = () => {
         year: "numeric",
       });
 
-      // Format time based on number of slots
       let timeRange: string;
       if (selectedSlots.length === 1) {
-        // Single slot: "at HH:MM AM/PM"
         timeRange = `At ${selectedSlots[0].time}`;
       } else {
-        // Multiple slots: "From HH:MM AM/PM to HH:MM AM/PM"
         timeRange = `From ${selectedSlots[0].time} to ${selectedSlots[selectedSlots.length - 1].time}`;
       }
 
@@ -107,7 +101,6 @@ const BookingConfirmationScreen: React.FC = () => {
         displayTime: timeRange,
       };
     } else {
-      // Single slot or default format
       return {
         dateTime: `${date} at ${time}`,
         displayDate: date,
@@ -123,9 +116,7 @@ const BookingConfirmationScreen: React.FC = () => {
       location: trainerAddress,
       priceItems: [
         { label: packageName, amount: price },
-        // { label: "First-Time Discount", amount: 15, isDiscount: true },
       ] as PriceItem[],
-      // total: price - 15,
       total: price,
     }),
     [trainerName, packageName, price, trainerAddress, formatDateTimeDisplay],
@@ -146,11 +137,9 @@ const BookingConfirmationScreen: React.FC = () => {
     setIsProcessing(true);
     console.log("priceSending", sessionData.total);
     try {
-      // Initialize the Stripe payment sheet (send amount in dollars, backend converts to cents)
       const localDateStr = selectedSlots[0]?.date || date;
       const localTimeStr = selectedSlots[0]?.time || time;
 
-      // Convert local to UTC using utility function
       const { utcDate, utcTime } = convertLocaDatemmddyyyylToUTC(
         localDateStr,
         localTimeStr,
@@ -231,14 +220,12 @@ const BookingConfirmationScreen: React.FC = () => {
 
       (async () => {
         try {
-          // Get local date and time
           const localDateStr = selectedSlots[0]?.date || date;
           const localTimeStr = selectedSlots[0]?.time || time;
 
           console.log("[BookingConfirmation] Local date:", localDateStr);
           console.log("[BookingConfirmation] Local time:", localTimeStr);
 
-          // Convert local to UTC using utility function
           const { utcDate, utcTime } = convertLocaDatemmddyyyylToUTC(
             localDateStr,
             localTimeStr,
@@ -270,7 +257,6 @@ const BookingConfirmationScreen: React.FC = () => {
           );
           setIsProcessing(false);
 
-          // Navigate to success screen
           navigation.navigate("BookingSuccess", {
             trainerId,
             trainerName,
@@ -361,7 +347,6 @@ const BookingConfirmationScreen: React.FC = () => {
             total={sessionData.total}
           />
 
-          {/* Cancellation Policy Section */}
           <View style={styles.policyContainer}>
             <View style={styles.policyIconContainer}>
               <Feather
@@ -412,7 +397,7 @@ const BookingConfirmationScreen: React.FC = () => {
             <View style={styles.buttonContent}>
               {isProcessing ? (
                 <>
-                  <ActivityIndicator color={COLORS.white} size="small" />
+                  <ActivityIndicator color={COLORS.black} size="small" />
                   <Text style={styles.buttonText}>
                     {STRINGS.BOOKING_CONFIRMATION.buttons.processing}
                   </Text>
@@ -434,7 +419,6 @@ const BookingConfirmationScreen: React.FC = () => {
         </View>
       </ScrollView>
 
-      {/* Payment Options Dialog */}
       <PaymentOptionsDialog
         visible={showPaymentDialog}
         onClose={() => setShowPaymentDialog(false)}
@@ -569,7 +553,7 @@ const styles = StyleSheet.create({
     gap: r(10),
   },
   buttonText: {
-    color: COLORS.white,
+    color: COLORS.black,
     fontFamily: FontWeight.SemiBold,
     fontSize: r(16, "font"),
   },

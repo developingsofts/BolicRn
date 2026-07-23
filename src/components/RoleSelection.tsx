@@ -48,12 +48,22 @@ const RoleSelection: React.FC<RoleSelectionProps> = ({ onNext }) => {
   return (
     <View style={styles.container}>
       {renderCard({
-        icon: <Image source={User3} style={{ width: 24, height: 24 }} />,
+        icon: (
+          <Image
+            source={User3}
+            style={{ width: 24, height: 24, tintColor: COLORS.white }}
+          />
+        ),
         name: "User",
         desc: "Find partners, join groups, and track progress.",
       })}
       {renderCard({
-        icon: <Image source={Trainer} style={{ width: 24, height: 24 }} />,
+        icon: (
+          <Image
+            source={Trainer}
+            style={{ width: 24, height: 24, tintColor: COLORS.white }}
+          />
+        ),
         name: "Trainer",
         desc: "I want to help others reach their fitness potential.",
       })}
@@ -68,21 +78,20 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
   },
-  // header, title, step, progress styles are now in OnboardingStepHeader
   cards: { gap: 16 },
   card: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     borderRadius: 16,
     padding: 20,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#eee",
+    borderColor: COLORS.border,
     marginBottom: 8,
     elevation: 2,
   },
   cardSelected: {
-    borderColor: "#6366F1",
-    shadowColor: "#6366F1",
+    borderColor: COLORS.border,
+    shadowColor: COLORS.black,
     shadowOpacity: 0.15,
     shadowRadius: 8,
     elevation: 4,
@@ -92,17 +101,17 @@ const styles = StyleSheet.create({
     height: 48,
 
     borderRadius: 24,
-    backgroundColor: "#222",
+    backgroundColor: COLORS.surface,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 12,
   },
-  cardTitle: { fontSize: 18, fontWeight: "600", color: "#222" },
-  cardDesc: { fontSize: 14, color: "#888", textAlign: "center", marginTop: 4 },
+  cardTitle: { fontSize: 18, fontWeight: "600", color: COLORS.text },
+  cardDesc: { fontSize: 14, color: COLORS.textSecondary, textAlign: "center", marginTop: 4 },
   signIn: { alignItems: "center", marginTop: 24 },
-  signInText: { fontSize: 14, color: "#888" },
+  signInText: { fontSize: 14, color: COLORS.textSecondary },
   signInButton: {
-    color: "#6366F1",
+    color: COLORS.primary,
     fontWeight: "400",
     textDecorationLine: "underline",
   },

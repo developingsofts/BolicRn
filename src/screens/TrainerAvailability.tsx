@@ -55,13 +55,11 @@ const TrainerAvailability: React.FC<{ navigation: any }> = ({ navigation }) => {
     useUpdateAvailabilityMutation();
   const [deleteAvailability] = useDeleteAvailabilityMutation();
 
-  // Fetch slots from API
   const { data, isLoading, isFetching, refetch } = useGetAvailabilityQuery(
     user?.id ? { trainerId: user.id } : { trainerId: "" },
     { skip: !user?.id }
   );
 
-  // Convert API slots to WeekAvailability
   useEffect(() => {
     const week: WeekAvailability = {};
     daysOfWeek.forEach((day) => {
@@ -76,7 +74,6 @@ const TrainerAvailability: React.FC<{ navigation: any }> = ({ navigation }) => {
       const slots = data.data[0]?.slots || [];
       slots.forEach((slot) => {
         const day = slot.day;
-        // Treat as off if both start_time and end_time are 'OFF' or empty
         const isOff =
           (slot && slot.start_time === "OFF" && slot.end_time === "OFF") ||
           (slot.start_time === "" && slot.end_time === "");
@@ -84,7 +81,6 @@ const TrainerAvailability: React.FC<{ navigation: any }> = ({ navigation }) => {
           if (isOff) {
             week[day] = { start_time: "", end_time: "" };
           } else {
-            // Convert UTC times to local timezone
             const localStartTime = slot.start_time
               ? toLocalTime(slot.start_time)
               : "";
@@ -107,11 +103,8 @@ const TrainerAvailability: React.FC<{ navigation: any }> = ({ navigation }) => {
         }
       });
     }
-    // Fallback to 09:00 AM/05:00 PM in 12-hour format if missing
     daysOfWeek.forEach((day) => {
-      // Defensive: ensure week[day] is always defined
       const dayObj = week[day] || { start_time: "", end_time: "" };
-      // Only fallback if value is missing or OFF
       if (!dayObj.start_time || dayObj.start_time === "OFF") {
         dayObj.start_time =
           !dayObj.start_time && !dayObj.end_time ? "" : "09:00 AM";
@@ -146,7 +139,6 @@ const TrainerAvailability: React.FC<{ navigation: any }> = ({ navigation }) => {
     setInitialAvailability(week);
   }, [data]);
 
-  // Convert 24-hour to 12-hour format
   function to12Hour(time: string) {
     if (!time || time === "OFF") return time;
     const [h, m] = time.split(":");
@@ -158,9 +150,7 @@ const TrainerAvailability: React.FC<{ navigation: any }> = ({ navigation }) => {
     return `${hour.toString().padStart(2, "0")}:${min} ${ampm}`;
   }
 
-  // Helper to format time as 12-hour (AM/PM)
   const formatTime = (date: Date) => {
-    // Always pad hour with zero if less than 10, and ensure AM/PM is uppercase
     let [time, ampm] = date
       .toLocaleTimeString([], {
         hour: "2-digit",
@@ -195,7 +185,6 @@ const TrainerAvailability: React.FC<{ navigation: any }> = ({ navigation }) => {
       const dayObj = prev[day] || { start_time: "", end_time: "" };
       const isCurrentlyOff = !dayObj.start_time && !dayObj.end_time;
       if (isCurrentlyOff) {
-        // Restore to default times
         return {
           ...prev,
           [day]: {
@@ -216,7 +205,6 @@ const TrainerAvailability: React.FC<{ navigation: any }> = ({ navigation }) => {
   };
 
   const handleDiscard = async () => {
-    // Prepare slots: convert local times to UTC before sending
     const slots = daysOfWeek.map((day) => {
       const startUtc = toUtc("09:00 AM");
       const endUtc = toUtc("05:00 PM");
@@ -240,10 +228,9 @@ const TrainerAvailability: React.FC<{ navigation: any }> = ({ navigation }) => {
           id: data.data[0]?.id ?? "",
           slots,
         }).unwrap();
-        
-        // Refetch to get updated data from server
+
         await refetch();
-        
+
         Alert.alert("Success", "Changes discarded and reset to default");
       }
     } catch (e) {
@@ -254,7 +241,6 @@ const TrainerAvailability: React.FC<{ navigation: any }> = ({ navigation }) => {
   const handleUpdate = async () => {
     console.log("Updating availability with state:", user?.id);
     if (!user?.id) return;
-    // Convert availability state to slots array, converting local times to UTC
     const slots = daysOfWeek.map((day) => {
       const dayObj = availability[day] || { start_time: "", end_time: "" };
       const { start_time, end_time } = dayObj;
@@ -353,7 +339,7 @@ const TrainerAvailability: React.FC<{ navigation: any }> = ({ navigation }) => {
                         <TouchableOpacity
                           style={{
                             borderWidth: 0.5,
-                            borderColor: "#0000001F",
+                            borderColor: COLORS.border,
                             paddingHorizontal: 5,
                             paddingVertical: 9,
                             width: "40%",
@@ -371,7 +357,7 @@ const TrainerAvailability: React.FC<{ navigation: any }> = ({ navigation }) => {
                         <TouchableOpacity
                           style={{
                             borderWidth: 0.5,
-                            borderColor: "#0000001F",
+                            borderColor: COLORS.border,
                             paddingHorizontal: 5,
                             paddingVertical: 9,
                             width: "40%",
@@ -417,7 +403,6 @@ const TrainerAvailability: React.FC<{ navigation: any }> = ({ navigation }) => {
             onCancel={() => setPicker(null)}
           />
 
-          {/* Action Buttons */}
           <View style={styles.actionRow}>
             <TouchableOpacity
               style={[styles.actionBtn, styles.discardBtn]}
@@ -458,7 +443,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   offTimeBox: {
-    backgroundColor: "#E6E6E6",
+    backgroundColor: COLORS._E6E6E6,
     borderRadius: 20,
     paddingHorizontal: 18,
     paddingVertical: 8,
@@ -493,7 +478,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  // ...existing code...
   scrollContent: {
     padding: 15,
   },
@@ -514,7 +498,7 @@ const styles = StyleSheet.create({
     padding: 20,
     marginBottom: 18,
     borderWidth: 1,
-    borderColor: "#EDEDED",
+    borderColor: COLORS.border,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
@@ -542,7 +526,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-start",
   },
   badgeOff: {
-    backgroundColor: "#E6E6E6",
+    backgroundColor: COLORS._E6E6E6,
     borderRadius: 32,
     paddingHorizontal: 12,
     paddingVertical: 9,
@@ -589,7 +573,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
   },
   toggleText: {
-    color: COLORS.white,
+    color: COLORS.black,
     fontWeight: "600",
     fontSize: 15,
   },
@@ -662,7 +646,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   discardBtn: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
   },
   updateBtn: {
     backgroundColor: COLORS.primary,
@@ -673,7 +657,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   updateText: {
-    color: COLORS.white,
+    color: COLORS.black,
     fontFamily: FontWeight.Medium,
     fontSize: 14,
   },

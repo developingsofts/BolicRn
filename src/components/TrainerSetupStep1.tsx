@@ -55,9 +55,7 @@ const TrainerSetupStep1: React.FC<TrainerSetupStep1Props> = ({ onNext }) => {
     }
   };
 
-  // Handler for Next: validate and call API
   const handleNextStep = async () => {
-    // Validate sessions
     const validSessions = sessions.filter(
       (s) =>
         s.name.trim() &&
@@ -118,7 +116,6 @@ const TrainerSetupStep1: React.FC<TrainerSetupStep1Props> = ({ onNext }) => {
         {sessions.map((session, index) => (
           <View key={session.id} style={styles.sessionCard}>
             <View style={styles.sessionHeader}>
-              {/* <Text style={styles.sessionTitle}>Session {index + 1}</Text> */}
               {sessions.length > 1 && index !== 0 && (
                 <TouchableOpacity
                   style={styles.removeBtn}
@@ -198,7 +195,7 @@ const styles = StyleSheet.create({
     boxShadow: "0px 0px 12px 0px #76767626",
     marginBottom: 24,
     gap: 8,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     justifyContent: "center",
   },
   addSessionText: {
@@ -249,7 +246,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   removeBtnText: {
-    color: COLORS.white,
+    color: COLORS.black,
     fontSize: 12,
     fontFamily: FontWeight.Medium,
   },
@@ -258,12 +255,12 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 12,
-    color: COLORS.gradient1,
+    color: COLORS.text,
     marginBottom: 2,
     fontFamily: FontWeight.Medium,
   },
   inputField: {
-    backgroundColor: "#F5F5F5",
+    backgroundColor: COLORS.background,
     borderRadius: 8,
     paddingVertical: 10,
     paddingHorizontal: 12,
@@ -288,7 +285,7 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   nextBtnText: {
-    color: COLORS.white,
+    color: COLORS.black,
     fontSize: 14,
     fontFamily: FontWeight.Medium,
   },

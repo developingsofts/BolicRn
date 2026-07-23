@@ -37,7 +37,6 @@ import { useAndroidNavBar } from "../hooks/useAndroidNavBar";
 const MyPosts: React.FC = ({ navigation, route }: any) => {
   const { user } = useAuth();
   const { height: navBarHeight } = useAndroidNavBar();
-  // Accept userId from route params (if present)
   const userId = route?.params?.userId || user?.id;
   const isOwnProfile =
     !route?.params?.userId || route?.params?.userId === user?.id;
@@ -52,7 +51,6 @@ const MyPosts: React.FC = ({ navigation, route }: any) => {
   const [editPostText, setEditPostText] = useState("");
   const [commentsModalVisible, setCommentsModalVisible] = useState(false);
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
-  // Fetch posts for the correct user
   const {
     data: postsData,
     refetch: refetchPosts,
@@ -211,7 +209,7 @@ const MyPosts: React.FC = ({ navigation, route }: any) => {
   const handleCloseComments = () => {
     setCommentsModalVisible(false);
     setSelectedPostId(null);
-    refetchPosts(); // Refresh to update comment counts
+    refetchPosts();
   };
 
   const handlePostAction = (action: string, postId: string) => {
@@ -279,17 +277,6 @@ const MyPosts: React.FC = ({ navigation, route }: any) => {
               return (
                 <View key={post.id} style={styles.postCard}>
                   <View style={styles.postHeader}>
-                    {/* <View style={styles.avatarContainer}>
-                    {post.user?.imageUrl ? (
-                      <Image source={{ uri: post.user.imageUrl }} style={styles.avatarImage} />
-                    ) : (
-                      <Text style={styles.avatarText}>{post.user?.displayName?.charAt(0) || 'U'}</Text>
-                    )}
-                  </View> */}
-                    {/* <View style={styles.postHeaderInfo}>
-                    <Text style={styles.postUserName}>{post.user?.displayName || 'User'}</Text>
-                    <Text style={styles.postTimestamp}>{post.createdAt ? new Date(post.createdAt).toLocaleDateString() : ''}</Text>
-                  </View> */}
                     <View style={{ flex: 1 }} />
                     {isOwnProfile && (
                       <TouchableOpacity
@@ -320,7 +307,6 @@ const MyPosts: React.FC = ({ navigation, route }: any) => {
                     </View>
                   )}
 
-                  {/* Workout Information */}
                   {post.workout && (
                     <View style={styles.postWorkoutBadge}>
                       <Text style={styles.postWorkoutIcon}>💪</Text>
@@ -336,7 +322,6 @@ const MyPosts: React.FC = ({ navigation, route }: any) => {
                     </View>
                   )}
 
-                  {/* Achievement Information */}
                   {post.achievement && (
                     <View style={styles.postAchievementBadge}>
                       <Text style={styles.postAchievementIcon}>
@@ -390,7 +375,7 @@ const MyPosts: React.FC = ({ navigation, route }: any) => {
                               style={[
                                 styles.postMetaIconImage,
                                 {
-                                  tintColor: COLORS.gradient1,
+                                  tintColor: COLORS.text,
                                 },
                               ]}
                             />
@@ -409,7 +394,7 @@ const MyPosts: React.FC = ({ navigation, route }: any) => {
                           style={[
                             styles.postMetaIconImage,
                             {
-                              tintColor: COLORS.gradient1,
+                              tintColor: COLORS.text,
                             },
                           ]}
                         />
@@ -419,19 +404,6 @@ const MyPosts: React.FC = ({ navigation, route }: any) => {
                       </TouchableOpacity>
                     </View>
                   </View>
-                  {/* <View style={styles.postReactionsRow}>
-                  <Text style={styles.postReactionsLabel}>Reactions</Text>
-                  {reactingPostId === postId && likingPostId !== postId ? (
-                    <ActivityIndicator size="small" color={COLORS.primary} />
-                  ) : (
-                    <ReactionSummary
-                      summary={reactionSummary}
-                      total={totalReactions}
-                      currentReaction={currentReaction}
-                      onPress={() => handleOpenReactionPicker(postId)}
-                    />
-                  )}
-                </View> */}
                 </View>
               );
             })
@@ -478,7 +450,6 @@ const MyPosts: React.FC = ({ navigation, route }: any) => {
         loading={false}
       />
 
-      {/* Edit Post Modal */}
       <Modal
         visible={editingPost !== null}
         animationType="slide"
@@ -585,7 +556,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   createPostButtonText: {
-    color: COLORS.white,
+    color: COLORS.black,
     fontSize: 14,
     fontFamily: FontWeight.Medium,
   },
@@ -609,7 +580,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     justifyContent: "space-between",
-    // marginBottom: 12,
   },
   avatarContainer: {
     width: 40,
@@ -709,7 +679,7 @@ const styles = StyleSheet.create({
   postMetaIconImage: {
     width: 20,
     height: 20,
-    tintColor: COLORS.gradient1,
+    tintColor: COLORS.text,
   },
   postMetaText: {
     fontSize: 12,
@@ -728,11 +698,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-  },
-  postActionIcon: {
-    width: 20,
-    height: 20,
-    tintColor: "#888888",
   },
   postActionText: {
     fontSize: 14,
@@ -782,7 +747,7 @@ const styles = StyleSheet.create({
   },
   postMenuOptionText: {
     fontSize: 14,
-    color: "#FF3B30",
+    color: COLORS.error,
     fontWeight: "500",
   },
   editPostModalContainer: {
@@ -858,7 +823,7 @@ const styles = StyleSheet.create({
   },
   editPostSaveButtonText: {
     fontSize: 16,
-    color: COLORS.white,
+    color: COLORS.black,
     fontFamily: FontWeight.Medium,
   },
   loadingContainer: {

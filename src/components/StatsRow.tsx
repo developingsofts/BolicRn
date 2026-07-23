@@ -15,7 +15,7 @@ interface StatsRowProps {
   style?: any;
 }
 
-const StatsRow: React.FC<StatsRowProps> = ({ stats, dividerColor = '#E6E6E7', style }) => (
+const StatsRow: React.FC<StatsRowProps> = ({ stats, dividerColor = COLORS.border, style }) => (
   <View style={[styles.statsRow, style]}>
     {stats.map((stat, idx) => (
       <React.Fragment key={stat.title + idx}>
@@ -36,7 +36,9 @@ const styles = StyleSheet.create({
   statsRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    backgroundColor: 'white',
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
     paddingVertical: 10,
     paddingHorizontal: 8,
     borderRadius: 10,
@@ -65,6 +67,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     marginRight: 5,
+    tintColor: COLORS.white,
   },
   statNumber: {
     fontSize: 20,

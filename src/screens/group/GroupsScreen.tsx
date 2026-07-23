@@ -43,7 +43,6 @@ const GroupsScreen: React.FC<GroupsScreenProps> = ({ navigation }) => {
 
   const categories = ["All", "Gym", "Running", "Cycling", "Yoga", "Swimming"];
 
-  // Fetch all groups (visible to everyone) with pagination and filter
   const {
     data: groupsData,
     isLoading,
@@ -68,7 +67,7 @@ const GroupsScreen: React.FC<GroupsScreenProps> = ({ navigation }) => {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    setPage(1); // Reset to first page
+    setPage(1);
     await refetch();
     setRefreshing(false);
   };
@@ -81,7 +80,7 @@ const GroupsScreen: React.FC<GroupsScreenProps> = ({ navigation }) => {
 
   const handleCategorySelect = (category: string) => {
     setSelectedCategory(category);
-    setPage(1); // Reset to page 1 when filter changes
+    setPage(1);
     setMenuVisible(false);
   };
 
@@ -135,7 +134,7 @@ const GroupsScreen: React.FC<GroupsScreenProps> = ({ navigation }) => {
                   icon={() => (
                     <Image
                       source={ArrowDown}
-                      style={{ width: 24, height: 24, right: -15 }}
+                      style={{ width: 24, height: 24, right: -15, tintColor: COLORS.white }}
                     />
                   )}
                   contentStyle={styles.buttonContentStyle}
@@ -173,7 +172,6 @@ const GroupsScreen: React.FC<GroupsScreenProps> = ({ navigation }) => {
         }
       />
 
-      {/* Groups List */}
       {isLoading && page === 1 ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={COLORS.primary} />
@@ -225,10 +223,9 @@ const GroupsScreen: React.FC<GroupsScreenProps> = ({ navigation }) => {
         style={styles.fab}
         onPress={() => navigation.navigate("ManageGroup")}
       >
-        <Image source={Add} style={{ width: 16, height: 16 }} />
+        <Image source={Add} style={{ width: 16, height: 16, tintColor: COLORS.black }} />
       </TouchableOpacity>
 
-      {/* Group Details Modal */}
       <Modal
         visible={showGroupDetails}
         transparent
@@ -310,13 +307,13 @@ const styles = StyleSheet.create({
   },
   menuItemText: {
     fontSize: 16,
-    color: COLORS.app_black,
+    color: COLORS.black,
     fontFamily: FontWeight.Medium,
     textAlign: "left",
   },
   menuItemTextActive: {
-    color: COLORS.primary,
-    fontFamily: FontWeight.Medium,
+    color: COLORS.black,
+    fontFamily: FontWeight.Bold,
     textAlign: "left",
   },
   groupsContainer: {
@@ -329,15 +326,10 @@ const styles = StyleSheet.create({
     paddingBottom: 14,
     paddingHorizontal: 14,
     marginBottom: DIMENSIONS.spacing.md,
-    backgroundColor: COLORS.white,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
     overflow: "hidden",
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 4,
   },
   groupHeader: {
     flexDirection: "row",
@@ -348,19 +340,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: FontWeight.SemiBold,
     flex: 1,
+    color: COLORS.text,
   },
   memberCount: {
     fontSize: 14,
     fontFamily: FontWeight.Medium,
+    color: COLORS.text,
   },
   groupCategory: {
     fontSize: 12,
     fontFamily: FontWeight.Regular,
     marginBottom: DIMENSIONS.spacing.xs,
+    color: COLORS.textSecondary,
   },
   groupLocation: {
     fontSize: 14,
     marginBottom: DIMENSIONS.spacing.xs,
+    color: COLORS.textSecondary,
   },
   groupDescription: {
     fontSize: 14,
@@ -423,7 +419,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   createButtonText: {
-    color: COLORS.white,
+    color: COLORS.black,
     fontSize: 14,
     fontWeight: "600",
     fontFamily: FontWeight.SemiBold,
@@ -439,7 +435,7 @@ const styles = StyleSheet.create({
     marginHorizontal: DIMENSIONS.spacing.lg,
   },
   loadMoreText: {
-    color: COLORS.white,
+    color: COLORS.black,
     fontSize: 14,
     fontWeight: "600",
     fontFamily: FontWeight.SemiBold,

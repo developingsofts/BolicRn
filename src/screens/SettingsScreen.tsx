@@ -47,7 +47,6 @@ const PREFERENCE_OPTIONS: PreferenceOption[] = [
   { label: "Swimming", value: "Swimming" },
 ];
 
-// Helper function to safely parse matchingPreference
 const parseMatchingPreference = (pref: any): PreferenceOption["value"][] => {
   if (!pref) return [];
   if (Array.isArray(pref)) return pref;
@@ -95,7 +94,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
   const [preferencesEnabled, setPreferencesEnabled] = useState<boolean>(
     user?.matchingEnabled ?? false
   );
-  
+
   const [selectedPreferences, setSelectedPreferences] = useState<
     PreferenceOption["value"][]
   >(parseMatchingPreference(user?.matchingPreference));
@@ -159,7 +158,6 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
   const handleLogout = async () => {
     try {
       await logout();
-      // Navigation will be handled automatically by the auth state change
     } catch (error) {
       console.error("Logout failed:", error);
     }
@@ -236,15 +234,13 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
 
     const previousPreferences = selectedPreferences;
     let newPreferences: PreferenceOption["value"][];
-    
+
     if (selectedPreferences.includes(option.value)) {
-      // Remove the preference if already selected
       newPreferences = selectedPreferences.filter(p => p !== option.value);
     } else {
-      // Add the preference if not selected
       newPreferences = [...selectedPreferences, option.value];
     }
-    
+
     setSelectedPreferences(newPreferences);
 
     await persistSettings({ matchingPreference: newPreferences }, () =>
@@ -279,7 +275,6 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
         refreshing={refreshing}
         onRefresh={handleRefresh}
       >
-        {/* Notification Settings */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>
             {STRINGS.SETTINGS.notifications}
@@ -371,14 +366,6 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
 
         <View style={styles.lineSeparator} />
 
-        {/* <TouchableOpacity
-          onPress={handleLogout}
-          style={styles.deactivateBtn}
-          disabled={isBusy}
-        >
-          <Text style={styles.logoutText}>{STRINGS.SETTINGS.logout}</Text>
-        </TouchableOpacity> */}
-
         <TouchableOpacity
           onPress={handleDeactivatePress}
           style={styles.deactivateBtn}
@@ -416,7 +403,7 @@ const styles = StyleSheet.create({
   iconSize: {
     width: 24,
     height: 24,
-    tintColor: COLORS.black,
+    tintColor: COLORS.text,
   },
   headerActions: {
     flexDirection: "row",
@@ -433,7 +420,7 @@ const styles = StyleSheet.create({
   savingIndicator: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     paddingHorizontal: DIMENSIONS.spacing.sm,
     paddingVertical: 4,
     borderRadius: 20,
@@ -454,9 +441,11 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: DIMENSIONS.spacing.xl,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     padding: DIMENSIONS.spacing.md,
     borderRadius: DIMENSIONS.borderRadius,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   sectionTitle: {
     fontSize: 20,
@@ -501,7 +490,7 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   preferenceBtnTextPrimary: {
-    color: COLORS.white,
+    color: COLORS.black,
   },
   preferenceBtnTextGray: {
     color: COLORS.buttonGrayText,
@@ -513,7 +502,7 @@ const styles = StyleSheet.create({
   },
   deactivateBtn: {
     marginTop: DIMENSIONS.spacing.lg,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     padding: 14,
     justifyContent: "center",
     flexDirection: "row",

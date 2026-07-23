@@ -39,12 +39,10 @@ const UserProfileForm = React.forwardRef<
   const [visibleCount, setVisibleCount] = useState(12);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
-  // Expose submit function via ref
   useImperativeHandle(ref, () => ({
     submit: onSubmit,
   }));
 
-  // Fetch training types from API
   const { data: trainingTypesData, isLoading: isLoadingTrainingTypes } = useGetTrainingTypesQuery(undefined, { skip: !isAuthenticated });
   const apiTrainingTypes = (trainingTypesData as any)?.data || [];
   const trainingTypes = apiTrainingTypes.length > 0 ? apiTrainingTypes : TRAINING_TYPES.map(title => ({ id: title, title }));
@@ -62,14 +60,12 @@ const UserProfileForm = React.forwardRef<
   const loadMore = () => {
     if (isLoadingMore || visibleCount >= trainingTypes.length) return;
     setIsLoadingMore(true);
-    // Simulate loading delay
     setTimeout(() => {
       setVisibleCount(prev => Math.min(prev + 12, trainingTypes.length));
       setIsLoadingMore(false);
     }, 500);
   };
 
-  // Location suggestions - using API
   const fetchSuggestions = useCallback(async (query: string) => {
     const trimmed = query.trim();
 
@@ -133,7 +129,6 @@ const UserProfileForm = React.forwardRef<
   return (
     <View style={styles.container}>
       <View style={styles.form}>
-        {/* Location Field */}
         <View style={styles.formItem}>
           <Text style={styles.label}>Your location</Text>
           <View style={styles.inputContainer}>
@@ -147,7 +142,6 @@ const UserProfileForm = React.forwardRef<
               }}
               onFocus={() => setIsLocationFocused(true)}
               onBlur={() => {
-                // Delay hiding suggestions to allow selection
                 setTimeout(() => setIsLocationFocused(false), 200);
               }}
               autoCapitalize="words"
@@ -171,14 +165,13 @@ const UserProfileForm = React.forwardRef<
           )}
         </View>
 
-        {/* Specialty Selection */}
         <View style={styles.formItem}>
           <Text style={styles.label}>Your Specialty (select at least one)</Text>
           {isLoadingTrainingTypes ? (
             <Text style={styles.loadingText}>Loading training types...</Text>
           ) : (
             <View style={styles.specialtiesContainer}>
-  
+
                 <ScrollView
                   style={styles.specialtiesScrollView}
                   contentContainerStyle={styles.badgeContainer}
@@ -226,7 +219,7 @@ const UserProfileForm = React.forwardRef<
                     </View>
                   )}
                 </ScrollView>
-          
+
             </View>
           )}
           {errors.specialties && (
@@ -247,32 +240,31 @@ const styles = StyleSheet.create({
     padding: 20,
     flexGrow: 1,
     borderRadius: 16,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     justifyContent: "center",
   },
   header: { marginBottom: 16 },
-  title: { fontSize: 24, fontWeight: "600", color: "#222" },
-  step: { fontSize: 14, color: "#888", marginTop: 4 },
   progress: { height: 8, borderRadius: 4, marginBottom: 24 },
   form: { gap: 16 },
   formItem: { marginBottom: 12 },
-  label: { fontSize: 15, fontWeight: "500", color: "#222", marginBottom: 6 },
+  label: { fontSize: 15, fontWeight: "500", color: COLORS.text, marginBottom: 6 },
   input: {
-    backgroundColor: "#f3f4f6",
-    borderColor: "#e5e7eb",
+    backgroundColor: COLORS.background,
+    borderColor: COLORS.border,
     borderWidth: 1,
     borderRadius: 8,
     padding: 12,
     fontSize: 15,
+    color: COLORS.text,
   },
   inputContainer: {
     position: 'relative',
   },
   inputError: {
-    borderColor: "#ef4444",
+    borderColor: COLORS.error,
   },
   error: {
-    color: "#ef4444",
+    color: COLORS.error,
     fontSize: 13,
     marginTop: 2,
   },
@@ -290,14 +282,14 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   badgeUnselected: {
-    backgroundColor: "#F2F2F7",
+    backgroundColor: COLORS.border,
   },
   badgeSelected: {
-    backgroundColor: "#6366F1",
+    backgroundColor: COLORS.primary,
   },
   badgeTextSelected: {
     fontSize: 14,
-    color: COLORS.white,  
+    color: COLORS.black,
   },
   badgeText: {
     fontSize: 14,
@@ -314,7 +306,7 @@ const styles = StyleSheet.create({
     top: '100%',
     left: 0,
     right: 0,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: COLORS.border,

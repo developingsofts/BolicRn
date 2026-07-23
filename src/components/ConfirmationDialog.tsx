@@ -38,7 +38,7 @@ const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
   confirmButtonColor = COLORS.error,
   cancelButtonColor = COLORS.buttonGrayBg,
   confirmTextColor = COLORS.white,
-  cancelTextColor = COLORS.buttonGrayText,
+  cancelTextColor = COLORS.white,
 }) => {
   const handleCancel = useCallback(() => {
     if (!loading) {
@@ -70,7 +70,7 @@ const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
               onPress={handleCancel}
               disabled={loading}
               activeOpacity={0.8}
-              style={[styles.button, { backgroundColor: cancelButtonColor }]}
+              style={[styles.button, styles.cancelButton, { backgroundColor: cancelButtonColor }]}
             >
               <Text style={[styles.buttonLabel, { color: cancelTextColor }]}>{cancelLabel}</Text>
             </TouchableOpacity>
@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
   dialog: {
     width: "100%",
     maxWidth: 360,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     borderRadius: DIMENSIONS.borderRadius,
     padding: DIMENSIONS.spacing.lg,
     elevation: 6,
@@ -139,10 +139,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   cancelButton: {
-    // Dynamic background color now passed as prop
+    borderWidth: 1.5,
+    borderColor: COLORS.textSecondary,
   },
   confirmButton: {
-    // Dynamic background color now passed as prop
   },
   buttonDisabled: {
     opacity: 0.7,
@@ -152,10 +152,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   cancelLabel: {
-    // Dynamic text color now passed as prop
   },
   confirmLabel: {
-    // Dynamic text color now passed as prop
   },
 });
 

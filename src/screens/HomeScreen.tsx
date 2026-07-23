@@ -42,7 +42,7 @@ import {
 import { useGetFollowersQuery } from "../services/api/followsApi";
 import type { Note as NoteEntity } from "../types";
 import type { ReactionType } from "../constants/reactions";
-import { Like, CommentRemove, ThreeDots } from "../../assets";
+import { Like, CommentRemove, ThreeDots, AppLogo } from "../../assets";
 import CommentsModal from "../components/CommentsModal";
 import ConfirmationDialog from "../components/ConfirmationDialog";
 import { r } from "../designing/responsiveDesigns";
@@ -121,7 +121,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const [noteBeingDeleted, setNoteBeingDeleted] = useState<string | null>(null);
   const [quickActionsExpanded, setQuickActionsExpanded] = useState(false);
 
-  // Fetch posts for Community Highlights - only when authenticated
   const {
     data: postsData,
     isLoading: postsLoading,
@@ -192,7 +191,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const [deleteNoteMutation, { isLoading: isDeletingNote }] =
     useDeleteNoteMutation();
 
-  // Debug posts data
   useEffect(() => {
     console.log("Posts data:", postsData);
     console.log("Community posts:", communityPosts);
@@ -203,7 +201,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     }
   }, [postsData, communityPosts]);
 
-  // Post reactions
   const [reactToPost] = useToggleLikeMutation();
   const [deletePost, { isLoading: isDeleting }] = useDeletePostMutation();
   const [reactingPostId, setReactingPostId] = useState<string | null>(null);
@@ -257,7 +254,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     try {
       setReactingPostId(postId);
       await reactToPost({ postId, reactionType }).unwrap();
-      // Posts will auto-refresh due to cache invalidation
     } catch (error) {
       console.error("Failed to update reaction:", error);
     } finally {
@@ -299,7 +295,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const handleCloseComments = () => {
     setCommentsModalVisible(false);
     setSelectedPostId(null);
-    refetchPosts(); // Refresh posts to update comment counts
+    refetchPosts();
   };
 
   const handlePostMenuPress = (postId: string) => {
@@ -319,8 +315,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
       isEditing: true,
     });
   };
-
-
 
   const confirmDeletePost = async () => {
     if (!postToDelete) return;
@@ -1040,9 +1034,15 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         refreshing={refreshing}
         onRefresh={handleRefresh}
       >
-        {/* Header */}
         <BasicTopBar
           showBackButton={false}
+          startView={
+            <Image
+              source={AppLogo}
+              style={styles.headerLogo}
+              resizeMode="contain"
+            />
+          }
           containerStyle={styles.header}
           title={`Good morning, ${user?.displayName}! 👋`}
           subtitle="Ready to crush your goals today?"
@@ -1068,7 +1068,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         />
 
         <View style={styles.mainContent}>
-          {/* Weekly Goal Section */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>{STRINGS.HOME.weeklyGoal}</Text>
@@ -1119,7 +1118,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             </View>
           </View>
 
-          {/* Workout of the Day */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>
@@ -1230,7 +1228,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                   ) : (
                     <View style={styles.workoutCompleted}>
                       <Text style={styles.workoutCompletedText}>
-                        ✅ Completed Today
+                        Completed Today
                       </Text>
                     </View>
                   )}
@@ -1239,7 +1237,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             )}
           </View>
 
-          {/* Community Highlights */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>🔥 Community Highlights</Text>
@@ -1281,7 +1278,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                   );
 
                   const postUser = post.user || {};
-                  // Use displayName, userName, or email as fallback
                   const userName =
                     postUser.displayName ||
                     postUser.userName ||
@@ -1356,7 +1352,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                                 source={ThreeDots}
                                 style={{ width: 20, height: 20 }}
                                 resizeMode={ResizeMode.CONTAIN}
-                                tintColor={COLORS.black}
+                                tintColor={COLORS.text}
 
                               />
                             </TouchableOpacity>
@@ -1390,7 +1386,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                       </View>
                       <Text style={styles.socialPostContent}>{post.title}</Text>
 
-                      {/* Workout Information */}
                       {post.workout && (
                         <View style={styles.postWorkoutBadge}>
                           <Text style={styles.postWorkoutIcon}>💪</Text>
@@ -1406,7 +1401,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                         </View>
                       )}
 
-                      {/* Achievement Information */}
                       {post.achievement && (
                         <View style={styles.postAchievementBadge}>
                           <Text style={styles.postAchievementIcon}>
@@ -1448,7 +1442,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                                 style={[
                                   styles.socialPostActionIcon,
                                   {
-                                    tintColor: COLORS.gradient1,
+                                    tintColor: COLORS.text,
                                   },
                                 ]}
                               />
@@ -1464,14 +1458,16 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                         >
                           <Image
                             source={CommentRemove}
-                            style={[styles.socialPostActionIcon]}
+                            style={[
+                              styles.socialPostActionIcon,
+                              { tintColor: COLORS.text },
+                            ]}
                           />
                           <Text style={styles.socialPostActionText}>
                             {post.commentCount || 0}
                           </Text>
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.socialPostAction}>
-                          {/* <Text style={styles.handshakeIcon}>🤝</Text> */}
                         </TouchableOpacity>
                       </View>
                       {shouldShowReactions && (
@@ -1498,7 +1494,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             )}
           </View>
 
-          {/* Friend Suggestions */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>👥 Suggested Partners</Text>
@@ -1530,7 +1525,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 style={styles.friendSuggestions}
-                contentContainerStyle={{ paddingRight: r(30) }} // Add this line
+                contentContainerStyle={{ paddingRight: r(30) }}
               >
                 {suggestedPartners.slice(0, 6).map((partner) => {
                   const initials = partner.name
@@ -1595,7 +1590,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             )}
           </View>
 
-          {/* Quick Actions */}
           <View style={styles.section}>
             <Text style={styles.sectionTitleWithSideText}>Quick Actions</Text>
             <View style={styles.quickActionsGrid}>
@@ -1681,7 +1675,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             </TouchableOpacity>
           </View>
 
-          {/* Notes Section */}
           <View style={styles.section}>
             <Text style={styles.sectionTitleWithSideText}>
               {STRINGS.HOME.quickNotes}
@@ -1706,7 +1699,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                   disabled={isCreatingNote || !newNote.trim()}
                 >
                   {isCreatingNote ? (
-                    <ActivityIndicator size="small" color={COLORS.white} />
+                    <ActivityIndicator size="small" color={COLORS.black} />
                   ) : (
                     <Text style={styles.addNoteButtonText}>
                       {STRINGS.COMMON.add}
@@ -1774,7 +1767,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             </View>
           </View>
 
-          {/* Gamification - Achievements */}
           <View style={styles.section}>
             <Text style={styles.sectionTitleWithSideText}>🏆 Achievements</Text>
             {achievementsLoading ? (
@@ -1843,7 +1835,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             )}
           </View>
 
-          {/* Recent Activity */}
           <View style={styles.section}>
             <Text style={styles.sectionTitleWithSideText}>Recent Activity</Text>
             {isActivityLoading ? (
@@ -1879,11 +1870,9 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             )}
           </View>
 
-          {/* Create Post */}
           <View style={styles.section}>
             <TouchableOpacity
               style={styles.createPostButton}
-              // onPress={() => navigation.navigate("CreatePost")}
               onPress={() => navigation.navigate("ShareWorkout")}
             >
               <Text style={styles.createPostIcon}>✏️</Text>
@@ -1921,7 +1910,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         }}
       />
 
-      {/* Comments Modal */}
       {selectedPostId && (
         <CommentsModal
           visible={commentsModalVisible}
@@ -1930,7 +1918,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         />
       )}
 
-      {/* Delete Post Confirmation Dialog */}
       <ConfirmationDialog
         visible={showDeletePostDialog}
         title="Delete Post"
@@ -1941,7 +1928,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         onCancel={cancelDeletePost}
         loading={isDeleting}
       />
-
 
     </SafeAreaView>
   );
@@ -1998,6 +1984,11 @@ const styles = StyleSheet.create({
   },
   profileButtonText: {
     fontSize: 20,
+    color: COLORS.text,
+  },
+  headerLogo: {
+    width: 38,
+    height: 38,
   },
   section: {
     paddingHorizontal: DIMENSIONS.spacing.lg,
@@ -2010,14 +2001,13 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontFamily: FontWeight.SemiBold,
-    color: COLORS.gradient1,
-    // marginBottom: DIMENSIONS.spacing.md,
+    color: COLORS.text,
   },
 
   sectionTitleWithSideText: {
     fontSize: 20,
     fontFamily: FontWeight.SemiBold,
-    color: COLORS.gradient1,
+    color: COLORS.text,
     marginBottom: DIMENSIONS.spacing.md,
   },
   quickActions: {
@@ -2046,7 +2036,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 
-  // Notepad Styles
   notepadContainer: {
     backgroundColor: COLORS.surface,
     borderRadius: DIMENSIONS.borderRadius,
@@ -2079,7 +2068,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   addNoteButtonText: {
-    color: COLORS.white,
+    color: COLORS.black,
     fontFamily: FontWeight.Medium,
     fontSize: 14,
   },
@@ -2141,7 +2130,6 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
 
-  // Achievements Styles
   achievementsGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -2183,7 +2171,7 @@ const styles = StyleSheet.create({
   progressBar: {
     width: "100%",
     height: 6,
-    backgroundColor: "#E5E7EB",
+    backgroundColor: COLORS.border,
     borderRadius: 3,
     marginBottom: DIMENSIONS.spacing.xs,
     overflow: "hidden",
@@ -2201,7 +2189,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: DIMENSIONS.spacing.xs,
     right: DIMENSIONS.spacing.xs,
-    backgroundColor: "#10B981",
+    backgroundColor: COLORS.success,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 10,
@@ -2248,7 +2236,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     padding: DIMENSIONS.spacing.md,
-    // borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
   activityIcon: {
@@ -2289,10 +2276,9 @@ const styles = StyleSheet.create({
   createPostText: {
     fontSize: 14,
     fontFamily: FontWeight.Medium,
-    color: COLORS.white,
+    color: COLORS.black,
   },
 
-  // Weekly Goal and Workout of the Day styles
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -2466,7 +2452,7 @@ const styles = StyleSheet.create({
     color: COLORS.surface,
   },
   workoutCompleted: {
-    backgroundColor: COLORS.success,
+    backgroundColor: COLORS.buttonGrayText,
     paddingHorizontal: DIMENSIONS.spacing.lg,
     paddingVertical: DIMENSIONS.spacing.md,
     borderRadius: DIMENSIONS.borderRadius,
@@ -2475,7 +2461,7 @@ const styles = StyleSheet.create({
   workoutCompletedText: {
     fontSize: 16,
     fontFamily: FontWeight.SemiBold,
-    color: COLORS.surface,
+    color: COLORS.white,
   },
   viewAllButton: {
     fontSize: 14,
@@ -2551,7 +2537,7 @@ const styles = StyleSheet.create({
     borderRadius: DIMENSIONS.borderRadius,
   },
   emptyStateButtonText: {
-    color: COLORS.white,
+    color: COLORS.black,
     fontSize: 14,
     fontFamily: FontWeight.Medium,
   },
@@ -2588,6 +2574,8 @@ const styles = StyleSheet.create({
     right: 0,
     backgroundColor: COLORS.surface,
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS.border,
     paddingVertical: DIMENSIONS.spacing.xs,
     minWidth: 120,
     shadowColor: "#000",
@@ -2603,7 +2591,7 @@ const styles = StyleSheet.create({
   },
   postMenuOptionText: {
     fontSize: 14,
-    color: "#FF3B30",
+    color: COLORS.error,
     fontWeight: "500",
   },
   socialPostContent: {
@@ -2730,7 +2718,7 @@ const styles = StyleSheet.create({
   friendSuggestionButtonText: {
     fontSize: 12,
     fontFamily: FontWeight.Medium,
-    color: COLORS.white,
+    color: COLORS.black,
   },
   quickActionsGrid: {
     flexDirection: "row",

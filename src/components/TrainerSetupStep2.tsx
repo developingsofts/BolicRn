@@ -41,7 +41,6 @@ const TrainerSetupStep2: React.FC<TrainerSetupStep2Props> = ({
   const [createAvailability, { isLoading: isCreating }] =
     useCreateAvailabilityMutation();
 
-  // Toggle OFF/ON for a day
   const handleToggleOff = (dayIdx: number) => {
     setSchedule((prev) =>
       prev.map((slot, idx) => {
@@ -56,7 +55,6 @@ const TrainerSetupStep2: React.FC<TrainerSetupStep2Props> = ({
     );
   };
 
-  // Open picker for a slot
   const openPicker = (dayIdx: number, mode: "start" | "end") => {
     setPicker({ mode, dayIdx });
   };
@@ -72,9 +70,7 @@ const TrainerSetupStep2: React.FC<TrainerSetupStep2Props> = ({
     setPicker(null);
   };
 
-  // Handle confirm: call createAvailability API
   const handleConfirm = async () => {
-    // Convert schedule to API format, times in UTC
     const slots = schedule.map((slot) => {
       const isOff = !slot.start && !slot.end;
       const startUtc = isOff ? "" : toUtc(slot.start);
@@ -151,7 +147,7 @@ const TrainerSetupStep2: React.FC<TrainerSetupStep2Props> = ({
                     <TouchableOpacity
                       style={{
                         borderWidth: 0.5,
-                        borderColor: "#0000001F",
+                        borderColor: COLORS.border,
                         paddingHorizontal: 5,
                         paddingVertical: 9,
                         width: "40%",
@@ -167,7 +163,7 @@ const TrainerSetupStep2: React.FC<TrainerSetupStep2Props> = ({
                     <TouchableOpacity
                       style={{
                         borderWidth: 0.5,
-                        borderColor: "#0000001F",
+                        borderColor: COLORS.border,
                         paddingHorizontal: 5,
                         paddingVertical: 9,
                         width: "40%",
@@ -260,7 +256,7 @@ const styles = StyleSheet.create({
     padding: 20,
     marginBottom: 18,
     borderWidth: 1,
-    borderColor: "#EDEDED",
+    borderColor: COLORS.border,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
@@ -288,7 +284,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-start",
   },
   badgeOff: {
-    backgroundColor: "#E6E6E6",
+    backgroundColor: COLORS._E6E6E6,
     borderRadius: 32,
     paddingHorizontal: 12,
     paddingVertical: 9,
@@ -323,12 +319,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   actionBtnText: {
-    color: COLORS.white,
+    color: COLORS.black,
     fontSize: 14,
     fontFamily: FontWeight.Medium,
   },
   outlineBtn: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     boxShadow: "0px 0px 12px 0px #76767626",
     flex: 0,
     justifyContent: "center",

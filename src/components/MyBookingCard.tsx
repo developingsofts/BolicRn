@@ -64,9 +64,7 @@ const MyBookingCard = ({
 
   return (
     <View style={styles.card}>
-      {/* Session Type/Title at the top */}
       <Text style={styles.sessionType}>{sessionType}</Text>
-      {/* Top Row: Date, Time, and Client/Badge with Separator */}
       <View style={styles.topRow}>
         <View
           style={styles.dateTimeCol}
@@ -92,7 +90,6 @@ const MyBookingCard = ({
           </View>
         </View>
       </View>
-      {/* Actions */}
       {!hideActions && (
         <View style={styles.actions}>
           <TouchableOpacity
@@ -133,7 +130,7 @@ Client will be notified and refund will be initiated.`}
 const styles = StyleSheet.create({
   card: {
     width: "100%",
-    backgroundColor: "#fff",
+    backgroundColor: COLORS.surface,
     borderRadius: 16,
     padding: 15,
     marginBottom: 8,
@@ -161,7 +158,7 @@ const styles = StyleSheet.create({
   date: {
     fontSize: 16,
     fontFamily: FontWeight.SemiBold,
-    color: COLORS.gradient1,
+    color: COLORS.text,
     marginBottom: 2,
   },
   timeRange: {
@@ -206,7 +203,7 @@ const styles = StyleSheet.create({
   },
   clientName: {
     fontSize: 16,
-    color: COLORS.gradient1,
+    color: COLORS.text,
     fontFamily: FontWeight.SemiBold,
     textAlign: "right",
     flexWrap: "wrap",
@@ -221,7 +218,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   avatarText: {
-    color: COLORS.white,
+    color: COLORS.black,
     fontFamily: FontWeight.SemiBold,
     fontSize: 18,
   },
@@ -237,10 +234,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
     alignItems: "center",
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
   },
   declineButton: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     borderColor: COLORS.white,
     boxShadow: "0px 0px 12px 0px #76767626",
   },
@@ -252,7 +249,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.primary,
   },
   rescheduleButtonText: {
-    color: COLORS.white,
+    color: COLORS.black,
   },
   actionButtonText: {
     fontFamily: FontWeight.Medium,

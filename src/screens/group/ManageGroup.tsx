@@ -128,12 +128,10 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
       "this user"
     : "this user";
 
-  // API mutations
   const [createGroup, { isLoading: isCreating }] = useCreateGroupMutation();
   const [updateGroup, { isLoading: isUpdating }] = useUpdateGroupMutation();
   const [deleteGroup, { isLoading: isDeleting }] = useDeleteGroupMutation();
 
-  // Fetch group members when editing
   const {
     data: membersData,
     isLoading: isLoadingMembers,
@@ -175,10 +173,9 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
     }
 
     setHandledRequestIds((prev) => {
-      // Only update if there are actual changes
       const filtered = prev.filter((id) => currentRequestIds.includes(id));
       if (filtered.length === prev.length) {
-        return prev; // Return same reference if no changes
+        return prev;
       }
       return filtered;
     });
@@ -211,7 +208,6 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
 
     try {
       if (isEditing && group) {
-        // Update existing group
         await updateGroup({
           groupId: group.id.toString(),
           name: groupName.trim(),
@@ -223,7 +219,6 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
 
         Toast.success("Group updated successfully!");
       } else {
-        // Create new group
         await createGroup({
           name: groupName.trim(),
           description: groupDescription.trim(),
@@ -236,7 +231,6 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
         Toast.success("Group created successfully!");
       }
 
-      // Navigate back or close modal
       if (onClose) {
         onClose();
       } else {
@@ -401,7 +395,7 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
         >
           <Menu.Item
             onPress={() => handleMemberAction(member, "profile")}
-            titleStyle={{ color: COLORS.app_black }}
+            titleStyle={{ color: COLORS.black }}
             title="View Profile"
           />
           {!isSelf && (
@@ -483,11 +477,11 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
           bottomView={
             <View style={styles.heroTags}>
               <View style={styles.locationTag}>
-                <Image source={Location} style={{ width: 16, height: 16 }} />
+                <Image source={Location} style={{ width: 16, height: 16, tintColor: COLORS.white }} />
                 <Text style={styles.tagText}>{location}</Text>
               </View>
               <View style={styles.categoryTag}>
-                <Image source={Gym} style={{ width: 16, height: 16 }} />
+                <Image source={Gym} style={{ width: 16, height: 16, tintColor: COLORS.white }} />
                 <Text style={styles.tagText}>{groupType}</Text>
               </View>
             </View>
@@ -495,7 +489,6 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
         />
 
         <View style={styles.heroHeader}>
-          {/* Group Info Card */}
           <View style={styles.groupInfoCard}>
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Name</Text>
@@ -555,7 +548,7 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
                       key={option}
                       style={{ width: "100%" }}
                       titleStyle={{
-                        color: COLORS.gradient1,
+                        color: COLORS.black,
                         fontFamily: FontWeight.Medium,
                         fontSize: 14,
                       }}
@@ -600,7 +593,7 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
                     <Menu.Item
                       key={option}
                       titleStyle={{
-                        color: COLORS.gradient1,
+                        color: COLORS.black,
                         fontFamily: FontWeight.Medium,
                         fontSize: 14,
                       }}
@@ -620,7 +613,9 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
             style={[
               styles.inputGroup,
               {
-                backgroundColor: COLORS.white,
+                backgroundColor: COLORS.surface,
+                borderWidth: 1,
+                borderColor: COLORS.border,
                 marginTop: r(15),
                 padding: r(16),
                 borderRadius: r(8),
@@ -654,7 +649,7 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
                 <Menu.Item
                   key={option}
                   titleStyle={{
-                    color: COLORS.gradient1,
+                    color: COLORS.black,
                     fontFamily: FontWeight.Medium,
                     fontSize: 14,
                   }}
@@ -667,7 +662,6 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
               ))}
             </Menu>
           </View>
-          {/* Members Section - Only show when editing */}
           {isEditing && (
             <View style={styles.groupInfoCard}>
               <View style={styles.membersHeader}>
@@ -789,7 +783,7 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
                             {approveLoading ? (
                               <ActivityIndicator
                                 size="small"
-                                color={COLORS.white}
+                                color={COLORS.black}
                               />
                             ) : (
                               <Text style={styles.requestButtonText}>
@@ -807,7 +801,7 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
                             {rejectLoading ? (
                               <ActivityIndicator
                                 size="small"
-                                color={COLORS.white}
+                                color={COLORS.black}
                               />
                             ) : (
                               <Text style={styles.requestButtonText}>
@@ -824,7 +818,6 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
             </View>
           )}
 
-          {/* Action Buttons */}
           {isEditing ? (
             <>
               <TouchableOpacity
@@ -839,7 +832,7 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
                   <ActivityIndicator size="small" color={COLORS.error} />
                 ) : (
                   <>
-                    <Image source={Trash} style={{ width: 20, height: 20 }} />
+                    <Image source={Trash} style={{ width: 20, height: 20, tintColor: COLORS.white }} />
                     <Text style={styles.deleteButtonText}>Delete Group</Text>
                   </>
                 )}
@@ -853,7 +846,7 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
                 onPress={handleExitGroup}
                 disabled={isDeleting || isUpdating}
               >
-                <Image source={Exit} style={{ width: 20, height: 20 }} />
+                <Image source={Exit} style={{ width: 20, height: 20, tintColor: COLORS.white }} />
                 <Text style={styles.deleteButtonText}>Exit Group</Text>
               </TouchableOpacity>
 
@@ -866,7 +859,7 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
                 disabled={isDeleting || isUpdating}
               >
                 {isUpdating ? (
-                  <ActivityIndicator size="small" color={COLORS.white} />
+                  <ActivityIndicator size="small" color={COLORS.black} />
                 ) : (
                   <Text style={styles.createButtonText}>Save Changes</Text>
                 )}
@@ -879,7 +872,7 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
               disabled={isCreating}
             >
               {isCreating ? (
-                <ActivityIndicator size="small" color={COLORS.white} />
+                <ActivityIndicator size="small" color={COLORS.black} />
               ) : (
                 <Text style={styles.createButtonText}>Create Group</Text>
               )}
@@ -930,7 +923,7 @@ const styles = StyleSheet.create({
   locationTag: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     paddingHorizontal: r(12),
     paddingVertical: r(6),
     borderRadius: r(20),
@@ -939,7 +932,7 @@ const styles = StyleSheet.create({
   categoryTag: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     paddingHorizontal: r(12),
     paddingVertical: r(6),
     borderRadius: r(20),
@@ -947,14 +940,16 @@ const styles = StyleSheet.create({
   tagText: {
     fontSize: 12,
     fontFamily: FontWeight.Medium,
-    color: COLORS.gradient1,
+    color: COLORS.text,
     marginLeft: r(4),
   },
   content: {
     flex: 1,
   },
   groupInfoCard: {
-    backgroundColor: "white",
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
     borderRadius: r(12),
     padding: r(16),
     marginTop: r(16),
@@ -975,7 +970,7 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 13,
     fontFamily: FontWeight.Medium,
-    color: COLORS.gradient1,
+    color: COLORS.text,
     marginBottom: r(4),
   },
   textInput: {
@@ -983,7 +978,7 @@ const styles = StyleSheet.create({
     padding: r(12),
     fontSize: 14,
     fontFamily: FontWeight.Medium,
-    color: COLORS.gradient1,
+    color: COLORS.text,
     backgroundColor: COLORS.background,
   },
   textArea: {
@@ -1023,11 +1018,11 @@ const styles = StyleSheet.create({
   membersTitle: {
     fontSize: 16,
     fontFamily: FontWeight.SemiBold,
-    color: COLORS.gradient1,
+    color: COLORS.text,
   },
   membersCount: {
     fontSize: 14,
-    color: COLORS.gradient1,
+    color: COLORS.text,
     fontFamily: FontWeight.Medium,
   },
   memberItem: {
@@ -1057,7 +1052,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   memberAvatarText: {
-    color: "white",
+    color: COLORS.black,
     fontSize: 16,
     fontFamily: FontWeight.SemiBold,
   },
@@ -1067,7 +1062,7 @@ const styles = StyleSheet.create({
   memberName: {
     fontSize: 16,
     fontFamily: FontWeight.SemiBold,
-    color: COLORS.gradient1,
+    color: COLORS.text,
   },
   memberLocation: {
     fontSize: 14,
@@ -1108,12 +1103,12 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS._EB3434,
   },
   requestButtonText: {
-    color: COLORS.white,
+    color: COLORS.black,
     fontSize: 14,
     fontFamily: FontWeight.Medium,
   },
   deleteButton: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     borderRadius: r(8),
     paddingVertical: r(12),
     paddingHorizontal: r(16),
@@ -1144,7 +1139,7 @@ const styles = StyleSheet.create({
     marginBottom: r(100),
   },
   createButtonText: {
-    color: "white",
+    color: COLORS.black,
     fontSize: 16,
     fontFamily: FontWeight.SemiBold,
   },

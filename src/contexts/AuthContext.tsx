@@ -25,7 +25,6 @@ import { baseApi } from "../services/api/baseApi";
 import { storageService } from "../services/storage";
 import { ERROR_MESSAGES, SUCCESS_MESSAGES } from "../config/constants";
 
-// Auth Context Interface
 interface AuthContextType {
   user: User | null;
   token: string | null;
@@ -48,18 +47,15 @@ interface AuthContextType {
   logout: () => Promise<void>;
   clearError: () => void;
   updateUser: (user: Partial<User>) => void;
-  dispatch: React.Dispatch<any>; // Keep for compatibility
+  dispatch: React.Dispatch<any>;
 }
 
-// Create Context
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Auth Provider Props
 interface AuthProviderProps {
   children: ReactNode;
 }
 
-// Auth Provider Component
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const dispatch = useAppDispatch();
   const user = useUser();
@@ -78,7 +74,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     [isLoginLoading, isRegisterLoading, isProfileLoading],
   );
 
-  // Check for existing token on app start and fetch fresh profile
   useEffect(() => {
     const initializeAuth = async () => {
       try {
@@ -87,7 +82,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (storedToken) {
           console.log("🔑 Token found, fetching fresh profile...",storedToken);
 
-          // Fetch fresh profile from API
           const profileResponse = await fetchProfile().unwrap();
 
           if (profileResponse.status && profileResponse.data) {
@@ -116,7 +110,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     initializeAuth();
   }, [dispatch, fetchProfile]);
 
-  // Login function - Only save token, user profile comes from the response
   const login = async (email: string, password: string): Promise<boolean> => {
     setError(null);
 
@@ -142,7 +135,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       const sanitizedUser = rest as unknown as User;
 
-      // Only save token to storage, not user profile
       await storageService.setAuthToken(rawToken);
       dispatch(setUser({ user: sanitizedUser, token: rawToken }));
 
@@ -158,7 +150,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Register function
   const register = async (userData: {
     email: string;
     password: string;
@@ -195,20 +186,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Logout function - Comprehensive data clearing
   const logout = async (): Promise<void> => {
     try {
       console.log("🚪 Starting comprehensive logout process...");
 
-      // 1. Clear Redux user state FIRST (this makes isAuthenticated false)
       console.log("👤 Clearing user state first...");
       dispatch(clearUser());
 
-      // 2. Clear RTK Query cache to invalidate all API data
       console.log("🔄 Clearing API cache...");
       dispatch(baseApi.util.resetApiState());
 
-      // 3. Clear all stored data from AsyncStorage
       console.log("🗑️ Clearing all stored user data...");
       const allKeys = await AsyncStorage.getAllKeys();
       const userDataKeys = allKeys.filter(
@@ -235,16 +222,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
       await storageService.clearUserData();
 
-      // 4. Reset any error state
       setError(null);
 
       console.log("✅ Logout completed successfully");
       Toast.success(SUCCESS_MESSAGES.logoutSuccess);
     } catch (error) {
       console.error("❌ Error during logout:", error);
-      // Even if there's an error, try to clear the essential data
       try {
-        dispatch(clearUser()); // Clear user state first
+        dispatch(clearUser());
         dispatch(baseApi.util.resetApiState());
         await storageService.clearUserData();
       } catch (fallbackError) {
@@ -254,12 +239,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Clear error function
   const clearErrorHandler = (): void => {
     setError(null);
   };
 
-  // Update user function
   const updateUserHandler = (userUpdate: Partial<User>): void => {
     dispatch(updateUser(userUpdate));
     const mergedUser = user ? { ...user, ...userUpdate } : userUpdate;
@@ -268,7 +251,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Context value
   const value: AuthContextType = {
     user,
     token,
@@ -281,13 +263,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     logout,
     clearError: clearErrorHandler,
     updateUser: updateUserHandler,
-    dispatch, // Keep for compatibility
+    dispatch,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-// Custom hook to use auth context
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (context === undefined) {
@@ -296,5 +277,4 @@ export const useAuth = (): AuthContextType => {
   return context;
 };
 
-// Export for convenience
 export default AuthContext;

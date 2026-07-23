@@ -52,5 +52,6 @@ export const Posts = require("../assets/posts.png");
 export const Workout = require("../assets/workout.png");
 export const Tick = require("../assets/tick.png");
 export const ThreeDots = require("../assets/threedots.png");
+export const AppLogo = require("../assets/app_logo.png");
 
 

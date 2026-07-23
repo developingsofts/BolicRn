@@ -15,7 +15,6 @@ const baseQuery = fetchBaseQuery({
       headers.set("Authorization", `Bearer ${token}`);
     }
 
-    // Don't set Content-Type for FormData endpoints - let the browser handle it
     const formDataEndpoints = [
       "updateMyProfileWithImage",
       "createPost",
@@ -33,13 +32,11 @@ const baseQuery = fetchBaseQuery({
   },
 });
 
-// Allows us to hook in cross-cutting concerns like refresh-token flows later
 const baseQueryWithErrorHandling: BaseQueryFn<
   string | FetchArgs,
   unknown,
   FetchBaseQueryError
 > = async (args, api, extraOptions) => {
-  // Log request details
   const url = typeof args === "string" ? args : args.url;
   const method = typeof args === "string" ? "GET" : args.method || "GET";
   const body = typeof args === "string" ? undefined : (args as FetchArgs).body;
@@ -146,7 +143,6 @@ const baseQueryWithErrorHandling: BaseQueryFn<
   }
   const duration = Date.now() - startTime;
 
-  // Log response details
   if (result.error) {
     console.error("❌ API Error:", {
       url: `${API_CONFIG.baseUrl}${url}`,
@@ -165,9 +161,6 @@ const baseQueryWithErrorHandling: BaseQueryFn<
       timestamp: new Date().toISOString(),
     });
   }
-
-  // Placeholder for future global error handling / token refresh flow
-  // if (result.error && result.error.status === 401) { ... }
 
   const normalizeParsingError = () => {
     const error = result.error as FetchBaseQueryError & {

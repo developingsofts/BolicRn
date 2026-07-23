@@ -10,8 +10,8 @@ interface BookingCardProps {
   id: number;
   trainer: TrainerInfo;
   user: UserInfo;
-  date: string; // ISO format: "2025-12-10T00:00:00.000Z"
-  time: string; // e.g., "10:00AM"
+  date: string;
+  time: string;
   price: PriceInfo;
   status: "upcomming" | "completed" | "canceled";
   onAccept?: () => void;
@@ -93,7 +93,7 @@ Client will be notified and refund will be initiated.`}
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: COLORS.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   avatarText: {
-    color: COLORS.white,
+    color: COLORS.black,
     fontFamily: FontWeight.SemiBold,
     fontSize: 22,
   },
@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
   guestName: {
     fontFamily: FontWeight.SemiBold,
     fontSize: 16,
-    color: COLORS.gradient1,
+    color: COLORS.text,
   },
   mutedText: {
     color: COLORS._5E5E5E,
@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   declineButton: {
-    backgroundColor: "#fff",
+    backgroundColor: COLORS.surface,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,

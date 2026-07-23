@@ -9,10 +9,8 @@ const deriveSocketUrl = (url: string): string => {
 
   try {
     const parsed = new URL(trimmed);
-    // If the API URL already points to the root, reuse it. Otherwise drop the path (e.g. /api).
     return `${parsed.protocol}//${parsed.host}`;
   } catch (error) {
-    // Fallback: strip a trailing /api or similar segment if present.
     return trimmed.replace(/\/(api|v1|v2)$/i, '');
   }
 };
@@ -38,7 +36,6 @@ export const initializeSocket = (token: string): Socket => {
     socket = createSocketInstance(token);
     tokenCache = token;
   } else if (tokenCache !== token) {
-    // Update auth payload if token has changed
     socket.auth = { token };
     tokenCache = token;
   }

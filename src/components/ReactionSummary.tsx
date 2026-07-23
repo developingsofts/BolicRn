@@ -116,15 +116,8 @@ const styles = StyleSheet.create({
   reactionIcon: {
     justifyContent: "center",
     alignItems: "center",
-    // shadowColor: "#000",
-    // shadowOffset: { width: 0, height: 1 },
-    // shadowOpacity: 0.1,
-    // shadowRadius: 2,
-    // elevation: 2,
   },
   userReactionIcon: {
-    // borderWidth: 2,
-    // borderColor: COLORS.primary,
   },
   reactionEmoji: {
     fontSize: 18,

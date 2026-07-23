@@ -115,20 +115,17 @@ const CommentsModal: React.FC<CommentsModalProps> = ({
   const handleSendComment = async () => {
     if (!commentText.trim()) return;
 
-    // Store the comment text and clear immediately to prevent duplicates
     const textToSend = commentText.trim();
     setCommentText("");
 
     try {
       if (editingComment) {
-        // Update existing comment
         await updateComment({
           commentId: editingComment.id.toString(),
           content: textToSend,
         }).unwrap();
         setEditingComment(null);
       } else {
-        // Create new comment
         await createComment({
           postId,
           content: textToSend,
@@ -140,7 +137,6 @@ const CommentsModal: React.FC<CommentsModalProps> = ({
       refetch();
     } catch (error) {
       console.error("Failed to post comment:", error);
-      // Restore the comment text on error
       setCommentText(textToSend);
       Alert.alert(
         "Error",
@@ -231,7 +227,6 @@ const CommentsModal: React.FC<CommentsModalProps> = ({
       .toUpperCase()
       .substring(0, 2);
 
-    // Add cache busting parameter to force image refresh on pull-to-refresh
     const avatarUri = item.user.imageUrl
       ? item.user.imageUrl.includes("?")
         ? item.user.imageUrl
@@ -288,13 +283,6 @@ const CommentsModal: React.FC<CommentsModalProps> = ({
             )}
           </View>
           <Text style={styles.commentText}>{item.content}</Text>
-          {/* <View style={styles.commentActions}>
-            {!isReply && (
-              <TouchableOpacity onPress={() => handleReply(item.id, userName)}>
-                <Text style={styles.commentActionText}>Reply</Text>
-              </TouchableOpacity>
-            )}
-          </View> */}
           {item.replies && item.replies.length > 0 && (
             <View style={styles.repliesContainer}>
               {item.replies.map((reply) => (
@@ -325,12 +313,10 @@ const CommentsModal: React.FC<CommentsModalProps> = ({
           <View style={styles.modalOverlay}>
             <TouchableWithoutFeedback>
               <View style={styles.modalContainer}>
-                {/* Drag Handle */}
                 <View style={styles.dragHandleContainer}>
                   <View style={styles.dragHandle} />
                 </View>
 
-                {/* Header */}
                 <View style={styles.headerContainer}>
                   <Text style={styles.headerTitle}>Comments</Text>
                   <TouchableOpacity
@@ -423,7 +409,7 @@ const CommentsModal: React.FC<CommentsModalProps> = ({
                         {isCreating || isUpdating ? (
                           <ActivityIndicator
                             size="small"
-                            color={COLORS.white}
+                            color={COLORS.black}
                           />
                         ) : (
                           <Image source={Send} style={styles.sendIcon} />
@@ -550,6 +536,8 @@ const styles = StyleSheet.create({
     padding: DIMENSIONS.spacing.md,
     paddingVertical: DIMENSIONS.spacing.lg,
     borderRadius: DIMENSIONS.borderRadius,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   replyContainer: {
     marginLeft: DIMENSIONS.spacing.xl,
@@ -612,6 +600,8 @@ const styles = StyleSheet.create({
     top: 30,
     right: 0,
     backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
     borderRadius: 8,
     paddingVertical: DIMENSIONS.spacing.xs,
     minWidth: 120,
@@ -628,7 +618,7 @@ const styles = StyleSheet.create({
   },
   menuOptionText: {
     fontSize: 14,
-    color: "#FF3B30",
+    color: COLORS.error,
     fontWeight: "500",
   },
   commentText: {
@@ -705,7 +695,7 @@ const styles = StyleSheet.create({
   sendIcon: {
     width: 20,
     height: 20,
-    tintColor: COLORS.white,
+    tintColor: COLORS.black,
   },
 });
 

@@ -10,10 +10,12 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Image,
 } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import MaskedView from "@react-native-masked-view/masked-view";
 import { LinearGradient } from "expo-linear-gradient";
+import { AppLogo } from "../../assets";
 import { Formik } from "formik";
 import {
   COLORS,
@@ -84,7 +86,6 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
     isUpdatingProfile ||
     isUpdatingProfileWithImage;
 
-  // Form state
   const [isSignUp, setIsSignUp] = useState(false);
   const [isPhoneVerified, setIsPhoneVerified] = useState(false);
   const [isSendingCode, setIsSendingCode] = useState(false);
@@ -99,7 +100,6 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
   const [signUpStep, setSignUpStep] = useState(0);
   const [isTrainerFlow, setIsTrainerFlow] = useState(false);
 
-  // Refs for form components
   const createAccountFormRef = React.useRef<{ submit: () => void }>(null);
   const userProfileFormRef = React.useRef<{ submit: () => void }>(null);
   const avatarUploadFormRef = React.useRef<{
@@ -107,7 +107,6 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
     getData: () => { avatar: string | null; name: string; description: string };
   }>(null);
 
-  // Combined form values for multi-step signup
   const [signUpFormValues, setSignUpFormValues] = useState<SignUpFormValues>({
     email: "",
     password: "",
@@ -124,7 +123,6 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
     bio: "",
   });
 
-  // Function to get step title based on flow and step
   const getStepTitle = (step: number, isTrainer: boolean) => {
     if (step === 0) {
       return "Join as a...";
@@ -162,7 +160,6 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
     }
   };
 
-  // Function to reset all form states
   const resetFormStates = () => {
     setSignUpFormValues({
       email: "",
@@ -187,13 +184,11 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
     setIsTrainerFlow(false);
   };
 
-  // Animation values
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
   const slideAnim = React.useRef(new Animated.Value(50)).current;
   const scaleAnim = React.useRef(new Animated.Value(0.9)).current;
 
   React.useEffect(() => {
-    // Animate in
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
@@ -217,7 +212,6 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
     payload: { user: User; token: string },
     successMessage?: string,
   ) => {
-    // Only save token, not user profile
     await storageService.setAuthToken(payload.token);
     dispatch(setUser(payload));
     Toast.success(successMessage ?? SUCCESS_MESSAGES.loginSuccess);
@@ -225,7 +219,6 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
 
   const handleSignUp = async (values: SignUpFormValues) => {
     try {
-      // Step 0: Create account with only email and password
       if (!authToken) {
         const registrationResponse = await triggerRegister({
           email: values.email,
@@ -250,21 +243,17 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
           throw new Error(ERROR_MESSAGES.authenticationError);
         }
 
-        // Store token for subsequent updates
         setAuthToken(token);
         await storageService.setAuthToken(token);
 
         console.log(
           "✅ Account created, token saved. Now collecting additional info...",
         );
-        // Don't show toast here - only show on final step
 
-        // Move to next step after successful account creation
         nextStep();
         return;
       }
     } catch (error: any) {
-      // Handle RTK Query errors
       let message = "Authentication failed";
 
       console.log("Error data:", error.data);
@@ -272,12 +261,10 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
       console.log("Error message:", error.message);
       console.log("Full error object:", JSON.stringify(error, null, 2));
 
-      // RTK Query error structure
       if (
         error?.status &&
         (error.status === 403 || error.status === 409 || error.status === 400)
       ) {
-        // Consistent message for duplicate email
         message =
           "Email already exists. Please use a different email or sign in.";
         console.log(
@@ -285,25 +272,21 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
           error.status,
         );
       } else if (error?.data?.message) {
-        // Backend error response
         message = error.data.message;
         console.log(
           "✅ Using backend message from error.data.message:",
           message,
         );
       } else if (error?.data?.error) {
-        // Alternative backend error format
         message = error.data.error;
         console.log(
           "✅ Using alternative backend error from error.data.error:",
           message,
         );
       } else if (error?.message) {
-        // Standard Error object
         message = error.message;
         console.log("✅ Using error.message:", message);
       } else if (error?.status) {
-        // HTTP status code errors
         console.log("Checking status:", error.status);
         if (error.status === 500) {
           message = "Server error. Please try again later.";
@@ -346,15 +329,12 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
 
         const sanitizedUser = rest as unknown as User;
 
-        // Check if user needs to complete onboarding
         const onboardingStep = sanitizedUser.onboardingStep || 0;
         const userRole = sanitizedUser.role;
 
-        // Determine flow based on role
         const isTrainer = userRole === "trainer";
         setIsTrainerFlow(isTrainer);
 
-        // Check if user has data that suggests incomplete onboarding
         const hasLocation =
           sanitizedUser.location && sanitizedUser.location.trim();
         const hasTrainingTypes =
@@ -382,9 +362,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
         });
 
         if (isTrainer) {
-          // Trainer flow logic
           if (onboardingStep === 1) {
-            // Completed registration, resume from profile
             console.log("🔄 Resuming trainer onboarding from profile step");
             setIsSignUp(true);
             setSignUpStep(2);
@@ -410,7 +388,6 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
             Toast.success("Welcome back! Please complete your profile setup.");
             return;
           } else if (onboardingStep === 2) {
-            // Completed profile, resume from avatar
             console.log("🔄 Resuming trainer onboarding from avatar step");
             setIsSignUp(true);
             setSignUpStep(3);
@@ -439,9 +416,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
             onboardingStep === 0 &&
             (hasLocation || hasTrainingTypes)
           ) {
-            // Has some profile data but onboardingStep is 0
             if (hasDisplayName && hasBio) {
-              // Resume from avatar
               console.log(
                 "🔄 Detected incomplete trainer onboarding - resuming from avatar step",
               );
@@ -471,7 +446,6 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
               );
               return;
             } else {
-              // Resume from profile
               console.log(
                 "🔄 Detected incomplete trainer onboarding - resuming from profile step",
               );
@@ -503,7 +477,6 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
             }
           }
         } else {
-          // User flow logic (old 7-step)
           const finalStep = 7;
           if (onboardingStep > 0 && onboardingStep < finalStep) {
             console.log(
@@ -541,7 +514,6 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
           }
         }
 
-        // User has completed onboarding - proceed with normal login
         await hydrateUser(
           { user: sanitizedUser, token },
           response.message || STRINGS.AUTH.success.loggedIn,
@@ -550,21 +522,15 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
         throw new Error(response.message || ERROR_MESSAGES.authenticationError);
       }
     } catch (error: any) {
-      // Handle RTK Query errors
       let message = "Authentication failed";
 
-      // RTK Query error structure
       if (error?.data?.message) {
-        // Backend error response
         message = error.data.message;
       } else if (error?.data?.error) {
-        // Alternative backend error format
         message = error.data.error;
       } else if (error?.message) {
-        // Standard Error object
         message = error.message;
       } else if (error?.status) {
-        // HTTP status code errors
         if (error.status === 401) {
           message = "Invalid email or password. Please try again.";
         } else if (error.status === 404) {
@@ -594,7 +560,6 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
 
   const prevStep = () => {
     if (signUpStep > 0) {
-      // Reset auth token when going back to email/password step
       if (signUpStep === 1) {
         setAuthToken(null);
         storageService.removeAuthToken();
@@ -674,7 +639,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
           >
             {isMutating ? (
               <View style={styles.loadingContainer}>
-                <ActivityIndicator color={COLORS.white} size="small" />
+                <ActivityIndicator color={COLORS.black} size="small" />
                 <Text style={[styles.submitButtonText, { marginLeft: 8 }]}>
                   Signing In...
                 </Text>
@@ -688,7 +653,6 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
     </Formik>
   );
 
-  // Trainer flow rendering
   const renderTrainerSignUpStep = () => {
     switch (signUpStep) {
       case 0:
@@ -750,7 +714,6 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
                       error.status === 409 ||
                       error.status === 400)
                   ) {
-                    // Consistent message for duplicate email
                     message =
                       "Email already exists. Please use a different email or sign in.";
                     console.log(
@@ -1054,7 +1017,6 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
     if (isTrainerFlow) {
       return renderTrainerSignUpStep();
     } else {
-      // For user flow, start with role selection
       if (signUpStep === 0) {
         return (
           <RoleSelection
@@ -1107,7 +1069,6 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
     }
   };
 
-  // User flow rendering (old 7-step)
   const renderUserSignUpStep = (
     values: SignUpFormValues,
     errors: any,
@@ -1271,7 +1232,6 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
           );
         }
       } catch (error: any) {
-        // Handle RTK Query errors
         let message = "Failed to update profile";
 
         console.log("Error data:", error.data);
@@ -1279,16 +1239,13 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
         console.log("Error message:", error.message);
         console.log("Full error object:", JSON.stringify(error, null, 2));
 
-        // RTK Query error structure
         if (error?.data?.message) {
-          // Backend error response - use the actual message
           message = error.data.message;
           console.log(
             "✅ Using backend message from error.data.message:",
             message,
           );
         } else if (error?.data?.error) {
-          // Alternative backend error format
           message = error.data.error;
           console.log(
             "✅ Using alternative backend error from error.data.error:",
@@ -1298,7 +1255,6 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
           error?.status &&
           (error.status === 403 || error.status === 409 || error.status === 400)
         ) {
-          // Fallback for status-based errors when no message is available
           if (error.status === 409) {
             message =
               "Email already exists. Please use a different email or sign in.";
@@ -1311,11 +1267,9 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
             error.status,
           );
         } else if (error?.message) {
-          // Standard Error object
           message = error.message;
           console.log("✅ Using error.message:", message);
         } else if (error?.status) {
-          // HTTP status code errors
           console.log("Checking status:", error.status);
           if (error.status === 500) {
             message = "Server error. Please try again later.";
@@ -1337,7 +1291,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
     };
 
     switch (signUpStep) {
-      case 1: // Email/Password
+      case 1:
         return (
           <View style={styles.stepContainer}>
             <TextInput
@@ -1382,7 +1336,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
           </View>
         );
 
-      case 2: // Phone Number
+      case 2:
         return (
           <View style={styles.stepContainer}>
             <Text style={styles.fieldLabel}>
@@ -1429,7 +1383,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
             >
               {isSendingCode ? (
                 <View style={styles.loadingContainer}>
-                  <ActivityIndicator color={COLORS.primary} size="small" />
+                  <ActivityIndicator color={COLORS.black} size="small" />
                   <Text style={[styles.sendCodeButtonText, { marginLeft: 8 }]}>
                     {STRINGS.AUTH.sending}
                   </Text>
@@ -1508,7 +1462,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
             >
               {isVerifyingCode ? (
                 <View style={styles.loadingContainer}>
-                  <ActivityIndicator color={COLORS.white} size="small" />
+                  <ActivityIndicator color={COLORS.black} size="small" />
                   <Text style={[styles.verifyButtonText, { marginLeft: 8 }]}>
                     {STRINGS.AUTH.verifying}
                   </Text>
@@ -1565,7 +1519,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
           </View>
         );
 
-      case 4: // Display Name
+      case 4:
         return (
           <View style={styles.stepContainer}>
             <TextInput
@@ -1597,7 +1551,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
           </View>
         );
 
-      case 5: // Age
+      case 5:
         return (
           <View style={styles.stepContainer}>
             <TextInput
@@ -1630,7 +1584,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
           </View>
         );
 
-      case 6: // Training Types
+      case 6:
         return (
           <View style={styles.stepContainer}>
             <View
@@ -1685,7 +1639,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
           </View>
         );
 
-      case 7: // Gender Preferences
+      case 7:
         return (
           <View style={styles.stepContainer}>
             <Text style={styles.fieldLabel}>{STRINGS.AUTH.yourGender}</Text>
@@ -1766,7 +1720,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
               >
                 {isMutating ? (
                   <View style={styles.loadingContainer}>
-                    <ActivityIndicator color={COLORS.white} size="small" />
+                    <ActivityIndicator color={COLORS.black} size="small" />
                     <Text style={[styles.nextButtonText, { marginLeft: 8 }]}>
                       {STRINGS.AUTH.sending}
                     </Text>
@@ -1808,27 +1762,13 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
             },
           ]}
         >
-          {/* Header */}
           <View style={styles.header}>
-            <MaskedView
-              maskElement={<Text style={styles.brandName}>BolicBuddy</Text>}
-            >
-              <LinearGradient
-                colors={[COLORS.gradient1, COLORS.gradient2, COLORS.gradient3]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 0, y: 0 }}
-              >
-                <Text style={[styles.brandName, { opacity: 0 }]}>
-                  {STRINGS.appName}
-                </Text>
-              </LinearGradient>
-            </MaskedView>
+            <Image source={AppLogo} style={styles.logo} resizeMode="contain" />
             <Text style={styles.brandTagline}>
               Find your perfect training partner
             </Text>
           </View>
 
-          {/* Mode Toggle */}
           <View style={styles.modeToggle}>
             <TouchableOpacity
               style={[styles.modeButton, !isSignUp && styles.modeButtonActive]}
@@ -1871,10 +1811,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
               progress={signUpStep / (isTrainerFlow ? 4 : 7)}
             />
           )}
-          {/* Form */}
           {isSignUp ? renderSignUpForm() : renderLoginForm()}
 
-          {/* Footer */}
           <View style={styles.footer}>
             <Text style={styles.footerText}>
               {isSignUp ? "Already have an account?" : "Don't have an account?"}
@@ -1913,6 +1851,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: DIMENSIONS.spacing.xl,
   },
+  logo: {
+    width: 140,
+    height: 140,
+    alignSelf: "center",
+    marginBottom: DIMENSIONS.spacing.sm,
+  },
   brandName: {
     fontSize: 32,
     fontWeight: "bold",
@@ -1946,7 +1890,7 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
   },
   modeTextActive: {
-    color: COLORS.surface,
+    color: COLORS.black,
   },
   formContainer: {
     marginBottom: DIMENSIONS.spacing.lg,
@@ -2038,7 +1982,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   trainingTypeTextActive: {
-    color: COLORS.surface,
+    color: COLORS.black,
     fontWeight: "600",
   },
   optionsContainer: {
@@ -2062,7 +2006,7 @@ const styles = StyleSheet.create({
     color: COLORS.text,
   },
   optionTextActive: {
-    color: COLORS.surface,
+    color: COLORS.black,
     fontWeight: "600",
   },
   stepButtons: {
@@ -2071,7 +2015,7 @@ const styles = StyleSheet.create({
   },
   backButton: {
     flex: 1,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     borderRadius: DIMENSIONS.borderRadius,
     paddingVertical: DIMENSIONS.spacing.md,
     alignItems: "center",
@@ -2096,7 +2040,7 @@ const styles = StyleSheet.create({
   nextButtonText: {
     fontSize: 16,
     fontWeight: "600",
-    color: COLORS.surface,
+    color: COLORS.black,
   },
   backBtnText: {
     fontSize: 16,
@@ -2116,7 +2060,7 @@ const styles = StyleSheet.create({
   sendCodeButtonText: {
     fontSize: 16,
     fontWeight: "600",
-    color: COLORS.surface,
+    color: COLORS.black,
   },
   verifyButton: {
     backgroundColor: COLORS.primary,
@@ -2131,7 +2075,7 @@ const styles = StyleSheet.create({
   verifyButtonText: {
     fontSize: 16,
     fontWeight: "600",
-    color: COLORS.surface,
+    color: COLORS.black,
   },
   resendButton: {
     marginTop: DIMENSIONS.spacing.md,
@@ -2155,7 +2099,7 @@ const styles = StyleSheet.create({
   submitButtonText: {
     fontSize: 16,
     fontWeight: "600",
-    color: COLORS.surface,
+    color: COLORS.black,
   },
   loadingContainer: {
     flexDirection: "row",
@@ -2193,7 +2137,6 @@ const styles = StyleSheet.create({
 
 export default AuthScreen;
 
-// Helper functions for user flow
 const sendVerificationCode = async (
   phoneNumber: string,
   setExpectedVerificationCode: (code: string) => void,

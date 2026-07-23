@@ -22,10 +22,7 @@ interface DaySlots {
   slots: string[];
 }
 
-// Convert date format from "Wednesday - Dec 10, 2025" to "mm/dd/yyyy"
-
 const RescheduleSessionScreen = ({ navigation, route }: any) => {
-  // Create custom day slots matching the original hardcoded data
   const customDaySlots: DaySlots[] = [
     {
       date: "2025-10-14",

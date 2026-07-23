@@ -38,8 +38,6 @@ interface TrainerProfileDetailsProps {
   onWorkExperienceChange?: (value: string) => void;
 }
 
-
-
 function getValueFromLabel(label?: string): string {
   if (!label) return "7";
   const found = YEARS.find((y) => y.label.toLowerCase() === label.toLowerCase());
@@ -78,7 +76,6 @@ const TrainerProfileDetails: React.FC<TrainerProfileDetailsProps> = ({
     if (onWorkExperienceChange) {
       onWorkExperienceChange(selectedLabel);
     }
-    // Only run on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -101,10 +98,9 @@ const TrainerProfileDetails: React.FC<TrainerProfileDetailsProps> = ({
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const asset = result.assets[0];
         setVideoPreview(asset.uri);
-        // Determine the correct MIME type
         const uriParts = asset.uri.split(".");
         const fileExtension = uriParts[uriParts.length - 1].toLowerCase();
-        let mimeType = "video/mp4"; // default
+        let mimeType = "video/mp4";
 
         if (fileExtension === "mp4") {
           mimeType = "video/mp4";
@@ -129,12 +125,11 @@ const TrainerProfileDetails: React.FC<TrainerProfileDetailsProps> = ({
       Alert.alert("Error", "Failed to pick video.");
     }
   };
-  
+
   return (
     <View style={styles.container}>
       <Text style={styles.heading}>Trainer Profile Details</Text>
 
-      {/* Work Experience Section */}
       <View style={styles.section}>
         <Text style={styles.label}>Work Experience</Text>
         <TouchableOpacity
@@ -145,7 +140,7 @@ const TrainerProfileDetails: React.FC<TrainerProfileDetailsProps> = ({
           <Ionicons
             name={showDropdown ? "chevron-up" : "chevron-down"}
             size={20}
-            color="#666"
+            color={COLORS.textSecondary}
           />
         </TouchableOpacity>
 
@@ -177,7 +172,7 @@ const TrainerProfileDetails: React.FC<TrainerProfileDetailsProps> = ({
                   {item.label}
                 </Text>
                 {workExperience === item.value && (
-                  <Ionicons name="checkmark" size={18} color="#2563eb" />
+                  <Ionicons name="checkmark" size={18} color={COLORS.primary} />
                 )}
               </TouchableOpacity>
             ))}
@@ -185,7 +180,6 @@ const TrainerProfileDetails: React.FC<TrainerProfileDetailsProps> = ({
         )}
       </View>
 
-      {/* Intro Video Section */}
       <View style={styles.section}>
         <Text style={styles.label}>Intro Video</Text>
         {videoPreview ? (
@@ -198,7 +192,7 @@ const TrainerProfileDetails: React.FC<TrainerProfileDetailsProps> = ({
                 <Text style={styles.changeVideoText}>Change Video</Text>
                 <Image
                   source={VideoIcon}
-                  style={{ width: 20, height: 20, marginLeft: 8 }}
+                  style={{ width: 20, height: 20, marginLeft: 8, tintColor: COLORS.white }}
                   resizeMode={ResizeMode.CONTAIN}
                 />
               </View>
@@ -217,7 +211,7 @@ const TrainerProfileDetails: React.FC<TrainerProfileDetailsProps> = ({
             </Text>
             <Image
               source={VideoIcon}
-              style={{ width: 20, height: 20, marginLeft: 8 }}
+              style={{ width: 20, height: 20, marginLeft: 8, tintColor: COLORS.white }}
               resizeMode={ResizeMode.CONTAIN}
             />
           </TouchableOpacity>
@@ -246,7 +240,9 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: 400,
     alignSelf: "center",
-    backgroundColor: "#fff",
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
     padding: 20,
     marginTop: 5,
     marginBottom: 24,
@@ -275,7 +271,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#f3f4f6",
+    backgroundColor: COLORS.background,
     borderRadius: 8,
     paddingVertical: 12,
     paddingHorizontal: 16,
@@ -283,14 +279,14 @@ const styles = StyleSheet.create({
   },
   dropdownButtonText: {
     fontSize: 15,
-    color: "#222",
+    color: COLORS.text,
     fontWeight: "500",
   },
   dropdownList: {
-    backgroundColor: "#fff",
+    backgroundColor: COLORS.surface,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: COLORS.border,
     marginBottom: 8,
     maxHeight: 250,
     overflow: "hidden",
@@ -302,7 +298,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#f3f4f6",
+    borderBottomColor: COLORS.border,
   },
   dropdownItemText: {
     fontSize: 14,
@@ -310,13 +306,13 @@ const styles = StyleSheet.create({
     fontFamily: FontWeight.Medium,
   },
   dropdownItemTextActive: {
-    color: "#2563eb",
+    color: COLORS.primary,
     fontWeight: "600",
   },
   pickerWrapper: {
     borderRadius: 8,
     overflow: "hidden",
-    backgroundColor: "#f3f4f6",
+    backgroundColor: COLORS.background,
     marginBottom: 8,
     position: "relative",
   },
@@ -330,7 +326,7 @@ const styles = StyleSheet.create({
   uploadBtn: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     borderRadius: 8,
     width: "100%",
     justifyContent: "center",
@@ -354,7 +350,7 @@ const styles = StyleSheet.create({
   videoHeaderRow: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     borderRadius: 8,
     paddingVertical: 12,
     paddingHorizontal: 16,
@@ -375,7 +371,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   removeText: {
-    color: "#ef4444",
+    color: COLORS.error,
     fontFamily: FontWeight.SemiBold,
     fontSize: 14,
   },
@@ -392,7 +388,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   removeVideoBtnText: {
-    color: "#ef4444",
+    color: COLORS.error,
     fontWeight: "600",
     fontSize: 15,
   },
@@ -401,7 +397,7 @@ const styles = StyleSheet.create({
     aspectRatio: 16 / 9,
     borderRadius: 10,
     overflow: "hidden",
-    backgroundColor: "#f3f4f6",
+    backgroundColor: COLORS.surface,
     marginBottom: 8,
     alignItems: "center",
     justifyContent: "center",
@@ -411,12 +407,12 @@ const styles = StyleSheet.create({
     aspectRatio: 16 / 9,
     borderRadius: 10,
     overflow: "hidden",
-    backgroundColor: "#f3f4f6",
+    backgroundColor: COLORS.surface,
     alignItems: "center",
     justifyContent: "center",
   },
   videoEmptyText: {
-    color: "#888",
+    color: COLORS.textSecondary,
     fontSize: 14,
   },
 });

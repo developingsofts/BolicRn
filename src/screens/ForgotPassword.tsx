@@ -10,6 +10,7 @@ import {
   Platform,
   ActivityIndicator,
   Linking,
+  Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import {
@@ -24,6 +25,7 @@ import { useResponsive } from "../hooks/responsiveDesignHook";
 import PasswordInput from "../components/PasswordInput";
 import MaskedView from "@react-native-masked-view/masked-view";
 import { LinearGradient } from "expo-linear-gradient";
+import { AppLogo } from "../../assets";
 import {
   useForgotPasswordMutation,
   useResetPasswordMutation,
@@ -56,7 +58,6 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({
   const [resetPassword, { isLoading: isResettingPassword }] =
     useResetPasswordMutation();
 
-  // Check if there's a token in the route params (from deep link)
   useEffect(() => {
     const params = route.params as any;
     console.log("📱 Route params:", params);
@@ -69,12 +70,10 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({
     }
   }, [route.params]);
 
-  // Also handle deep links via Linking API
   useEffect(() => {
     const handleDeepLink = (event: { url: string }) => {
       console.log("🔗 Deep link received:", event.url);
 
-      // Parse URL to extract token
       const url = event.url;
       const tokenMatch = url.match(/[?&]token=([^&]+)/);
 
@@ -87,7 +86,6 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({
       }
     };
 
-    // Handle initial URL (if app was opened from a link)
     Linking.getInitialURL().then((url) => {
       if (url) {
         console.log("🔗 Initial URL:", url);
@@ -95,7 +93,6 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({
       }
     });
 
-    // Handle URL while app is running
     const subscription = Linking.addEventListener("url", handleDeepLink);
 
     return () => {
@@ -211,7 +208,7 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({
         disabled={isSendingEmail}
       >
         {isSendingEmail ? (
-          <ActivityIndicator color="#FFFFFF" />
+          <ActivityIndicator color={COLORS.black} />
         ) : (
           <Text style={styles.buttonText}>Send Reset Link</Text>
         )}
@@ -236,13 +233,6 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({
         autoCorrect={false}
         editable={false}
       />
-
-      {/* <TouchableOpacity
-        style={styles.secondaryButton}
-        onPress={handleResendEmail}
-      >
-        <Text style={styles.secondaryButtonText}>Resend Email</Text>
-      </TouchableOpacity> */}
 
       <TouchableOpacity
         style={[styles.button, { marginTop: 10 }]}
@@ -282,7 +272,7 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({
         disabled={isResettingPassword}
       >
         {isResettingPassword ? (
-          <ActivityIndicator color="#FFFFFF" />
+          <ActivityIndicator color={COLORS.black} />
         ) : (
           <Text style={styles.buttonText}>Reset Password</Text>
         )}
@@ -325,7 +315,6 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAwareScrollView
-        // behavior={Platform.OS === "ios" ? "padding" : "height"}
         contentContainerStyle={styles.keyboardAvoid}
         keyboardShouldPersistTaps="handled"
         enableOnAndroid={true}
@@ -350,25 +339,17 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({
               name="chevron-back"
               size={24}
               style={{ marginTop: 30, marginStart: 20 }}
-              color={COLORS.black}
+              color={COLORS.text}
             />
           </TouchableOpacity>
         </View>
 
         <View style={styles.content}>
-          <MaskedView
-            maskElement={<Text style={styles.logo}>{STRINGS.appName}</Text>}
-          >
-            <LinearGradient
-              colors={[COLORS.gradient1, COLORS.gradient2, COLORS.gradient3]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 0, y: 0 }}
-            >
-              <Text style={[styles.logo, { opacity: 0 }]}>
-                {STRINGS.appName}
-              </Text>
-            </LinearGradient>
-          </MaskedView>
+          <Image
+            source={AppLogo}
+            style={styles.logoImage}
+            resizeMode="contain"
+          />
           <Text style={styles.logoSubtitle}>Reset your password</Text>
           <View style={styles.mainContent}>{renderCurrentStep()}</View>
         </View>
@@ -390,7 +371,7 @@ const baseStyles = StyleSheet.create({
   },
   mainContent: {
     justifyContent: "center",
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     borderRadius: 10,
     paddingTop: 15,
     paddingBottom: 10,
@@ -407,6 +388,12 @@ const baseStyles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 20,
     justifyContent: "center",
+  },
+  logoImage: {
+    width: 120,
+    height: 120,
+    alignSelf: "center",
+    marginBottom: 8,
   },
   logo: {
     fontSize: 32,
@@ -446,6 +433,7 @@ const baseStyles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 14,
+    color: COLORS.text,
     fontFamily: FontWeight.Medium,
     marginBottom: 20,
     backgroundColor: COLORS.background,
@@ -489,7 +477,7 @@ const baseStyles = StyleSheet.create({
     backgroundColor: "#B0B0B0",
   },
   buttonText: {
-    color: COLORS.white,
+    color: COLORS.black,
     fontSize: 14,
     fontFamily: FontWeight.Medium,
   },

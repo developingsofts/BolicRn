@@ -3,7 +3,6 @@ import { View, Text, TouchableOpacity, Alert, StyleSheet } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { COLORS } from '../config/constants';
 
-// Configure notification behavior
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -21,12 +20,12 @@ export interface NotificationSettings {
   partnerMessages: boolean;
   achievementAlerts: boolean;
   weeklyProgress: boolean;
-  reminderTime: string; // "HH:MM" format
-  reminderDays: number[]; // [0,1,2,3,4,5,6] for days of week
+  reminderTime: string;
+  reminderDays: number[];
   quietHours: {
     enabled: boolean;
-    start: string; // "HH:MM"
-    end: string; // "HH:MM"
+    start: string;
+    end: string;
   };
 }
 
@@ -52,7 +51,6 @@ export class NotificationManager {
     return NotificationManager.instance;
   }
 
-  // Request notification permissions
   async requestPermission(): Promise<boolean> {
     try {
       const { status: existingStatus } = await Notifications.getPermissionsAsync();
@@ -75,7 +73,6 @@ export class NotificationManager {
       
       this.notificationPermission = true;
       
-      // Get push token for remote notifications
       const token = await Notifications.getExpoPushTokenAsync();
       console.log('Push token:', token);
       
@@ -87,7 +84,6 @@ export class NotificationManager {
     }
   }
 
-  // Schedule a notification
   async scheduleNotification(notification: ScheduledNotification): Promise<string | null> {
     try {
       if (!this.notificationPermission) {
@@ -122,12 +118,10 @@ export class NotificationManager {
     }
   }
 
-  // Schedule recurring workout reminders
   async scheduleWorkoutReminders(settings: NotificationSettings): Promise<void> {
     if (!settings.workoutReminders) return;
     
     try {
-      // Cancel existing workout reminders
       await this.cancelWorkoutReminders();
       
       const [hours, minutes] = settings.reminderTime.split(':').map(Number);
@@ -138,7 +132,6 @@ export class NotificationManager {
         reminderTime.setHours(hours, minutes, 0, 0);
         reminderTime.setDate(reminderTime.getDate() + ((day - reminderTime.getDay() + 7) % 7));
         
-        // If the time has passed today, schedule for next week
         if (reminderTime <= now) {
           reminderTime.setDate(reminderTime.getDate() + 7);
         }
@@ -159,7 +152,6 @@ export class NotificationManager {
     }
   }
 
-  // Cancel workout reminders
   async cancelWorkoutReminders(): Promise<void> {
     try {
       const existingNotifications = await Notifications.getAllScheduledNotificationsAsync();
@@ -179,7 +171,6 @@ export class NotificationManager {
     }
   }
 
-  // Send streak alert notification
   async sendStreakAlert(streakDays: number, settings: NotificationSettings): Promise<void> {
     if (!settings.streakAlerts) return;
     
@@ -195,7 +186,6 @@ export class NotificationManager {
     await this.scheduleNotification(notification);
   }
 
-  // Send goal milestone notification
   async sendGoalMilestoneNotification(goalTitle: string, milestone: number, unit: string, settings: NotificationSettings): Promise<void> {
     if (!settings.goalMilestones) return;
     
@@ -211,7 +201,6 @@ export class NotificationManager {
     await this.scheduleNotification(notification);
   }
 
-  // Send achievement notification
   async sendAchievementNotification(achievementTitle: string, achievementDescription: string, settings: NotificationSettings): Promise<void> {
     if (!settings.achievementAlerts) return;
     
@@ -227,7 +216,6 @@ export class NotificationManager {
     await this.scheduleNotification(notification);
   }
 
-  // Send weekly progress notification
   async sendWeeklyProgressNotification(weeklyProgress: number, weeklyGoal: number, settings: NotificationSettings): Promise<void> {
     if (!settings.weeklyProgress) return;
     
@@ -243,7 +231,6 @@ export class NotificationManager {
     await this.scheduleNotification(notification);
   }
 
-  // Get all scheduled notifications
   async getAllScheduledNotifications(): Promise<ScheduledNotification[]> {
     try {
       const notifications = await Notifications.getAllScheduledNotificationsAsync();
@@ -262,7 +249,6 @@ export class NotificationManager {
     }
   }
 
-  // Cancel all notifications
   async cancelAllNotifications(): Promise<void> {
     try {
       await Notifications.cancelAllScheduledNotificationsAsync();
@@ -273,7 +259,6 @@ export class NotificationManager {
   }
 }
 
-// Notification Settings Component
 interface NotificationSettingsProps {
   settings: NotificationSettings;
   onSettingsChange: (settings: NotificationSettings) => void;
@@ -391,7 +376,7 @@ export const NotificationSettingsComponent: React.FC<NotificationSettingsProps> 
 
 const styles = StyleSheet.create({
   notificationCard: {
-    backgroundColor: 'white',
+    backgroundColor: COLORS.surface,
     borderRadius: 16,
     padding: 20,
     marginBottom: 16,
@@ -410,7 +395,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#374151',
+    color: COLORS.text,
   },
   notificationSettings: {
     marginTop: 12,
@@ -421,7 +406,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: COLORS.border,
   },
   notificationSettingInfo: {
     flex: 1,
@@ -429,25 +414,25 @@ const styles = StyleSheet.create({
   notificationSettingTitle: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#374151',
+    color: COLORS.text,
   },
   notificationSettingDesc: {
     fontSize: 12,
-    color: '#6B7280',
+    color: COLORS.textSecondary,
     marginTop: 2,
   },
   notificationToggle: {
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: COLORS.border,
     borderRadius: 12,
   },
   notificationToggleActive: {
-    backgroundColor: '#10B981',
+    backgroundColor: COLORS.success,
   },
   notificationToggleText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#374151',
+    color: COLORS.text,
   },
 }); 

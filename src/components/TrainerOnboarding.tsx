@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
   buttonText: {
-    color: COLORS.white,
+    color: COLORS.black,
     fontSize: 14,
     fontFamily: FontWeight.Medium,
   },

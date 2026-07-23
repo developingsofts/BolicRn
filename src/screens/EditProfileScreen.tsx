@@ -81,7 +81,6 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
   const bioInputRef = useRef<any>(null);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
 
-  // Sync local state with user context when user data changes
   useEffect(() => {
     if (user) {
       setName(user.displayName || "");
@@ -114,7 +113,6 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
 
     const keyboardDidHide = Keyboard.addListener("keyboardDidHide", () => {
       setKeyboardVisible(false);
-      // Blur the bio input when keyboard is hidden so it can be focused again
       bioInputRef.current?.blur();
     });
 
@@ -126,25 +124,23 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
 
   const handleBioFocus = () => {
     setIsBioFocused(true);
-    // Scroll to bio field with a delay to ensure keyboard is shown
     setTimeout(() => {
       bioInputRef.current?.measureLayout(
         scrollViewRef.current,
         (x: number, y: number, width: number, height: number) => {
           scrollViewRef.current?.scrollTo({
-            y: Math.max(0, y - 400), // Scroll with more offset to prevent going to status bar
+            y: Math.max(0, y - 400),
             animated: true,
           });
         },
         () => {
-          // Fallback - scroll less aggressively
           scrollViewRef.current?.scrollTo({
             y: 200,
             animated: true,
           });
-        }
+        },
       );
-    }, 300); // Increased delay to let keyboard settle
+    }, 300);
   };
 
   const handleBioBlur = () => {
@@ -175,10 +171,9 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
         const asset = result.assets[0];
         setSelectedImage(asset.uri);
 
-        // Determine the correct MIME type
         const uriParts = asset.uri.split(".");
         const fileExtension = uriParts[uriParts.length - 1].toLowerCase();
-        let mimeType = "image/jpeg"; // default
+        let mimeType = "image/jpeg";
 
         if (fileExtension === "png") {
           mimeType = "image/png";
@@ -201,7 +196,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
           "File name:",
           asset.fileName || `profile_${Date.now()}.${fileExtension}`,
         );
-        setDeleteImage(false); // Reset delete flag when new image is selected
+        setDeleteImage(false);
       }
     } catch (error) {
       console.error("Error picking image:", error);
@@ -212,7 +207,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
   const handleDeleteImage = () => {
     setSelectedImage(null);
     setImageFile(null);
-    setDeleteImage(true); // Mark that user wants to delete the image
+    setDeleteImage(true);
   };
 
   const fetchSuggestions = useCallback(async (query: string) => {
@@ -279,7 +274,6 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
     try {
       let response;
 
-      // If there's an image file, use FormData mutation
       if (imageFile || videoFile) {
         const payload: any = {
           displayName: name.trim(),
@@ -292,18 +286,16 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
 
         response = await updateProfileWithImage(payload).unwrap();
       } else if (deleteImage) {
-        // If user wants to delete image, send null/empty imageUrl
         const payload: any = {
           displayName: name.trim(),
           bio: bio.trim(),
           location: location.trim(),
           workExperience: workExperience.trim(),
-          imageUrl: "", // Send empty string to delete image
+          imageUrl: "",
         };
 
         response = await updateProfile(payload).unwrap();
       } else {
-        // Otherwise use regular JSON mutation
         const payload: any = {
           displayName: name.trim(),
           bio: bio.trim(),
@@ -315,7 +307,6 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
       }
 
       if (response.status && response.data) {
-        // Redux store is automatically updated via onQueryStarted in userApi
         Toast.success("Profile updated successfully");
         navigation.goBack();
       } else {
@@ -357,7 +348,11 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
                 style={styles.avatarImage}
               />
             ) : (
-              <Text style={styles.avatarText}>{initial}</Text>
+              <Text
+                style={[styles.avatarText, isGuest && styles.guestAvatarText]}
+              >
+                {initial}
+              </Text>
             )}
           </View>
           <View style={styles.avatarInfoCol}>
@@ -402,7 +397,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
           placeholder={
             isNameFocused ? "" : STRINGS.EDIT_PROFILE.namePlaceholder
           }
-          placeholderTextColor={COLORS._D9D9D9}
+          placeholderTextColor={COLORS.placeholder}
           editable={!isLoading}
           onFocus={() => setIsNameFocused(true)}
           onBlur={() => setIsNameFocused(false)}
@@ -417,7 +412,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
           placeholder={
             isLocationFocused ? "" : STRINGS.EDIT_PROFILE.locationPlaceholder
           }
-          placeholderTextColor={COLORS._D9D9D9}
+          placeholderTextColor={COLORS.placeholder}
           editable={!isLoading}
           multiline
           onFocus={() => {
@@ -463,7 +458,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
           value={bio}
           onChangeText={setBio}
           placeholder={isBioFocused ? "" : STRINGS.EDIT_PROFILE.bioPlaceholder}
-          placeholderTextColor={COLORS._D9D9D9}
+          placeholderTextColor={COLORS.placeholder}
           multiline
           maxLength={500}
           editable={!isLoading}
@@ -483,9 +478,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
       >
         <ScrollView
           ref={scrollViewRef}
-          contentContainerStyle={[
-            styles.scrollContent,
-          ]}
+          contentContainerStyle={[styles.scrollContent]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
@@ -512,7 +505,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
               disabled={isLoading}
             >
               {isLoading ? (
-                <ActivityIndicator size="small" color={COLORS.white} />
+                <ActivityIndicator size="small" color={COLORS.black} />
               ) : (
                 <Text style={styles.saveBtnText}>
                   {STRINGS.EDIT_PROFILE.saveChanges}
@@ -529,7 +522,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
   },
   scrollContent: {
     flexGrow: 1,
@@ -560,7 +553,6 @@ const styles = StyleSheet.create({
   },
   avatarRow: {
     flexDirection: "row",
-    // alignItems: "center",
     marginTop: 10,
     marginStart: 10,
     justifyContent: "flex-start",
@@ -584,12 +576,15 @@ const styles = StyleSheet.create({
     resizeMode: "cover",
   },
   guestAvatar: {
-    backgroundColor: COLORS.app_black,
+    backgroundColor: COLORS.surface,
+  },
+  guestAvatarText: {
+    color: COLORS.white,
   },
   avatarText: {
     fontFamily: FontWeight.SemiBold,
     fontSize: 48,
-    color: COLORS.white,
+    color: COLORS.black,
   },
   avatarInfoCol: {
     flexDirection: "column",
@@ -609,7 +604,7 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   uploadBtn: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.primary,
     paddingHorizontal: r(10),
     paddingVertical: r(10),
     justifyContent: "center",
@@ -623,7 +618,7 @@ const styles = StyleSheet.create({
     color: COLORS.black,
   },
   deleteBtn: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.primary,
     paddingHorizontal: 11,
     paddingVertical: 11,
     borderRadius: 4,
@@ -633,6 +628,7 @@ const styles = StyleSheet.create({
   deleteIcon: {
     width: r(20),
     height: r(20),
+    tintColor: COLORS.error,
   },
   iconSize: {
     width: 24,
@@ -641,7 +637,7 @@ const styles = StyleSheet.create({
   },
   formWrapper: {
     zIndex: 10,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     paddingHorizontal: 20,
     gap: 20,
     paddingBottom: 90,
@@ -651,8 +647,10 @@ const styles = StyleSheet.create({
     padding: 20,
     alignSelf: "center",
     marginTop: -40,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS.border,
     boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
     elevation: 4,
   },
@@ -663,7 +661,6 @@ const styles = StyleSheet.create({
     color: COLORS.app_black,
   },
   inputGroup: {
-    // marginBottom: 18,
   },
   inputLabel: {
     fontSize: 12,
@@ -705,7 +702,7 @@ const styles = StyleSheet.create({
     top: 70,
     left: 0,
     right: 0,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: COLORS._E6E6E7,
@@ -761,7 +758,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   saveBtnText: {
-    color: COLORS.white,
+    color: COLORS.black,
     fontFamily: FontWeight.Medium,
     fontSize: 14,
   },

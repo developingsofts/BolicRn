@@ -77,7 +77,6 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({
   const [showAchievementModal, setShowAchievementModal] = useState(false);
   const [showUnlockedModal, setShowUnlockedModal] = useState(false);
 
-  // Populate form when editing
   useEffect(() => {
     if (isEditing && editingPost?.title) {
       setPostText(editingPost.title);
@@ -138,7 +137,6 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({
         const asset = result.assets[0];
         setSelectedImage(asset.uri);
 
-        // Determine the correct MIME type
         const uriParts = asset.uri.split(".");
         const fileExtension = uriParts[uriParts.length - 1].toLowerCase();
         let mimeType = "image/jpeg";
@@ -188,7 +186,6 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({
 
     try {
       if (isEditing && editingPost?.id) {
-        // Update post
         const payload: any = {
           postId: editingPost.id,
           title: postText.trim(),
@@ -203,7 +200,6 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({
           Toast.error(response.message || "Failed to update post");
         }
       } else {
-        // Create post
         const payload: any = {
           title: postText.trim(),
         };
@@ -299,7 +295,6 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({
           </Pressable>
 
           <View style={styles.content}>
-            {/* Text Input */}
             <View style={styles.textInputContainer}>
               <TextInput
                 style={styles.textInput}
@@ -313,7 +308,6 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({
               />
             </View>
 
-            {/* Action Buttons */}
             <View style={styles.actionButtons}>
               <TouchableOpacity
                 style={styles.actionButton}
@@ -338,7 +332,6 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({
               </TouchableOpacity>
             </View>
 
-            {/* Selected Achievement */}
             {selectedAchievement && (
               <View style={styles.achievementContainer}>
                 <View style={styles.achievementHeader}>
@@ -373,7 +366,6 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({
 
             <Divider style={{ height: 1.5, backgroundColor: COLORS._C9C9C9 }} />
 
-            {/* Selected Images */}
             {selectedImage && (
               <View style={styles.imagesContainer}>
                 <View
@@ -480,7 +472,7 @@ const CreatePostScreen: React.FC<CreatePostScreenProps> = ({
               disabled={isCreating}
             >
               {isCreating ? (
-                <ActivityIndicator size="small" color={COLORS.white} />
+                <ActivityIndicator size="small" color={COLORS.black} />
               ) : (
                 <Text style={styles.postButtonText}>
                   {STRINGS.CREATE_POST.post}
@@ -539,7 +531,9 @@ const baseStyles = StyleSheet.create({
     borderRadius: 10,
     marginTop: 10,
     marginBottom: 10,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
     shadowOffset: {
       width: 0,
       height: 2,
@@ -557,7 +551,7 @@ const baseStyles = StyleSheet.create({
     color: COLORS.white,
   },
   textInputContainer: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     borderRadius: 10,
     paddingHorizontal: 10,
     height: 130,
@@ -587,10 +581,10 @@ const baseStyles = StyleSheet.create({
     fontFamily: FontWeight.Medium,
     textAlign: "center",
     alignSelf: "center",
-    color: COLORS.gradient1,
+    color: COLORS.text,
   },
   achievementContainer: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     borderWidth: 1,
     paddingHorizontal: 15,
     paddingVertical: 10,
@@ -601,6 +595,7 @@ const baseStyles = StyleSheet.create({
   actionButtonImage: {
     width: 25,
     height: 25,
+    tintColor: COLORS.white,
   },
   achievementHeader: {
     flexDirection: "row",
@@ -611,7 +606,7 @@ const baseStyles = StyleSheet.create({
   achievementTitle: {
     fontSize: 16,
     fontFamily: FontWeight.SemiBold,
-    color: COLORS.gradient1,
+    color: COLORS.text,
     letterSpacing: 0,
   },
   achievementCard: {
@@ -670,7 +665,7 @@ const baseStyles = StyleSheet.create({
   postButtonText: {
     fontSize: 14,
     fontFamily: FontWeight.Medium,
-    color: COLORS.white,
+    color: COLORS.black,
   },
   modalOverlay: {
     flex: 1,
@@ -678,7 +673,7 @@ const baseStyles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   modalContent: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: "70%",
@@ -723,7 +718,7 @@ const baseStyles = StyleSheet.create({
     marginBottom: 4,
   },
   unlockedModalContent: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     marginHorizontal: 20,
     borderRadius: 15,
     padding: 30,
@@ -733,9 +728,12 @@ const baseStyles = StyleSheet.create({
   closeIcon: {
     width: 25,
     height: 25,
+    tintColor: COLORS.white,
   },
   shareWorkoutCard: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
     borderRadius: 8,
     paddingHorizontal: 20,
     paddingVertical: 18,

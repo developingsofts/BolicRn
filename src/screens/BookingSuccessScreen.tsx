@@ -49,7 +49,6 @@ const BookingSuccessScreen: React.FC = () => {
   }, [navigation, trainerId, trainerName]);
 
   const handleUpdateCancel = useCallback(() => {
-    // Navigate to profile/bookings section
     navigation.navigate("Main", { screen: "Profile" });
   }, [navigation]);
 
@@ -61,16 +60,14 @@ const BookingSuccessScreen: React.FC = () => {
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="light" />
       <View style={styles.container}>
-        {/* Success Icon */}
         <View style={styles.iconContainer}>
-          <Image 
-            source={PaymentSuccess} 
+          <Image
+            source={PaymentSuccess}
             style={styles.successIcon}
             resizeMode="contain"
           />
         </View>
 
-        {/* Header */}
         <View style={styles.headerContainer}>
           <Text style={styles.title}>Session Booked!</Text>
           <Text style={styles.subtitle}>
@@ -78,13 +75,11 @@ const BookingSuccessScreen: React.FC = () => {
           </Text>
         </View>
 
-        {/* Session Details Card */}
         <View style={styles.detailsCard}>
           <Text style={styles.dateTimeText}>{dateTime}</Text>
           <Text style={styles.locationText}>at {location}</Text>
         </View>
 
-        {/* Action Buttons */}
         <View style={styles.actionsContainer}>
           <TouchableOpacity
             style={styles.primaryButton}
@@ -103,7 +98,6 @@ const BookingSuccessScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Back to Home Link */}
         <TouchableOpacity
           style={styles.homeLink}
           onPress={handleBackToHome}
@@ -112,10 +106,8 @@ const BookingSuccessScreen: React.FC = () => {
           <Text style={styles.homeLinkText}>Back to Home</Text>
         </TouchableOpacity>
 
-        {/* Separator Line */}
         <View style={styles.separator} />
 
-        {/* Info Text */}
         <Text style={styles.infoText}>
           You can view and update your scheduled sessions through profile anytime.
         </Text>
@@ -133,7 +125,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: DIMENSIONS.spacing.md,
-    // paddingVertical: DIMENSIONS.spacing.lg,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -151,7 +142,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontFamily: FontWeight.SemiBold,
-    color: COLORS.gradient1,
+    color: COLORS.text,
     fontWeight:600,
     marginBottom: DIMENSIONS.spacing.sm,
   },
@@ -198,11 +189,11 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     fontSize: r(16),
     fontFamily: FontWeight.SemiBold,
-    color: COLORS.white,
+    color: COLORS.black,
   },
   outlineButton: {
     width: "100%",
-    backgroundColor:  COLORS.white,
+    backgroundColor: COLORS.surface,
     paddingVertical: DIMENSIONS.spacing.md,
     borderRadius: 8,
     alignItems: "center",
@@ -212,7 +203,7 @@ const styles = StyleSheet.create({
   outlineButtonText: {
     fontSize:14,
     fontFamily: FontWeight.SemiBold,
-    color: "#383838",
+    color: COLORS.text,
   },
   homeLink: {
     marginBottom: DIMENSIONS.spacing.xl,

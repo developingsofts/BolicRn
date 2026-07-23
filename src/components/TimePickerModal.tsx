@@ -39,20 +39,17 @@ const TimePickerModal: React.FC<TimePickerModalProps> = ({
     let h = 9,
       m = 0;
     if (timeStr) {
-      // Remove Unicode spaces and normalize whitespace
       const cleaned = timeStr
         .replace(
           /[\u202F\u00A0\u2007\u2060\u2009\u200A\u200B\u200C\u200D\uFEFF\s]+/g,
           " "
         )
         .trim();
-      // Accept both 09:00 AM and 09:00
       const match = cleaned.match(/(\d{1,2}):(\d{2}) ?([AP]M)?/i);
       if (match) {
         h = parseInt(match[1], 10);
         m = parseInt(match[2], 10);
         if (match[3]) {
-          // If AM/PM present, convert to 24-hour
           if (match[3].toUpperCase() === "PM" && h < 12) h += 12;
           if (match[3].toUpperCase() === "AM" && h === 12) h = 0;
         }
@@ -83,7 +80,6 @@ const TimePickerModal: React.FC<TimePickerModalProps> = ({
     }
     if (selectedDate) {
       setTempPickerValue(selectedDate);
-      // On Android, immediately confirm. On iOS, wait for OK button
       if (Platform.OS === "android") {
         let newTime = formatTime(selectedDate);
         newTime = newTime.replace(/am|pm/, (match) => match.toUpperCase());
@@ -100,7 +96,6 @@ const TimePickerModal: React.FC<TimePickerModalProps> = ({
 
   if (!visible) return null;
 
-  // Android: Show native picker directly
   if (Platform.OS === "android") {
     return (
       <DateTimePicker
@@ -113,7 +108,6 @@ const TimePickerModal: React.FC<TimePickerModalProps> = ({
     );
   }
 
-  // iOS: Show custom modal with spinner
   const { height: navBarHeight } = useAndroidNavBar();
   return (
     <Modal
@@ -161,7 +155,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   iosPickerContainer: {
-    backgroundColor: "#F9F9F9",
+    backgroundColor: COLORS.surface,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingBottom: 20,
@@ -175,7 +169,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#E5E5E5",
+    borderBottomColor: COLORS.border,
     width: "100%",
   },
   iosPickerHeaderTitle: {

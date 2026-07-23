@@ -82,7 +82,6 @@ interface UpdateCommentPayload {
 
 export const likesCommentsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    // React to a post
     reactToPost: builder.mutation<ApiResponse<ReactionResponse>, { postId: string; reactionType?: ReactionType }>({
       query: ({ postId, reactionType }) => ({
         url: `/post/${postId}/like`,
@@ -94,7 +93,6 @@ export const likesCommentsApi = baseApi.injectEndpoints({
       invalidatesTags: ['Posts'],
     }),
 
-    // Get reactions for a post
     getPostReactions: builder.query<
       ApiResponse<GetLikesResponse & { reactionSummary: Record<ReactionType, number> }>,
       { postId: string; page?: number; limit?: number }
@@ -106,7 +104,6 @@ export const likesCommentsApi = baseApi.injectEndpoints({
       providesTags: ['Posts'],
     }),
 
-    // Check the current user's reaction to a post
     checkUserReaction: builder.query<ApiResponse<{ reacted: boolean; currentReaction: ReactionType | null }>, string>({
       query: (postId) => ({
         url: `/post/${postId}/liked`,
@@ -115,7 +112,6 @@ export const likesCommentsApi = baseApi.injectEndpoints({
       providesTags: ['Posts'],
     }),
 
-    // Create a comment
     createComment: builder.mutation<ApiResponse<Comment>, CreateCommentPayload>({
       query: ({ postId, content, parentCommentId }) => ({
         url: `/post/${postId}/comments`,
@@ -125,7 +121,6 @@ export const likesCommentsApi = baseApi.injectEndpoints({
       invalidatesTags: ['Posts'],
     }),
 
-    // Get comments for a post
     getPostComments: builder.query<
       ApiResponse<GetCommentsResponse>,
       { postId: string; page?: number; limit?: number }
@@ -135,10 +130,9 @@ export const likesCommentsApi = baseApi.injectEndpoints({
         method: 'GET',
       }),
       providesTags: ['Posts'],
-      keepUnusedDataFor: 0, // Don't cache - always fetch fresh data
+      keepUnusedDataFor: 0,
     }),
 
-    // Update a comment
     updateComment: builder.mutation<ApiResponse<Comment>, UpdateCommentPayload>({
       query: ({ commentId, content }) => ({
         url: `/post/comments/${commentId}`,
@@ -148,7 +142,6 @@ export const likesCommentsApi = baseApi.injectEndpoints({
       invalidatesTags: ['Posts'],
     }),
 
-    // Delete a comment
     deleteComment: builder.mutation<ApiResponse<void>, string>({
       query: (commentId) => ({
         url: `/post/comments/${commentId}`,

@@ -1,11 +1,6 @@
-/**
- * String Constants for BolicBuddy App
- * Organized by screen name for easy maintenance and localization
- */
 
 export const STRINGS = {
   appName: "Bolic",
-  // Auth Screen
   AUTH: {
     signIn: "Sign In",
     signUp: "Sign Up",
@@ -71,7 +66,6 @@ export const STRINGS = {
     },
   },
 
-  // Chat Screen
   CHAT: {
     defaultTitle: "Chat",
     placeholder: "Type a message...",
@@ -81,7 +75,6 @@ export const STRINGS = {
     },
   },
 
-  // Edit Profile Screen
   EDIT_PROFILE: {
     title: "Edit Profile",
     uploadNew: "Upload New ",
@@ -95,7 +88,6 @@ export const STRINGS = {
     saveChanges: "Save Changes",
   },
 
-  // Home Screen
   HOME: {
     welcome: "Welcome",
     level: "Level",
@@ -133,7 +125,6 @@ export const STRINGS = {
     },
   },
 
-  // Messages Screen
   MESSAGES: {
     title: "Messages",
     subtitle: "Chat with your training partners",
@@ -154,7 +145,6 @@ export const STRINGS = {
     emptySubtitle: "Connect with training partners to see your chats here.",
   },
 
-  // Profile Screen
   PROFILE: {
     title: "Profile",
     edit: "Edit",
@@ -199,7 +189,6 @@ export const STRINGS = {
     workoutCompleted: "Completed:",
   },
 
-  // Settings Screen
   SETTINGS: {
     title: "Settings",
     notifications: "Notifications",
@@ -227,7 +216,6 @@ export const STRINGS = {
     version: "Version",
   },
 
-  // Share Workout Screen
   SHARE_WORKOUT: {
     title: "Share Workout",
     subtitle: "Share your workout or achievement",
@@ -241,7 +229,6 @@ export const STRINGS = {
     completed: "Completed:",
   },
 
-  // Create Post Screen
   CREATE_POST: {
     title: "Create Post",
     subtitle: "Share your workout or achievement",
@@ -268,7 +255,6 @@ export const STRINGS = {
     },
   },
 
-  // Find Screen
   FIND: {
     title: "Find Partners & Trainers",
     subtitle: "Swipe to discover",
@@ -315,7 +301,6 @@ export const STRINGS = {
     },
   },
 
-  // Workout Session Screen
   WORKOUT_SESSION: {
     title: "Workout Session",
     subtitle: "Edit workout session",
@@ -340,7 +325,6 @@ export const STRINGS = {
       "This screen will allow users to track their workouts, log exercises, sets, reps, and monitor their progress.",
   },
 
-  // Forgot Password Screen
   FORGOT_PASSWORD: {
     title: "Forgot Password",
     email: "Email",
@@ -371,7 +355,6 @@ export const STRINGS = {
     },
   },
 
-  // Group Screens
   GROUPS: {
     title: "Groups",
     subtitle: "Join gym and training groups",
@@ -391,7 +374,6 @@ export const STRINGS = {
     member: "Member",
   },
 
-  // Booking Confirmation Screen
   BOOKING_CONFIRMATION: {
     title: "Confirm Your Session",
     subtitle: "Go through before you finalize",
@@ -429,7 +411,6 @@ export const STRINGS = {
     },
   },
 
-  // Scheduled Sessions Screen
   SCHEDULED_SESSIONS: {
     title: "Scheduled Sessions",
     subtitle: "Your upcoming sessions with trainers",
@@ -460,7 +441,6 @@ export const STRINGS = {
     },
   },
 
-  // Common
   COMMON: {
     save: "Save",
     cancel: "Cancel",

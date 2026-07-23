@@ -66,7 +66,6 @@ const CancellationConfirmationModal: React.FC<
     >
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
-          {/* Close Button */}
           <TouchableOpacity
             style={styles.modalCloseButton}
             onPress={onClose}
@@ -81,7 +80,6 @@ const CancellationConfirmationModal: React.FC<
             scrollEnabled={true}
             contentContainerStyle={styles.modalScrollContent}
           >
-            {/* Header */}
             <View style={styles.modalHeader}>
               <Feather
                 name="alert-circle"
@@ -93,13 +91,11 @@ const CancellationConfirmationModal: React.FC<
               <Text style={styles.modalSubtitle}>{subtitle}</Text>
             </View>
 
-            {/* Refund Policy Section */}
             <View style={styles.policySection}>
               <Text style={styles.policySectionTitle}>
                 {STRINGS.SCHEDULED_SESSIONS.cancellationModal.refundTerms}
               </Text>
 
-              {/* Booking Amount */}
               <View style={styles.amountRow}>
                 <Text style={styles.amountLabel}>
                   {STRINGS.SCHEDULED_SESSIONS.cancellationModal.refundLabels.sessionAmount}
@@ -109,7 +105,6 @@ const CancellationConfirmationModal: React.FC<
                 </Text>
               </View>
 
-              {/* Processing Fee */}
               <View style={styles.amountRow}>
                 <Text style={styles.amountLabel}>
                   {STRINGS.SCHEDULED_SESSIONS.cancellationModal.refundLabels.processingFee}
@@ -119,10 +114,8 @@ const CancellationConfirmationModal: React.FC<
                 </Text>
               </View>
 
-              {/* Divider */}
               <View style={styles.divider} />
 
-              {/* Total Refundable */}
               <View style={[styles.amountRow, styles.totalRow]}>
                 <Text style={styles.totalLabel}>
                   {STRINGS.SCHEDULED_SESSIONS.cancellationModal.refundLabels.refundableAmount}
@@ -132,7 +125,6 @@ const CancellationConfirmationModal: React.FC<
                 </Text>
               </View>
 
-              {/* Policy Details */}
               <View style={styles.policyDetails}>
                 <View style={styles.policyDetailRow}>
                   <View
@@ -159,7 +151,6 @@ const CancellationConfirmationModal: React.FC<
               </View>
             </View>
 
-            {/* Action Buttons */}
             <View style={styles.modalButtonsContainer}>
               <TouchableOpacity
                 style={[
@@ -185,7 +176,7 @@ const CancellationConfirmationModal: React.FC<
                 disabled={isLoading}
               >
                 {isLoading ? (
-                  <ActivityIndicator color={COLORS.white} size="small" />
+                  <ActivityIndicator color={COLORS.black} size="small" />
                 ) : (
                   <Text style={styles.confirmActionButtonText}>
                     {confirmButtonText}
@@ -358,7 +349,7 @@ const styles = StyleSheet.create({
   confirmActionButtonText: {
     fontSize: r(13, "font"),
     fontFamily: FontWeight.SemiBold,
-    color: COLORS.white,
+    color: COLORS.black,
   },
   buttonDisabled: {
     opacity: 0.6,

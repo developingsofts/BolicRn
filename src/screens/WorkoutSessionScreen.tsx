@@ -41,17 +41,14 @@ const WorkoutSessionScreen: React.FC<WorkoutSessionScreenProps> = ({ navigation,
   const [showFinishDialog, setShowFinishDialog] = useState(false);
   const [hasWorkoutStarted, setHasWorkoutStarted] = useState(false);
 
-  // Fetch complete workout data with exercises
   const { data: workoutResponse, isLoading: workoutLoading } = useGetWorkoutByIdQuery(initialWorkout.id);
   const workout = workoutResponse?.status ? workoutResponse.data : initialWorkout;
 
-  // Debug workout data changes
   useEffect(() => {
     console.log('Workout data:', workout);
     console.log('Workout exercises:', workout?.workoutExercises);
   }, [workout]);
 
-  // API hooks
   const [startWorkoutSession] = useStartWorkoutSessionMutation();
   const { data: activeSessionData, isLoading: activeSessionLoading, error: activeSessionError } = useGetActiveWorkoutSessionQuery(undefined);
   const [completeExercise] = useCompleteExerciseMutation();
@@ -59,7 +56,6 @@ const WorkoutSessionScreen: React.FC<WorkoutSessionScreenProps> = ({ navigation,
   const [pauseWorkoutSession] = usePauseWorkoutSessionMutation();
   const [resumeWorkoutSession] = useResumeWorkoutSessionMutation();
 
-  // Initialize session on mount
   useEffect(() => {
     const initializeSession = async () => {
       console.log('initializeSession called');
@@ -75,7 +71,6 @@ const WorkoutSessionScreen: React.FC<WorkoutSessionScreenProps> = ({ navigation,
       console.log('Initializing session for workout:', workout.id);
 
       try {
-        // Check if there's already an active session
         console.log('Checking for active session...');
         console.log('Active session data:', JSON.stringify(activeSessionData, null, 2));
         console.log('Active session loading:', activeSessionLoading);
@@ -101,7 +96,6 @@ const WorkoutSessionScreen: React.FC<WorkoutSessionScreenProps> = ({ navigation,
           }
           console.log('  - activeSessionError =', activeSessionError);
           console.log('No active session found, starting new one...');
-          // Start a new session
           const result = await startWorkoutSession({ workoutId: workout.id });
           console.log('Start session result:', result);
           if (result.data?.status) {
@@ -126,12 +120,10 @@ const WorkoutSessionScreen: React.FC<WorkoutSessionScreenProps> = ({ navigation,
     }
   }, [workout?.id, activeSessionData, activeSessionLoading]);
 
-  // Debug sessionId changes
   useEffect(() => {
     console.log('sessionId changed:', sessionId);
   }, [sessionId]);
 
-  // Timer for session duration
   const [sessionSeconds, setSessionSeconds] = useState(0);
   const [isSessionActive, setIsSessionActive] = useState(false);
 
@@ -147,7 +139,6 @@ const WorkoutSessionScreen: React.FC<WorkoutSessionScreenProps> = ({ navigation,
     return () => clearInterval(interval);
   }, [isSessionActive, currentSessionStartTime]);
 
-  // Rest timer
   useEffect(() => {
     let restInterval: NodeJS.Timeout;
     if (isResting && restTimeLeft > 0) {
@@ -164,7 +155,6 @@ const WorkoutSessionScreen: React.FC<WorkoutSessionScreenProps> = ({ navigation,
     return () => clearInterval(restInterval);
   }, [isResting, restTimeLeft]);
 
-  // Format time as HH:MM:SS
   const formatTime = (totalSeconds: number) => {
     const hours = Math.floor(totalSeconds / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -231,24 +221,21 @@ const WorkoutSessionScreen: React.FC<WorkoutSessionScreenProps> = ({ navigation,
       await completeExercise({
         sessionId,
         workoutExerciseId: currentExercise.id,
-        setNumber: 1, // For now, assuming single set per exercise
+        setNumber: 1,
         repsCompleted: currentExercise.reps || undefined,
         durationCompleted: currentExercise.duration || undefined,
       });
 
       console.log('Exercise completed successfully');
 
-      // Start rest timer
       setRestTimeLeft(currentExercise.restTime);
       setIsResting(true);
 
-      // Move to next exercise or complete workout
       if (currentExerciseIndex < workout.workoutExercises.length - 1) {
         console.log('Moving to next exercise');
         setCurrentExerciseIndex(prev => prev + 1);
       } else {
         console.log('Completing workout');
-        // Complete the workout
         await handleConfirmFinish(false);
       }
     } catch (error) {
@@ -287,7 +274,6 @@ const WorkoutSessionScreen: React.FC<WorkoutSessionScreenProps> = ({ navigation,
           { text: 'OK', onPress: () => navigation.goBack() }
         ]);
       } else {
-        // Auto-completed workout
         Alert.alert('Congratulations!', 'Workout completed successfully!', [
           { text: 'OK', onPress: () => navigation.goBack() }
         ]);
@@ -314,7 +300,7 @@ const WorkoutSessionScreen: React.FC<WorkoutSessionScreenProps> = ({ navigation,
           subtitle="Loading..."
         />
         <View style={styles.loadingContainer}>
-          <Text>Loading workout...</Text>
+          <Text style={{ color: COLORS.textSecondary }}>Loading workout...</Text>
         </View>
       </SafeAreaView>
     );
@@ -336,7 +322,6 @@ const WorkoutSessionScreen: React.FC<WorkoutSessionScreenProps> = ({ navigation,
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Timer Section */}
         <View style={styles.timerContainer}>
           <Text style={styles.timerLabel}>Session Time</Text>
           <Text style={styles.timerDisplay}>{formatTime(sessionSeconds)}</Text>
@@ -353,7 +338,7 @@ const WorkoutSessionScreen: React.FC<WorkoutSessionScreenProps> = ({ navigation,
               <Ionicons 
                 name={isSessionActive ? 'pause' : 'play'} 
                 size={24} 
-                color={COLORS.white} 
+                color={COLORS.black}
               />
               <Text style={styles.primaryButtonText}>
                 {isSessionActive ? 'Pause' : 'Start'}
@@ -372,7 +357,6 @@ const WorkoutSessionScreen: React.FC<WorkoutSessionScreenProps> = ({ navigation,
           </View>
         </View>
 
-        {/* Current Exercise */}
         {currentExercise && (
           <View style={styles.exerciseContainer}>
             <Text style={styles.sectionTitle}>Current Exercise</Text>
@@ -409,7 +393,6 @@ const WorkoutSessionScreen: React.FC<WorkoutSessionScreenProps> = ({ navigation,
           </View>
         )}
 
-        {/* Upcoming Exercises */}
         {workout.workoutExercises && workout.workoutExercises.length > currentExerciseIndex + 1 && (
           <View style={styles.exercisesContainer}>
             <Text style={styles.sectionTitle}>Upcoming Exercises</Text>
@@ -438,7 +421,7 @@ const WorkoutSessionScreen: React.FC<WorkoutSessionScreenProps> = ({ navigation,
         confirmLabel="End"
         cancelLabel="Cancel"
         confirmButtonColor={COLORS.primary}
-        confirmTextColor={COLORS.white}
+        confirmTextColor={COLORS.black}
         onConfirm={handleConfirmFinish}
         onCancel={handleCancelFinish}
       />
@@ -460,11 +443,13 @@ const styles = StyleSheet.create({
     paddingBottom: DIMENSIONS.spacing.xxl,
   },
   timerContainer: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     borderRadius: 16,
     padding: DIMENSIONS.spacing.xl,
     marginBottom: DIMENSIONS.spacing.lg,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.border,
     shadowColor: COLORS.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -480,7 +465,7 @@ const styles = StyleSheet.create({
   timerDisplay: {
     fontSize: 48,
     fontFamily: FontWeight.Bold,
-    color: COLORS.gradient1,
+    color: COLORS.text,
     marginBottom: DIMENSIONS.spacing.lg,
   },
   timerControls: {
@@ -502,10 +487,10 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     fontSize: 16,
     fontFamily: FontWeight.SemiBold,
-    color: COLORS.white,
+    color: COLORS.black,
   },
   secondaryButton: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     borderWidth: 1,
     borderColor: COLORS.primary,
   },
@@ -523,7 +508,7 @@ const styles = StyleSheet.create({
   },
   infoCard: {
     flex: 1,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     borderRadius: 12,
     padding: DIMENSIONS.spacing.md,
     alignItems: 'center',
@@ -542,7 +527,7 @@ const styles = StyleSheet.create({
   infoValue: {
     fontSize: 14,
     fontFamily: FontWeight.SemiBold,
-    color: COLORS.gradient1,
+    color: COLORS.text,
     marginTop: 4,
     textAlign: 'center',
   },
@@ -552,16 +537,18 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontFamily: FontWeight.SemiBold,
-    color: COLORS.gradient1,
+    color: COLORS.text,
     marginBottom: DIMENSIONS.spacing.md,
   },
   exerciseCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     borderRadius: 12,
     padding: DIMENSIONS.spacing.md,
     marginBottom: DIMENSIONS.spacing.sm,
+    borderWidth: 1,
+    borderColor: COLORS.border,
     shadowColor: COLORS.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -580,7 +567,7 @@ const styles = StyleSheet.create({
   exerciseNumberText: {
     fontSize: 14,
     fontFamily: FontWeight.Bold,
-    color: COLORS.white,
+    color: COLORS.black,
   },
   exerciseInfo: {
     flex: 1,
@@ -588,7 +575,7 @@ const styles = StyleSheet.create({
   exerciseName: {
     fontSize: 16,
     fontFamily: FontWeight.SemiBold,
-    color: COLORS.gradient1,
+    color: COLORS.text,
     marginBottom: 4,
   },
   exerciseDetail: {
@@ -614,7 +601,7 @@ const styles = StyleSheet.create({
   finishButtonText: {
     fontSize: 16,
     fontFamily: FontWeight.SemiBold,
-    color: COLORS.white,
+    color: COLORS.black,
   },
   loadingContainer: {
     flex: 1,
@@ -665,7 +652,7 @@ const styles = StyleSheet.create({
   completeButtonText: {
     fontSize: 16,
     fontFamily: FontWeight.SemiBold,
-    color: COLORS.white,
+    color: COLORS.black,
   },
   progressBar: {
     height: 8,

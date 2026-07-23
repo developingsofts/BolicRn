@@ -3,10 +3,6 @@ import type { Group } from '../../types';
 import { baseApi } from './baseApi';
 import type { ApiResponse } from './types';
 
-// ...existing code...
-
-
-// Leave group (exit as a member) - RTK Query endpoint
 export const leaveGroupApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     leaveGroup: builder.mutation<ApiResponse<any>, string>({
@@ -22,4 +18,3 @@ export const leaveGroupApi = baseApi.injectEndpoints({
 
 export const { useLeaveGroupMutation } = leaveGroupApi;
 
-// ...existing code...

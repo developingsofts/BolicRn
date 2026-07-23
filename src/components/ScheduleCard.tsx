@@ -11,8 +11,8 @@ interface ScheduleCardProps {
   id: number;
   trainer: TrainerInfo;
   user: UserInfo;
-  date: string; // ISO format: "2025-12-10T00:00:00.000Z"
-  time: string; // e.g., "10:00AM"
+  date: string;
+  time: string;
   price: PriceInfo;
   status: "upcomming" | "completed" | "canceled";
   onRemove?: () => void;
@@ -48,20 +48,16 @@ const ScheduleCard: React.FC<ScheduleCardProps> = ({
       <Text style={styles.title}>Today’s Schedule</Text>
       <View style={styles.row}>
         <View style={styles.infoSection}>
-          {/* Time Section */}
           <View style={styles.timeSection}>
             <Text style={styles.startTime}>{localtime}</Text>
             <Text style={styles.endTime}>{localEndTime}</Text>
           </View>
-          {/* Divider */}
           <View style={styles.verticalDivider} />
-          {/* Client Info Section */}
           <View style={styles.clientSection}>
             <Text style={styles.clientName}>{user.name}</Text>
             <Text style={styles.sessionType}>{price.title}</Text>
           </View>
         </View>
-        {/* Action Buttons */}
         <View style={styles.actions}>
           <TouchableOpacity
             style={[styles.iconBtn, styles.removeBtn]}
@@ -101,7 +97,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: COLORS.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -117,7 +113,7 @@ const styles = StyleSheet.create({
       },
     }),
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: COLORS.border,
   },
   row: {
     flexDirection: "row",
@@ -160,7 +156,7 @@ const styles = StyleSheet.create({
   clientName: {
     fontFamily: FontWeight.SemiBold,
     fontSize: 16,
-    color: COLORS.gradient1,
+    color: COLORS.text,
     flexWrap: "wrap",
   },
   sessionType: {
@@ -186,7 +182,7 @@ const styles = StyleSheet.create({
   actionDivider: {
     width: 1,
     height: 24,
-    backgroundColor: "#E5E7EB",
+    backgroundColor: COLORS.border,
     alignSelf: "center",
   },
   removeBtn: {},
@@ -195,6 +191,7 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     resizeMode: "contain",
+    tintColor: COLORS.white,
   },
 });
 

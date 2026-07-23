@@ -54,11 +54,8 @@ interface UserWorkoutsResponse {
   };
 }
 
-// Get user achievements
-
 export const workoutApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    // Get all workouts
     getWorkouts: builder.query<ApiResponse<WorkoutsResponse>, void>({
       query: () => ({
         url: API_END_POINTS.workouts.all,
@@ -67,7 +64,6 @@ export const workoutApi = baseApi.injectEndpoints({
       providesTags: ['Workout'],
     }),
 
-    // Get workout by ID
     getWorkoutById: builder.query<ApiResponse<Workout>, string>({
       query: (id) => ({
         url: API_END_POINTS.workouts.byId(id),
@@ -76,7 +72,6 @@ export const workoutApi = baseApi.injectEndpoints({
       providesTags: ['Workout'],
     }),
 
-    // Get all exercises
     getExercises: builder.query<ApiResponse<Exercise[]>, void>({
       query: () => ({
         url: API_END_POINTS.exercises.all,
@@ -85,7 +80,6 @@ export const workoutApi = baseApi.injectEndpoints({
       providesTags: ['Exercise'],
     }),
 
-    // Get exercise by ID
     getExerciseById: builder.query<ApiResponse<Exercise>, string>({
       query: (id) => ({
         url: API_END_POINTS.exercises.byId(id),
@@ -94,7 +88,6 @@ export const workoutApi = baseApi.injectEndpoints({
       providesTags: ['Exercise'],
     }),
 
-    // Start workout session
     startWorkoutSession: builder.mutation<ApiResponse<UserWorkoutSession>, StartWorkoutPayload>({
       query: (data) => ({
         url: API_END_POINTS.workouts.sessions.start,
@@ -104,7 +97,6 @@ export const workoutApi = baseApi.injectEndpoints({
       invalidatesTags: ['WorkoutSession'],
     }),
 
-    // Get active workout session
     getActiveWorkoutSession: builder.query<ApiResponse<ActiveWorkoutSessionResponse | null>, void>({
       query: () => ({
         url: API_END_POINTS.workouts.sessions.active,
@@ -113,7 +105,6 @@ export const workoutApi = baseApi.injectEndpoints({
       providesTags: ['WorkoutSession'],
     }),
 
-    // Complete exercise
     completeExercise: builder.mutation<ApiResponse<UserExerciseProgress>, CompleteExercisePayload>({
       query: (data) => ({
         url: API_END_POINTS.workouts.sessions.completeExercise,
@@ -123,7 +114,6 @@ export const workoutApi = baseApi.injectEndpoints({
       invalidatesTags: ['WorkoutSession'],
     }),
 
-    // Complete workout session
     completeWorkoutSession: builder.mutation<ApiResponse<UserWorkoutSession>, { sessionId: string }>({
       query: ({ sessionId }) => ({
         url: API_END_POINTS.workouts.sessions.complete,
@@ -133,7 +123,6 @@ export const workoutApi = baseApi.injectEndpoints({
       invalidatesTags: ['WorkoutSession'],
     }),
 
-    // Pause workout session
     pauseWorkoutSession: builder.mutation<ApiResponse<UserWorkoutSession>, { sessionId: string }>({
       query: ({ sessionId }) => ({
         url: API_END_POINTS.workouts.sessions.pause,
@@ -143,7 +132,6 @@ export const workoutApi = baseApi.injectEndpoints({
       invalidatesTags: ['WorkoutSession'],
     }),
 
-    // Resume workout session
     resumeWorkoutSession: builder.mutation<ApiResponse<UserWorkoutSession>, { sessionId: string }>({
       query: ({ sessionId }) => ({
         url: API_END_POINTS.workouts.sessions.resume,
@@ -153,7 +141,6 @@ export const workoutApi = baseApi.injectEndpoints({
       invalidatesTags: ['WorkoutSession'],
     }),
 
-    // Cancel workout session
     cancelWorkoutSession: builder.mutation<ApiResponse<UserWorkoutSession>, { sessionId: string }>({
       query: ({ sessionId }) => ({
         url: API_END_POINTS.workouts.sessions.cancel,
@@ -163,7 +150,6 @@ export const workoutApi = baseApi.injectEndpoints({
       invalidatesTags: ['WorkoutSession'],
     }),
 
-    // Get workout history
     getWorkoutHistory: builder.query<ApiResponse<WorkoutHistoryResponse>, void>({
       query: () => ({
         url: API_END_POINTS.workouts.sessions.history,
@@ -172,7 +158,6 @@ export const workoutApi = baseApi.injectEndpoints({
       providesTags: ['WorkoutSession'],
     }),
 
-    // Get user workouts
     getUserWorkouts: builder.query<ApiResponse<UserWorkoutsResponse>, { page?: number; limit?: number }>({
       query: ({ page = 1, limit = 10 }) => ({
         url: `${API_END_POINTS.workouts.userWorkouts}?page=${page}&limit=${limit}`,
@@ -181,7 +166,6 @@ export const workoutApi = baseApi.injectEndpoints({
       providesTags: ['UserWorkout'],
     }),
 
-    // Get user achievements
     getUserAchievements: builder.query<ApiResponse<Achievement[]>, { userId?: string }>({
       query: (body) => ({
         url: API_END_POINTS.users.achievements(body.userId??'me'),

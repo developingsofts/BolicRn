@@ -36,7 +36,6 @@ const ScheduledSessions: React.FC = ({ navigation }: any) => {
     useState<BookingData | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
 
-  // Fetch user's upcoming bookings
   const {
     data: bookingsResponse,
     isLoading,
@@ -54,13 +53,11 @@ const ScheduledSessions: React.FC = ({ navigation }: any) => {
     }
   );
 
-  // Extract bookings from response
   const bookings =
     bookingsResponse && bookingsResponse.status && "data" in bookingsResponse
       ? (bookingsResponse as any).data?.bookings || []
       : [];
   const handleBookNew = () => {
-    // Navigate to Main tab navigator, then to Find tab with params
     navigation.navigate("Main", {
       screen: "Find",
       params: {
@@ -87,7 +84,7 @@ const ScheduledSessions: React.FC = ({ navigation }: any) => {
 
   const handleConfirmCancellation = async () => {
     if (!selectedBookingForCancellation) return;
-    
+
     setIsCancelling(true);
     try {
       await deleteBooking({
@@ -174,7 +171,6 @@ const ScheduledSessions: React.FC = ({ navigation }: any) => {
               };
               return (
                 <View key={booking.id} style={styles.sessionCard}>
-                  {/* Header with date/time on left and trainer on right */}
                   <View style={styles.sessionHeader}>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.sessionDate}>{displayDate}</Text>
@@ -190,14 +186,12 @@ const ScheduledSessions: React.FC = ({ navigation }: any) => {
                     </View>
                   </View>
 
-                  {/* Location row */}
                   <View style={styles.sessionLocationRow}>
                     <Text style={styles.sessionLocation}>
                       {booking.price?.title || "Session"}
                     </Text>
                   </View>
 
-                  {/* Actions row */}
                   <View style={styles.sessionActions}>
                     <TouchableOpacity
                       style={styles.actionButton}
@@ -232,7 +226,6 @@ const ScheduledSessions: React.FC = ({ navigation }: any) => {
         )}
       </ScrollView>
 
-      {/* Cancellation Confirmation Modal */}
       <CancellationConfirmationModal
         visible={cancellationModalVisible}
         booking={selectedBookingForCancellation}
@@ -273,7 +266,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   bookButtonText: {
-    color: COLORS.white,
+    color: COLORS.black,
     fontFamily: FontWeight.Medium,
     fontSize: 14,
     letterSpacing: 0.2,
@@ -283,7 +276,7 @@ const styles = StyleSheet.create({
   },
   sessionCard: {
     width: "100%",
-    backgroundColor: "#fff",
+    backgroundColor: COLORS.surface,
     borderRadius: 16,
     padding: 18,
     marginBottom: 8,
@@ -304,7 +297,7 @@ const styles = StyleSheet.create({
   sessionDate: {
     fontSize: 16,
     fontFamily: FontWeight.SemiBold,
-    color: COLORS.gradient1,
+    color: COLORS.text,
     marginBottom: 2,
   },
   sessionTime: {
@@ -321,7 +314,7 @@ const styles = StyleSheet.create({
   sessionInstructor: {
     fontSize: 16,
     fontFamily: FontWeight.SemiBold,
-    color: COLORS.gradient1,
+    color: COLORS.text,
   },
   sessionLocationRow: {
     flexDirection: "row",
@@ -350,7 +343,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     borderColor: COLORS.border,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     alignItems: "center",
   },
   actionButtonText: {
@@ -359,7 +352,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   cancelButton: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
   },
   cancelButtonText: {
     color: COLORS._EB3434,

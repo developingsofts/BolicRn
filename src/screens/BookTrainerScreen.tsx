@@ -46,7 +46,6 @@ const BookTrainerScreen: React.FC<BookTrainerScreenProps> = ({
   const trainerId = route?.params?.trainerId;
   const trainerAddress = route?.params?.trainerAddress || "";
 
-  // Fetch training prices for the trainer
   const {
     data: pricesData,
     isLoading: isPricesLoading,
@@ -65,8 +64,6 @@ const BookTrainerScreen: React.FC<BookTrainerScreenProps> = ({
     }
   };
 
-  // Extract session packages from API response with proper type checking
-  // Handle both ApiResponse wrapper structure and direct array responses
   const sessions =
     pricesData && pricesData.status && "data" in pricesData
       ? pricesData.data
@@ -252,7 +249,7 @@ const styles = StyleSheet.create({
     gap: DIMENSIONS.spacing.md,
   },
   packageCard: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     borderRadius: 8,
     padding: DIMENSIONS.spacing.md,
     marginBottom: DIMENSIONS.spacing.sm,
@@ -271,7 +268,7 @@ const styles = StyleSheet.create({
     fontFamily: FontWeight.SemiBold,
     fontSize: 16,
     fontWeight: 600,
-    color: COLORS.gradient1,
+    color: COLORS.text,
   },
   savingsBadge: {
     backgroundColor: COLORS.primary + "15",
@@ -290,7 +287,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 400,
     color: COLORS._5E5E5E,
-    // marginBottom: DIMENSIONS.spacing.md,
     lineHeight: 20,
   },
   packagePricing: {
@@ -310,7 +306,7 @@ const styles = StyleSheet.create({
     color: COLORS._5E5E5E,
   },
   infoSection: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     borderRadius: 12,
     padding: DIMENSIONS.spacing.lg,
     marginTop: DIMENSIONS.spacing.lg,

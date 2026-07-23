@@ -53,7 +53,6 @@ interface RespondToJoinRequestPayload {
 
 export const groupsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    // Get all groups (visible to everyone) with pagination
     getAllGroups: builder.query<
       ApiResponse<{ groups: Group[]; pagination: any }>,
       { page?: number; limit?: number; type?: string } | void
@@ -62,12 +61,12 @@ export const groupsApi = baseApi.injectEndpoints({
         const page = params?.page || 1;
         const limit = params?.limit || 10;
         const type = params?.type;
-        
+
         let url = `/group/all?page=${page}&limit=${limit}`;
         if (type && type !== 'All') {
           url += `&type=${type}`;
         }
-        
+
         return {
           url,
           method: 'GET',
@@ -81,7 +80,7 @@ export const groupsApi = baseApi.injectEndpoints({
         if (!arg || arg.page === 1) {
           return newItems;
         }
-        
+
         if ('data' in currentCache && 'data' in newItems && currentCache.status && newItems.status) {
           return {
             ...newItems,
@@ -94,15 +93,14 @@ export const groupsApi = baseApi.injectEndpoints({
             }
           };
         }
-        
+
         return newItems;
       },
       forceRefetch({ currentArg, previousArg }) {
         return currentArg?.page !== previousArg?.page || currentArg?.type !== previousArg?.type;
       },
     }),
-    
-    // Get groups created by current user with pagination
+
     getUserGroups: builder.query<
       ApiResponse<{ groups: Group[]; pagination: any }>,
       { page?: number; limit?: number; type?: string } | void
@@ -111,12 +109,12 @@ export const groupsApi = baseApi.injectEndpoints({
         const page = params?.page || 1;
         const limit = params?.limit || 10;
         const type = params?.type;
-        
+
         let url = `/group/my-groups?page=${page}&limit=${limit}`;
         if (type && type !== 'All') {
           url += `&type=${type}`;
         }
-        
+
         return {
           url,
           method: 'GET',
@@ -130,7 +128,7 @@ export const groupsApi = baseApi.injectEndpoints({
         if (!arg || arg.page === 1) {
           return newItems;
         }
-        
+
         if ('data' in currentCache && 'data' in newItems && currentCache.status && newItems.status) {
           return {
             ...newItems,
@@ -143,15 +141,14 @@ export const groupsApi = baseApi.injectEndpoints({
             }
           };
         }
-        
+
         return newItems;
       },
       forceRefetch({ currentArg, previousArg }) {
         return currentArg?.page !== previousArg?.page || currentArg?.type !== previousArg?.type;
       },
     }),
-    
-    // Get group by ID
+
     getGroupById: builder.query<
       ApiResponse<GroupDetailsResponse>,
       { groupId: string }
@@ -162,8 +159,7 @@ export const groupsApi = baseApi.injectEndpoints({
       }),
       providesTags: ['Groups'],
     }),
-    
-    // Get group members with pagination
+
     getGroupMembers: builder.query<
       ApiResponse<{ members: any[]; pagination: any }>,
       GetGroupMembersPayload
@@ -174,8 +170,7 @@ export const groupsApi = baseApi.injectEndpoints({
       }),
       providesTags: ['Groups'],
     }),
-    
-    // Get group posts with pagination
+
     getGroupPosts: builder.query<
       ApiResponse<{ posts: any[]; pagination: any }>,
       GetGroupPostsPayload
@@ -186,8 +181,7 @@ export const groupsApi = baseApi.injectEndpoints({
       }),
       providesTags: ['Groups', 'Posts'],
     }),
-    
-    // Create group
+
     createGroup: builder.mutation<
       ApiResponse<Group>,
       CreateGroupPayload
@@ -199,8 +193,7 @@ export const groupsApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Groups'],
     }),
-    
-    // Update group
+
     updateGroup: builder.mutation<
       ApiResponse<Group>,
       UpdateGroupPayload
@@ -212,8 +205,7 @@ export const groupsApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Groups'],
     }),
-    
-    // Delete group
+
     deleteGroup: builder.mutation<
       ApiResponse<{ success: boolean }>,
       { groupId: string }
@@ -224,8 +216,7 @@ export const groupsApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Groups'],
     }),
-    
-    // Join group (add current user as member)
+
     joinGroup: builder.mutation<
       ApiResponse<Group>,
       { groupId: string }
@@ -237,7 +228,6 @@ export const groupsApi = baseApi.injectEndpoints({
       invalidatesTags: ['Groups'],
     }),
 
-    // Request to join a group (for private/invite-only groups)
     requestJoinGroup: builder.mutation<
       ApiResponse<{ id: number; status: string }>,
       { groupId: string }
@@ -249,7 +239,6 @@ export const groupsApi = baseApi.injectEndpoints({
       invalidatesTags: ['Groups'],
     }),
 
-    // Get join requests for a group (creator only)
     getGroupJoinRequests: builder.query<
       ApiResponse<any[]>,
       GetGroupJoinRequestsPayload
@@ -261,7 +250,6 @@ export const groupsApi = baseApi.injectEndpoints({
   providesTags: ['Groups'],
     }),
 
-    // Respond to a join request (creator only)
     respondToJoinRequest: builder.mutation<
       ApiResponse<any>,
       RespondToJoinRequestPayload

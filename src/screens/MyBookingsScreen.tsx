@@ -45,17 +45,14 @@ const MyBookingsScreen = ({ navigation }: any) => {
     canceled: { page: 1, hasMore: true },
   });
 
-  // Get trainer ID from Redux store
   const trainerId = user?.id;
 
-  // Get current tab status
   const currentTabConfig = TABS.find((tab) => tab.key === activeTab);
   const currentStatus = currentTabConfig?.status as
     | "upcomming"
     | "completed"
     | "canceled";
 
-  // Fetch bookings for active tab
   const {
     data: bookingsResponse,
     isLoading,
@@ -76,14 +73,12 @@ const MyBookingsScreen = ({ navigation }: any) => {
   const [deleteBooking] = useDeleteBookingMutation();
   const [updateBooking] = useUpdateBookingMutation();
 
-  // Store bookings by tab
   const [bookingsByTab, setBookingsByTab] = useState<Record<string, any[]>>({
     upcoming: [],
     completed: [],
     canceled: [],
   });
 
-  // Update bookings when response changes
   useEffect(() => {
     if (
       bookingsResponse &&
@@ -94,13 +89,11 @@ const MyBookingsScreen = ({ navigation }: any) => {
       const currentPageNum = pagination[activeTab]?.page || 1;
 
       if (currentPageNum === 1) {
-        // First page - replace all bookings
         setBookingsByTab((prev) => ({
           ...prev,
           [activeTab]: bookingData.bookings || [],
         }));
       } else {
-        // Subsequent pages - append bookings
         setBookingsByTab((prev) => ({
           ...prev,
           [activeTab]: [
@@ -110,7 +103,6 @@ const MyBookingsScreen = ({ navigation }: any) => {
         }));
       }
 
-      // Update pagination state
       const totalPages = bookingData.pagination?.totalPages || 1;
       setPagination((prev) => ({
         ...prev,
@@ -124,14 +116,12 @@ const MyBookingsScreen = ({ navigation }: any) => {
 
   const handleTabChange = useCallback(
     (tabKey: string) => {
-      // Only proceed if switching to a different tab
       if (tabKey === activeTab) {
         return;
       }
 
       setActiveTab(tabKey);
 
-      // If switching to a tab with no data, refetch the API
       if (
         bookingsByTab[tabKey]?.length === 0 &&
         pagination[tabKey]?.page === 1
@@ -160,7 +150,6 @@ const MyBookingsScreen = ({ navigation }: any) => {
         await deleteBooking({ sessionId: bookingId}).unwrap();
         Toast.success("Booking declined successfully");
 
-        // Remove from local state
         setBookingsByTab((prev) => ({
           ...prev,
           [activeTab]: prev[activeTab].filter((b) => b.id !== bookingId),
@@ -175,7 +164,6 @@ const MyBookingsScreen = ({ navigation }: any) => {
   const handleReschedule = useCallback(
     async (bookingId: number) => {
       try {
-        // Navigate to reschedule screen
         navigation.navigate("RescheduleSessionScreen", { bookingId });
       } catch (error: any) {
         Toast.error(error?.data?.message || "Failed to reschedule booking");
@@ -325,7 +313,7 @@ const styles = StyleSheet.create({
     fontFamily: FontWeight.Medium,
   },
   tabTextActive: {
-    color: COLORS.white,
+    color: COLORS.black,
     fontFamily: FontWeight.Medium,
     fontSize: 16,
   },

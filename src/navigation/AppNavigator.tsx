@@ -1,7 +1,7 @@
 import MyRatings from "../screens/MyRatings";
 import Achievements from "../screens/Achievements";
 import React from "react";
-import { Text } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
@@ -15,7 +15,6 @@ import ScheduledSessions from "../screens/ScheduledSessions";
 import { COLORS, DIMENSIONS, API_CONFIG } from "../config/constants";
 import BolicStripeProvider from "../components/stripe-provider";
 
-// Import screens
 import AuthScreen from "../screens/AuthScreen";
 import HomeScreen from "../screens/HomeScreen";
 import FindScreen from "../screens/FindScreen";
@@ -38,20 +37,16 @@ import RescheduleSessionScreen from "../screens/RescheduleSessionScreen";
 import TrainerAvailability from "../screens/TrainerAvailability";
 import TrainerPricing from "../screens/TrainerPricing";
 
-// Import components
 import LoadingScreen from "../components/LoadingScreen";
 import ForgotPassword from "../screens/ForgotPassword";
 import GroupsScreen from "../screens/group/GroupsScreen";
 import GroupDetails from "../screens/group/GroupDetails";
 import ManageGroup from "../screens/group/ManageGroup";
-// Create navigators
 const Stack = createStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
 const FindStack = createStackNavigator<FindStackParams>();
 const HomeStack = createStackNavigator<HomeStackParams>();
 
-
-// Find Stack Navigator
 const FindStackNavigator: React.FC = () => {
   return (
     <FindStack.Navigator
@@ -62,8 +57,6 @@ const FindStackNavigator: React.FC = () => {
       <FindStack.Screen name="FindMain" component={FindScreen} />
       <FindStack.Screen name="UserProfile" component={ProfileScreen} />
 
-      {/* Add more Find-related screens here */}
-      {/* Example: <FindStack.Screen name="WorkoutDetails" component={WorkoutDetailsScreen} /> */}
     </FindStack.Navigator>
   );
 };
@@ -79,13 +72,10 @@ const HomeStackNavigator: React.FC = () => {
       <HomeStack.Screen name="CreatePost" component={CreatePostScreen} />
       <HomeStack.Screen name="ShareWorkout" component={ShareWorkoutScreen} />
 
-      {/* Add more Home-related screens here */}
-      {/* Example: <HomeStack.Screen name="PostDetails" component={PostDetailsScreen} /> */}
     </HomeStack.Navigator>
   );
 };
 
-// Main Tab Navigator
 const MainTabNavigator: React.FC = () => {
   return (
     <SafeAreaView style={{ flex: 1, }} edges={[]}>
@@ -93,7 +83,7 @@ const MainTabNavigator: React.FC = () => {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: COLORS.white,
+          backgroundColor: COLORS.background,
           borderTopWidth: 1,
           borderTopColor: COLORS.border,
           paddingBottom: 40,
@@ -111,8 +101,12 @@ const MainTabNavigator: React.FC = () => {
         name="Home"
         component={HomeStackNavigator}
         options={{
-          tabBarIcon: ({ color, size }) => (
-            <Text style={{ color, fontSize: size }}>🏠</Text>
+          tabBarIcon: ({ focused, color, size }) => (
+            <Ionicons
+              name={focused ? "home" : "home-outline"}
+              size={size}
+              color={color}
+            />
           ),
         }}
       />
@@ -120,8 +114,12 @@ const MainTabNavigator: React.FC = () => {
         name="Find"
         component={FindStackNavigator}
         options={{
-          tabBarIcon: ({ color, size }) => (
-            <Text style={{ color, fontSize: size }}>⚡</Text>
+          tabBarIcon: ({ focused, color, size }) => (
+            <Ionicons
+              name={focused ? "search" : "search-outline"}
+              size={size}
+              color={color}
+            />
           ),
         }}
       />
@@ -129,8 +127,12 @@ const MainTabNavigator: React.FC = () => {
         name="Groups"
         component={GroupsScreen}
         options={{
-          tabBarIcon: ({ color, size }) => (
-            <Text style={{ color, fontSize: size }}>◉</Text>
+          tabBarIcon: ({ focused, color, size }) => (
+            <Ionicons
+              name={focused ? "people" : "people-outline"}
+              size={size}
+              color={color}
+            />
           ),
         }}
       />
@@ -138,8 +140,12 @@ const MainTabNavigator: React.FC = () => {
         name="Messages"
         component={MessagesScreen}
         options={{
-          tabBarIcon: ({ color, size }) => (
-            <Text style={{ color, fontSize: size }}>○</Text>
+          tabBarIcon: ({ focused, color, size }) => (
+            <Ionicons
+              name={focused ? "chatbubbles" : "chatbubbles-outline"}
+              size={size}
+              color={color}
+            />
           ),
         }}
       />
@@ -147,8 +153,12 @@ const MainTabNavigator: React.FC = () => {
         name="Profile"
         component={ProfileScreen}
         options={{
-          tabBarIcon: ({ color, size }) => (
-            <Text style={{ color, fontSize: size }}>◎</Text>
+          tabBarIcon: ({ focused, color, size }) => (
+            <Ionicons
+              name={focused ? "person" : "person-outline"}
+              size={size}
+              color={color}
+            />
           ),
         }}
       />
@@ -157,11 +167,9 @@ const MainTabNavigator: React.FC = () => {
   );
 };
 
-// App Navigator
 const AppNavigator: React.FC = () => {
   const { isAuthenticated, isBootstrapping } = useAuth();
 
-  // Deep linking configuration
   const linking = {
     prefixes: ['bolic://', API_CONFIG.baseUrl],
     config: {
@@ -178,7 +186,6 @@ const AppNavigator: React.FC = () => {
     },
   };
 
-  // Show loading screen while checking authentication
   if (isBootstrapping) {
     return <LoadingScreen />;
   }

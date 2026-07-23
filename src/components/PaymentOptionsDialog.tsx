@@ -75,7 +75,6 @@ const PaymentOptionsDialog: React.FC<PaymentOptionsDialogProps> = ({
       <View style={styles.overlay}>
         <SafeAreaView style={styles.modalContainer}>
           <View style={[styles.dialogContent, { paddingBottom: DIMENSIONS.spacing.xl + navBarHeight }]}>
-            {/* Header */}
             <View style={styles.header}>
               <Text style={styles.title}>Payment Options</Text>
               <TouchableOpacity onPress={onClose} style={styles.closeButton}>
@@ -83,7 +82,6 @@ const PaymentOptionsDialog: React.FC<PaymentOptionsDialogProps> = ({
               </TouchableOpacity>
             </View>
 
-            {/* Payment Options */}
             <View style={styles.optionsContainer}>
               {renderRadioOption(
                 'credit',
@@ -104,7 +102,6 @@ const PaymentOptionsDialog: React.FC<PaymentOptionsDialogProps> = ({
               )}
             </View>
 
-            {/* Confirm Button */}
             <TouchableOpacity
               style={styles.confirmButton}
               onPress={handleConfirm}
@@ -218,7 +215,7 @@ const styles = StyleSheet.create({
   confirmButtonText: {
     fontSize: 16,
     fontFamily: FontWeight.SemiBold,
-    color: COLORS.white,
+    color: COLORS.black,
   },
 });
 

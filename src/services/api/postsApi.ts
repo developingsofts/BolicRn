@@ -28,7 +28,6 @@ interface CommentPayload {
 
 export const postsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    // Get all posts with pagination
     getPosts: builder.query<
       ApiResponse<{ posts: Post[]; pagination: any }>,
       { page?: number; limit?: number }
@@ -42,17 +41,14 @@ export const postsApi = baseApi.injectEndpoints({
         };
       },
       providesTags: ['Posts'],
-      // Support for infinite scroll - merge results
       serializeQueryArgs: ({ endpointName }) => {
         return endpointName;
       },
       merge: (currentCache, newItems, { arg }) => {
-        // If page 1 or no arg, return fresh data
         if (!arg || arg.page === 1) {
           return newItems;
         }
-        
-        // Merge results for page > 1
+
         if ('data' in currentCache && 'data' in newItems && currentCache.status && newItems.status) {
           return {
             ...newItems,
@@ -65,15 +61,14 @@ export const postsApi = baseApi.injectEndpoints({
             }
           };
         }
-        
+
         return newItems;
       },
       forceRefetch({ currentArg, previousArg }) {
         return (currentArg?.page || 1) !== (previousArg?.page || 1);
       },
     }),
-    
-    // Get user posts
+
     getUserPosts: builder.query<
       ApiResponse<{ posts: Post[]; pagination: any }>,
       { userId: string; page?: number; limit?: number }
@@ -84,21 +79,18 @@ export const postsApi = baseApi.injectEndpoints({
       }),
       providesTags: ['Posts'],
     }),
-    
-    // Create post with FormData
+
     createPost: builder.mutation<ApiResponse<Post>, CreatePostPayload>({
       query: (payload) => {
         const formData = new FormData();
-        
-        // Add text fields
+
         formData.append('title', payload.title);
         if (payload.groupId) formData.append('groupId', payload.groupId.toString());
         if (payload.achievementId) formData.append('achievementId', payload.achievementId.toString());
         formData.append('type', payload.type || 'normal');
         if (payload.workoutId) formData.append('workoutId', payload.workoutId);
         if(payload.shareToCommunity) formData.append('shareToCommunity', payload.shareToCommunity);
-        
-        // Add media file if present
+
         if (payload.mediaFile) {
           const mediaFile = payload.mediaFile as any;
           formData.append('media', {
@@ -107,7 +99,7 @@ export const postsApi = baseApi.injectEndpoints({
             name: mediaFile.name || `post_${Date.now()}.jpg`,
           } as any);
         }
-        
+
         return {
           url: '/post/create',
           method: 'POST',
@@ -116,8 +108,7 @@ export const postsApi = baseApi.injectEndpoints({
       },
       invalidatesTags: ['Posts'],
     }),
-    
-    // Delete post
+
     deletePost: builder.mutation<
       ApiResponse<{ success: boolean }>,
       { postId: string }
@@ -128,17 +119,16 @@ export const postsApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Posts'],
     }),
-    
-    // Update post
+
     updatePost: builder.mutation<
       ApiResponse<Post>,
       { postId: string; title?: string; mediaFile?: any }
     >({
       query: ({ postId, title, mediaFile }) => {
         const formData = new FormData();
-        
+
         if (title) formData.append('title', title);
-        
+
         if (mediaFile) {
           formData.append('media', {
             uri: mediaFile.uri,
@@ -146,7 +136,7 @@ export const postsApi = baseApi.injectEndpoints({
             name: mediaFile.name || `post_${Date.now()}.jpg`,
           } as any);
         }
-        
+
         return {
           url: `/post/update/${postId}`,
           method: 'PUT',

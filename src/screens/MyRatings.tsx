@@ -73,7 +73,6 @@ const MyRatings: React.FC = ({ navigation, route }: any) => {
         containerStyle={{ paddingTop: DIMENSIONS.spacing.xxl, paddingBottom: DIMENSIONS.spacing.lg }}
       />
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        {/* Rating Overview */}
         <View style={styles.ratingOverview}>
           <View style={styles.starsRow}>
             {[...Array(5)].map((_, i) => (
@@ -90,7 +89,6 @@ const MyRatings: React.FC = ({ navigation, route }: any) => {
             {averageRating} ({totalReviews} Reviews)
           </Text>
         </View>
-        {/* Reviews Section */}
         <Text style={styles.sectionTitle}>What people are saying</Text>
         <View style={styles.reviewsList}>
           {reviews.map((review) => (

@@ -271,7 +271,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
         ? STRINGS.MESSAGES.attachmentPlaceholder
         : STRINGS.MESSAGES.noMessagesYet;
 
-      // Debug image messages
       if (message.messageType === "image" || message.attachmentUrl) {
         console.log("Image message:", {
           id: message.id,
@@ -403,7 +402,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
         const asset = result.assets[0];
         isUserNearBottomRef.current = true;
 
-        // Ensure proper URI format for React Native Image component
         const imageUri = asset.uri.startsWith("file://")
           ? asset.uri
           : `file://${asset.uri}`;
@@ -411,10 +409,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
         console.log("Image selected - Original URI:", asset.uri);
         console.log("Image selected - Formatted URI:", imageUri);
 
-        // Show sending indicator
         Toast.info("Sending image...");
 
-        // Send image as form data
         await sendMessage({
           conversationId: resolvedConversationId,
           messageType: "image",
@@ -441,7 +437,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
     [emitTyping]
   );
 
-  // Handle keyboard events
   useEffect(() => {
     const keyboardWillShow = Keyboard.addListener(
       Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
@@ -709,7 +704,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
               <View style={styles.inputWrapper}>
                 <TextInput
                   placeholder={STRINGS.CHAT.placeholder}
-                  placeholderTextColor={COLORS.gradient1}
+                  placeholderTextColor={COLORS.placeholder}
                   style={styles.textInput}
                   value={messageInput}
                   onChangeText={handleInputChange}
@@ -742,8 +737,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    // backgroundColor:"red"
-    // backgroundColor: COLORS.gradient3,
   },
   keyboardAvoidingView: {
     flex: 1,
@@ -771,7 +764,7 @@ const styles = StyleSheet.create({
   avatarText: {
     fontFamily: FontWeight.SemiBold,
     fontSize: 18,
-    color: COLORS.white,
+    color: COLORS.black,
   },
   title: {
     fontSize: 24,
@@ -834,9 +827,8 @@ const styles = StyleSheet.create({
   messagesWrapper: {
     flex: 1,
     paddingHorizontal: DIMENSIONS.spacing.lg,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     paddingTop: DIMENSIONS.spacing.lg,
-    // paddingBottom is set dynamically based on keyboard height
   },
   flatList: {
     flex: 1,
@@ -863,7 +855,6 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     fontStyle: "italic",
   },
-  // Message styles
   dateSeparator: {
     flexDirection: "row",
     alignItems: "center",
@@ -890,7 +881,6 @@ const styles = StyleSheet.create({
     paddingBottom: 5.5,
     paddingLeft: 12,
     borderRadius: 9,
-    // marginTop: DIMENSIONS.spacing.lg,
   },
   messageContent: {
     flex: 1,
@@ -992,7 +982,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   myMessageText: {
-    color: COLORS.white,
+    color: COLORS.black,
   },
   theirMessageText: {
     color: COLORS.text,
@@ -1011,7 +1001,7 @@ const styles = StyleSheet.create({
   reactionIcon: {
     width: 14,
     height: 14,
-    tintColor: COLORS.gradient1,
+    tintColor: COLORS.text,
   },
   inputContainer: {
     backgroundColor: COLORS.gradient3,
@@ -1036,8 +1026,8 @@ const styles = StyleSheet.create({
   },
   textInput: {
     flex: 1,
-    backgroundColor: COLORS.white,
-    color: COLORS.black,
+    backgroundColor: COLORS.surface,
+    color: COLORS.text,
     borderTopLeftRadius: 14,
     borderTopRightRadius: 8,
     borderBottomRightRadius: 8,
@@ -1056,12 +1046,12 @@ const styles = StyleSheet.create({
   imageIcon: {
     width: 24,
     height: 24,
-    tintColor: COLORS.gradient1,
+    tintColor: COLORS.text,
   },
   sendButton: {
     width: 45,
     height: 45,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     borderRadius: 4,
     justifyContent: "center",
     alignItems: "center",
@@ -1069,7 +1059,7 @@ const styles = StyleSheet.create({
   sendIcon: {
     width: 20,
     height: 20,
-    tintColor: COLORS.gradient1,
+    tintColor: COLORS.text,
   },
   imageMessageContainer: {
     maxWidth: 250,

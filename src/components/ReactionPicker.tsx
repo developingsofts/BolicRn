@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
   container: {
     width: "100%",
     maxWidth: 360,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     borderRadius: DIMENSIONS.borderRadius,
     padding: DIMENSIONS.spacing.lg,
     shadowColor: "#000",

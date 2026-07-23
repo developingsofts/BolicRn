@@ -1244,8 +1244,7 @@ export const useChat = ({
       const tempId = generateTemporaryMessageId();
 
       const attachmentUrlString = typeof attachmentUrl === 'string' ? attachmentUrl : attachmentUrl?.uri ?? null;
-      
-      // Check if this is a file attachment
+
       const isFileAttachment = typeof attachmentUrl === 'object' && attachmentUrl !== null;
 
       const optimisticMessage: ChatMessage = {
@@ -1272,8 +1271,6 @@ export const useChat = ({
         createdAt: timestamp,
       });
 
-      // Only show optimistic message for text messages, not for file attachments
-      // For files, we'll show the image only after server uploads it
       if (!isFileAttachment) {
         integrateMessage(optimisticMessage, { skipPendingResolution: true });
       }
@@ -1300,8 +1297,6 @@ export const useChat = ({
         }).unwrap();
 
         if (isSuccessResponse(response) && response.data) {
-          // Always integrate the message from server response
-          // For file attachments, this is the first time they appear (after upload)
           integrateMessage(
             {
               ...response.data,
@@ -1367,7 +1362,6 @@ export const useChat = ({
           applyUpdatedMessage(response.data.message);
         }
       } catch {
-        // Intentionally suppressed – UI can remain optimistic when offline
       }
     },
     [toggleMessageReactionMutation, applyUpdatedMessage]
@@ -1581,7 +1575,6 @@ export const useChat = ({
           Math.max(lastMarkedId, ...newIds)
         );
       } catch {
-        // ignore failures to allow retry on next invocation
       }
     },
     [

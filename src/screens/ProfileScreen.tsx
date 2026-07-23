@@ -111,7 +111,6 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
   const [deleteBooking] = useDeleteBookingMutation();
   const [updateBooking] = useUpdateBookingMutation()
 
-  // Use correct profile data based on context
   const profileData: User | UserProfile | undefined | null = isOwnProfile
     ? myProfileData && myProfileData.status === true && myProfileData.data
       ? myProfileData.data
@@ -169,27 +168,20 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
   const [isFollowing, setIsFollowing] = useState(false);
 
   const isGuest = route?.params?.isGuest || !user;
-  // const isOwnProfile =
-  //   !route?.params?.userId || route.params.userId === user?.id;
   const navigationNative = useNavigation();
-  // Use trainerOnboardingStep for trainers, fallback to onboardingStep for users
   const isTrainer = user?.role === "trainer";
   const trainerOnboardingStep = user?.trainerOnboardingStep ?? 0;
   const onboardingStep = isTrainer
     ? trainerOnboardingStep
     : user?.onboardingStep ?? 0;
-  // Show onboarding only if trainer and step < 2
   const showTrainerOnboarding = isOwnProfile && isTrainer && onboardingStep < 2;
-  // Show trainer menu if trainer and onboarding complete (step >= 2)
   const showOwnProfileFeatures =
     isOwnProfile && !isGuest && (!isTrainer || onboardingStep >= 2);
 
-  // Handler to launch onboarding flow and update onboardingStep after completion
   const handleTrainerOnboarding = () => {
     navigation.navigate("TrainerSetup");
   };
   const profileBio = (() => {
-    // First try route params bio (for specific cases)
     const routeBio = route?.params?.bio;
     if (routeBio) {
       const cleanedRouteBio = routeBio.trim();
@@ -198,7 +190,6 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
       }
     }
 
-    // Then try profileData bio (from API)
     const rawUserBio = profileData?.bio;
     if (rawUserBio) {
       const cleaned = rawUserBio.trim();
@@ -207,7 +198,6 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
       }
     }
 
-    // Fallback to default text
     return isGuest ? "No bio available" : STRINGS.PROFILE.bio;
   })();
 
@@ -232,7 +222,6 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
       label: "My Pricing",
       icon: Price,
     },
-    // { id: "my-rating", label: "My Rating", icon: Rating },
   ];
 
   const guestMenuItems = [
@@ -251,11 +240,6 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
       label: STRINGS.PROFILE.achievements,
       icon: Achievements,
     },
-    // {
-    //   id: "rating",
-    //   label: "Rating",
-    //   icon: "star-outline" as const,
-    // },
   ];
 
   const menuItems = isOwnProfile
@@ -291,11 +275,6 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
           label: STRINGS.PROFILE.achievements,
           icon: Achievements,
         },
-        // {
-        //   id: "rating",
-        //   label: showOwnProfileFeatures ? "My Ratings" : "Rating",
-        //   icon: Rating,
-        // },
       ]
     : guestMenuItems;
 
@@ -316,7 +295,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
     try {
       await deleteBooking({ sessionId: id }).unwrap();
       Toast.success("Booking removed successfully");
-      await refetchMyProfile(); // Refresh profile data
+      await refetchMyProfile();
     } catch (error) {
       Toast.error("Failed to remove booking");
       console.error("Delete booking error:", error);
@@ -329,7 +308,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
     try {
       await updateBooking({ id, status: "upcomming" }).unwrap();
       Toast.success("Booking updated successfully");
-      await refetchMyProfile(); // Refresh profile data
+      await refetchMyProfile();
     } catch (error) {
       Toast.error("Failed to update booking");
       console.error("Update booking error:", error);
@@ -339,21 +318,12 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
   const renderFollowingView = () => {
     return (
       <View style={styles.followingRow}>
-        {/* <TouchableOpacity 
-          style={styles.followingMainBtn}
-          onPress={handleBookTrainer}
-        >
-          <View style={styles.followingMainBtnContent}>
-            <Ionicons name="calendar" size={20} color={COLORS.gradient1} />
-            <Text style={styles.followingText}>Book Session</Text>
-          </View>
-        </TouchableOpacity> */}
         <TouchableOpacity
           style={styles.followingMainBtn}
           onPress={isFollowing ? undefined : handleFollow}
         >
           <View style={styles.followingMainBtnContent}>
-            <Image source={Following} style={styles.smallIconSize} />
+            <Image source={Following} style={[styles.smallIconSize, { tintColor: COLORS.black }]} />
             <Text style={styles.followingText}>
               {isFollowing ? STRINGS.PROFILE.following : "Follow"}
             </Text>
@@ -364,14 +334,13 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
             style={styles.followingIconBtn}
             onPress={handleUnfollow}
           >
-            <Image source={DeleteUser} style={styles.smallIconSize} />
+            <Image source={DeleteUser} style={[styles.smallIconSize, { tintColor: COLORS.black }]} />
           </TouchableOpacity>
         )}
       </View>
     );
   };
   const renderProfileAvatar = () => {
-    // Prefer user from route params if present (for visiting other profiles)
     const displayName =
       profileData?.displayName ||
       (profileData as any)?.userName ||
@@ -490,7 +459,6 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
       edges={["left", "right"]}
       style={[styles.container, isGuest && styles.guestContainer]}
     >
-      {/* <View style={styles.profileHeader} /> */}
       <RefreshableScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -514,12 +482,12 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
               <Text style={styles.weeklyActivityTitle}>Weekly Activity</Text>
             </View>
             <View style={styles.weeklyActivityContent}>
-              {/* Weekly Goal Section */}
               <View style={styles.weeklyGoalSection}>
                 <View style={styles.weeklyGoalHeader}>
                   <Text style={styles.weeklyGoalLabel}>Weekly Goal</Text>
-                  <Text style={styles.weeklyGoalValue}>{`${profileData?.completedWeeklySessions || 0
-                    }/${profileData?.totalWeeklySessions || 0} Workouts`}</Text>
+                  <Text style={styles.weeklyGoalValue}>{`${
+                    profileData?.completedWeeklySessions || 0
+                  }/${profileData?.totalWeeklySessions || 0} Workouts`}</Text>
                 </View>
                 <View style={styles.progressBarContainer}>
                   <View
@@ -531,16 +499,15 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
                           ((profileData?.completedWeeklySessions || 0) /
                             Math.max(
                               profileData?.totalWeeklySessions || 1,
-                              1
+                              1,
                             )) *
-                          100
+                            100,
                         )}%`,
                       },
                     ]}
                   />
                 </View>
               </View>
-              {/* Streak Stats */}
               <View style={styles.streakStatsContainer}>
                 <View style={styles.streakStatItem}>
                   <Text style={styles.streakStatLabel}>CURRENT STREAK</Text>
@@ -555,7 +522,6 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
                   </Text>
                 </View>
               </View>
-              {/* Daily Streak */}
               <View style={styles.dailyStreakSection}>
                 <Text style={styles.dailyStreakLabel}>Daily Streak</Text>
                 <View style={styles.daysContainer}>
@@ -632,7 +598,6 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
                 key={item.id}
                 style={[styles.menuItem, index === 0 && styles.menuItemActive]}
                 onPress={() => {
-                  // Handle guest profile navigation
                   if (isGuest) {
                     if (item.id === "posts") {
                       navigation.navigate("MyPosts", { userId: userId });
@@ -646,7 +611,6 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
                     return;
                   }
 
-                  // Handle own profile navigation
                   if (isTrainer) {
                     if (item.id === "all-bookings") {
                       navigation.navigate("MyBookings");
@@ -675,7 +639,6 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
                     } else if (item.id === "my-bookings") {
                       navigation.navigate("MyBookings");
                     } else {
-                      // Handle other menu items as needed
                       console.log(`Pressed ${item.label}`);
                     }
                   }
@@ -699,7 +662,10 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
       {isOwnProfile && !isGuest && (
         <View style={styles.logoutSection}>
           <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-            <Image source={Exit} style={styles.smallIconSize} />
+            <Image
+              source={Exit}
+              style={[styles.smallIconSize, { tintColor: COLORS.error }]}
+            />
             <Text style={styles.logoutButtonText}>
               {STRINGS.PROFILE.logout}
             </Text>
@@ -753,11 +719,11 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.gradient3,
   },
   guestContainer: {
-    backgroundColor: "red",
+    backgroundColor: COLORS.background,
   },
   scrollView: {
     flex: 1,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
   },
   scrollContent: {
     paddingBottom: 100,
@@ -765,6 +731,7 @@ const styles = StyleSheet.create({
   iconSize: {
     width: 35,
     height: 35,
+    tintColor: COLORS.white,
   },
   smallIconSize: {
     width: 20,
@@ -776,10 +743,8 @@ const styles = StyleSheet.create({
     width: 15,
     height: 15,
   },
-  // Profile Header Styles
   profileHeader: {
     backgroundColor: COLORS.gradient3,
-    // height: r(260),
     paddingBottom: 40,
     paddingTop: DIMENSIONS.spacing.xl,
     alignItems: "center",
@@ -812,7 +777,6 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   headerIconBtn: {
-    // padding: 6,
   },
   commentIcon: { marginRight: 10 },
   headerIconText: {
@@ -840,12 +804,11 @@ const styles = StyleSheet.create({
     resizeMode: "cover",
   },
   guestAvatar: {
-    // backgroundColor: "#6c757d",
   },
   avatarText: {
     fontSize: 48,
     fontFamily: FontWeight.SemiBold,
-    color: "white",
+    color: COLORS.black,
   },
   displayName: {
     fontSize: 16,
@@ -855,7 +818,7 @@ const styles = StyleSheet.create({
   locationText: {
     fontSize: 12,
     fontFamily: FontWeight.Regular,
-    color: COLORS._D9D9D9,
+    color: COLORS.textSecondary,
     marginBottom: 8,
   },
   bioText: {
@@ -866,82 +829,6 @@ const styles = StyleSheet.create({
     fontFamily: FontWeight.Regular,
     marginHorizontal: 20,
   },
-  statsRow: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    backgroundColor: "white",
-    paddingVertical: 10,
-    paddingHorizontal: 8,
-    borderRadius: 10,
-    width: "90%",
-    position: "absolute",
-    alignSelf: "center",
-    bottom: -40,
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    zIndex: 10,
-  },
-  statItem: {
-    alignItems: "center",
-    // flex: 1,
-  },
-  statDivider: {
-    width: 1,
-    height: "70%",
-    backgroundColor: COLORS._E6E6E7,
-    opacity: 1,
-    justifyContent: "center",
-    alignSelf: "center",
-  },
-  statNumber: {
-    fontSize: 20,
-    fontFamily: FontWeight.SemiBold,
-    color: COLORS.app_black,
-  },
-  statLabel: {
-    fontSize: 11,
-    color: COLORS._5E5E5E,
-    fontFamily: FontWeight.Medium,
-    textTransform: "uppercase",
-  },
-
-  // Action Buttons Styles
-  actionButtons: {
-    flexDirection: "row",
-    justifyContent: "center",
-    paddingHorizontal: 20,
-    marginTop: 20,
-    gap: 10,
-  },
-  actionButton: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  followButton: {
-    backgroundColor: "#4a90e2",
-  },
-  followButtonText: {
-    color: "white",
-    fontWeight: "600",
-    fontSize: 16,
-  },
-  messageButton: {
-    backgroundColor: "red",
-    borderWidth: 1,
-    borderColor: "#ddd",
-  },
-  messageButtonText: {
-    color: "#333",
-    fontWeight: "600",
-    fontSize: 16,
-  },
-
-  // Tab Bar Styles
   tabBar: {
     flexDirection: "row",
     marginHorizontal: 20,
@@ -970,7 +857,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 
-  // Tab Content Styles
   tabContent: {
     paddingHorizontal: 20,
     marginTop: 20,
@@ -983,7 +869,6 @@ const styles = StyleSheet.create({
     width: "100%",
   },
 
-  // Activity Tab Styles
   subTabContainer: {
     flexDirection: "row",
     marginBottom: 20,
@@ -1000,7 +885,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   activeSubTab: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
@@ -1019,264 +904,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontFamily: FontWeight.Medium,
   },
-  emptyState: {
-    alignItems: "center",
-    paddingVertical: 40,
-  },
-  emptyStateText: {
-    color: "#999",
-    fontSize: 16,
-  },
-  postCard: {
-    backgroundColor: "white",
-    borderRadius: 8,
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-    marginBottom: 15,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-  },
-  postContent: {
-    fontSize: 14,
-    color: COLORS.app_black,
-    fontFamily: FontWeight.Regular,
-    marginBottom: 10,
-  },
-  postTime: {
-    fontSize: 12,
-    fontFamily: FontWeight.Regular,
-    color: COLORS._616888,
-  },
-  postActions: {
-    flexDirection: "row",
-    gap: 20,
-  },
-  postAction: {
-    fontSize: 12,
-    marginLeft: 3,
-    fontFamily: FontWeight.Regular,
-    color: COLORS._616888,
-  },
-
-  // Workout Card Styles
-  workoutPostCard: {
-    backgroundColor: "white",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 2,
-    borderStyle: "dashed",
-    borderColor: "#4A90E2",
-  },
-  workoutPostContent: {
-    fontSize: 16,
-    color: COLORS.app_black,
-    lineHeight: 22,
-    marginBottom: 12,
-    fontFamily: FontWeight.Regular,
-  },
-  workoutPostFooter: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  workoutPostTime: {
-    fontSize: 14,
-    color: COLORS._5E5E5E,
-    fontFamily: FontWeight.Regular,
-  },
-  workoutPostActions: {
-    flexDirection: "row",
-    gap: 16,
-  },
-  workoutPostAction: {
-    fontSize: 14,
-    color: COLORS._5E5E5E,
-    fontFamily: FontWeight.Medium,
-  },
-  workoutCard: {
-    backgroundColor: "white",
-    borderRadius: 12,
-    padding: 15,
-    marginBottom: 12,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-  },
-  workoutHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "red",
-  },
-  workoutTitle: {
-    fontSize: 16,
-    fontFamily: FontWeight.SemiBold,
-    color: COLORS.app_black,
-    flex: 1,
-    marginBottom: 4,
-  },
-  postItButton: {
-    backgroundColor: COLORS.white,
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: COLORS._CCCCCC,
-    alignSelf: "center",
-  },
-  postItButtonText: {
-    fontSize: 14,
-    color: COLORS.app_black,
-    fontFamily: FontWeight.Medium,
-  },
-  workoutDetails: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 7,
-    gap: 10,
-  },
-  workoutTag: {
-    paddingHorizontal: 8,
-    borderRadius: 10,
-  },
-  strengthTag: {
-    backgroundColor: COLORS._D2E7FF,
-  },
-  workoutTagText: {
-    fontSize: 12,
-    color: COLORS._0B80FF,
-    fontFamily: FontWeight.Regular,
-  },
-  workoutInfo: {
-    fontSize: 12,
-    color: COLORS.app_black,
-    fontFamily: FontWeight.Regular,
-  },
-  workoutCompleted: {
-    fontSize: 14,
-    color: COLORS._5E5E5E,
-    fontFamily: FontWeight.Regular,
-  },
-
-  // Achievements Tab Styles
-  achievementsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-  },
-  achievementCardGrid: {
-    backgroundColor: "white",
-    borderRadius: 18,
-    padding: 10,
-    width: "48%",
-    height: 140,
-    marginBottom: 15,
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-  },
-
-  achievementIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-  },
-  achievementIconText: {
-    width: 25,
-    height: 25,
-  },
-  achievementTitle: {
-    fontSize: 16,
-    top: -5,
-    fontFamily: FontWeight.SemiBold,
-    color: COLORS.app_black,
-    textAlign: "left",
-  },
-  achievementDescription: {
-    fontSize: 12,
-    fontFamily: FontWeight.Regular,
-    color: COLORS._5E5E5E,
-    textAlign: "left",
-  },
-  achievementProgress: {
-    width: "100%",
-    marginTop: "auto",
-  },
-  achievementProgressBar: {
-    height: 3,
-    backgroundColor: COLORS._D9D9D9,
-    borderRadius: 2,
-  },
-  achievementProgressFill: {
-    height: "100%",
-    backgroundColor: "#4a90e2",
-    borderRadius: 10,
-  },
-
-  // Connections Tab Styles
-  connectionCard: {
-    backgroundColor: "white",
-    borderRadius: 8,
-    padding: 15,
-    marginBottom: 10,
-    flexDirection: "row",
-    alignItems: "center",
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-  },
-  connectionAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: "center",
-    backgroundColor: COLORS.primary,
-    alignItems: "center",
-    marginRight: 15,
-  },
-  connectionAvatarText: {
-    fontSize: 15,
-    fontFamily: FontWeight.SemiBold,
-    color: COLORS.white,
-  },
-  connectionInfo: {
-    flex: 1,
-  },
-  connectionName: {
-    fontSize: 16,
-    fontFamily: FontWeight.SemiBold,
-    color: COLORS.app_black,
-    marginBottom: 2,
-  },
-  connectionLocation: {
-    fontSize: 14,
-    fontFamily: FontWeight.Regular,
-    color: COLORS._5E5E5E,
-  },
-  messageConnectionButton: {
-    backgroundColor: "#4a90e2",
-    paddingVertical: 8,
-    paddingHorizontal: 15,
-    borderRadius: 5,
-  },
-  messageConnectionButtonText: {
-    color: "white",
-    fontSize: 12,
-    fontWeight: "600",
-  },
-
-  // Logout Section Styles
   logoutSection: {
     paddingHorizontal: 20,
     paddingVertical: 15,
@@ -1296,19 +923,18 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     justifyContent: "center",
     flexDirection: "row",
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: "center",
   },
   logoutButtonText: {
-    color: COLORS._EB3434,
+    color: COLORS.error,
     fontSize: 14,
     left: 5,
     fontFamily: FontWeight.Medium,
   },
 
-  // Legacy styles (keeping for compatibility)
   header: {
     paddingHorizontal: DIMENSIONS.spacing.lg,
     paddingTop: DIMENSIONS.spacing.sm,
@@ -1482,13 +1108,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
   },
-  // Weekly Activity Styles
   weeklyActivityCard: {
     width: "90%",
     maxWidth: 600,
     alignSelf: "center",
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     borderRadius: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
     marginTop: 60,
     marginBottom: 16,
     shadowColor: "#000",
@@ -1602,7 +1229,6 @@ const styles = StyleSheet.create({
     borderColor: COLORS._D7D7D7,
     backgroundColor: "transparent",
   },
-  // Menu List Styles
   menuListContainer: {
     flexDirection: "column",
     gap: 12,
@@ -1621,7 +1247,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     padding: 16,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: COLORS._E6E6E7,
@@ -1632,8 +1258,6 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   menuItemActive: {
-    // borderWidth: 2,
-    // borderColor: COLORS.primary,
   },
   menuItemLeft: {
     flexDirection: "row",
@@ -1644,11 +1268,12 @@ const styles = StyleSheet.create({
     marginRight: 0,
     width: 20,
     height: 20,
+    tintColor: COLORS.white,
   },
   menuItemLabel: {
     fontSize: 16,
     fontFamily: FontWeight.SemiBold,
-    color: COLORS.gradient1,
+    color: COLORS.text,
   },
 });
 

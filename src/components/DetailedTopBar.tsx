@@ -14,19 +14,16 @@ import { r } from "../designing/responsiveDesigns";
 import FontWeight from "../hooks/useInterFonts";
 
 interface DetailedTopBarProps {
-  // Navigation
   onBackPress?: () => void;
   showBackButton?: boolean;
   backButtonIcon?: keyof typeof Ionicons.glyphMap;
   backButtonColor?: string;
 
-  // Avatar
   avatar?: React.ReactNode;
   avatarText?: string;
   avatarSize?: number;
   avatarBackgroundColor?: string;
 
-  // Title and Subtitle
   title?: string;
   subtitle?: string;
   titleStyle?: TextStyle;
@@ -34,12 +31,10 @@ interface DetailedTopBarProps {
   bioText?: string;
   biostyle?: TextStyle;
 
-  // Custom Views
   startView?: React.ReactNode;
   endView?: React.ReactNode;
   bottomView?: React.ReactNode;
 
-  // Styling
   containerStyle?: ViewStyle;
   contentStyle?: ViewStyle;
   backgroundColor?: string;
@@ -53,7 +48,7 @@ const DetailedTopBar: React.FC<DetailedTopBarProps> = ({
   avatar,
   avatarText,
   avatarSize = 80,
-  avatarBackgroundColor = COLORS.primary,
+  avatarBackgroundColor = COLORS.surface,
   title,
   subtitle,
   titleStyle,
@@ -69,9 +64,7 @@ const DetailedTopBar: React.FC<DetailedTopBarProps> = ({
 }) => {
   return (
     <View style={[styles.container, { backgroundColor }, containerStyle]}>
-      {/* Top Row - Back Button and Actions */}
       <View style={[styles.topRow, contentStyle]}>
-        {/* Start View or Back Button */}
         {startView ? (
           startView
         ) : showBackButton ? (
@@ -90,11 +83,9 @@ const DetailedTopBar: React.FC<DetailedTopBarProps> = ({
           <View style={styles.backButton} />
         )}
 
-        {/* End View */}
         {endView && <View style={styles.endView}>{endView}</View>}
       </View>
 
-      {/* Avatar */}
       {(avatar || avatarText) && (
         <View style={styles.avatarContainer}>
           {avatar ? (
@@ -119,7 +110,6 @@ const DetailedTopBar: React.FC<DetailedTopBarProps> = ({
         </View>
       )}
 
-      {/* Title and Subtitle */}
       {(title || subtitle) && (
         <View style={styles.textContainer}>
           {title && <Text style={[styles.title, titleStyle]}>{title}</Text>}
@@ -130,7 +120,6 @@ const DetailedTopBar: React.FC<DetailedTopBarProps> = ({
       )}
       <Text style={biostyle}>{bioText}</Text>
 
-      {/* Bottom View */}
       {bottomView && <View style={styles.bottomContainer}>{bottomView}</View>}
     </View>
   );

@@ -68,7 +68,6 @@ export const messagingApi = baseApi.injectEndpoints({
     }),
     sendMessage: builder.mutation<ApiResponse<ChatMessage>, SendMessagePayload>({
       query: ({ conversationId, content, attachmentUrl, messageType }) => {
-        // If attachmentUrl is a file object, use FormData
         if (attachmentUrl && typeof attachmentUrl === 'object' && 'uri' in attachmentUrl) {
           const formData = new FormData();
           if (content) formData.append('content', content);
@@ -78,15 +77,14 @@ export const messagingApi = baseApi.injectEndpoints({
             type: attachmentUrl.type,
             name: attachmentUrl.name,
           } as any);
-          
+
           return {
             url: API_END_POINTS.messages.sendMessage(conversationId),
             method: 'POST',
             body: formData,
           };
         }
-        
-        // Otherwise use regular JSON payload
+
         return {
           url: API_END_POINTS.messages.sendMessage(conversationId),
           method: 'POST',
@@ -127,7 +125,6 @@ export const messagingApi = baseApi.injectEndpoints({
       CreateConversationPayload
     >({
       query: (payload) => {
-        // If attachmentUrl is a file object, use FormData
         if (payload.attachmentUrl && typeof payload.attachmentUrl === 'object' && 'uri' in payload.attachmentUrl) {
           const formData = new FormData();
           if (payload.type) formData.append('type', payload.type);
@@ -144,15 +141,14 @@ export const messagingApi = baseApi.injectEndpoints({
             type: payload.attachmentUrl.type,
             name: payload.attachmentUrl.name,
           } as any);
-          
+
           return {
             url: API_END_POINTS.messages.conversations,
             method: 'POST',
             body: formData,
           };
         }
-        
-        // Otherwise use regular JSON payload
+
         return {
           url: API_END_POINTS.messages.conversations,
           method: 'POST',

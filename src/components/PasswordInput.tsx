@@ -43,7 +43,7 @@ const PasswordInput: React.FC<PasswordInputProps> = ({
           <Image
             resizeMode="contain"
             source={EyeHide}
-            style={{ width: 25, height: 25 }}
+            style={{ width: 25, height: 25, tintColor: COLORS.white }}
           />
         )}
       </TouchableOpacity>

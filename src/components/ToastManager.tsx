@@ -11,11 +11,9 @@ interface ToastData {
 
 let showToastCallback: ((toast: ToastData) => void) | null = null;
 
-// Toast Manager Component
 const ToastManager: React.FC = () => {
   const [currentToast, setCurrentToast] = useState<ToastData | null>(null);
 
-  // Register the callback when component mounts
   React.useEffect(() => {
     showToastCallback = (toast: ToastData) => {
       setCurrentToast(toast);
@@ -45,7 +43,6 @@ const ToastManager: React.FC = () => {
   );
 };
 
-// Toast API
 export const Toast = {
   success: (message: string, duration?: number) => {
     const toast: ToastData = {
@@ -62,7 +59,7 @@ export const Toast = {
       id: Date.now().toString(),
       message,
       type: 'error',
-      duration: duration || 4000, // Errors stay longer by default
+      duration: duration || 4000,
     };
     showToastCallback?.(toast);
   },

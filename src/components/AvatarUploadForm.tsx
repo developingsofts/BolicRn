@@ -8,6 +8,7 @@ import {
   StyleSheet,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+import { COLORS } from "../config/constants";
 
 interface AvatarUploadFormProps {
   onDataChange?: (data: {
@@ -106,7 +107,7 @@ const AvatarUploadForm = React.forwardRef<
             marginBottom: 8,
             fontWeight: "500",
             fontSize: 16,
-            color: "#444",
+            color: COLORS.white,
           }}
         >
           Your Name
@@ -123,7 +124,7 @@ const AvatarUploadForm = React.forwardRef<
             marginBottom: 8,
             fontWeight: "500",
             fontSize: 16,
-            color: "#444",
+            color: COLORS.white,
           }}
         >
           Description
@@ -148,7 +149,7 @@ const styles = StyleSheet.create({
   container: {
     width: "100%",
     alignSelf: "center",
-    backgroundColor: "#fff",
+    backgroundColor: COLORS.surface,
     padding: 20,
     marginTop: 24,
     marginBottom: 24,
@@ -163,19 +164,19 @@ const styles = StyleSheet.create({
     width: 96,
     height: 96,
     borderRadius: 48,
-    backgroundColor: "#f3f4f6",
+    backgroundColor: COLORS.background,
   },
   avatarPlaceholder: {
     width: 96,
     height: 96,
     borderRadius: 48,
-    backgroundColor: "#f3f4f6",
+    backgroundColor: COLORS.background,
     alignItems: "center",
     justifyContent: "center",
   },
   avatarPlaceholderText: {
     fontSize: 40,
-    color: "#bbb",
+    color: COLORS.textSecondary,
     fontWeight: "bold",
   },
   uploadBtn: {
@@ -186,7 +187,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     flex: 1,
     width: "80%",
-    borderColor: "#007AFF",
+    borderColor: COLORS.primary,
     borderRadius: 8,
     paddingVertical: 10,
     paddingHorizontal: 16,
@@ -194,14 +195,15 @@ const styles = StyleSheet.create({
   uploadBtnText: {
     fontWeight: "500",
     fontSize: 15,
+    color: COLORS.white,
   },
   input: {
-    backgroundColor: "#f3f4f6",
+    backgroundColor: COLORS.background,
     borderRadius: 8,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 16,
-    color: "#222",
+    color: COLORS.white,
     marginBottom: 14,
   },
   textArea: {
@@ -209,14 +211,14 @@ const styles = StyleSheet.create({
     textAlignVertical: "top",
   },
   submitBtn: {
-    backgroundColor: "#2563eb",
+    backgroundColor: COLORS.primary,
     borderRadius: 8,
     paddingVertical: 14,
     alignItems: "center",
     marginTop: 8,
   },
   submitBtnText: {
-    color: "#fff",
+    color: COLORS.black,
     fontWeight: "600",
     fontSize: 16,
   },

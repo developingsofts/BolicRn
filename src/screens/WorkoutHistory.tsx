@@ -23,13 +23,11 @@ const WorkoutHistory: React.FC = ({ navigation }: any) => {
 
   console.log('WorkoutHistory - Full response:', JSON.stringify(workoutHistoryData, null, 2));
 
-  // Format duration from seconds to minutes
   const formatDuration = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
     return `${minutes} mins`;
   };
 
-  // Format completed date
   const formatCompletedDate = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -43,7 +41,6 @@ const WorkoutHistory: React.FC = ({ navigation }: any) => {
     return date.toLocaleDateString();
   };
 
-  // Get workout category and intensity from workout data
   const getWorkoutCategory = (workout: any) => {
     return workout?.type || 'General';
   };
@@ -52,11 +49,10 @@ const WorkoutHistory: React.FC = ({ navigation }: any) => {
     return workout?.difficulty || 'Medium';
   };
 
-  // Transform API data to match UI structure
   const apiData = workoutHistoryData as any;
   const sessions = apiData?.data?.sessions || [];
   const workouts: WorkoutItem[] = sessions
-    .filter((session: any) => session.status === 'completed') // Only show completed workouts
+    .filter((session: any) => session.status === 'completed')
     .map((session: any) => ({
       id: session.id.toString(),
       title: session.workout?.title || 'Unknown Workout',
@@ -73,13 +69,11 @@ const WorkoutHistory: React.FC = ({ navigation }: any) => {
   };
 
   const handlePostIt = (workoutId: string) => {
-    // TODO: Implement post workout logic
     console.log(`Post workout ${workoutId}`);
   };
 
   return (
     <SafeAreaView edges={[]} style={styles.container}>
-      {/* Header */}
       <BasicTopBar
         onBackPress={() => navigation.goBack()}
         title="Workout History"
@@ -87,21 +81,17 @@ const WorkoutHistory: React.FC = ({ navigation }: any) => {
         containerStyle={{ paddingTop: DIMENSIONS.spacing.xxl, paddingBottom: DIMENSIONS.spacing.lg }}
       />
 
-      {/* Content */}
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        {/* Start New Workout Button */}
         <TouchableOpacity style={styles.startButton} onPress={handleStartWorkout}>
           <Text style={styles.startButtonText}>Start New Workout</Text>
         </TouchableOpacity>
 
-        {/* Loading State */}
         {isLoading && (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={COLORS.primary} />
           </View>
         )}
 
-        {/* Error State */}
         {error && (
           <View style={styles.errorContainer}>
             <Text style={styles.errorText}>Failed to load workout history</Text>
@@ -111,7 +101,6 @@ const WorkoutHistory: React.FC = ({ navigation }: any) => {
           </View>
         )}
 
-        {/* Workouts List */}
         {!isLoading && !error && workouts.length > 0 && (
           <View style={styles.workoutList}>
             {workouts.map((workout) => (
@@ -120,7 +109,7 @@ const WorkoutHistory: React.FC = ({ navigation }: any) => {
                   <View style={{ flex: 1 }}>
                     <Text style={styles.title}>{workout.title}</Text>
                     <View style={styles.metaRow}>
-                      <View style={[styles.badge, { backgroundColor: workout.categoryColor }]}> 
+                      <View style={[styles.badge, { backgroundColor: workout.categoryColor }]}>
                         <Text
                           style={[
                             styles.badgeText,
@@ -144,7 +133,6 @@ const WorkoutHistory: React.FC = ({ navigation }: any) => {
           </View>
         )}
 
-        {/* Empty State */}
         {!isLoading && !error && workouts.length === 0 && (
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>No workout history yet</Text>
@@ -167,11 +155,6 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 24,
     overflow: 'hidden',
   },
-  header: {
-    paddingTop: DIMENSIONS.spacing.xxl,
-    paddingBottom: DIMENSIONS.spacing.lg,
-    backgroundColor: COLORS.primary,
-  },
   scrollView: {
     flex: 1,
     backgroundColor: COLORS.background,
@@ -182,7 +165,7 @@ const styles = StyleSheet.create({
   },
   startButton: {
     width: '100%',
-    backgroundColor: '#0D8AFF',
+    backgroundColor: COLORS.primary,
     paddingVertical: 15,
     borderRadius: 4,
     alignItems: 'center',
@@ -195,7 +178,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   startButtonText: {
-    color: COLORS.white,
+    color: COLORS.black,
     fontFamily: FontWeight.Medium,
     fontSize: 14,
     letterSpacing: 0.2,
@@ -259,8 +242,8 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#00000033',
-    backgroundColor: COLORS.white,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.surface,
     shadowColor: COLORS.black,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
@@ -299,7 +282,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   retryButtonText: {
-    color: COLORS.white,
+    color: COLORS.black,
     fontSize: 14,
     fontFamily: FontWeight.Medium,
   },

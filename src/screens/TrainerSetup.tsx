@@ -24,29 +24,24 @@ const TrainerSetup: React.FC = ({ navigation }: any) => {
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const [updateMyProfile] = useUpdateMyProfileMutation();
 
-  // Sync step with backend value on mount
   useEffect(() => {
     if (user?.trainerOnboardingStep && user.trainerOnboardingStep > 0 && user.trainerOnboardingStep <= 2) {
       setStep(user.trainerOnboardingStep);
     }
   }, [user?.trainerOnboardingStep]);
 
-  // Handlers for step navigation
   const handleNext = async () => {
     const nextStep = step + 1;
     setStep(nextStep);
-    // Persist current step as progress
     if (user?.trainerOnboardingStep !== nextStep) {
       await updateMyProfile({ trainerOnboardingStep: nextStep });
     }
   };
   const handleSaveDraft = async () => {
-    // Save current step as draft (step 2, but not confirmed)
     await updateMyProfile({ trainerOnboardingStep: 2 });
     alert("Draft saved. Your availability has been saved as draft.");
   };
   const handleConfirm = async () => {
-    // Mark onboarding as complete (step 0 or 3 = complete)
     await updateMyProfile({ trainerOnboardingStep: 3 });
     navigation.navigate("Main", { screen: "Profile" });
   };
@@ -63,7 +58,6 @@ const TrainerSetup: React.FC = ({ navigation }: any) => {
       hideSubscription.remove();
     };
   }, []);
-
 
   const handleBack = () => {
     if (step > 1) {
@@ -89,7 +83,6 @@ const TrainerSetup: React.FC = ({ navigation }: any) => {
           }}
         />
 
-        {/* Progress Indicator */}
         <View style={styles.progressSection}>
           <Text style={styles.progressStep}>Step {step} of 2</Text>
           <View style={styles.progressBarBg}>
@@ -102,7 +95,6 @@ const TrainerSetup: React.FC = ({ navigation }: any) => {
           </View>
         </View>
 
-        {/* Step Content */}
         {step === 1 ? (
           <TrainerSetupStep1 onNext={handleNext} />
         ) : (
@@ -152,7 +144,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   progressSection: {
-    backgroundColor: "#F5F5F5",
+    backgroundColor: COLORS.surface,
     paddingHorizontal: 16,
     paddingVertical: 18,
   },

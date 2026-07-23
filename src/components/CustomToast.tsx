@@ -31,7 +31,6 @@ const CustomToast: React.FC<CustomToastProps> = ({
   const opacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Slide down from top animation
     Animated.parallel([
       Animated.spring(translateY, {
         toValue: 0,
@@ -46,7 +45,6 @@ const CustomToast: React.FC<CustomToastProps> = ({
       }),
     ]).start();
 
-    // Auto hide after duration
     const timer = setTimeout(() => {
       hideToast();
     }, duration);
@@ -141,7 +139,7 @@ const CustomToast: React.FC<CustomToastProps> = ({
 const styles = StyleSheet.create({
   container: {
     position: "absolute",
-    top: 60, // Position at top of screen below status bar
+    top: 60,
     left: DIMENSIONS.spacing.md,
     right: DIMENSIONS.spacing.md,
     borderRadius: 12,

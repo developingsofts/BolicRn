@@ -32,7 +32,6 @@ const Achievements: React.FC = ({ navigation, route }: any) => {
     });
   };
 
-  // Pull to refresh state and handler
   const [refreshing, setRefreshing] = React.useState(false);
   const onRefresh = async () => {
     setRefreshing(true);
@@ -49,7 +48,6 @@ const Achievements: React.FC = ({ navigation, route }: any) => {
     { skip: !isAuthenticated }
   );
 
-  // Memoize achievements from API
   const achievements = React.useMemo(() => {
     if (!achievementsData?.status) return [];
     const items = (achievementsData.data as any[]) ?? [];
@@ -125,7 +123,9 @@ const Achievements: React.FC = ({ navigation, route }: any) => {
         </TouchableOpacity>
         {achievementsLoading ? (
           <View style={{ padding: 20, alignItems: "center" }}>
-            <Text>Loading achievements...</Text>
+            <Text style={{ color: COLORS.textSecondary }}>
+              Loading achievements...
+            </Text>
           </View>
         ) : achievementsError ? (
           <View style={{ padding: 20, alignItems: "center" }}>
@@ -135,7 +135,9 @@ const Achievements: React.FC = ({ navigation, route }: any) => {
           </View>
         ) : achievements.length === 0 ? (
           <View style={{ padding: 20, alignItems: "center" }}>
-            <Text>No achievements yet.</Text>
+            <Text style={{ color: COLORS.textSecondary }}>
+              No achievements yet.
+            </Text>
           </View>
         ) : (
           <View style={styles.achievementsGrid}>
@@ -144,7 +146,6 @@ const Achievements: React.FC = ({ navigation, route }: any) => {
 
               return (
                 <View key={achievement.id} style={styles.achievementCard}>
-                  {/* First row: two icons with gap */}
                   <View style={styles.iconRow}>
                     <Text style={styles.achievementIcon}>
                       {achievement.icon}
@@ -152,15 +153,12 @@ const Achievements: React.FC = ({ navigation, route }: any) => {
                     <View style={{ width: 16 }} />
                     <Text style={styles.achievementIcon}>🏅</Text>
                   </View>
-                  {/* Second row: name/title */}
                   <Text style={styles.achievementTitle}>
                     {achievement.title}
                   </Text>
-                  {/* Third row: description */}
                   <Text style={styles.achievementDescription}>
                     {achievement.description}
                   </Text>
-                  {/* Fourth row: progress bar */}
                   <View style={styles.progressContainer}>
                     <View style={styles.progressBar}>
                       <View
@@ -214,7 +212,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   bookButtonText: {
-    color: COLORS.white,
+    color: COLORS.black,
     fontFamily: FontWeight.Medium,
     fontSize: 14,
     letterSpacing: 0.2,
@@ -267,7 +265,7 @@ const styles = StyleSheet.create({
   progressBar: {
     width: "100%",
     height: 6,
-    backgroundColor: "#E5E7EB",
+    backgroundColor: COLORS.border,
     borderRadius: 3,
     marginBottom: DIMENSIONS.spacing.xs,
     overflow: "hidden",

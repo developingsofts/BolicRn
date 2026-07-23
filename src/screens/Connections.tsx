@@ -26,7 +26,6 @@ const Connections: React.FC = ({ navigation, route }: any) => {
     });
   };
 
-  // Pagination state
   const [page, setPage] = useState(1);
   const [allFollowing, setAllFollowing] = useState<any[]>([]);
   const [hasMore, setHasMore] = useState(true);
@@ -47,40 +46,34 @@ const Connections: React.FC = ({ navigation, route }: any) => {
     { skip: !isAuthenticated },
   );
 
-  // Append new users to allFollowing on data change
   useEffect(() => {
     if (connectionsData?.status) {
-      // API returns users under data.users
       const items = (connectionsData.data?.users as any[]) ?? [];
       if (page === 1) {
         setAllFollowing(items);
       } else {
         setAllFollowing((prev) => {
-          // Avoid duplicates
           const existingIds = new Set(prev.map((u) => u.id || u._id));
           const newItems = items.filter((u) => !existingIds.has(u.id || u._id));
           return [...prev, ...newItems];
         });
       }
-      setHasMore(items.length === 20); // If less than limit, no more pages
+      setHasMore(items.length === 20);
     }
   }, [connectionsData, page]);
 
-  // Stop refreshing when fetch completes
   useEffect(() => {
     if (refreshing && !connectionsFetching) {
       setRefreshing(false);
     }
   }, [connectionsFetching, refreshing]);
 
-  // Pull-to-refresh handler
   const handleRefresh = async () => {
     setRefreshing(true);
     setPage(1);
     await refetchConnections();
   };
 
-  // Memoize following users for rendering
   const following = React.useMemo(() => {
     if (!Array.isArray(allFollowing)) return [];
     return allFollowing.map((user: any) => ({
@@ -135,10 +128,11 @@ const Connections: React.FC = ({ navigation, route }: any) => {
             <Text style={styles.addButtonText}>Add New</Text>
           </TouchableOpacity>
         )}
-        {/* Achievements-style grid/list with loading, error, empty states */}
         {connectionsLoading && page === 1 ? (
           <View style={{ padding: 20, alignItems: "center" }}>
-            <Text>Loading connections...</Text>
+            <Text style={{ color: COLORS.textSecondary }}>
+              Loading connections...
+            </Text>
           </View>
         ) : connectionsError ? (
           <View style={{ padding: 20, alignItems: "center" }}>
@@ -148,7 +142,9 @@ const Connections: React.FC = ({ navigation, route }: any) => {
           </View>
         ) : following.length === 0 ? (
           <View style={{ padding: 20, alignItems: "center" }}>
-            <Text>No connections yet.</Text>
+            <Text style={{ color: COLORS.textSecondary }}>
+              No connections yet.
+            </Text>
           </View>
         ) : (
           <>
@@ -188,7 +184,7 @@ const Connections: React.FC = ({ navigation, route }: any) => {
                 onPress={handleLoadMore}
                 disabled={connectionsFetching}
               >
-                <Text style={{ color: COLORS.white, fontWeight: "600" }}>
+                <Text style={{ color: COLORS.black, fontWeight: "600" }}>
                   {connectionsFetching ? "Loading..." : "Load More"}
                 </Text>
               </TouchableOpacity>
@@ -228,7 +224,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   addButtonText: {
-    color: COLORS.white,
+    color: COLORS.black,
     fontFamily: FontWeight.Medium,
     fontSize: 14,
     letterSpacing: 0.2,
@@ -284,8 +280,8 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#00000033",
-    backgroundColor: COLORS.white,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.surface,
     alignSelf: "flex-start",
     shadowColor: COLORS.black,
     shadowOffset: { width: 0, height: 1 },

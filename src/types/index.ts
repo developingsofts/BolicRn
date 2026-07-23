@@ -1,4 +1,3 @@
-// User Types
 export interface User {
   id: string;
   weeklyActivity?: {
@@ -121,19 +120,18 @@ export interface UserStats {
   };
 }
 
-// Workout Types
 export interface Workout {
   id: string;
   title: string;
   description: string;
   type: string;
   difficulty: "Easy" | "Medium" | "Hard";
-  totalDuration: number; // in seconds
+  totalDuration: number;
   totalCalories: number;
   exerciseCount: number;
-  targetMuscleGroups: string[]; // JSON parsed
-  equipmentRequired: string[]; // JSON parsed
-  workoutExercises?: WorkoutExercise[]; // Include related exercises
+  targetMuscleGroups: string[];
+  equipmentRequired: string[];
+  workoutExercises?: WorkoutExercise[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -144,11 +142,11 @@ export interface Exercise {
   description: string;
   type: string;
   difficulty: "Easy" | "Medium" | "Hard";
-  duration: number; // in seconds
+  duration: number;
   calories: number;
-  muscleGroups: string[]; // JSON parsed
-  equipment: string[]; // JSON parsed
-  instructions: string[]; // JSON parsed
+  muscleGroups: string[];
+  equipment: string[];
+  instructions: string[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -160,9 +158,9 @@ export interface WorkoutExercise {
   order: number;
   sets: number;
   reps?: number;
-  duration?: number; // for time-based exercises
-  restTime: number; // in seconds
-  exercise?: Exercise; // populated when needed
+  duration?: number;
+  restTime: number;
+  exercise?: Exercise;
 }
 
 export interface UserWorkout {
@@ -174,7 +172,7 @@ export interface UserWorkout {
   level: string;
   createdAt: Date;
   updatedAt: Date;
-  workout?: Workout; // populated when needed
+  workout?: Workout;
 }
 
 export interface UserWorkoutSession {
@@ -183,10 +181,10 @@ export interface UserWorkoutSession {
   workoutId: string;
   startedAt: Date;
   completedAt?: Date;
-  totalDuration: number; // in seconds
+  totalDuration: number;
   totalCaloriesBurned: number;
   status: "in_progress" | "completed" | "paused" | "cancelled";
-  workout?: Workout; // populated when needed
+  workout?: Workout;
   progress?: UserExerciseProgress[];
 }
 
@@ -196,7 +194,7 @@ export interface UserExerciseProgress {
   workoutExerciseId: string;
   setNumber: number;
   repsCompleted?: number;
-  durationCompleted?: number; // in seconds
+  durationCompleted?: number;
   caloriesBurned: number;
   completedAt: Date;
   workoutExercise?: WorkoutExercise;
@@ -222,7 +220,6 @@ export interface ProgressGoal {
   }>;
 }
 
-// Social Types
 export interface TrainingPartner {
   id: string;
   userId: string;
@@ -303,9 +300,9 @@ export interface Post {
     timeframe: string;
   };
   likes: number;
-  likeCount?: number; // From backend API
-  commentCount?: number; // From backend API
-  isLikedByUser?: boolean; // From backend API
+  likeCount?: number;
+  commentCount?: number;
+  isLikedByUser?: boolean;
   comments: Array<{
     id: string;
     userId: string;
@@ -333,7 +330,6 @@ export interface Post {
   currentUserReaction?: ReactionType | null;
 }
 
-// Rating Types
 export interface Rating {
   id: string;
   raterId: string;
@@ -362,7 +358,6 @@ export interface UserRating {
   recentRatings: Rating[];
 }
 
-// Achievement Types
 export interface Achievement {
   id: number;
   userId: string;
@@ -383,7 +378,6 @@ export interface Note {
   updatedAt: string;
 }
 
-// Notification Types
 export interface NotificationSettings {
   workoutReminders: boolean;
   streakAlerts: boolean;
@@ -391,12 +385,12 @@ export interface NotificationSettings {
   partnerMessages: boolean;
   achievementAlerts: boolean;
   weeklyProgress: boolean;
-  reminderTime: string; // "HH:MM" format
-  reminderDays: number[]; // [0,1,2,3,4,5,6] for days of week
+  reminderTime: string;
+  reminderDays: number[];
   quietHours: {
     enabled: boolean;
-    start: string; // "HH:MM"
-    end: string; // "HH:MM"
+    start: string;
+    end: string;
   };
 }
 
@@ -428,7 +422,6 @@ export interface Notification {
 
 export * from "./chat";
 
-// Navigation Types
 export type RootStackParamList = {
   Auth: undefined;
   Main: undefined;

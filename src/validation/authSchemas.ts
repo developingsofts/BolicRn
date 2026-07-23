@@ -1,6 +1,5 @@
 import * as Yup from "yup";
 
-// Login validation schema
 export const loginSchema = Yup.object().shape({
   email: Yup.string()
     .email("Please enter a valid email address")
@@ -18,7 +17,6 @@ export const loginSchema = Yup.object().shape({
     .required("Password is required"),
 });
 
-// Sign-up validation schema (validates all fields)
 export const signUpSchema = Yup.object().shape({
   email: Yup.string()
     .email("Please enter a valid email address")

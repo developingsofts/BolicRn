@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   dialog: {
-    backgroundColor: "#F2F2F7",
+    backgroundColor: COLORS.surface,
     borderRadius: 16,
     padding: 24,
     width: "85%",
@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontFamily: FontWeight.SemiBold,
-    color: COLORS.gradient1,
+    color: COLORS.text,
     flex: 1,
   },
   description: {
@@ -113,10 +113,10 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
   },
   confirmBtn: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
   },
   deleteText: {
-    color: COLORS.white,
+    color: COLORS.black,
     fontFamily: FontWeight.Medium,
     fontSize: 14,
   },

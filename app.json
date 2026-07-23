@@ -5,13 +5,13 @@
     "scheme": "bolic",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "icon": "./assets/app_icon.png",
+    "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/app_logo.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#0A0A0A"
     },
     "assetBundlePatterns": ["**/*"],
     "ios": {
@@ -33,8 +33,8 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/app_icon.png",
+        "backgroundColor": "#000000"
       },
       "edgeToEdgeEnabled": true,
       "package": "com.bolicbuddy.app",
