@@ -254,8 +254,6 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation, route }) => {
     }
   };
 
-  // Neutral "Skip Profile" — advance to the next card without recording a
-  // like/dislike on the server.
   const handleSkip = async (item: SwipeableItem) => {
     setSkippedCount((prev) => prev + 1);
     setRemovedIds((prev) => [...prev, item.id]);

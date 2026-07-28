@@ -53,12 +53,9 @@ export type SwipeableItem = TrainingPartner | Trainer;
 
 interface SwipeableCardProps {
   partner: SwipeableItem;
-  /** Called when the user taps Skip (previously a left swipe). */
   onSwipeLeft: (partner: SwipeableItem) => void;
-  /** Called when the user taps Connect (previously a right swipe). */
   onSwipeRight: (partner: SwipeableItem) => void;
   onPress?: (partner: SwipeableItem) => void;
-  /** Neutral "Skip Profile" — advance without recording a like/dislike. */
   onSkip?: (partner: SwipeableItem) => void;
   navigation?: any;
   isFollowing?: boolean;
@@ -82,7 +79,6 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
   const [imageError, setImageError] = useState(false);
   const isTrainer = "specialty" in partner || "hourlyRate" in partner;
 
-  // Enter / dismiss animation
   const translateX = useRef(new Animated.Value(0)).current;
   const opacity = useRef(new Animated.Value(0)).current;
   const isDismissing = useRef(false);
@@ -129,7 +125,6 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
         onPress={() => onPress && onPress(partner)}
         activeOpacity={0.9}
       >
-        {/* Background Image */}
         <View style={styles.imageContainer}>
           {partner.imageUrl && !imageError ? (
             <Image
@@ -146,23 +141,19 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
           )}
         </View>
 
-        {/* Card Info */}
         <View style={styles.cardInfo}>
           <View style={styles.cardInfoContent}>
-            {/* Name and Age */}
             <View style={styles.nameAgeContainer}>
               <Text style={styles.name}>{partner.name || "Unknown"}</Text>
               {partner.age && <Text style={styles.age}>{partner.age}</Text>}
             </View>
 
-            {/* Location */}
             <View style={styles.locationContainer}>
               {partner.location && (
                 <Text style={styles.location}>{partner.location}</Text>
               )}
             </View>
 
-            {/* Training Types */}
             {partner.trainingTypes && partner.trainingTypes.length > 0 && (
               <View style={styles.trainingTypesContainer}>
                 {partner.trainingTypes
@@ -182,9 +173,7 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
               </View>
             )}
 
-            {/* Tags/Badges */}
             <View style={styles.tagsContainer}>
-              {/* Specialty/Type Badge */}
               {(("specialty" in partner && partner.specialty) ||
                 ("type" in partner && partner.type)) && (
                 <View style={styles.tag}>
@@ -198,7 +187,6 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
                 </View>
               )}
 
-              {/* Match/Rate Badge */}
               <View style={[styles.tag, styles.tagAccent]}>
                 <Text style={styles.tagTextAccent}>
                   {"compatibility" in partner &&
@@ -210,7 +198,6 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
                 </Text>
               </View>
 
-              {/* Experience Badge */}
               {partner.experience && (
                 <View style={styles.tag}>
                   <Text style={styles.tagText}>{partner.experience}</Text>
@@ -218,7 +205,6 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
               )}
             </View>
 
-            {/* Secondary actions: View Profile + Follow / Book */}
             <View style={styles.actionRow}>
               <TouchableOpacity
                 style={styles.outlineBtn}
@@ -290,7 +276,6 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
                 </TouchableOpacity>
               )}
             </View>
-            {/* Primary actions: Pass (left) + Connect (right) */}
             <View style={styles.actionRow}>
               <TouchableOpacity
                 style={styles.outlineBtn}
@@ -315,7 +300,6 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
               </TouchableOpacity>
             </View>
 
-            {/* Neutral skip — advance without recording a like/dislike */}
             {onSkip && (
               <TouchableOpacity
                 style={styles.skipProfileBtn}
@@ -464,7 +448,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    
+
     height: r(41, 'height'),
     borderRadius: 12,
     backgroundColor: COLORS.background,
