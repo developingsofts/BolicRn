@@ -66,7 +66,8 @@ npm run prebuild     # regenerate native android/ios dirs (they are gitignored)
 - **Responsive scaling:** `src/designing/responsiveDesigns.ts` exports `r(value, type?)`, `responsive(styleObject)` (auto-scales numeric values by inferring width/height/font/spacing from the property name), `SCALE`, `wp`/`hp`, `isTablet`. Use the `useResponsive(styles)` hook (`src/hooks/responsiveDesignHook.ts`) to memoize. Base design reference is 375×812 (iPhone X). Most screens still use plain `StyleSheet.create`.
 - **Fonts:** Inter, via `useInterFonts()`; reference weights through the **`FontWeight` enum** (default export of `src/hooks/useInterFonts.ts`), e.g. `fontFamily: FontWeight.SemiBold`.
 - **Icons/images:** PNG assets are exported as named `require()`s from `assets/index` and imported as `import { Fire, Settings } from "../../assets"`.
-- **Copy/strings:** `src/config/strings.ts` exports `STRINGS`, organized by screen.
+- **No emoji in UI chrome.** Section titles, buttons, badges, and list rows use plain text plus a PNG icon from `assets/index` (`<Image>` with an explicit `width`/`height` + `tintColor`), never an emoji in a `<Text>`. Decorative emoji were stripped from HomeScreen; when adding UI, reuse an existing asset rather than reintroducing one. **Exception:** post reactions (`src/constants/reactions.ts`) are emoji by design — that's the feature, not decoration.
+- **Copy/strings:** `src/config/strings.ts` exports `STRINGS`, organized by screen. **Gotcha:** screen copy that *looks* hardcoded is often here — e.g. the Home section titles are `STRINGS.HOME.weeklyGoal`/`workoutOfDay`/`quickNotes`, so editing the screen file alone won't change them. Grep `src/config/strings.ts` too.
 - **Toasts:** use the global `Toast` API from `src/components/ToastManager.tsx` (`Toast.success/error/warning/info(...)`), which drives the `<ToastWrapper/>` mounted in `App.tsx`. (Prefer this over the `toastify-react-native` dependency.)
 
 ## Directory map (`src/`)

@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   ScrollView,
   Pressable,
+  ImageSourcePropType,
 } from "react-native";
 import RefreshableScrollView from "../components/RefreshableScrollView";
 import { useAuth } from "../contexts/AuthContext";
@@ -42,7 +43,21 @@ import {
 import { useGetFollowersQuery } from "../services/api/followsApi";
 import type { Note as NoteEntity } from "../types";
 import type { ReactionType } from "../constants/reactions";
-import { Like, CommentRemove, ThreeDots, AppLogo } from "../../assets";
+import {
+  Like,
+  CommentRemove,
+  ThreeDots,
+  AppLogo,
+  Achievement as AchievementIcon,
+  Achievements as AchievementsIcon,
+  Calender,
+  Connections,
+  Edit as EditIcon,
+  Gym,
+  Posts,
+  Trash,
+  Users2,
+} from "../../assets";
 import CommentsModal from "../components/CommentsModal";
 import ConfirmationDialog from "../components/ConfirmationDialog";
 import { r } from "../designing/responsiveDesigns";
@@ -102,7 +117,7 @@ interface WorkoutOfTheDay {
 interface ActivityItem {
   id: string;
   type: "workout" | "achievement" | "post" | "connection";
-  icon: string;
+  icon: ImageSourcePropType;
   title: string;
   details: string;
   timestamp: Date | null;
@@ -551,7 +566,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
       ),
       title: achievement?.title ?? "Achievement unlocked",
       description: achievement?.description ?? "Keep progressing!",
-      icon: achievement?.icon ?? "🏆",
+      icon: achievement?.icon ?? "",
       unlocked: true,
       progress:
         achievement?.progress ??
@@ -652,7 +667,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
           session?.id ?? completionDate?.getTime() ?? Math.random()
         }`,
         type: "workout",
-        icon: "🏋️",
+        icon: Gym,
         title: workoutTitle,
         details,
         timestamp: completionDate,
@@ -673,7 +688,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         activities.push({
           id: `achievement-${achievement.id}`,
           type: "achievement",
-          icon: "🏆",
+          icon: AchievementIcon,
           title: `Achievement unlocked: ${achievement.title}`,
           details: achievement.description,
           timestamp: earnedAt,
@@ -760,7 +775,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
           activities.push({
             id: `post-${relevantPost.id}`,
             type: "post",
-            icon: isWorkoutShare ? "🔥" : "📝",
+            icon: isWorkoutShare ? Gym : Posts,
             title: isWorkoutShare
               ? `Workout shared: ${baseTitle}`
               : `New post: ${baseTitle}`,
@@ -805,7 +820,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             activities.push({
               id: `connection-${follower?.id ?? connectionName}-${index}`,
               type: "connection",
-              icon: "🤝",
+              icon: Connections,
               title: `New connection: ${connectionName}`,
               details: follower?.email
                 ? `You connected with ${connectionName}`
@@ -1044,7 +1059,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             />
           }
           containerStyle={styles.header}
-          title={`Good morning, ${user?.displayName}! 👋`}
+          title={`Good morning, ${user?.displayName}`}
           subtitle="Ready to crush your goals today?"
           titleStyle={styles.greeting}
           subtitleStyle={styles.subtitle}
@@ -1111,7 +1126,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
               {weeklyGoal.completed && (
                 <View style={styles.weeklyGoalCompleted}>
                   <Text style={styles.weeklyGoalCompletedText}>
-                    🎉 Goal Completed!
+                    Goal Completed
                   </Text>
                 </View>
               )}
@@ -1239,7 +1254,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>🔥 Community Highlights</Text>
+              <Text style={styles.sectionTitle}>Community Highlights</Text>
               <TouchableOpacity onPress={() => navigation.navigate("HomeFeed")}>
                 <Text style={styles.viewAllButton}>{STRINGS.HOME.viewAll}</Text>
               </TouchableOpacity>
@@ -1388,7 +1403,11 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
                       {post.workout && (
                         <View style={styles.postWorkoutBadge}>
-                          <Text style={styles.postWorkoutIcon}>💪</Text>
+                          <Image
+                            source={Gym}
+                            style={styles.postWorkoutIcon}
+                            resizeMode="contain"
+                          />
                           <View style={styles.postWorkoutInfo}>
                             <Text style={styles.postWorkoutTitle}>
                               {post.workout.title}
@@ -1403,9 +1422,11 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
                       {post.achievement && (
                         <View style={styles.postAchievementBadge}>
-                          <Text style={styles.postAchievementIcon}>
-                            {post.achievement.icon || "🏆"}
-                          </Text>
+                          <Image
+                            source={AchievementIcon}
+                            style={styles.postAchievementIcon}
+                            resizeMode="contain"
+                          />
                           <View style={styles.postAchievementInfo}>
                             <Text style={styles.postAchievementTitle}>
                               {post.achievement.title}
@@ -1496,7 +1517,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>👥 Suggested Partners</Text>
+              <Text style={styles.sectionTitle}>Suggested Partners</Text>
               <TouchableOpacity onPress={() => navigation.navigate("Find")}>
                 <Text style={styles.viewAllButton}>Find More</Text>
               </TouchableOpacity>
@@ -1597,7 +1618,11 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                 style={styles.quickActionCard}
                 onPress={() => navigation.navigate("Groups")}
               >
-                <Text style={styles.quickActionIcon}>👥</Text>
+                <Image
+                  source={Users2}
+                  style={styles.quickActionIcon}
+                  resizeMode="contain"
+                />
                 <Text style={styles.quickActionTitle}>Find Groups</Text>
                 <Text style={styles.quickActionSubtitle}>
                   Join training communities
@@ -1608,7 +1633,11 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                 style={styles.quickActionCard}
                 onPress={() => navigation.navigate("Find")}
               >
-                <Text style={styles.quickActionIcon}>🤝</Text>
+                <Image
+                  source={Connections}
+                  style={styles.quickActionIcon}
+                  resizeMode="contain"
+                />
                 <Text style={styles.quickActionTitle}>Find Partners</Text>
                 <Text style={styles.quickActionSubtitle}>
                   Connect with fitness buddies
@@ -1619,7 +1648,11 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                 style={styles.quickActionCard}
                 onPress={() => navigation.navigate("CreatePost")}
               >
-                <Text style={styles.quickActionIcon}>📝</Text>
+                <Image
+                  source={Posts}
+                  style={styles.quickActionIcon}
+                  resizeMode="contain"
+                />
                 <Text style={styles.quickActionTitle}>Share Progress</Text>
                 <Text style={styles.quickActionSubtitle}>
                   Post your achievements
@@ -1630,7 +1663,11 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                 style={styles.quickActionCard}
                 onPress={() => navigation.navigate("Profile")}
               >
-                <Text style={styles.quickActionIcon}>📊</Text>
+                <Image
+                  source={AchievementsIcon}
+                  style={styles.quickActionIcon}
+                  resizeMode="contain"
+                />
                 <Text style={styles.quickActionTitle}>View Stats</Text>
                 <Text style={styles.quickActionSubtitle}>
                   Check your progress
@@ -1643,7 +1680,11 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                     style={styles.quickActionCard}
                     onPress={handleBookSession}
                   >
-                    <Text style={styles.quickActionIcon}>🗓️</Text>
+                    <Image
+                      source={Calender}
+                      style={styles.quickActionIcon}
+                      resizeMode="contain"
+                    />
                     <Text style={styles.quickActionTitle}>Schedule Chat</Text>
                     <Text style={styles.quickActionSubtitle}>
                       Plan a session with your coach
@@ -1654,7 +1695,11 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                     style={styles.quickActionCard}
                     onPress={startWorkoutOfTheDay}
                   >
-                    <Text style={styles.quickActionIcon}>💪</Text>
+                    <Image
+                      source={Gym}
+                      style={styles.quickActionIcon}
+                      resizeMode="contain"
+                    />
                     <Text style={styles.quickActionTitle}>Browse Workouts</Text>
                     <Text style={styles.quickActionSubtitle}>
                       Explore new training plans
@@ -1749,7 +1794,11 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                               color={COLORS.primary}
                             />
                           ) : (
-                            <Text style={styles.deleteNoteText}>🗑️</Text>
+                            <Image
+                              source={Trash}
+                              style={styles.deleteNoteIcon}
+                              resizeMode="contain"
+                            />
                           )}
                         </TouchableOpacity>
                       </View>
@@ -1768,7 +1817,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitleWithSideText}>🏆 Achievements</Text>
+            <Text style={styles.sectionTitleWithSideText}>Achievements</Text>
             {achievementsLoading ? (
               <View style={styles.sectionLoader}>
                 <ActivityIndicator size="small" color={COLORS.primary} />
@@ -1798,9 +1847,11 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
                   return (
                     <View key={achievement.id} style={styles.achievementCard}>
-                      <Text style={styles.achievementIcon}>
-                        {achievement.icon}
-                      </Text>
+                      <Image
+                        source={AchievementIcon}
+                        style={styles.achievementIcon}
+                        resizeMode="contain"
+                      />
                       <Text style={styles.achievementTitle}>
                         {achievement.title}
                       </Text>
@@ -1825,7 +1876,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                       </View>
                       {achievement.unlocked && (
                         <View style={styles.unlockedBadge}>
-                          <Text style={styles.unlockedText}>✓ Unlocked</Text>
+                          <Text style={styles.unlockedText}>Unlocked</Text>
                         </View>
                       )}
                     </View>
@@ -1852,7 +1903,11 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
               <View style={styles.activityList}>
                 {recentActivities.map((activity) => (
                   <View key={activity.id} style={styles.activityItem}>
-                    <Text style={styles.activityIcon}>{activity.icon}</Text>
+                    <Image
+                      source={activity.icon}
+                      style={styles.activityIcon}
+                      resizeMode="contain"
+                    />
                     <View style={styles.activityContent}>
                       <Text style={styles.activityTitle}>{activity.title}</Text>
                       <Text style={styles.activityDetails}>
@@ -1875,7 +1930,11 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
               style={styles.createPostButton}
               onPress={() => navigation.navigate("ShareWorkout")}
             >
-              <Text style={styles.createPostIcon}>✏️</Text>
+              <Image
+                source={EditIcon}
+                style={styles.createPostIcon}
+                resizeMode="contain"
+              />
               <Text style={styles.createPostText}>Share your workout</Text>
             </TouchableOpacity>
           </View>
@@ -1951,13 +2010,13 @@ const styles = StyleSheet.create({
     paddingBottom: DIMENSIONS.spacing.md,
   },
   greeting: {
-    fontSize: 16,
+    fontSize: 15,
     fontFamily: FontWeight.Medium,
     color: COLORS.white,
     marginBottom: 5,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: COLORS.white,
   },
   userName: {
@@ -1983,7 +2042,7 @@ const styles = StyleSheet.create({
     resizeMode: "cover",
   },
   profileButtonText: {
-    fontSize: 20,
+    fontSize: 18,
     color: COLORS.text,
   },
   headerLogo: {
@@ -1999,13 +2058,13 @@ const styles = StyleSheet.create({
     paddingTop: 20,
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: 17,
     fontFamily: FontWeight.SemiBold,
     color: COLORS.text,
   },
 
   sectionTitleWithSideText: {
-    fontSize: 20,
+    fontSize: 17,
     fontFamily: FontWeight.SemiBold,
     color: COLORS.text,
     marginBottom: DIMENSIONS.spacing.md,
@@ -2070,7 +2129,7 @@ const styles = StyleSheet.create({
   addNoteButtonText: {
     color: COLORS.black,
     fontFamily: FontWeight.Medium,
-    fontSize: 14,
+    fontSize: 13,
   },
   notesList: {
     padding: DIMENSIONS.spacing.md,
@@ -2088,7 +2147,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: DIMENSIONS.spacing.md,
     paddingBottom: DIMENSIONS.spacing.md,
     color: COLORS._5E5E5E,
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: FontWeight.Medium,
   },
   noteItem: {
@@ -2100,7 +2159,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
   },
   noteText: {
-    fontSize: 14,
+    fontSize: 13,
     color: COLORS.app_black,
     fontFamily: FontWeight.Medium,
   },
@@ -2117,8 +2176,10 @@ const styles = StyleSheet.create({
   deleteNoteButton: {
     padding: 4,
   },
-  deleteNoteText: {
-    fontSize: 16,
+  deleteNoteIcon: {
+    width: 16,
+    height: 16,
+    tintColor: COLORS.error,
   },
   viewAllNotesButton: {
     alignItems: "center",
@@ -2147,18 +2208,20 @@ const styles = StyleSheet.create({
     position: "relative",
   },
   achievementIcon: {
-    fontSize: 32,
+    width: 26,
+    height: 26,
+    tintColor: COLORS.text,
     marginBottom: DIMENSIONS.spacing.sm,
   },
   achievementTitle: {
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: FontWeight.Medium,
     color: COLORS.app_black,
     textAlign: "center",
     marginBottom: DIMENSIONS.spacing.xs,
   },
   achievementDescription: {
-    fontSize: 12,
+    fontSize: 11,
     color: COLORS._5E5E5E,
     textAlign: "center",
     fontFamily: FontWeight.Regular,
@@ -2239,25 +2302,27 @@ const styles = StyleSheet.create({
     borderBottomColor: COLORS.border,
   },
   activityIcon: {
-    fontSize: 24,
+    width: 20,
+    height: 20,
+    tintColor: COLORS.textSecondary,
     marginRight: DIMENSIONS.spacing.md,
   },
   activityContent: {
     flex: 1,
   },
   activityTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontFamily: FontWeight.SemiBold,
     color: COLORS.app_black,
     marginBottom: DIMENSIONS.spacing.xs,
   },
   activityDetails: {
-    fontSize: 12,
+    fontSize: 11,
     color: COLORS._5E5E5E,
     fontFamily: FontWeight.Medium,
   },
   activityTime: {
-    fontSize: 12,
+    fontSize: 11,
     color: COLORS._5E5E5E,
     fontFamily: FontWeight.Medium,
   },
@@ -2270,11 +2335,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   createPostIcon: {
-    fontSize: 20,
+    width: 16,
+    height: 16,
+    tintColor: COLORS.black,
     marginRight: DIMENSIONS.spacing.sm,
   },
   createPostText: {
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: FontWeight.Medium,
     color: COLORS.black,
   },
@@ -2286,7 +2353,7 @@ const styles = StyleSheet.create({
     marginBottom: DIMENSIONS.spacing.md,
   },
   editButton: {
-    fontSize: 14,
+    fontSize: 13,
     color: COLORS.primary,
     fontFamily: FontWeight.Medium,
   },
@@ -2304,7 +2371,7 @@ const styles = StyleSheet.create({
     marginBottom: DIMENSIONS.spacing.md,
   },
   weeklyGoalTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontFamily: FontWeight.Medium,
     color: COLORS.app_black,
     flex: 1,
@@ -2314,7 +2381,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   weeklyGoalProgress: {
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: FontWeight.Medium,
     color: COLORS.primary,
   },
@@ -2340,12 +2407,12 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   weeklyGoalCompletedText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "600",
     color: COLORS.surface,
   },
   workoutDate: {
-    fontSize: 14,
+    fontSize: 13,
     color: COLORS._5E5E5E,
     fontFamily: FontWeight.Medium,
   },
@@ -2360,7 +2427,7 @@ const styles = StyleSheet.create({
     marginBottom: DIMENSIONS.spacing.md,
   },
   workoutOfTheDayTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontFamily: FontWeight.SemiBold,
     color: COLORS.app_black,
     marginBottom: DIMENSIONS.spacing.sm,
@@ -2392,17 +2459,17 @@ const styles = StyleSheet.create({
     textTransform: "capitalize",
   },
   workoutOfTheDayDescription: {
-    fontSize: 14,
+    fontSize: 13,
     color: COLORS._5E5E5E,
     fontFamily: FontWeight.Medium,
-    lineHeight: 20,
+    lineHeight: 19,
     marginBottom: DIMENSIONS.spacing.lg,
   },
   workoutOfTheDayExercises: {
     marginBottom: DIMENSIONS.spacing.lg,
   },
   workoutOfTheDayExercisesTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontFamily: FontWeight.SemiBold,
     color: COLORS.app_black,
   },
@@ -2418,7 +2485,7 @@ const styles = StyleSheet.create({
     paddingVertical: DIMENSIONS.spacing.sm,
   },
   workoutOfTheDayExerciseName: {
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: FontWeight.Medium,
     color: COLORS.app_black,
     flex: 1,
@@ -2447,7 +2514,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   startWorkoutButtonText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "600",
     color: COLORS.surface,
   },
@@ -2459,12 +2526,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   workoutCompletedText: {
-    fontSize: 16,
+    fontSize: 15,
     fontFamily: FontWeight.SemiBold,
     color: COLORS.white,
   },
   viewAllButton: {
-    fontSize: 14,
+    fontSize: 13,
     color: COLORS.primary,
     fontFamily: FontWeight.Medium,
   },
@@ -2524,7 +2591,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
   },
   emptyStateText: {
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: FontWeight.Medium,
     color: COLORS._5E5E5E,
     marginBottom: DIMENSIONS.spacing.md,
@@ -2538,7 +2605,7 @@ const styles = StyleSheet.create({
   },
   emptyStateButtonText: {
     color: COLORS.black,
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: FontWeight.Medium,
   },
   socialPostInitials: {
@@ -2550,7 +2617,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   socialPostName: {
-    fontSize: 16,
+    fontSize: 15,
     fontFamily: FontWeight.SemiBold,
     color: COLORS.app_black,
     marginBottom: 2,
@@ -2595,9 +2662,9 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   socialPostContent: {
-    fontSize: 14,
+    fontSize: 13,
     color: COLORS.text,
-    lineHeight: 20,
+    lineHeight: 19,
     fontFamily: FontWeight.Medium,
     marginBottom: DIMENSIONS.spacing.md,
   },
@@ -2634,7 +2701,7 @@ const styles = StyleSheet.create({
     height: 20,
   },
   socialPostActionText: {
-    fontSize: 14,
+    fontSize: 13,
     color: COLORS.text,
     fontWeight: "600",
   },
@@ -2689,11 +2756,11 @@ const styles = StyleSheet.create({
   },
   friendSuggestionAvatarText: {
     color: COLORS.surface,
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "600",
   },
   friendSuggestionName: {
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: FontWeight.SemiBold,
     color: COLORS.app_black,
     textAlign: "center",
@@ -2736,11 +2803,13 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
   },
   quickActionIcon: {
-    fontSize: 32,
+    width: 26,
+    height: 26,
+    tintColor: COLORS.text,
     marginBottom: DIMENSIONS.spacing.sm,
   },
   quickActionTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontFamily: FontWeight.Medium,
     color: COLORS.app_black,
     marginBottom: DIMENSIONS.spacing.xs,
@@ -2752,11 +2821,11 @@ const styles = StyleSheet.create({
   },
   quickActionToggleText: {
     color: COLORS.primary,
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: FontWeight.Medium,
   },
   quickActionSubtitle: {
-    fontSize: 12,
+    fontSize: 11,
     fontFamily: FontWeight.Regular,
     color: COLORS._5E5E5E,
     textAlign: "center",
@@ -2780,7 +2849,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     borderRadius: 8,
     padding: DIMENSIONS.spacing.sm,
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: FontWeight.Medium,
     color: COLORS.text,
     backgroundColor: COLORS.background,
@@ -2829,14 +2898,16 @@ const styles = StyleSheet.create({
     marginTop: DIMENSIONS.spacing.sm,
   },
   postWorkoutIcon: {
-    fontSize: 20,
+    width: 18,
+    height: 18,
+    tintColor: COLORS.primary,
     marginRight: DIMENSIONS.spacing.sm,
   },
   postWorkoutInfo: {
     flex: 1,
   },
   postWorkoutTitle: {
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: FontWeight.SemiBold,
     color: COLORS.primary,
     marginBottom: 2,
@@ -2855,14 +2926,16 @@ const styles = StyleSheet.create({
     marginTop: DIMENSIONS.spacing.sm,
   },
   postAchievementIcon: {
-    fontSize: 20,
+    width: 18,
+    height: 18,
+    tintColor: COLORS._B9780E,
     marginRight: DIMENSIONS.spacing.sm,
   },
   postAchievementInfo: {
     flex: 1,
   },
   postAchievementTitle: {
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: FontWeight.SemiBold,
     color: COLORS._B9780E,
     marginBottom: 2,
