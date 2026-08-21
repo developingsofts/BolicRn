@@ -16,7 +16,8 @@
     "clean": "rm -rf node_modules && npm install",
     "lint": "npx eslint . --ext .ts,.tsx",
     "type-check": "npx tsc --noEmit",
-    "test": "echo \"No tests specified\" && exit 0"
+    "test": "echo \"No tests specified\" && exit 0",
+    "postinstall": "patch-package"
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",
@@ -71,6 +72,7 @@
     "@babel/core": "^7.25.2",
     "@react-native-community/cli": "^20.0.1",
     "@types/react": "~19.1.10",
+    "patch-package": "^8.0.1",
     "typescript": "~5.9.2"
   },
   "private": true

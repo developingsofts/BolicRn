@@ -54,4 +54,7 @@ temp/
 .yarn
 
 # Claude Code
-.claude/
+.claude/*
+!.claude/settings.json
+!.claude/skills/
+!.claude/hooks/
