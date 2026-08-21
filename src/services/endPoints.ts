@@ -114,9 +114,19 @@ export const API_END_POINTS = {
   },
 
   ratings: {
-    create: "/ratings",
-    userRatings: (userId: string) => `/ratings/user/${userId}`,
-    ratingById: (ratingId: string) => `/ratings/${ratingId}`,
+    create: "/rating/create",
+    userRatings: (userId: string) => `/rating/user/${userId}`,
+  },
+
+  weeklyGoal: {
+    current: "/goal/weekly",
+    save: "/goal/weekly",
+    remove: "/goal/weekly",
+  },
+
+  activity: {
+    feed: (page: number = 1, limit: number = 20) =>
+      `/activity/feed?page=${page}&limit=${limit}`,
   },
 
   notes: {

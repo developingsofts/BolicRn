@@ -20,6 +20,7 @@ import FontWeight from "../../hooks/useInterFonts";
 import { Group } from "../../types";
 import { Location, Gym, Close, Trash, Exit, Add } from "../../../assets";
 import BasicTopBar from "../../components/BasicTopBar";
+import RefreshableScrollView from "../../components/RefreshableScrollView";
 import {
   useCreateGroupMutation,
   useUpdateGroupMutation,
@@ -87,6 +88,17 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
   const group = route?.params?.group || propGroup;
   const isCreator =
     user?.id && group?.creatorId && Number(user.id) === Number(group.creatorId);
+
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([refetchMembers(), refetchJoinRequests()]);
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const [groupName, setGroupName] = useState(
     isEditing && group ? group.name : ""
@@ -455,10 +467,12 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
 
   return (
     <SafeAreaView edges={["left", "right"]} style={styles.container}>
-      <ScrollView
+      <RefreshableScrollView
         style={styles.content}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: r(100) }}
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
       >
         <BasicTopBar
           showBackButton={false}
@@ -879,7 +893,7 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
             </TouchableOpacity>
           )}
         </View>
-      </ScrollView>
+      </RefreshableScrollView>
       <ConfirmDialog
         visible={removeDialogVisible}
         onClose={cancelRemoveMember}

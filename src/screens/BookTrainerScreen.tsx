@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS, DIMENSIONS } from "../config/constants";
+import { REFRESH_INDICATOR_PROPS } from "../components/RefreshableScrollView";
 import { LeftArrow } from "../../assets";
 import FontWeight from "../hooks/useInterFonts";
 import BasicTopBar from "../components/BasicTopBar";
@@ -198,9 +199,9 @@ const BookTrainerScreen: React.FC<BookTrainerScreenProps> = ({
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor={COLORS.primary}
             title="Pull to refresh"
             titleColor={COLORS.textSecondary}
+            {...REFRESH_INDICATOR_PROPS}
           />
         }
       >

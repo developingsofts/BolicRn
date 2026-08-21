@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import BasicTopBar from "../components/BasicTopBar";
 import CancellationConfirmationModal from "../components/CancellationConfirmationModal";
+import { REFRESH_INDICATOR_PROPS } from "../components/RefreshableScrollView";
 import {
   COLORS,
   DIMENSIONS,
@@ -133,8 +134,7 @@ const ScheduledSessions: React.FC = ({ navigation }: any) => {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
-            colors={[COLORS.primary]}
-            tintColor={COLORS.primary}
+            {...REFRESH_INDICATOR_PROPS}
           />
         }
       >

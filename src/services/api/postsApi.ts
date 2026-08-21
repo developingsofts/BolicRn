@@ -89,7 +89,8 @@ export const postsApi = baseApi.injectEndpoints({
         if (payload.achievementId) formData.append('achievementId', payload.achievementId.toString());
         formData.append('type', payload.type || 'normal');
         if (payload.workoutId) formData.append('workoutId', payload.workoutId);
-        if(payload.shareToCommunity) formData.append('shareToCommunity', payload.shareToCommunity);
+        if (payload.shareToCommunity)
+          formData.append('shareToCommunity', String(payload.shareToCommunity));
 
         if (payload.mediaFile) {
           const mediaFile = payload.mediaFile as any;

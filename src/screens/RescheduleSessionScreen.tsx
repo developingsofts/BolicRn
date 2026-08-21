@@ -1,5 +1,5 @@
-import React, { useEffect } from "react";
-import { View, StyleSheet } from "react-native";
+import React from "react";
+import { StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import BasicTopBar from "../components/BasicTopBar";
 import DateTimeSelector from "../components/DateTimeSelector";
@@ -11,41 +11,54 @@ import {
 } from "../config/constants";
 import {
   BookingData,
+  useGetUserBookingsQuery,
   useUpdateBookingMutation,
 } from "../services/api/bookingApi";
 import { Toast } from "../components/ToastManager";
 
-interface DaySlots {
-  date: string;
-  displayDate: string;
-  day: string;
-  slots: string[];
-}
+const BOOKINGS_FETCH_LIMIT = 100;
 
 const RescheduleSessionScreen = ({ navigation, route }: any) => {
-  const customDaySlots: DaySlots[] = [
-    {
-      date: "2025-10-14",
-      displayDate: "14",
-      day: "Sun",
-      slots: ["9:00 AM", "2:00 PM", "7:00 PM"],
-    },
-    {
-      date: "2025-10-15",
-      displayDate: "15",
-      day: "Mon",
-      slots: ["9:00 AM", "2:00 PM", "7:00 PM"],
-    },
-    {
-      date: "2025-10-16",
-      displayDate: "16",
-      day: "Tue",
-      slots: ["9:00 AM", "2:00 PM", "7:00 PM"],
-    },
-  ];
+  const currentBooking: BookingData | undefined = route.params?.booking;
 
-  const currentBooking = route.params?.booking;
-  const [updateBooking, { isLoading: isUpdating }] = useUpdateBookingMutation();
+  const trainerId = currentBooking?.trainer?.id
+    ? String(currentBooking.trainer.id)
+    : undefined;
+  const [updateBooking] = useUpdateBookingMutation();
+
+  const clientId = currentBooking?.user?.id;
+  const { data: userBookingsData } = useGetUserBookingsQuery(
+    {
+      user_id: clientId ?? "",
+      status: "upcomming",
+      page: 1,
+      limit: BOOKINGS_FETCH_LIMIT,
+    },
+    { skip: !clientId },
+  );
+
+  const sessionCount = React.useMemo(() => {
+    const rows =
+      userBookingsData && userBookingsData.status === true
+        ? userBookingsData.data?.bookings ?? []
+        : [];
+
+    const matching = rows.filter(
+      (b) =>
+        b?.price?.id === currentBooking?.price?.id &&
+        b?.trainer?.id === currentBooking?.trainer?.id,
+    ).length;
+
+    return Math.max(matching, 1);
+  }, [userBookingsData, currentBooking?.price?.id, currentBooking?.trainer?.id]);
+
+  const pricePerSession = currentBooking?.price?.price;
+  const sessionPriceDesc =
+    pricePerSession !== undefined && pricePerSession !== null
+      ? `$${pricePerSession}/hr  x  ${sessionCount} ${
+          sessionCount === 1 ? "hour" : "hours"
+        }`
+      : "";
 
   const handleUpdate = async (booking: BookingData) => {
     try {
@@ -94,7 +107,8 @@ const RescheduleSessionScreen = ({ navigation, route }: any) => {
         navigation={navigation}
         buttonText="Update"
         onUpdateBooking={handleUpdate}
-        customDaySlots={customDaySlots}
+        trainerId={trainerId}
+        sessionPriceDesc={sessionPriceDesc}
         reschedule={true}
         booking={currentBooking}
       />

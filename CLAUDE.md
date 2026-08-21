@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 BolicBuddy ("Bolic") — a fitness social-networking mobile app: partner/trainer matching, workout tracking, groups, real-time chat, trainer booking with Stripe payments. Expo + React Native, TypeScript (strict), React 19, New Architecture enabled.
 
-Large parts of the product are still placeholder. Before assuming a screen works, check `BOLIC-STATIC-AUDIT.md` — it catalogues per-screen status, hardcoded values, and controls that do nothing.
+Large parts of the product are still placeholder — screens can look complete while their controls do nothing and their numbers are hardcoded. Verify a screen actually works before building on it.
 
 ## Commands
 
@@ -71,6 +71,7 @@ npm run prebuild     # regenerate native android/ios dirs (they are gitignored)
 - **Fonts:** Inter, via `useInterFonts()`; reference weights through the **`FontWeight` enum** (default export of `src/hooks/useInterFonts.ts`), e.g. `fontFamily: FontWeight.SemiBold`.
 - **Icons/images:** PNG assets are exported as named `require()`s from `assets/index` and imported as `import { Fire, Settings } from "../../assets"`.
 - **No emoji in UI chrome.** Section titles, buttons, badges, and list rows use plain text plus a PNG icon from `assets/index` (`<Image>` with an explicit `width`/`height` + `tintColor`), never an emoji in a `<Text>`. Decorative emoji were stripped from HomeScreen; when adding UI, reuse an existing asset rather than reintroducing one. **Exception:** post reactions (`src/constants/reactions.ts`) are emoji by design — that's the feature, not decoration.
+- **No calories anywhere in the UI.** The backend still computes and stores per-exercise and per-session calories (and the response types in `src/types/index.ts` still carry the fields), but nothing renders them and `WeeklyGoalType` is `workouts | minutes` only. This is deliberate — the server's estimate assumes 3 seconds per rep, so the numbers are not trustworthy. Don't add a calorie readout back.
 - **Copy/strings:** `src/config/strings.ts` exports `STRINGS`, organized by screen. **Gotcha:** screen copy that *looks* hardcoded is often here — e.g. the Home section titles are `STRINGS.HOME.weeklyGoal`/`workoutOfDay`/`quickNotes`, so editing the screen file alone won't change them. Grep `src/config/strings.ts` too.
 - **Toasts:** use the global `Toast` API from `src/components/ToastManager.tsx` (`Toast.success/error/warning/info(...)`), which drives the `<ToastWrapper/>` mounted in `App.tsx`. (Prefer this over the `toastify-react-native` dependency.)
 

@@ -16,15 +16,19 @@ import {
   RouteProp,
 } from "@react-navigation/native";
 import { COLORS, DIMENSIONS } from "../config/constants";
+import { STRINGS } from "../config/strings";
 import { r } from "../designing/responsiveDesigns";
 import FontWeight from "../hooks/useInterFonts";
 import { PaymentSuccess } from "../../assets";
 
 type BookingSuccessParams = {
   trainerName?: string;
+  packageName?: string;
+  price?: number;
   dateTime?: string;
   location?: string;
   trainerId?: string;
+  slotCount?: number;
 };
 
 const BookingSuccessScreen: React.FC = () => {
@@ -32,11 +36,19 @@ const BookingSuccessScreen: React.FC = () => {
   const route = useRoute<RouteProp<{ params: BookingSuccessParams }, "params">>();
 
   const {
-    trainerName = "Alex",
-    dateTime = "Sunday, Oct 14, 2025 at 9:00 AM",
-    location = "Downtown Fitness Club",
+    trainerName = STRINGS.BOOKING_CONFIRMATION.fallbacks.trainer,
+    packageName,
+    price,
+    dateTime,
+    location,
     trainerId,
+    slotCount = 1,
   } = route.params || {};
+
+  const sessionLabel =
+    packageName && slotCount > 1
+      ? `${packageName} × ${slotCount}`
+      : packageName;
 
   const handleChatWithTrainer = useCallback(() => {
     if (trainerId) {
@@ -76,8 +88,19 @@ const BookingSuccessScreen: React.FC = () => {
         </View>
 
         <View style={styles.detailsCard}>
-          <Text style={styles.dateTimeText}>{dateTime}</Text>
-          <Text style={styles.locationText}>at {location}</Text>
+          {!!sessionLabel && (
+            <Text style={styles.sessionText}>{sessionLabel}</Text>
+          )}
+          {!!dateTime && <Text style={styles.dateTimeText}>{dateTime}</Text>}
+          {!!location && (
+            <Text style={styles.locationText}>at {location}</Text>
+          )}
+          {typeof price === "number" && price > 0 && (
+            <View style={styles.paidRow}>
+              <Text style={styles.paidLabel}>Paid</Text>
+              <Text style={styles.paidValue}>${price.toFixed(2)}</Text>
+            </View>
+          )}
         </View>
 
         <View style={styles.actionsContainer}>
@@ -162,6 +185,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
   },
+  sessionText: {
+    fontSize: r(13),
+    fontFamily: FontWeight.Medium,
+    color: COLORS.textSecondary,
+    textTransform: "uppercase",
+    letterSpacing: 0.6,
+    marginBottom: DIMENSIONS.spacing.xs,
+  },
   dateTimeText: {
     fontSize: r(18),
     fontFamily: FontWeight.SemiBold,
@@ -172,6 +203,25 @@ const styles = StyleSheet.create({
     fontSize: r(14),
     fontFamily: FontWeight.Regular,
     color: COLORS.textSecondary,
+  },
+  paidRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: DIMENSIONS.spacing.md,
+    paddingTop: DIMENSIONS.spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  paidLabel: {
+    fontSize: r(14),
+    fontFamily: FontWeight.Regular,
+    color: COLORS.textSecondary,
+  },
+  paidValue: {
+    fontSize: r(16),
+    fontFamily: FontWeight.SemiBold,
+    color: COLORS.text,
   },
   actionsContainer: {
     width: "100%",

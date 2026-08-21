@@ -55,6 +55,32 @@ interface DateTimeSelectorProps {
   booking?: BookingData;
 }
 
+const parseTimeToMinutes = (timeStr: string): number => {
+  const match = timeStr?.match(/(\d{1,2}):(\d{2})\s?(AM|PM)/i);
+  if (!match) return -1;
+  let hours = parseInt(match[1], 10);
+  const minutes = parseInt(match[2], 10);
+  const ampm = match[3].toUpperCase();
+  if (ampm === "PM" && hours !== 12) hours += 12;
+  if (ampm === "AM" && hours === 12) hours = 0;
+  return hours * 60 + minutes;
+};
+
+const toDateKey = (date: Date): string =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
+    date.getDate(),
+  ).padStart(2, "0")}`;
+
+const BOOKING_LEAD_MINUTES = 30;
+
+const dropPastSlots = (dateKey: string, slots: string[]): string[] => {
+  const now = new Date();
+  if (dateKey !== toDateKey(now)) return slots;
+  const cutoff =
+    now.getHours() * 60 + now.getMinutes() + BOOKING_LEAD_MINUTES;
+  return slots.filter((slot) => parseTimeToMinutes(slot) >= cutoff);
+};
+
 const DateTimeSelector: React.FC<DateTimeSelectorProps> = ({
   navigation,
   onBackPress,
@@ -67,8 +93,8 @@ const DateTimeSelector: React.FC<DateTimeSelectorProps> = ({
   description,
   sessionTitle = "Single Session",
   sessionDescription = "One-on-one personalized training session.",
-  sessionPriceDesc = "$75/hr x 4 hours",
-  sessionPrice = "300",
+  sessionPriceDesc = "",
+  sessionPrice = "",
   buttonText,
   onButtonPress,
   onUpdateBooking,
@@ -77,7 +103,7 @@ const DateTimeSelector: React.FC<DateTimeSelectorProps> = ({
   reschedule = false,
   booking,
 }) => {
-  const today = new Date().toISOString().split("T")[0];
+  const today = toDateKey(new Date());
 
   console.log("Received booking:", booking);
 
@@ -109,7 +135,7 @@ const DateTimeSelector: React.FC<DateTimeSelectorProps> = ({
       const date = new Date(todayDate);
       date.setDate(todayDate.getDate() + i);
 
-      const dateStr = date.toISOString().split("T")[0];
+      const dateStr = toDateKey(date);
       const displayDate = date.getDate().toString().padStart(2, "0");
       const days = [
         "Sunday",
@@ -135,7 +161,7 @@ const DateTimeSelector: React.FC<DateTimeSelectorProps> = ({
         date: dateStr,
         displayDate,
         day,
-        slots: timeSlots,
+        slots: dropPastSlots(dateStr, timeSlots),
       });
     }
 
@@ -165,7 +191,7 @@ const DateTimeSelector: React.FC<DateTimeSelectorProps> = ({
         break;
       }
 
-      const dateStr = date.toISOString().split("T")[0];
+      const dateStr = toDateKey(date);
       const displayDate = date.getDate().toString().padStart(2, "0");
       const dayName = daysOfWeek[date.getDay()];
 
@@ -201,7 +227,7 @@ const DateTimeSelector: React.FC<DateTimeSelectorProps> = ({
         date: dateStr,
         displayDate,
         day: dayName,
-        slots: timeSlots,
+        slots: dropPastSlots(dateStr, timeSlots),
       });
     }
 
@@ -256,10 +282,7 @@ const DateTimeSelector: React.FC<DateTimeSelectorProps> = ({
       defaultTime
     );
   } else {
-    const todaySlot = initialDaySlots.find((slot) => slot.date === today);
-    defaultTime = todaySlot
-      ? todaySlot.slots[0]
-      : initialDaySlots[0]?.slots[0] || "09:00 AM";
+    defaultTime = "";
   }
 
   const [calendarSelectedDate, setCalendarSelectedDate] =
@@ -382,38 +405,29 @@ const DateTimeSelector: React.FC<DateTimeSelectorProps> = ({
   );
 
   useEffect(() => {
-    if (
-      displayedSlots &&
-      displayedSlots.length > 0 &&
-      displayedSlots[0].slots.length > 0
-    ) {
-      if (isInitialMount && !isLoadingAvailability) {
-        if (reschedule && booking && booking.time) {
-          setSelectedDate(defaultDate);
-          setSelectedTime(defaultTime);
-          setSelectedSlots([{ date: defaultDate, time: defaultTime }]);
-          console.log(
-            "[DateTimeSelector] Reschedule mode - Pre-selected:",
-            defaultTime,
-            "on date:",
-            defaultDate
-          );
-        } else {
-          const firstDate = displayedSlots[0].date;
-          const firstSlot = displayedSlots[0].slots[0];
-          console.log(
-            "[DateTimeSelector] Initial mount - Auto-selecting first slot:",
-            firstSlot,
-            "on date:",
-            firstDate
-          );
-          setSelectedDate(firstDate);
-          setSelectedTime(firstSlot);
-          setSelectedSlots([{ date: firstDate, time: firstSlot }]);
-        }
-        setIsInitialMount(false);
-      }
+    if (!isInitialMount || isLoadingAvailability || !displayedSlots?.length) {
+      return;
     }
+
+    if (reschedule && booking && booking.time) {
+      setSelectedDate(defaultDate);
+      setSelectedTime(defaultTime);
+      setSelectedSlots([{ date: defaultDate, time: defaultTime }]);
+      setIsInitialMount(false);
+      return;
+    }
+
+    const firstBookable = displayedSlots.find((day) => day.slots.length > 0);
+    if (!firstBookable) {
+      return;
+    }
+
+    setSelectedDate(firstBookable.date);
+    setSelectedTime(firstBookable.slots[0]);
+    setSelectedSlots([
+      { date: firstBookable.date, time: firstBookable.slots[0] },
+    ]);
+    setIsInitialMount(false);
   }, [isInitialMount, displayedSlots, isLoadingAvailability]);
 
   useEffect(() => {
@@ -581,10 +595,10 @@ const DateTimeSelector: React.FC<DateTimeSelectorProps> = ({
   };
 
   const renderCalendar = () => {
-    const selectedDateObj = new Date(selectedDate);
-    const monthName = selectedDateObj.toLocaleDateString("en-US", {
-      month: "long",
-    });
+    const selectedDateObj = new Date(selectedDate || calendarSelectedDate);
+    const monthName = Number.isNaN(selectedDateObj.getTime())
+      ? new Date().toLocaleDateString("en-US", { month: "long" })
+      : selectedDateObj.toLocaleDateString("en-US", { month: "long" });
 
     return (
       <View style={styles.calendar}>
@@ -642,16 +656,20 @@ const DateTimeSelector: React.FC<DateTimeSelectorProps> = ({
         >
           {displayedSlots.map((daySlot, dayIndex) => {
             const isSelectedDay = selectedDate === daySlot.date;
+            const hasSlots = daySlot.slots.length > 0;
 
             return (
               <View key={dayIndex} style={styles.dayColumn}>
                 <TouchableOpacity
+                  disabled={!hasSlots}
                   onPress={() =>
+                    hasSlots &&
                     handleTimeSlotSelect(daySlot.date, daySlot.slots[0])
                   }
                   style={[
                     styles.dateButton,
                     isSelectedDay && styles.dateButtonSelected,
+                    !hasSlots && styles.dateButtonEmpty,
                   ]}
                 >
                   <Text
@@ -701,6 +719,16 @@ const DateTimeSelector: React.FC<DateTimeSelectorProps> = ({
                     </TouchableOpacity>
                   );
                 })}
+
+                {!hasSlots && (
+                  <View style={styles.noSlots}>
+                    <Text style={styles.noSlotsText}>
+                      {daySlot.date === today
+                        ? "No slots left today"
+                        : "Not available"}
+                    </Text>
+                  </View>
+                )}
               </View>
             );
           })}
@@ -717,20 +745,34 @@ const DateTimeSelector: React.FC<DateTimeSelectorProps> = ({
     >
       {renderCalendar()}
       {renderAvailableSlots()}
-      <View style={styles.sessionCard}>
-        <Text style={styles.sessionTitle}>
-          {reschedule ? booking?.price?.title : sessionTitle}
-        </Text>
-        <Text style={styles.sessionDesc}>
-          {reschedule ? booking?.price?.description : sessionDescription}
-        </Text>
-        <View style={styles.sessionDetailsRow}>
-          <Text style={styles.sessionPriceDesc}>{sessionPriceDesc}</Text>
-          <Text style={styles.sessionPrice}>
-            ${reschedule ? booking?.price?.price : sessionPrice}
-          </Text>
-        </View>
-      </View>
+      {(() => {
+        const cardTitle = reschedule ? booking?.price?.title : sessionTitle;
+        const cardDesc = reschedule
+          ? booking?.price?.description
+          : sessionDescription;
+        const cardPrice = reschedule ? booking?.price?.price : sessionPrice;
+        const hasPrice =
+          cardPrice !== undefined &&
+          cardPrice !== null &&
+          String(cardPrice).trim() !== "";
+
+        return (
+          <View style={styles.sessionCard}>
+            {!!cardTitle && (
+              <Text style={styles.sessionTitle}>{cardTitle}</Text>
+            )}
+            {!!cardDesc && <Text style={styles.sessionDesc}>{cardDesc}</Text>}
+            {(hasPrice || !!sessionPriceDesc) && (
+              <View style={styles.sessionDetailsRow}>
+                <Text style={styles.sessionPriceDesc}>{sessionPriceDesc}</Text>
+                {hasPrice && (
+                  <Text style={styles.sessionPrice}>${cardPrice}</Text>
+                )}
+              </View>
+            )}
+          </View>
+        );
+      })()}
       <TouchableOpacity
         style={[
           styles.continueButton,
@@ -842,6 +884,21 @@ const styles = StyleSheet.create({
   },
   dateDaySelected: {
     color: COLORS.black,
+  },
+  dateButtonEmpty: {
+    opacity: 0.4,
+  },
+  noSlots: {
+    paddingVertical: r(14),
+    paddingHorizontal: r(8),
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  noSlotsText: {
+    fontFamily: FontWeight.Regular,
+    fontSize: r(11, "font"),
+    color: COLORS.textSecondary,
+    textAlign: "center",
   },
   timeSlot: {
     backgroundColor: COLORS.background,

@@ -93,7 +93,9 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation, route }) => {
   const [menuVisible, setMenuVisible] = useState(false);
   const [ratingModalVisible, setRatingModalVisible] = useState(false);
   const [selectedUserForRating, setSelectedUserForRating] = useState<{
+    id: string;
     name: string;
+    imageUrl?: string | null;
     type: "partner" | "trainer";
   } | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -289,7 +291,9 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation, route }) => {
               text: STRINGS.FIND.alerts.rateExperience,
               onPress: () => {
                 setSelectedUserForRating({
+                  id: String(item.id),
                   name: item.name,
+                  imageUrl: item.imageUrl || null,
                   type: activeTab === "partners" ? "partner" : "trainer",
                 });
                 setRatingModalVisible(true);
@@ -336,14 +340,9 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation, route }) => {
     setSkippedCount(0);
   };
 
-  const handleRatingSubmit = (rating: number, comment: string) => {
-    if (selectedUserForRating) {
-      Alert.alert(
-        STRINGS.FIND.alerts.ratingSubmittedTitle,
-        `${STRINGS.FIND.alerts.ratingSubmittedMessage} ${selectedUserForRating.name} ${STRINGS.FIND.alerts.withStars} ${rating} ${STRINGS.FIND.alerts.stars}`,
-        [{ text: STRINGS.COMMON.ok }],
-      );
-    }
+  const closeRatingModal = () => {
+    setRatingModalVisible(false);
+    setSelectedUserForRating(null);
   };
 
   const handleCategorySelect = (category: string) => {
@@ -496,6 +495,17 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation, route }) => {
           )}
         </View>
       </RefreshableScrollView>
+
+      {selectedUserForRating && (
+        <RatingModal
+          visible={ratingModalVisible}
+          onClose={closeRatingModal}
+          rateeId={selectedUserForRating.id}
+          name={selectedUserForRating.name}
+          imageUrl={selectedUserForRating.imageUrl}
+          role={selectedUserForRating.type}
+        />
+      )}
     </SafeAreaView>
   );
 };

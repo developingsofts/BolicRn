@@ -20,6 +20,7 @@ export interface PaymentSheetParamsWithoutSavingPaymentOptions {
 
 export interface PaymentRequest {
   amount: number;
+  priceId: string;
   currency?: string;
   customerId?: string;
   description?: string;
@@ -83,8 +84,8 @@ export const fetchPaymentSheetParams = async (
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
+        price_id: paymentRequest.priceId,
         amount: paymentRequest.amount,
-        sessionId: paymentRequest.metadata?.sessionId || "",
         trainerId: paymentRequest.metadata?.trainerId || "",
         date: paymentRequest.metadata?.date || "",
         time: paymentRequest.metadata?.time || "",
@@ -110,7 +111,11 @@ export const fetchPaymentSheetParams = async (
     );
 
     const paymentIntent = data.data?.clientSecret || data.clientSecret;
-    const customer = data.data?.stripeCustomerId || data.stripeCustomerId;
+    const customer =
+      data.data?.customerId ||
+      data.data?.stripeCustomerId ||
+      data.customerId ||
+      data.stripeCustomerId;
 
     console.log("Extracted payment params:", { paymentIntent, customer });
 

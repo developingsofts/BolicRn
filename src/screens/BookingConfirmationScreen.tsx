@@ -41,15 +41,17 @@ import { r } from "../designing/responsiveDesigns";
 import FontWeight from "../hooks/useInterFonts";
 import { LeftArrow } from "../../assets";
 import { useCreateBookingMutation } from "../services/api/bookingApi";
-import { formatAmountToCents, useStripePayment } from "../utils/stripeUtils";
+import { useGetUserProfileQuery } from "../services/api/userApi";
+import { useAuth } from "../contexts/AuthContext";
+import { useStripePayment } from "../utils/stripeUtils";
 
 type BookingConfirmationParams = {
-  sessionId?: string;
   priceId?: string;
   trainerId?: string;
   trainerName?: string;
   packageName?: string;
   price?: number;
+  description?: string;
   date?: string;
   time?: string;
   trainerAddress?: string;
@@ -65,18 +67,45 @@ const BookingConfirmationScreen: React.FC = () => {
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [createBooking] = useCreateBookingMutation();
   const { initializePaymentSheet, openPaymentSheet } = useStripePayment();
+  const { isAuthenticated } = useAuth();
 
   const {
     priceId = "",
     trainerId,
-    trainerName = "Alex",
-    packageName = "Single Session",
-    price = 75,
-    date = "Sunday, Oct 14, 2025",
-    time = "9:00 AM",
-    trainerAddress = "Downtown Fitness Club",
+    trainerName: passedTrainerName,
+    packageName: passedPackageName,
+    price = 0,
+    description,
+    date = "",
+    time = "",
+    trainerAddress,
     selectedSlots = [],
   } = route.params || {};
+
+  const { data: trainerProfileData } = useGetUserProfileQuery(
+    trainerId || "",
+    { skip: !trainerId || !isAuthenticated },
+  );
+
+  const trainerProfile =
+    trainerProfileData && trainerProfileData.status === true
+      ? (trainerProfileData.data as any)
+      : null;
+
+  const trainerName =
+    trainerProfile?.displayName ||
+    trainerProfile?.userName ||
+    passedTrainerName ||
+    STRINGS.BOOKING_CONFIRMATION.fallbacks.trainer;
+
+  const packageName =
+    passedPackageName || STRINGS.BOOKING_CONFIRMATION.fallbacks.session;
+
+  const location =
+    trainerAddress?.trim() ||
+    trainerProfile?.location ||
+    trainerProfile?.userAddress?.city ||
+    STRINGS.BOOKING_CONFIRMATION.fallbacks.location;
 
   const formatDateTimeDisplay = useMemo(() => {
     console.log("Selected Slots for formatting:", selectedSlots);
@@ -109,18 +138,28 @@ const BookingConfirmationScreen: React.FC = () => {
     }
   }, [selectedSlots, date, time]);
   console.log("Constructing sessionData with:", packageName);
-  const sessionData = useMemo(
-    () => ({
+  const sessionData = useMemo(() => {
+    const slotCount = Math.max(selectedSlots.length, 1);
+    const label =
+      slotCount > 1 ? `${packageName} × ${slotCount}` : packageName;
+
+    return {
       trainer: trainerName,
       dateTime: formatDateTimeDisplay.dateTime,
-      location: trainerAddress,
-      priceItems: [
-        { label: packageName, amount: price },
-      ] as PriceItem[],
-      total: price,
-    }),
-    [trainerName, packageName, price, trainerAddress, formatDateTimeDisplay],
-  );
+      location,
+      description,
+      priceItems: [{ label, amount: price * slotCount }] as PriceItem[],
+      total: price * slotCount,
+    };
+  }, [
+    trainerName,
+    packageName,
+    price,
+    location,
+    description,
+    selectedSlots.length,
+    formatDateTimeDisplay,
+  ]);
 
   const handleBack = useCallback(() => {
     if (navigation.canGoBack()) {
@@ -150,11 +189,15 @@ const BookingConfirmationScreen: React.FC = () => {
           STRINGS.BOOKING_CONFIRMATION.errors.dateConversionError,
         );
       }
+      if (!priceId) {
+        throw new Error(STRINGS.BOOKING_CONFIRMATION.errors.missingPrice);
+      }
+
       const { error: initError } = await initializePaymentSheet({
+        priceId,
         amount: sessionData.total,
         metadata: {
           trainerId: trainerId || "",
-          sessionId: priceId || "",
           date: utcDate,
           time: utcTime,
         },
@@ -175,17 +218,73 @@ const BookingConfirmationScreen: React.FC = () => {
       }
 
       if (success) {
+        const slots =
+          selectedSlots.length > 0
+            ? selectedSlots
+            : [{ date: localDateStr, time: localTimeStr }];
+
+        const results = await Promise.allSettled(
+          slots.map(async (slot) => {
+            const converted = convertLocaDatemmddyyyylToUTC(
+              slot.date,
+              slot.time,
+            );
+            if (!converted.utcDate || !converted.utcTime) {
+              throw new Error(
+                STRINGS.BOOKING_CONFIRMATION.errors.dateConversionError,
+              );
+            }
+
+            const res = await createBooking({
+              trainer_id: trainerId || "",
+              price_id: priceId,
+              date: converted.utcDate,
+              time: converted.utcTime,
+              status: "upcomming",
+            }).unwrap();
+
+            if (!res?.status) {
+              throw new Error(
+                res?.message ||
+                  STRINGS.BOOKING_CONFIRMATION.messages.bookingFailed,
+              );
+            }
+            return res;
+          }),
+        );
+
+        const failed = results.filter((r) => r.status === "rejected");
+        setIsProcessing(false);
+
+        if (failed.length > 0) {
+          console.error(
+            "[BookingConfirmation] Paid but booking creation failed:",
+            failed,
+          );
+          Alert.alert(
+            STRINGS.COMMON.error,
+            failed.length === slots.length
+              ? STRINGS.BOOKING_CONFIRMATION.messages.paidButNotBooked
+              : `${STRINGS.BOOKING_CONFIRMATION.messages.paidPartiallyBooked} (${
+                  slots.length - failed.length
+                }/${slots.length})`,
+          );
+          return;
+        }
+
         Toast.success(
           STRINGS.BOOKING_CONFIRMATION.messages.paymentSuccess,
           2500,
         );
-        setIsProcessing(false);
 
         navigation.navigate("BookingSuccess", {
           trainerId,
           trainerName,
+          packageName,
+          price: sessionData.total,
           dateTime: sessionData.dateTime,
           location: sessionData.location,
+          slotCount: slots.length,
         });
       }
     } catch (error) {
@@ -324,6 +423,18 @@ const BookingConfirmationScreen: React.FC = () => {
             label={STRINGS.BOOKING_CONFIRMATION.infoCards.trainer}
             value={sessionData.trainer}
             icon={<Feather name="user" size={r(18)} color={COLORS.primary} />}
+          />
+
+          <InfoCard
+            label={STRINGS.BOOKING_CONFIRMATION.infoCards.session}
+            value={
+              sessionData.description
+                ? `${packageName}\n${sessionData.description}`
+                : packageName
+            }
+            icon={
+              <Feather name="clipboard" size={r(18)} color={COLORS.primary} />
+            }
           />
 
           <InfoCard

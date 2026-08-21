@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import RefreshableScrollView from "../components/RefreshableScrollView";
 import BasicTopBar from "../components/BasicTopBar";
 import MyBookingCard from "../components/MyBookingCard";
 import {
@@ -37,6 +38,16 @@ const LIMIT_PER_PAGE = 10;
 const MyBookingsScreen = ({ navigation }: any) => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("upcoming");
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await refetch();
+    } finally {
+      setRefreshing(false);
+    }
+  };
   const [pagination, setPagination] = useState<
     Record<string, { page: number; hasMore: boolean }>
   >({
@@ -210,9 +221,11 @@ const MyBookingsScreen = ({ navigation }: any) => {
           ))}
         </View>
       </View>
-      <ScrollView
+      <RefreshableScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
         onMomentumScrollEnd={(event) => {
           const scrollPosition = event.nativeEvent.contentOffset.y;
           const scrollViewHeight = event.nativeEvent.layoutMeasurement.height;
@@ -271,7 +284,7 @@ const MyBookingsScreen = ({ navigation }: any) => {
             <ActivityIndicator size="small" color={COLORS.primary} />
           </View>
         )}
-      </ScrollView>
+      </RefreshableScrollView>
     </SafeAreaView>
   );
 };

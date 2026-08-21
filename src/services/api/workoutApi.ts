@@ -19,6 +19,8 @@ interface CompleteExercisePayload {
   setNumber: number;
   repsCompleted?: number;
   durationCompleted?: number;
+  weightUsed?: number;
+  notes?: string;
 }
 
 interface WorkoutsResponse {
@@ -120,7 +122,7 @@ export const workoutApi = baseApi.injectEndpoints({
         method: 'POST',
         body: { sessionId },
       }),
-      invalidatesTags: ['WorkoutSession'],
+      invalidatesTags: ['WorkoutSession', 'WeeklyGoal', 'Activity', 'User'],
     }),
 
     pauseWorkoutSession: builder.mutation<ApiResponse<UserWorkoutSession>, { sessionId: string }>({

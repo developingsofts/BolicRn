@@ -1,8 +1,9 @@
 
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BasicTopBar from '../components/BasicTopBar';
+import RefreshableScrollView from '../components/RefreshableScrollView';
 import { COLORS, DIMENSIONS } from '../config/constants';
 import FontWeight from '../hooks/useInterFonts';
 import { useGetWorkoutHistoryQuery } from '../services/api/workoutApi';
@@ -20,6 +21,16 @@ interface WorkoutItem {
 
 const WorkoutHistory: React.FC = ({ navigation }: any) => {
   const { data: workoutHistoryData, isLoading, error, refetch } = useGetWorkoutHistoryQuery();
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await refetch();
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   console.log('WorkoutHistory - Full response:', JSON.stringify(workoutHistoryData, null, 2));
 
@@ -81,7 +92,12 @@ const WorkoutHistory: React.FC = ({ navigation }: any) => {
         containerStyle={{ paddingTop: DIMENSIONS.spacing.xxl, paddingBottom: DIMENSIONS.spacing.lg }}
       />
 
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+      <RefreshableScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
+      >
         <TouchableOpacity style={styles.startButton} onPress={handleStartWorkout}>
           <Text style={styles.startButtonText}>Start New Workout</Text>
         </TouchableOpacity>
@@ -139,7 +155,7 @@ const WorkoutHistory: React.FC = ({ navigation }: any) => {
             <Text style={styles.emptySubtext}>Complete your first workout to see it here!</Text>
           </View>
         )}
-      </ScrollView>
+      </RefreshableScrollView>
     </SafeAreaView>
   );
 };

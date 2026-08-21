@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import BasicTopBar from "../components/BasicTopBar";
 import { COLORS, DIMENSIONS } from "../config/constants";
+import { REFRESH_INDICATOR_PROPS } from "../components/RefreshableScrollView";
 import FontWeight from "../hooks/useInterFonts";
 import { useAuth } from "../contexts/AuthContext";
 import { useGetUserConnectionsQuery } from "../services/api/connectionsApi";
@@ -119,7 +120,7 @@ const Connections: React.FC = ({ navigation, route }: any) => {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
-            colors={[COLORS.primary]}
+            {...REFRESH_INDICATOR_PROPS}
           />
         }
       >

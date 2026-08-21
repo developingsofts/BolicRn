@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import BasicTopBar from "../components/BasicTopBar";
 import { COLORS, DIMENSIONS } from "../config/constants";
+import { REFRESH_INDICATOR_PROPS } from "../components/RefreshableScrollView";
 import FontWeight from "../hooks/useInterFonts";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../contexts/AuthContext";
@@ -114,7 +115,7 @@ const Achievements: React.FC = ({ navigation, route }: any) => {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor={COLORS.primary}
+            {...REFRESH_INDICATOR_PROPS}
           />
         }
       >

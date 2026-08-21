@@ -16,7 +16,6 @@ export interface WorkoutSession {
     notes?: string;
     completed: boolean;
   }>;
-  caloriesBurned: number;
   difficulty: 'easy' | 'medium' | 'hard';
   notes: string;
   location?: string;
@@ -61,7 +60,6 @@ export interface UserStats {
   lastWorkoutDate?: Date;
   averageWorkoutDuration: number;
   totalWorkoutTime: number;
-  caloriesBurned: number;
   strengthProgress: {
     bench: number;
     squat: number;
@@ -212,16 +210,13 @@ export const ProgressStats: React.FC<ProgressStatsProps> = ({
       monthAgo.setMonth(monthAgo.getMonth() - 1);
       return session.date >= monthAgo;
     }).length;
-    
-    const totalCalories = workoutSessions.reduce((sum, session) => sum + session.caloriesBurned, 0);
-    
+
     return {
       totalWorkouts,
       totalTime,
       averageDuration,
       thisWeekWorkouts,
       thisMonthWorkouts,
-      totalCalories,
       activeGoals: progressGoals.filter(goal => !goal.completed).length,
       completedGoals: progressGoals.filter(goal => goal.completed).length,
     };
@@ -265,10 +260,6 @@ export const ProgressStats: React.FC<ProgressStatsProps> = ({
             <Text style={styles.statLabel}>This Month</Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statNumber}>{Math.round(stats.totalCalories / 1000)}k</Text>
-            <Text style={styles.statLabel}>Calories Burned</Text>
-          </View>
-          <View style={styles.statCard}>
             <Text style={styles.statNumber}>{Math.round(stats.totalTime / 60)}</Text>
             <Text style={styles.statLabel}>Total Hours</Text>
           </View>
@@ -309,7 +300,6 @@ export const ProgressStats: React.FC<ProgressStatsProps> = ({
             </View>
             <View style={styles.workoutStats}>
               <Text style={styles.workoutDuration}>{session.duration} min</Text>
-              <Text style={styles.workoutCalories}>{session.caloriesBurned} cal</Text>
             </View>
           </View>
         ))}
@@ -503,10 +493,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     color: COLORS.text,
-  },
-  workoutCalories: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-    marginTop: 2,
   },
 }); 

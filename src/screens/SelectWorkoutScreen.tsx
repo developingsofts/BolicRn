@@ -1,10 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  ScrollView,
   Dimensions,
   Image,
   ActivityIndicator,
@@ -12,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, DIMENSIONS } from '../config/constants';
 import BasicTopBar from '../components/BasicTopBar';
+import RefreshableScrollView from '../components/RefreshableScrollView';
 import FontWeight from '../hooks/useInterFonts';
 import { WeightLifting, StrengthTraining, Cardio, BuddhistGym, Gym1, Man } from '../../assets';
 import { useGetWorkoutsQuery } from '../services/api/workoutApi';
@@ -29,7 +29,18 @@ interface SelectWorkoutScreenProps {
 
 const SelectWorkoutScreen: React.FC<SelectWorkoutScreenProps> = ({ navigation }) => {
   const { isAuthenticated } = useAuth();
-  const { data: workoutsResponse, isLoading, error } = useGetWorkoutsQuery(undefined, { skip: !isAuthenticated });
+  const { data: workoutsResponse, isLoading, error, refetch } =
+    useGetWorkoutsQuery(undefined, { skip: !isAuthenticated });
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await refetch();
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   console.log('Workouts query state:', { isLoading, error, data: workoutsResponse });
 
@@ -108,10 +119,12 @@ const SelectWorkoutScreen: React.FC<SelectWorkoutScreenProps> = ({ navigation })
         containerStyle={{ paddingTop: DIMENSIONS.spacing.xxl, paddingBottom: DIMENSIONS.spacing.lg }}
       />
 
-      <ScrollView
+      <RefreshableScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
       >
         <View style={styles.grid}>
           {workouts.map((workout) => (
@@ -133,7 +146,7 @@ const SelectWorkoutScreen: React.FC<SelectWorkoutScreenProps> = ({ navigation })
             </TouchableOpacity>
           ))}
         </View>
-      </ScrollView>
+      </RefreshableScrollView>
     </SafeAreaView>
   );
 };

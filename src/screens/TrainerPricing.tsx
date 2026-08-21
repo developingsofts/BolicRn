@@ -17,6 +17,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import BasicTopBar from "../components/BasicTopBar";
 import { COLORS, DIMENSIONS } from "../config/constants";
+import { REFRESH_INDICATOR_PROPS } from "../components/RefreshableScrollView";
 import { Ionicons } from "@expo/vector-icons";
 import ConfirmDialog from "../components/ConfirmDialog";
 import TrainerSetupStep1 from "../components/TrainerSetupStep1";
@@ -172,7 +173,7 @@ const TrainerPricing: React.FC<{ navigation: any }> = ({ navigation }) => {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor={COLORS.primary}
+            {...REFRESH_INDICATOR_PROPS}
           />
         }
       >

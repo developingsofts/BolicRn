@@ -39,6 +39,7 @@ import TrainerPricing from "../screens/TrainerPricing";
 
 import LoadingScreen from "../components/LoadingScreen";
 import ForgotPassword from "../screens/ForgotPassword";
+import CreateWeeklyGoal from "../screens/CreateWeeklyGoal";
 import GroupsScreen from "../screens/group/GroupsScreen";
 import GroupDetails from "../screens/group/GroupDetails";
 import ManageGroup from "../screens/group/ManageGroup";
@@ -214,6 +215,7 @@ console.log("API URL:", API_CONFIG.baseUrl,isAuthenticated);
           <Stack.Screen name="ShareWorkout" component={ShareWorkoutScreen} />
           <Stack.Screen name="Achievements" component={Achievements} />
           <Stack.Screen name="MyRatings" component={MyRatings} />
+          <Stack.Screen name="CreateWeeklyGoal" component={CreateWeeklyGoal} />
           <Stack.Screen name="ScheduledSessions" component={ScheduledSessions} />
           <Stack.Screen name="BookTrainer" component={BookTrainerScreen} />
           <Stack.Screen name="SelectDateTime" component={SelectDateTimeScreen} />

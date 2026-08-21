@@ -5,7 +5,7 @@ import { r } from "../designing/responsiveDesigns";
 
 interface RatingStarsProps {
   rating: number;
-  size?: "small" | "medium" | "large";
+  size?: "small" | "medium" | "large" | "xlarge";
   onRatingChange?: (rating: number) => void;
   readonly?: boolean;
   showRating?: boolean;
@@ -26,13 +26,15 @@ const RatingStars: React.FC<RatingStarsProps> = ({
         return 16;
       case "large":
         return 24;
+      case "xlarge":
+        return 38;
       default:
         return 20;
     }
   };
 
   const getStarColor = (starNumber: number) => {
-    return starNumber <= rating ? "#FFD700" : COLORS.border;
+    return starNumber <= rating ? COLORS.primary : COLORS.border;
   };
 
   const handleStarPress = (starNumber: number) => {
@@ -73,7 +75,16 @@ return (
         <Text
           style={[
             styles.ratingText,
-            { fontSize: size === "small" ? 12 : size === "large" ? 16 : 14 },
+            {
+              fontSize:
+                size === "small"
+                  ? 12
+                  : size === "large"
+                    ? 16
+                    : size === "xlarge"
+                      ? 18
+                      : 14,
+            },
           ]}
         >
           {rating.toFixed(1)}

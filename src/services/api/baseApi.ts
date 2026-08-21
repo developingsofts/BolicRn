@@ -141,6 +141,22 @@ const baseQueryWithErrorHandling: BaseQueryFn<
   if (coercedMembersResponse) {
     result = { data: coercedMembersResponse } as typeof result;
   }
+
+  if (
+    result?.error &&
+    (result.error as FetchBaseQueryError).status === 404 &&
+    typeof url === "string" &&
+    url.includes("/workout-session/active")
+  ) {
+    result = {
+      data: {
+        status: true,
+        message: "No active workout session found",
+        statusCode: 200,
+        data: null,
+      },
+    } as unknown as typeof result;
+  }
   const duration = Date.now() - startTime;
 
   if (result.error) {
@@ -226,6 +242,8 @@ export const baseApi = createApi({
     "SelectDateTime",
     "UserProfile",
     "Connections",
+    "WeeklyGoal",
+    "Activity",
   ],
   endpoints: () => ({}),
 });

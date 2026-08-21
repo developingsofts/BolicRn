@@ -108,6 +108,17 @@ export const removeAuthToken = async () => {
   await removeItem(STORAGE_KEYS.authToken);
 };
 
+export const setWeeklyGoal = async (goal: unknown) => {
+  await setItem(STORAGE_KEYS.progressGoals, goal);
+};
+
+export const getWeeklyGoal = <T = unknown>() =>
+  getItem<T>(STORAGE_KEYS.progressGoals);
+
+export const removeWeeklyGoal = async () => {
+  await removeItem(STORAGE_KEYS.progressGoals);
+};
+
 export const setUserProfile = async (profile: unknown) => {
   await setItem(STORAGE_KEYS.userProfile, profile);
 };
@@ -123,6 +134,9 @@ export const storageService = {
   removeAuthToken,
   setUserProfile,
   getUserProfile,
+  setWeeklyGoal,
+  getWeeklyGoal,
+  removeWeeklyGoal,
 };
 
 export default storageService;

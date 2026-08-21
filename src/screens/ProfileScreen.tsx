@@ -97,14 +97,90 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
   const passedUser = route?.params?.user;
   const userId = passedUser?.id || route?.params?.userId;
   const isOwnProfile = !userId && !passedUser;
-  const { data: myProfileData, refetch: refetchMyProfile } =
-    useGetMyProfileQuery(undefined, {
-      skip: !isOwnProfile || !isAuthenticated,
-    });
+  const myProfileQuery = useGetMyProfileQuery(undefined, {
+    skip: !isOwnProfile || !isAuthenticated,
+  });
+  const userProfileQuery = useGetUserProfileQuery(userId || "", {
+    skip: isOwnProfile || !userId || !isAuthenticated,
+  });
+
+  const { data: myProfileData, refetch: refetchMyProfile } = myProfileQuery;
   const { data: userProfileData, refetch: refetchUserProfile } =
-    useGetUserProfileQuery(userId || "", {
-      skip: isOwnProfile || !userId || !isAuthenticated,
+    userProfileQuery;
+
+  useEffect(() => {
+    const describe = (
+      name: string,
+      endpoint: string,
+      args: unknown,
+      q: {
+        isUninitialized: boolean;
+        isLoading: boolean;
+        isFetching: boolean;
+        isError: boolean;
+        isSuccess: boolean;
+        data?: unknown;
+        error?: unknown;
+      },
+    ) => ({
+      name,
+      endpoint,
+      args,
+      skipped: q.isUninitialized,
+      state: q.isUninitialized
+        ? "skipped"
+        : q.isLoading
+          ? "loading"
+          : q.isFetching
+            ? "refetching"
+            : q.isError
+              ? "error"
+              : q.isSuccess
+                ? "success"
+                : "idle",
+      ok: (q.data as any)?.status,
+      message: (q.data as any)?.message,
+      error: q.error ? JSON.stringify(q.error) : undefined,
     });
+
+    console.log(
+      "[ProfileScreen] API calls on visit",
+      JSON.stringify(
+        {
+          viewing: isOwnProfile ? "own profile" : `user ${userId}`,
+          queries: [
+            describe(
+              "getMyProfile",
+              "GET /user/get",
+              undefined,
+              myProfileQuery,
+            ),
+            describe(
+              "getUserProfile",
+              `GET /users/${userId}/profile`,
+              userId,
+              userProfileQuery,
+            ),
+          ],
+          mutationsAvailable: [
+            "followUser  POST /follows/follow",
+            "unfollowUser  POST /follows/unfollow",
+            "deleteBooking  POST /payment/refund-payment",
+            "updateBooking  POST /booking/update",
+          ],
+        },
+        null,
+        2,
+      ),
+    );
+  }, [
+    isOwnProfile,
+    userId,
+    myProfileQuery.status,
+    myProfileQuery.isFetching,
+    userProfileQuery.status,
+    userProfileQuery.isFetching,
+  ]);
 
   const [followUser] = useFollowUserMutation();
   const [unfollowUser] = useUnfollowUserMutation();
@@ -222,6 +298,11 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
       label: "My Pricing",
       icon: Price,
     },
+    {
+      id: "my-rating",
+      label: STRINGS.RATING.myRatingsMenu,
+      icon: Rating,
+    },
   ];
 
   const guestMenuItems = [
@@ -239,6 +320,11 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
       id: "achievements",
       label: STRINGS.PROFILE.achievements,
       icon: Achievements,
+    },
+    {
+      id: "rating",
+      label: STRINGS.RATING.userRatingsMenu,
+      icon: Rating,
     },
   ];
 
@@ -274,6 +360,11 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
           id: "achievements",
           label: STRINGS.PROFILE.achievements,
           icon: Achievements,
+        },
+        {
+          id: "rating",
+          label: STRINGS.RATING.myRatingsMenu,
+          icon: Rating,
         },
       ]
     : guestMenuItems;
@@ -512,7 +603,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
                 <View style={styles.streakStatItem}>
                   <Text style={styles.streakStatLabel}>CURRENT STREAK</Text>
                   <Text style={styles.streakStatValue}>
-                    {profileData?.currentStreak || 0} Days
+                    {profileData?.streak || 0} Days
                   </Text>
                 </View>
                 <View style={styles.streakStatItem}>
@@ -606,7 +697,12 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
                     } else if (item.id === "achievements") {
                       navigation.navigate("Achievements", { userId: userId });
                     } else if (item.id === "rating") {
-                      navigation.navigate("MyRatings", { userId: userId });
+                      navigation.navigate("MyRatings", {
+                        userId: userId,
+                        name:
+                          (profileData as any)?.displayName ||
+                          (profileData as any)?.userName,
+                      });
                     }
                     return;
                   }

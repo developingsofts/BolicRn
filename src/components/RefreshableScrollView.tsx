@@ -1,5 +1,16 @@
 import React from "react";
 import { ScrollView, RefreshControl, ScrollViewProps } from "react-native";
+import { COLORS } from "../config/constants";
+
+export const REFRESH_INDICATOR_PROPS: {
+  tintColor: string;
+  colors: string[];
+  progressBackgroundColor: string;
+} = {
+  tintColor: COLORS.primary,
+  colors: [COLORS.primary],
+  progressBackgroundColor: COLORS.surface,
+};
 
 interface RefreshableScrollViewProps extends ScrollViewProps {
   refreshing: boolean;
@@ -17,7 +28,11 @@ const RefreshableScrollView: React.FC<RefreshableScrollViewProps> = ({
     <ScrollView
       {...props}
       refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          {...REFRESH_INDICATOR_PROPS}
+        />
       }
     >
       {children}

@@ -1,32 +1,30 @@
 import { API_END_POINTS } from '../endPoints';
-import type { Rating, UserRating } from '../../types';
+import type {
+  RatingScore,
+  RatingsListResponse,
+  SubmitRatingResponse,
+} from '../../types';
 import { baseApi } from './baseApi';
 import type { ApiResponse } from './types';
 
-interface SubmitRatingPayload extends Partial<Rating> {
-  ratedUserId: string;
-  stars: Rating['stars'];
-  comment?: string;
-  trainingSession?: Rating['trainingSession'];
+export interface SubmitRatingPayload {
+  rateeId: number;
+  score: RatingScore;
+  review?: string;
 }
 
-interface UpdateRatingPayload {
-  ratingId: string;
-  data: Partial<Rating>;
+export interface FetchUserRatingsPayload {
+  userId: string | number;
+  page?: number;
+  limit?: number;
 }
 
-interface DeleteRatingPayload {
-  ratingId: string;
-}
-
-interface FetchUserRatingsPayload {
-  userId: string;
-}
+export const RATINGS_PAGE_SIZE = 10;
 
 export const ratingsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     submitRating: builder.mutation<
-      ApiResponse<Rating>,
+      ApiResponse<SubmitRatingResponse>,
       SubmitRatingPayload
     >({
       query: (body) => ({
@@ -36,41 +34,21 @@ export const ratingsApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Ratings'],
     }),
+
     getUserRatings: builder.query<
-      ApiResponse<UserRating>,
+      ApiResponse<RatingsListResponse>,
       FetchUserRatingsPayload
     >({
-      query: ({ userId }) => ({
-        url: API_END_POINTS.ratings.userRatings(userId),
+      query: ({ userId, page = 1, limit = RATINGS_PAGE_SIZE }) => ({
+        url: `${API_END_POINTS.ratings.userRatings(
+          String(userId),
+        )}?page=${page}&limit=${limit}`,
         method: 'GET',
       }),
       providesTags: ['Ratings'],
-    }),
-    updateRating: builder.mutation<ApiResponse<Rating>, UpdateRatingPayload>({
-      query: ({ ratingId, data }) => ({
-        url: API_END_POINTS.ratings.ratingById(ratingId),
-        method: 'PUT',
-        body: data,
-      }),
-      invalidatesTags: ['Ratings'],
-    }),
-    deleteRating: builder.mutation<
-      ApiResponse<{ success: boolean }>,
-      DeleteRatingPayload
-    >({
-      query: ({ ratingId }) => ({
-        url: API_END_POINTS.ratings.ratingById(ratingId),
-        method: 'DELETE',
-      }),
-      invalidatesTags: ['Ratings'],
     }),
   }),
   overrideExisting: false,
 });
 
-export const {
-  useSubmitRatingMutation,
-  useGetUserRatingsQuery,
-  useUpdateRatingMutation,
-  useDeleteRatingMutation,
-} = ratingsApi;
+export const { useSubmitRatingMutation, useGetUserRatingsQuery } = ratingsApi;

@@ -3,6 +3,7 @@ import { View, StyleSheet, Image, TouchableOpacity, Text } from "react-native";
 import DateTimeSelector from "../components/DateTimeSelector";
 import BasicTopBar from "../components/BasicTopBar";
 import { COLORS, DIMENSIONS } from "../config/constants";
+import { STRINGS } from "../config/strings";
 import FontWeight from "../hooks/useInterFonts";
 import { LeftArrow } from "../../assets";
 
@@ -25,8 +26,11 @@ const SelectDateTimeScreen: React.FC<SelectDateTimeScreenProps> = ({
   navigation,
   route,
 }) => {
-  const trainerName = route?.params?.trainerName || "Alex";
-  const packageName = route?.params?.packageName || "Training Session";
+  const trainerName =
+    route?.params?.trainerName || STRINGS.BOOKING_CONFIRMATION.fallbacks.trainer;
+  const packageName =
+    route?.params?.packageName ||
+    STRINGS.BOOKING_CONFIRMATION.fallbacks.session;
   const price = route?.params?.price || 0;
   const priceId = route?.params?.priceId || '';
   const trainerId = route?.params?.trainerId;

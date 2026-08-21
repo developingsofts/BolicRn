@@ -16,6 +16,12 @@ import RefreshableScrollView from "../components/RefreshableScrollView";
 import { useAuth } from "../contexts/AuthContext";
 import { COLORS, DIMENSIONS } from "../config/constants";
 import STRINGS from "../config/strings";
+import { useFocusEffect } from "@react-navigation/native";
+import { storageService } from "../services/storage";
+import { useGetWeeklyGoalQuery } from "../services/api/goalsApi";
+import { useGetActivityFeedQuery } from "../services/api/activityApi";
+import type { ActivityItem as ApiActivityItem } from "../types";
+import type { WeeklyGoal as StoredWeeklyGoal } from "../types";
 import { SafeAreaView } from "react-native-safe-area-context";
 import FontWeight from "../hooks/useInterFonts";
 import BasicTopBar from "../components/BasicTopBar";
@@ -92,7 +98,7 @@ interface WeeklyGoal {
   target: number;
   current: number;
   unit: string;
-  type: "workouts" | "calories" | "minutes" | "strength" | "cardio";
+  type: "workouts" | "strength" | "cardio";
   completed: boolean;
 }
 
@@ -192,6 +198,14 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   } = useGetFollowersQuery(
     { userId: String(user?.id ?? ""), page: 1, limit: 10 },
     { skip: !isAuthenticated || !user?.id },
+  );
+
+  const { data: weeklyGoalData } = useGetWeeklyGoalQuery(undefined, {
+    skip: !isAuthenticated,
+  });
+  const { data: activityFeedData } = useGetActivityFeedQuery(
+    { page: 1, limit: 20 },
+    { skip: !isAuthenticated },
   );
 
   const {
@@ -359,15 +373,61 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     return workoutHistoryData.data.sessions ?? [];
   }, [workoutHistoryData]);
 
-  const weeklyGoal = useMemo<WeeklyGoal>(() => {
-    const targetWorkouts = 4;
+  const [storedGoal, setStoredGoal] = useState<StoredWeeklyGoal | null>(null);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      let active = true;
+      storageService
+        .getWeeklyGoal<StoredWeeklyGoal>()
+        .then((goal) => {
+          if (active) setStoredGoal(goal ?? null);
+        })
+        .catch(() => {
+          if (active) setStoredGoal(null);
+        });
+      return () => {
+        active = false;
+      };
+    }, []),
+  );
+
+  const serverAnswered = weeklyGoalData?.status === true;
+  const apiGoal = serverAnswered ? weeklyGoalData.data?.goal ?? null : null;
+  const apiProgress = serverAnswered
+    ? weeklyGoalData.data?.progress ?? null
+    : null;
+
+  useEffect(() => {
+    if (serverAnswered && storedGoal) {
+      storageService.removeWeeklyGoal().catch(() => {});
+      setStoredGoal(null);
+    }
+  }, [serverAnswered, storedGoal]);
+
+  const weeklyGoal = useMemo<WeeklyGoal | null>(() => {
+    if (apiGoal && apiProgress) {
+      return {
+        id: String(apiGoal.id),
+        title: apiGoal.title,
+        target: apiProgress.target,
+        current: apiProgress.current,
+        unit: apiProgress.unit,
+        type: apiGoal.type,
+        completed: apiProgress.completed,
+      };
+    }
+
+    if (serverAnswered || !storedGoal) return null;
+
+    const targetWorkouts = storedGoal.target;
     const defaultGoal: WeeklyGoal = {
-      id: "current-week",
-      title: "Complete 4 Workouts This Week",
-      target: targetWorkouts,
+      id: storedGoal.id,
+      title: storedGoal.title,
+      target: storedGoal.target,
       current: 0,
-      unit: "workouts",
-      type: "workouts",
+      unit: storedGoal.unit,
+      type: storedGoal.type,
       completed: false,
     };
 
@@ -382,7 +442,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     startOfWeek.setDate(diff);
     startOfWeek.setHours(0, 0, 0, 0);
 
-    const completedThisWeek = workoutSessions.filter((session: any) => {
+    const sessionsThisWeek = workoutSessions.filter((session: any) => {
       if (session.status !== "completed") {
         return false;
       }
@@ -400,14 +460,16 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
       }
 
       return completedAt >= startOfWeek;
-    }).length;
+    });
+
+    const current = sessionsThisWeek.length;
 
     return {
       ...defaultGoal,
-      current: completedThisWeek,
-      completed: completedThisWeek >= targetWorkouts,
+      current,
+      completed: current >= targetWorkouts,
     };
-  }, [workoutSessions]);
+  }, [workoutSessions, storedGoal, apiGoal, apiProgress, serverAnswered]);
 
   const workouts = useMemo(() => {
     if (!workoutsData?.status) {
@@ -618,7 +680,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     });
   }, [potentialMatchesData]);
 
-  const recentActivities = useMemo<ActivityItem[]>(() => {
+  const stitchedActivities = useMemo<ActivityItem[]>(() => {
     const activities: ActivityItem[] = [];
 
     workoutSessions.forEach((session: any) => {
@@ -840,6 +902,31 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
       .slice(0, 6);
   }, [workoutSessions, achievements, userPostsData, followersData]);
 
+  const activityIconFor = (type: ApiActivityItem["type"]) => {
+    if (type === "achievement") return AchievementIcon;
+    if (type === "post") return Posts;
+    return Gym;
+  };
+
+  const recentActivities = useMemo<ActivityItem[]>(() => {
+    const feed =
+      activityFeedData?.status === true ? activityFeedData.data?.activities : null;
+
+    if (!feed) return stitchedActivities;
+
+    return feed.slice(0, 6).map((item) => {
+      const when = item.occurredAt ? new Date(item.occurredAt) : null;
+      return {
+        id: item.id,
+        type: item.type,
+        icon: activityIconFor(item.type),
+        title: item.title,
+        details: item.detail ?? "",
+        timestamp: when && !Number.isNaN(when.getTime()) ? when : null,
+      };
+    });
+  }, [activityFeedData, stitchedActivities]);
+
   const isWorkoutOfTheDayLoading =
     workoutsLoading || workoutDetailLoading || workoutDetailFetching;
 
@@ -1008,7 +1095,21 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   };
 
   const startWorkoutOfTheDay = () => {
-    navigation.navigate("SelectWorkout");
+    const detailed =
+      workoutDetailData?.status && workoutDetailData.data
+        ? (workoutDetailData.data as any)
+        : null;
+    const fromList = workouts.find(
+      (w: any) => String(w?.id) === String(workoutOfTheDayId),
+    );
+    const target = detailed ?? fromList;
+
+    if (!target) {
+      navigation.navigate("SelectWorkout");
+      return;
+    }
+
+    navigation.navigate("WorkoutSession", { workout: target });
   };
   const handleBookSession = () => {
     navigation.navigate("Main", {
@@ -1086,10 +1187,46 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>{STRINGS.HOME.weeklyGoal}</Text>
-              <TouchableOpacity onPress={() => navigation.navigate("Settings")}>
-                <Text style={styles.editButton}>{STRINGS.HOME.edit}</Text>
-              </TouchableOpacity>
+              {!!weeklyGoal && (
+                <TouchableOpacity
+                  onPress={() =>
+                    navigation.navigate("CreateWeeklyGoal", {
+                      goal: apiGoal
+                        ? {
+                            id: String(apiGoal.id),
+                            title: apiGoal.title,
+                            target: apiGoal.target,
+                            unit: apiProgress?.unit ?? "",
+                            type: apiGoal.type,
+                            createdAt: apiGoal.createdAt,
+                          }
+                        : storedGoal ?? undefined,
+                    })
+                  }
+                >
+                  <Text style={styles.editButton}>{STRINGS.HOME.edit}</Text>
+                </TouchableOpacity>
+              )}
             </View>
+            {!weeklyGoal ? (
+              <View style={styles.weeklyGoalCard}>
+                <Text style={styles.weeklyGoalEmptyTitle}>
+                  {STRINGS.WEEKLY_GOAL.emptyTitle}
+                </Text>
+                <Text style={styles.weeklyGoalEmptyText}>
+                  {STRINGS.WEEKLY_GOAL.emptySubtitle}
+                </Text>
+                <TouchableOpacity
+                  style={styles.createGoalButton}
+                  onPress={() => navigation.navigate("CreateWeeklyGoal")}
+                  activeOpacity={0.85}
+                >
+                  <Text style={styles.createGoalButtonText}>
+                    {STRINGS.WEEKLY_GOAL.createButton}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
             <View style={styles.weeklyGoalCard}>
               <View style={styles.weeklyGoalHeader}>
                 <Text style={styles.weeklyGoalTitle}>{weeklyGoal.title}</Text>
@@ -1131,6 +1268,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                 </View>
               )}
             </View>
+            )}
           </View>
 
           <View style={styles.section}>
@@ -1241,11 +1379,21 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                       </Text>
                     </TouchableOpacity>
                   ) : (
-                    <View style={styles.workoutCompleted}>
-                      <Text style={styles.workoutCompletedText}>
-                        Completed Today
-                      </Text>
-                    </View>
+                    <>
+                      <View style={styles.workoutCompleted}>
+                        <Text style={styles.workoutCompletedText}>
+                          Completed Today
+                        </Text>
+                      </View>
+                      <TouchableOpacity
+                        onPress={() => navigation.navigate("SelectWorkout")}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={styles.browseWorkoutsText}>
+                          Browse other workouts
+                        </Text>
+                      </TouchableOpacity>
+                    </>
                   )}
                 </View>
               </View>
@@ -2357,6 +2505,29 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     fontFamily: FontWeight.Medium,
   },
+  weeklyGoalEmptyTitle: {
+    fontSize: r(15, "font"),
+    fontFamily: FontWeight.SemiBold,
+    color: COLORS.text,
+    marginBottom: r(4),
+  },
+  weeklyGoalEmptyText: {
+    fontSize: r(13, "font"),
+    fontFamily: FontWeight.Regular,
+    color: COLORS.textSecondary,
+    marginBottom: r(14),
+  },
+  createGoalButton: {
+    backgroundColor: COLORS.primary,
+    borderRadius: r(10),
+    paddingVertical: r(12),
+    alignItems: "center",
+  },
+  createGoalButtonText: {
+    fontSize: r(15, "font"),
+    fontFamily: FontWeight.SemiBold,
+    color: COLORS.black,
+  },
   weeklyGoalCard: {
     backgroundColor: COLORS.surface,
     borderRadius: DIMENSIONS.borderRadius,
@@ -2504,6 +2675,13 @@ const styles = StyleSheet.create({
   },
   workoutOfTheDayActions: {
     alignItems: "center",
+  },
+  browseWorkoutsText: {
+    fontSize: r(14, "font"),
+    fontFamily: FontWeight.Medium,
+    color: COLORS.textSecondary,
+    textAlign: "center",
+    marginTop: DIMENSIONS.spacing.md,
   },
   startWorkoutButton: {
     backgroundColor: COLORS.primary,

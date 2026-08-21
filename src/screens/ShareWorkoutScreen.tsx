@@ -18,6 +18,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { COLORS, DIMENSIONS } from "../config/constants";
+import { REFRESH_INDICATOR_PROPS } from "../components/RefreshableScrollView";
 import STRINGS from "../config/strings";
 import { Achievement, ImageFile, LeftArrow, Media, Close } from "../../assets";
 import FontWeight from "../hooks/useInterFonts";
@@ -246,7 +247,7 @@ const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
               <RefreshControl
                 refreshing={refreshing}
                 onRefresh={handleRefresh}
-                tintColor={COLORS.primary}
+                {...REFRESH_INDICATOR_PROPS}
               />
             }
           >

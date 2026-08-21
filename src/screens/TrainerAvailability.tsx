@@ -12,6 +12,7 @@ import {
 import TimePickerModal from "../components/TimePickerModal";
 import { SafeAreaView } from "react-native-safe-area-context";
 import BasicTopBar from "../components/BasicTopBar";
+import RefreshableScrollView from "../components/RefreshableScrollView";
 import { COLORS, DIMENSIONS, toUtc, toLocalTime } from "../config/constants";
 import { useUser } from "../store/hooks";
 import {
@@ -45,6 +46,16 @@ const daysOfWeek = [
 const TrainerAvailability: React.FC<{ navigation: any }> = ({ navigation }) => {
   const { user } = useAuth();
   const [availability, setAvailability] = useState<WeekAvailability>({});
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await refetch();
+    } finally {
+      setRefreshing(false);
+    }
+  };
   const [initialAvailability, setInitialAvailability] =
     useState<WeekAvailability>({});
   const [picker, setPicker] = useState<{
@@ -304,7 +315,11 @@ const TrainerAvailability: React.FC<{ navigation: any }> = ({ navigation }) => {
           <ActivityIndicator size="large" color={COLORS.primary} />
         </View>
       ) : (
-        <ScrollView contentContainerStyle={styles.scrollContent}>
+        <RefreshableScrollView
+          contentContainerStyle={styles.scrollContent}
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+        >
           <View style={styles.sessionCard}>
             {daysOfWeek.map((day, idx) => {
               const isOff =
@@ -420,7 +435,7 @@ const TrainerAvailability: React.FC<{ navigation: any }> = ({ navigation }) => {
               </Text>
             </TouchableOpacity>
           </View>
-        </ScrollView>
+        </RefreshableScrollView>
       )}
     </SafeAreaView>
   );

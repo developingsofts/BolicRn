@@ -43,7 +43,7 @@ export interface User {
   totalWorkouts?: number;
   partnersCount?: number;
   awardsCount?: number;
-  currentStreak?: number;
+  streak?: number;
   longestStreak?: number;
   clientCount?: number;
   totalWeeklySessions?: number;
@@ -81,7 +81,7 @@ export interface UserProfile {
   totalWorkouts?: number;
   partnersCount?: number;
   awardsCount?: number;
-  currentStreak?: number;
+  streak?: number;
   longestStreak?: number;
   clientCount?: number;
   totalWeeklySessions?: number;
@@ -195,6 +195,7 @@ export interface UserExerciseProgress {
   setNumber: number;
   repsCompleted?: number;
   durationCompleted?: number;
+  weightUsed?: number;
   caloriesBurned: number;
   completedAt: Date;
   workoutExercise?: WorkoutExercise;
@@ -330,32 +331,123 @@ export interface Post {
   currentUserReaction?: ReactionType | null;
 }
 
-export interface Rating {
+export interface WeeklyGoalProgress {
+  current: number;
+  target: number;
+  unit: string;
+  percent: number;
+  completed: boolean;
+  weekStart: string;
+  weekEnd: string;
+}
+
+export interface WeeklyGoalRecord {
+  id: number;
+  userId: number;
+  type: WeeklyGoalType;
+  target: number;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WeeklyGoalResponse {
+  goal: WeeklyGoalRecord | null;
+  progress: WeeklyGoalProgress | null;
+}
+
+export type ActivityType = "workout" | "achievement" | "post";
+
+export interface ActivityItem {
   id: string;
-  raterId: string;
-  raterDisplayName: string;
-  ratedUserId: string;
-  stars: 1 | 2 | 3 | 4 | 5;
-  comment: string;
-  timestamp: Date;
-  trainingSession?: {
-    date: Date;
-    duration: number;
-    activities: string[];
+  type: ActivityType;
+  title: string;
+  detail: string;
+  occurredAt: string;
+  meta?: {
+    workoutId?: number;
+    sessionId?: number;
+    durationSeconds?: number;
+    exerciseCount?: number;
+    caloriesBurned?: number;
+    achievementId?: number;
+    icon?: string;
+    postId?: number;
+    likeCount?: number;
+    commentCount?: number;
   };
 }
 
-export interface UserRating {
-  averageRating: number;
-  totalRatings: number;
-  ratingBreakdown: {
-    fiveStars: number;
-    fourStars: number;
-    threeStars: number;
-    twoStars: number;
-    oneStar: number;
+export interface ActivityFeedResponse {
+  activities: ActivityItem[];
+  pagination: {
+    currentPage: number;
+    totalPages: number;
+    totalActivities: number;
+    limit: number;
+    hasMore: boolean;
   };
-  recentRatings: Rating[];
+}
+
+export type WeeklyGoalType = "workouts";
+
+export interface WeeklyGoal {
+  id: string;
+  title: string;
+  target: number;
+  unit: string;
+  type: WeeklyGoalType;
+  createdAt: string;
+}
+
+export type RatingScore = 1 | 2 | 3 | 4 | 5;
+
+export interface RatingAuthor {
+  id: number;
+  userName: string | null;
+  displayName: string | null;
+  imageUrl: string | null;
+  role: string | null;
+}
+
+export interface Rating {
+  id: number;
+  raterId: number;
+  rateeId: number;
+  score: RatingScore;
+  review: string | null;
+  createdAt: string;
+  updatedAt: string;
+  rater?: RatingAuthor;
+}
+
+export type RatingBreakdown = Record<RatingScore, number>;
+
+export interface RatingSummary {
+  average: number;
+  count: number;
+  breakdown: RatingBreakdown;
+}
+
+export interface RatingsPagination {
+  currentPage: number;
+  totalPages: number;
+  totalRatings: number;
+  limit: number;
+  hasMore: boolean;
+}
+
+export interface RatingsListResponse {
+  ratings: Rating[];
+  summary: RatingSummary;
+  myRating: Rating | null;
+  pagination: RatingsPagination;
+}
+
+export interface SubmitRatingResponse {
+  rating: Rating;
+  summary: RatingSummary;
+  created: boolean;
 }
 
 export interface Achievement {
@@ -438,11 +530,7 @@ export type RootStackParamList = {
     initialMessage?: string;
   };
   SelectWorkout: undefined;
-  WorkoutSession: {
-    sessionId?: string;
-    workoutType?: string;
-    workoutName?: string;
-  };
+  WorkoutSession: { workout: Workout };
   CreatePost: undefined;
   Settings: undefined;
   ForgotPassword: undefined;
@@ -453,28 +541,38 @@ export type RootStackParamList = {
   BookTrainer: { trainerId?: string; trainerName?: string } | undefined;
   SelectDateTime:
     | {
+        priceId?: string;
         trainerId?: string;
         trainerName?: string;
-        packageTitle?: string;
+        packageName?: string;
         price?: number;
+        description?: string;
+        trainerAddress?: string;
       }
     | undefined;
   BookingConfirmation:
     | {
+        priceId?: string;
         trainerId?: string;
         trainerName?: string;
-        packageTitle?: string;
+        packageName?: string;
         price?: number;
+        description?: string;
+        trainerAddress?: string;
         date?: string;
         time?: string;
+        selectedSlots?: { date: string; time: string }[];
       }
     | undefined;
   BookingSuccess:
     | {
         trainerId?: string;
         trainerName?: string;
+        packageName?: string;
+        price?: number;
         dateTime?: string;
         location?: string;
+        slotCount?: number;
       }
     | undefined;
   MyPosts: undefined;
@@ -482,7 +580,8 @@ export type RootStackParamList = {
   Connections: undefined;
   ScheduledSessions: undefined;
   Achievements: undefined;
-  MyRatings: undefined;
+  MyRatings: { userId?: string; name?: string } | undefined;
+  CreateWeeklyGoal: { goal?: WeeklyGoal } | undefined;
   UserProfile: { userId: string; user: any };
   TrainerSetup: undefined;
   MyBookings: undefined;

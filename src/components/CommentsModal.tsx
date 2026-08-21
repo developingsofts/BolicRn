@@ -19,6 +19,7 @@ import {
   Keyboard,
 } from "react-native";
 import { COLORS, DIMENSIONS } from "../config/constants";
+import { REFRESH_INDICATOR_PROPS } from "./RefreshableScrollView";
 import { useAndroidNavBar } from "../hooks/useAndroidNavBar";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
@@ -351,8 +352,7 @@ const CommentsModal: React.FC<CommentsModalProps> = ({
                         <RefreshControl
                           refreshing={refreshing}
                           onRefresh={handleRefresh}
-                          tintColor={COLORS.primary}
-                          colors={[COLORS.primary]}
+                          {...REFRESH_INDICATOR_PROPS}
                         />
                       }
                     />

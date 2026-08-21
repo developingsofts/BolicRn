@@ -91,7 +91,6 @@ export const toUtc = (timeStr: string) => {
   const tzOffsetMinutes = new Date().getTimezoneOffset();
   console.log("[toUtc] Timezone offset (minutes):", tzOffsetMinutes);
 
-
   let totalLocalMinutes = localHour * 60 + localMinute;
   console.log("[toUtc] Total local minutes:", totalLocalMinutes);
 
@@ -153,7 +152,6 @@ export const toLocalTime = (utcStr: string) => {
 
     const tzOffsetMinutes = new Date().getTimezoneOffset();
     console.log("[toLocalTime] Timezone offset (minutes):", tzOffsetMinutes);
-
 
     let totalUtcMinutes = utcHour * 60 + utcMinute;
     let totalLocalMinutes = totalUtcMinutes - tzOffsetMinutes;
@@ -608,7 +606,6 @@ export const MATCHING_CONFIG = {
 
 export const WORKOUT_CONFIG = {
   defaultDuration: 60,
-  defaultCalories: 300,
   exerciseTypes: ["strength", "cardio", "flexibility", "mixed"],
   difficultyLevels: ["easy", "medium", "hard"],
 };
