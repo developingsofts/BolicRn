@@ -28,6 +28,12 @@ export interface User {
   imageUrl?: string;
   bio?: string;
   location?: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  /** Match score (0-100) returned by the matching endpoints only. */
+  compatibility?: number | null;
+  /** Distance in miles from the current user, returned by the matching endpoints only. */
+  distance?: number | null;
   experienceLevel?: string;
   availability?: string;
   onboardingStep?: number;
@@ -75,6 +81,8 @@ export interface UserProfile {
   userGender: string;
   currentPRs: string;
   location: string;
+  latitude?: number | null;
+  longitude?: number | null;
   gym: string;
   photo?: string;
   verified: boolean;
@@ -131,6 +139,10 @@ export interface Workout {
   exerciseCount: number;
   targetMuscleGroups: string[];
   equipmentRequired: string[];
+  /** Server-side artwork URL. Present on /workout/all but null for every row today. */
+  imageUrl?: string | null;
+  /** Machine slug ("arms", "full_body", …) — present per row on /workout/all; matches GET /workout/categories. */
+  category?: string | null;
   workoutExercises?: WorkoutExercise[];
   createdAt: Date;
   updatedAt: Date;
@@ -262,6 +274,9 @@ export interface Group {
   privacy?: string;
   isMember?: boolean;
   joinRequestStatus?: "pending" | "approved" | "rejected" | null;
+  /** Authoritative server flags — prefer these over inferring from `privacy`. */
+  canJoin?: boolean;
+  canRequestJoin?: boolean;
   creatorId?: number | string;
   createdAt: Date;
 }
@@ -536,7 +551,13 @@ export type RootStackParamList = {
   ForgotPassword: undefined;
   GroupDetails: { group: Group };
   ManageGroup: { group: Group };
-  ShareWorkout: undefined;
+  ShareWorkout:
+    | {
+        workoutId?: string;
+        workoutTitle?: string;
+        sessionId?: string;
+      }
+    | undefined;
   EditProfile: { userId?: string; isGuest?: boolean } | undefined;
   BookTrainer: { trainerId?: string; trainerName?: string } | undefined;
   SelectDateTime:
@@ -585,7 +606,7 @@ export type RootStackParamList = {
   UserProfile: { userId: string; user: any };
   TrainerSetup: undefined;
   MyBookings: undefined;
-  RescheduleSession: undefined;
+  RescheduleSession: { booking?: BookingData } | undefined;
   TrainerAvailability: undefined;
   TrainerPricing: undefined;
 };
@@ -606,5 +627,11 @@ export type FindStackParams = {
 export type HomeStackParams = {
   HomeFeed: undefined;
   CreatePost: undefined;
-  ShareWorkout: undefined;
+  ShareWorkout:
+    | {
+        workoutId?: string;
+        workoutTitle?: string;
+        sessionId?: string;
+      }
+    | undefined;
 };

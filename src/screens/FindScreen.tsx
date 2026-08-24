@@ -6,11 +6,12 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  ScrollView,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import RefreshableScrollView from "../components/RefreshableScrollView";
 import { Menu, Button, Chip } from "react-native-paper";
-import { COLORS, DIMENSIONS } from "../config/constants";
+import { COLORS, TRAINING_TYPES, DIMENSIONS } from "../config/constants";
 import STRINGS from "../config/strings";
 import SwipeableCard, {
   TrainingPartner,
@@ -32,6 +33,7 @@ import {
   useUnfollowUserMutation,
 } from "../services/api/followsApi";
 import FontWeight from "../hooks/useInterFonts";
+import { formatDistance } from "../utils/location";
 
 function mapToSwipeableItem(item: any): SwipeableItem {
   console.log(
@@ -48,8 +50,10 @@ function mapToSwipeableItem(item: any): SwipeableItem {
       age: item.age,
       type: item.trainingTypes?.[0] || "",
       trainingTypes: item.trainingTypes || [],
-      distance: item.distance ? String(item.distance) : "",
-      compatibility: item.compatibility ?? 0,
+      distance: formatDistance(item.distance) ?? "",
+      ...(typeof item.compatibility === "number"
+        ? { compatibility: item.compatibility }
+        : {}),
       bio: item.bio,
       location: item.location,
       experience: item.experienceLevel || item.experience,
@@ -64,7 +68,7 @@ function mapToSwipeableItem(item: any): SwipeableItem {
       age: item.age,
       specialty: item.specialty || item.trainingTypes?.[0] || "",
       trainingTypes: item.trainingTypes || [],
-      distance: item.distance ? String(item.distance) : "",
+      distance: formatDistance(item.distance) ?? "",
       rating: item.rating,
       hourlyRate: item.hourlyRate || "",
       bio: item.bio,
@@ -81,6 +85,8 @@ interface FindScreenProps {
   navigation: any;
   route: any;
 }
+
+const FILTER_CATEGORIES = ["All", ...TRAINING_TYPES];
 
 const FindScreen: React.FC<FindScreenProps> = ({ navigation, route }) => {
   const [selectedFilters, setSelectedFilters] = useState<string[]>(["All"]);
@@ -382,7 +388,6 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation, route }) => {
           <BasicTopBar
             showBackButton={false}
             title="Find Partners & Trainers"
-            subtitle="Swipe to discover"
             containerStyle={{ paddingVertical: DIMENSIONS.spacing.xxl }}
             bottomView={
               <View style={styles.tabContainerWrapper}>
@@ -439,6 +444,38 @@ const FindScreen: React.FC<FindScreenProps> = ({ navigation, route }) => {
               </View>
             }
           />
+        </View>
+
+        <View style={styles.filtersSection}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.filterChipsRow}
+          >
+            {FILTER_CATEGORIES.map((category) => {
+              const isSelected = selectedFilters.includes(category);
+              return (
+                <TouchableOpacity
+                  key={category}
+                  style={[
+                    styles.filterChip,
+                    isSelected && styles.filterChipSelected,
+                  ]}
+                  onPress={() => handleCategorySelect(category)}
+                  activeOpacity={0.85}
+                >
+                  <Text
+                    style={[
+                      styles.filterChipText,
+                      isSelected && styles.filterChipTextSelected,
+                    ]}
+                  >
+                    {category}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
         </View>
 
         <View style={styles.cardsSection}>
@@ -569,6 +606,32 @@ const styles = StyleSheet.create({
   filtersSection: {
     paddingHorizontal: DIMENSIONS.spacing.lg,
     marginBottom: DIMENSIONS.spacing.lg,
+  },
+  filterChipsRow: {
+    flexDirection: "row",
+    gap: DIMENSIONS.spacing.sm,
+    paddingRight: DIMENSIONS.spacing.lg,
+  },
+  filterChip: {
+    paddingHorizontal: DIMENSIONS.spacing.md,
+    paddingVertical: DIMENSIONS.spacing.sm,
+    borderRadius: 50,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.surface,
+  },
+  filterChipSelected: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  filterChipText: {
+    fontSize: 14,
+    color: COLORS.text,
+    fontFamily: FontWeight.Medium,
+  },
+  filterChipTextSelected: {
+    color: COLORS.black,
+    fontFamily: FontWeight.SemiBold,
   },
   dropdownContainer: {
     alignItems: "center",

@@ -13,6 +13,8 @@ interface CreatePostPayload {
   achievementId?: number;
   type?: 'normal' | 'workout_share';
   workoutId?: string;
+  /** Attaches the workout-session's logged performance. Server 404s if the session is not the caller's. */
+  sessionId?: string;
   mediaFile?: {
     uri: string;
     type: string;
@@ -89,6 +91,7 @@ export const postsApi = baseApi.injectEndpoints({
         if (payload.achievementId) formData.append('achievementId', payload.achievementId.toString());
         formData.append('type', payload.type || 'normal');
         if (payload.workoutId) formData.append('workoutId', payload.workoutId);
+        if (payload.sessionId) formData.append('sessionId', payload.sessionId);
         if (payload.shareToCommunity)
           formData.append('shareToCommunity', String(payload.shareToCommunity));
 

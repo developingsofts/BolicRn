@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Alert, Image } from "react-native";
+import React from "react";
+import { Image } from "react-native";
 import { useCreateTrainingPriceMutation } from "../services/api/pricesApi";
 import {
   View,
@@ -9,80 +9,125 @@ import {
   TouchableOpacity,
   TextInput,
   KeyboardAvoidingView,
-  Platform,
 } from "react-native";
-import { COLORS, DIMENSIONS } from "../config/constants";
+import { COLORS } from "../config/constants";
 import FontWeight from "../hooks/useInterFonts";
-import { Ionicons } from "@expo/vector-icons";
 import { Add } from "../../assets";
+import { Toast } from "./ToastManager";
+
+/**
+ * LOCAL COPY — this belongs in `src/config/strings.ts`
+ * (e.g. `STRINGS.TRAINER_SETUP.step1`). It lives here only because strings.ts
+ * is being edited concurrently. TODO: move into STRINGS and import from there.
+ */
+const STEP1_COPY = {
+  addSession: "Add New Session",
+  title: "Set Your Rates",
+  description: "Create packages for clients to book. You can add more later.",
+  remove: "Remove",
+  sessionName: "Session name",
+  descriptionLabel: "Description",
+  pricePerHour: "Price per hour",
+  pricePlaceholder: "$ per hour",
+  next: "Next",
+  saving: "Saving...",
+  needOneSession:
+    "Add at least one session with a name, description and price before continuing.",
+  createFailed: "Failed to create sessions. Please try again.",
+};
+
+export interface SessionDraft {
+  id: string;
+  name: string;
+  description: string;
+  price: string;
+  /** true once this draft has been persisted, so Next never creates it twice. */
+  saved?: boolean;
+}
+
+export const createEmptySession = (): SessionDraft => ({
+  id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+  name: "",
+  description: "",
+  price: "",
+});
+
+const isValidSession = (session: SessionDraft) =>
+  !!session.name.trim() &&
+  !!session.description.trim() &&
+  !!session.price &&
+  !isNaN(Number(session.price));
 
 interface TrainerSetupStep1Props {
   onNext: () => void;
+  /** Owned by TrainerSetup so stepping back from step 2 preserves the entries. */
+  sessions: SessionDraft[];
+  setSessions: React.Dispatch<React.SetStateAction<SessionDraft[]>>;
 }
 
-const TrainerSetupStep1: React.FC<TrainerSetupStep1Props> = ({ onNext }) => {
-  const [sessions, setSessions] = useState([
-    {
-      id: Date.now().toString(),
-      name: "",
-      description: "",
-      price: "",
-    },
-  ]);
+const TrainerSetupStep1: React.FC<TrainerSetupStep1Props> = ({
+  onNext,
+  sessions,
+  setSessions,
+}) => {
   const [createTrainingPrice, { isLoading }] = useCreateTrainingPriceMutation();
 
   const handleAddSession = () => {
-    const newSession = {
-      id: Date.now().toString(),
-      name: "",
-      description: "",
-      price: "",
-    };
-    setSessions([...sessions, newSession]);
+    setSessions((prev) => [...prev, createEmptySession()]);
   };
 
-  const updateSession = (id: string, field: string, value: string) => {
-    setSessions(
-      sessions.map((session) =>
-        session.id === id ? { ...session, [field]: value } : session
+  const updateSession = (
+    id: string,
+    field: "name" | "description" | "price",
+    value: string
+  ) => {
+    setSessions((prev) =>
+      prev.map((session) =>
+        session.id === id
+          ? { ...session, [field]: value, saved: false }
+          : session
       )
     );
   };
 
   const removeSession = (id: string) => {
-    if (sessions.length > 1) {
-      setSessions(sessions.filter((session) => session.id !== id));
-    }
+    setSessions((prev) =>
+      prev.length > 1 ? prev.filter((session) => session.id !== id) : prev
+    );
   };
 
   const handleNextStep = async () => {
-    const validSessions = sessions.filter(
-      (s) =>
-        s.name.trim() &&
-        s.description.trim() &&
-        s.price &&
-        !isNaN(Number(s.price))
-    );
+    const validSessions = sessions.filter(isValidSession);
     if (validSessions.length === 0) {
-      Alert.alert(
-        "Please add at least one valid session with name, description, and price."
-      );
+      Toast.warning(STEP1_COPY.needOneSession);
       return;
     }
+
+    // Only send drafts that have not been persisted yet, so coming back from
+    // step 2 and pressing Next again does not duplicate the trainer's packages.
+    const pending = validSessions.filter((session) => !session.saved);
+    if (pending.length === 0) {
+      onNext();
+      return;
+    }
+
     try {
       await createTrainingPrice(
-        validSessions.map((s) => ({
-          session_name: s.name,
-          description: s.description,
-          price: s.price.toString(),
+        pending.map((session) => ({
+          session_name: session.name,
+          description: session.description,
+          price: session.price.toString(),
         }))
       ).unwrap();
+      const pendingIds = new Set(pending.map((session) => session.id));
+      setSessions((prev) =>
+        prev.map((session) =>
+          pendingIds.has(session.id) ? { ...session, saved: true } : session
+        )
+      );
       onNext();
     } catch (e: any) {
-      Alert.alert(
-        "Failed to create sessions",
-        e?.data?.message || "Please try again."
-      );
+      Toast.error(e?.data?.message || STEP1_COPY.createFailed);
     }
   };
 
@@ -96,7 +141,7 @@ const TrainerSetupStep1: React.FC<TrainerSetupStep1Props> = ({ onNext }) => {
           style={styles.addSessionBtn}
           onPress={handleAddSession}
         >
-          <Text style={styles.addSessionText}>Add New Session</Text>
+          <Text style={styles.addSessionText}>{STEP1_COPY.addSession}</Text>
           <Image
             source={Add}
             tintColor={COLORS._191919}
@@ -108,10 +153,8 @@ const TrainerSetupStep1: React.FC<TrainerSetupStep1Props> = ({ onNext }) => {
           />
         </TouchableOpacity>
         <View style={{ marginBottom: 16 }}>
-          <Text style={styles.sectionTitle}>Set Your Rates</Text>
-          <Text style={styles.sectionDesc}>
-            Create packages for clients to book. You can add more later.
-          </Text>
+          <Text style={styles.sectionTitle}>{STEP1_COPY.title}</Text>
+          <Text style={styles.sectionDesc}>{STEP1_COPY.description}</Text>
         </View>
         {sessions.map((session, index) => (
           <View key={session.id} style={styles.sessionCard}>
@@ -121,41 +164,41 @@ const TrainerSetupStep1: React.FC<TrainerSetupStep1Props> = ({ onNext }) => {
                   style={styles.removeBtn}
                   onPress={() => removeSession(session.id)}
                 >
-                  <Text style={styles.removeBtnText}>Remove</Text>
+                  <Text style={styles.removeBtnText}>{STEP1_COPY.remove}</Text>
                 </TouchableOpacity>
               )}
             </View>
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Session name</Text>
+              <Text style={styles.label}>{STEP1_COPY.sessionName}</Text>
               <TextInput
                 style={[styles.inputField, { height: 48 }]}
                 value={session.name}
                 onChangeText={(text) => updateSession(session.id, "name", text)}
-                placeholder="Session name"
+                placeholder={STEP1_COPY.sessionName}
                 placeholderTextColor={COLORS._5E5E5E}
               />
             </View>
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Description</Text>
+              <Text style={styles.label}>{STEP1_COPY.descriptionLabel}</Text>
               <TextInput
                 style={[styles.inputField, { height: 48 }]}
                 value={session.description}
                 onChangeText={(text) =>
                   updateSession(session.id, "description", text)
                 }
-                placeholder="Description"
+                placeholder={STEP1_COPY.descriptionLabel}
                 placeholderTextColor={COLORS._5E5E5E}
               />
             </View>
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Price per hour</Text>
+              <Text style={styles.label}>{STEP1_COPY.pricePerHour}</Text>
               <TextInput
                 style={[styles.inputField, { height: 48 }]}
                 value={session.price}
                 onChangeText={(text) =>
                   updateSession(session.id, "price", text)
                 }
-                placeholder="$ per hour"
+                placeholder={STEP1_COPY.pricePlaceholder}
                 placeholderTextColor={COLORS._5E5E5E}
                 keyboardType="numeric"
               />
@@ -169,7 +212,7 @@ const TrainerSetupStep1: React.FC<TrainerSetupStep1Props> = ({ onNext }) => {
           disabled={isLoading}
         >
           <Text style={styles.nextBtnText}>
-            {isLoading ? "Saving..." : "Next"}
+            {isLoading ? STEP1_COPY.saving : STEP1_COPY.next}
           </Text>
         </TouchableOpacity>
       </ScrollView>
@@ -267,7 +310,7 @@ const styles = StyleSheet.create({
     alignContent: "center",
     minHeight: 36,
     fontFamily: FontWeight.Medium,
-    fontSize:14,
+    fontSize: 14,
     color: COLORS.app_black,
     justifyContent: "center",
   },

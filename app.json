@@ -13,7 +13,9 @@
       "resizeMode": "contain",
       "backgroundColor": "#0A0A0A"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.bolicbuddy.app",
@@ -24,12 +26,19 @@
           "NSAllowsArbitraryLoads": true
         },
         "CFBundleAllowMixedLocalizations": true,
-        "CFBundleLocalizations": ["fr"]
+        "CFBundleLocalizations": [
+          "fr"
+        ],
+        "NSLocationWhenInUseUsageDescription": "Bolic uses your location to show how far away potential training partners and trainers are. Your exact position is never shown to other users \u2014 only an approximate distance."
       },
       "entitlements": {
-        "com.apple.developer.in-app-payments": ["merchant.com.bolicbuddy.app"]
+        "com.apple.developer.in-app-payments": [
+          "merchant.com.bolicbuddy.app"
+        ]
       },
-      "associatedDomains": ["applinks:api.bolicbuddy.com"]
+      "associatedDomains": [
+        "applinks:api.bolicbuddy.com"
+      ]
     },
     "android": {
       "adaptiveIcon": {
@@ -58,7 +67,10 @@
               "pathPrefix": "/reset-password"
             }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },
@@ -80,7 +92,12 @@
           }
         }
       ],
-      "expo-location",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Bolic uses your location to show how far away potential training partners and trainers are. Your exact position is never shown to other users \u2014 only an approximate distance."
+        }
+      ],
       "expo-notifications",
       "expo-font"
     ],

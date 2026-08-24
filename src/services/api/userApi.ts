@@ -18,6 +18,8 @@ interface UpdateProfileWithImagePayload {
   displayName?: string;
   bio?: string;
   location?: string;
+  latitude?: number | null;
+  longitude?: number | null;
   imageFile?: File | { uri: string; type: string; name: string };
   videoFile?: File | { uri: string; type: string; name: string };
   age?: number;
@@ -62,6 +64,10 @@ export const userApi = baseApi.injectEndpoints({
         if (payload.displayName) formData.append('displayName', payload.displayName);
         if (payload.bio) formData.append('bio', payload.bio);
         if (payload.location) formData.append('location', payload.location);
+        if (payload.latitude !== undefined && payload.latitude !== null)
+          formData.append('latitude', payload.latitude.toString());
+        if (payload.longitude !== undefined && payload.longitude !== null)
+          formData.append('longitude', payload.longitude.toString());
         if (payload.age) formData.append('age', payload.age.toString());
         if (payload.userGender) formData.append('userGender', payload.userGender);
         if (payload.genderPreference) formData.append('genderPreference', payload.genderPreference);

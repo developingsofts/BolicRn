@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -22,14 +22,16 @@ import FontWeight from "../hooks/useInterFonts";
 import {
   BookingData,
   useGetUserBookingsQuery,
-  useDeleteBookingMutation,
+  useCancelBookingAtomicMutation,
+  useLazyGetRefundQuoteQuery,
 } from "../services/api/bookingApi";
 import { useAuth } from "../contexts/AuthContext";
 import { Toast } from "../components/ToastManager";
 
 const ScheduledSessions: React.FC = ({ navigation }: any) => {
   const { user } = useAuth();
-  const [deleteBooking] = useDeleteBookingMutation();
+  const [cancelBookingAtomic] = useCancelBookingAtomicMutation();
+  const [fetchRefundQuote, refundQuoteState] = useLazyGetRefundQuoteQuery();
   const [refreshing, setRefreshing] = useState(false);
   const [cancellationModalVisible, setCancellationModalVisible] =
     useState(false);
@@ -80,21 +82,78 @@ const ScheduledSessions: React.FC = ({ navigation }: any) => {
     if (booking.status === "upcomming") {
       setSelectedBookingForCancellation(booking);
       setCancellationModalVisible(true);
+      // Server-authored refund figures for the sheet. Best-effort: the modal
+      // shows its honest fallback while this loads or if it fails.
+      void fetchRefundQuote({ id: booking.id });
     }
   };
 
+  // Map the server quote (snake_case keys, minor-unit amounts) into the
+  // sheet's shape. Only when something was actually charged — for an unpaid
+  // session the modal's plain "amount paid" fallback beats a row of zeros.
+  const refundQuote = useMemo(() => {
+    const resp = refundQuoteState.data;
+    const q = resp && resp.status ? resp.data : null;
+    if (!q || !selectedBookingForCancellation) return undefined;
+    if (String(q.booking_id) !== String(selectedBookingForCancellation.id)) {
+      return undefined;
+    }
+    if (!q.charged || q.charged <= 0) return undefined;
+    return {
+      amount: q.charged / 100,
+      fee: typeof q.fee === "number" ? q.fee / 100 : null,
+      net: typeof q.net === "number" ? q.net / 100 : null,
+      eta:
+        q.expected_arrival?.business_days != null
+          ? `${q.expected_arrival.business_days} business days`
+          : q.expected_arrival?.estimated_date ?? null,
+      currency: q.currency ? q.currency.toUpperCase() : null,
+      policyText: q.policy_text ?? null,
+    };
+  }, [refundQuoteState.data, selectedBookingForCancellation]);
+
   const handleConfirmCancellation = async () => {
-    if (!selectedBookingForCancellation) return;
+    // Guard against a double-confirm while the first request is in flight.
+    if (!selectedBookingForCancellation || isCancelling) return;
+
+    const booking = selectedBookingForCancellation;
 
     setIsCancelling(true);
     try {
-      await deleteBooking({
-        sessionId: selectedBookingForCancellation.id,
-      }).unwrap();
+      // One atomic call: the server cancels, refunds where a payment exists,
+      // and reports the refund outcome. Idempotent — a retry answers
+      // ALREADY_CANCELED with status: true, which lands here as success.
+      const result = await cancelBookingAtomic({ id: booking.id }).unwrap();
+
+      // The API answers 200 with { status: false, message } on failure, so an
+      // unwrap() that resolves is not by itself proof of success.
+      if (!result.status) {
+        throw new Error(
+          result.message ||
+            STRINGS.SCHEDULED_SESSIONS.messages.cancellationFailed
+        );
+      }
+
+      const refundError = result.data?.refund_error;
+      if (refundError) {
+        // Cancellation landed; only the refund failed. The server message is
+        // user-presentable copy — report it honestly instead of a blanket
+        // success toast.
+        Toast.error(refundError);
+        closeCancellationModal();
+        return;
+      }
+
       Toast.success(STRINGS.SCHEDULED_SESSIONS.messages.sessionCancelled);
       closeCancellationModal();
-    } catch (error) {
-      Toast.error(STRINGS.SCHEDULED_SESSIONS.messages.cancellationFailed);
+    } catch (error: any) {
+      // Surface the real server message; keep the modal open so the user can
+      // retry without re-selecting the session.
+      Toast.error(
+        error?.data?.message ||
+          error?.message ||
+          STRINGS.SCHEDULED_SESSIONS.messages.cancellationFailed
+      );
     } finally {
       setIsCancelling(false);
     }
@@ -230,6 +289,7 @@ const ScheduledSessions: React.FC = ({ navigation }: any) => {
         visible={cancellationModalVisible}
         booking={selectedBookingForCancellation}
         isLoading={isCancelling}
+        refundQuote={refundQuote}
         onClose={closeCancellationModal}
         onConfirm={handleConfirmCancellation}
       />

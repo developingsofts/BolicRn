@@ -7,7 +7,6 @@ import {
   Pressable,
   FlatList,
   Image,
-  TextInput,
   Modal,
   ActivityIndicator,
 } from "react-native";
@@ -15,23 +14,28 @@ import { Menu } from "react-native-paper";
 import RefreshableScrollView from "../../components/RefreshableScrollView";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { COLORS, DIMENSIONS } from "../../config/constants";
-import { r, SCALE } from "../../designing/responsiveDesigns";
+import {
+  COLORS,
+  DIMENSIONS,
+  formatWorkoutDurationMinutes,
+} from "../../config/constants";
+import { r } from "../../designing/responsiveDesigns";
 import { useResponsive } from "../../hooks/responsiveDesignHook";
 import FontWeight from "../../hooks/useInterFonts";
 import { Divider } from "react-native-paper";
 import {
+  Achievement,
   Add,
   Comment,
   Edit,
+  Exit,
+  EyeHide,
   Gym,
-  ImageFile,
   Like,
   Location,
-  Send,
+  Workout,
 } from "../../../assets";
 import { Group } from "../../types";
-import ManageGroup from "./ManageGroup";
 import BasicTopBar from "../../components/BasicTopBar";
 import {
   useGetGroupByIdQuery,
@@ -39,13 +43,9 @@ import {
   useGetGroupPostsQuery,
   useJoinGroupMutation,
   useRequestJoinGroupMutation,
-  useDeleteGroupMutation,
 } from "../../services/api/groupsApi";
 import { useLeaveGroupMutation } from "../../services/api/leaveGroup";
-import {
-  useToggleLikeMutation,
-  useGetPostCommentsQuery,
-} from "../../services/api/likesCommentsApi";
+import { useToggleLikeMutation } from "../../services/api/likesCommentsApi";
 import {
   useDeletePostMutation,
   useUpdatePostMutation,
@@ -53,6 +53,7 @@ import {
 import { useAuth } from "../../contexts/AuthContext";
 import { Toast } from "../../components/ToastManager";
 import CommentsModal from "../../components/CommentsModal";
+import ConfirmDialog from "../../components/ConfirmDialog";
 import EditPostModal from "../../components/EditPostModal";
 import { useFocusEffect } from "@react-navigation/native";
 import type { FetchBaseQueryError } from "@reduxjs/toolkit/query";
@@ -141,6 +142,22 @@ const baseStyles = StyleSheet.create({
     paddingHorizontal: r(12),
     paddingVertical: r(6),
     borderRadius: r(20),
+  },
+  privacyTag: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: COLORS.surface,
+    paddingHorizontal: r(12),
+    paddingVertical: r(6),
+    borderRadius: r(20),
+    marginLeft: r(8),
+  },
+  privacyNotice: {
+    fontSize: 13,
+    fontFamily: FontWeight.Regular,
+    color: COLORS.textSecondary,
+    lineHeight: 18,
+    marginBottom: r(12),
   },
   tagText: {
     fontSize: 12,
@@ -460,6 +477,43 @@ const baseStyles = StyleSheet.create({
     lineHeight: 20,
     marginBottom: 10,
   },
+  attachmentBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: COLORS.background,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: r(8),
+    padding: r(10),
+    marginBottom: r(10),
+  },
+  attachmentIcon: {
+    width: 20,
+    height: 20,
+    tintColor: COLORS.white,
+    marginRight: r(10),
+  },
+  attachmentInfo: {
+    flex: 1,
+  },
+  attachmentTitle: {
+    fontSize: 14,
+    fontFamily: FontWeight.SemiBold,
+    color: COLORS.text,
+  },
+  attachmentSubtitle: {
+    fontSize: 12,
+    fontFamily: FontWeight.Regular,
+    color: COLORS.textSecondary,
+    marginTop: r(2),
+  },
+  postImage: {
+    width: "100%",
+    height: r(200),
+    borderRadius: r(8),
+    marginBottom: r(10),
+    backgroundColor: COLORS.background,
+  },
   postActions: {
     flexDirection: "row",
     alignItems: "center",
@@ -597,63 +651,6 @@ const baseStyles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "500",
   },
-  deleteModalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 2000,
-  },
-  deleteModalContent: {
-    backgroundColor: COLORS.surface,
-    borderRadius: r(12),
-    padding: r(20),
-    marginHorizontal: r(20),
-    alignItems: "center",
-  },
-  deleteModalTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: COLORS.text,
-    marginBottom: r(8),
-  },
-  deleteModalMessage: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-    textAlign: "center",
-    marginBottom: r(20),
-  },
-  deleteModalActions: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    width: "100%",
-  },
-  deleteModalCancelButton: {
-    flex: 1,
-    padding: r(12),
-    borderRadius: r(8),
-    backgroundColor: COLORS.surface,
-    marginRight: r(8),
-    alignItems: "center",
-  },
-  deleteModalCancelText: {
-    color: COLORS.text,
-    fontSize: 16,
-    fontWeight: "500",
-  },
-  deleteModalDeleteButton: {
-    flex: 1,
-    padding: r(12),
-    borderRadius: r(8),
-    backgroundColor: COLORS._EB3434,
-    marginLeft: r(8),
-    alignItems: "center",
-  },
-  deleteModalDeleteText: {
-    color: COLORS.white,
-    fontSize: 16,
-    fontWeight: "500",
-  },
   postMenuDropdown: {
     position: "absolute",
     top: 35,
@@ -709,9 +706,11 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
     caption: string;
   } | null>(null);
   const [editPostText, setEditPostText] = useState("");
-  const [scrollViewHeight, setScrollViewHeight] = useState(0);
-  const [contentHeight, setContentHeight] = useState(0);
   const [likingPostId, setLikingPostId] = useState<string | null>(null);
+  const [exitDialogVisible, setExitDialogVisible] = useState(false);
+  // Set once we've successfully POSTed a join request, so the button reflects
+  // the pending state even if the group payload doesn't echo joinRequestStatus.
+  const [requestJustSubmitted, setRequestJustSubmitted] = useState(false);
 
   const passedGroup = propGroup || route?.params?.group;
   const groupId = passedGroup?.id?.toString();
@@ -745,7 +744,6 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
   const [joinGroup, { isLoading: isJoining }] = useJoinGroupMutation();
   const [requestJoinGroup, { isLoading: isRequestingJoin }] =
     useRequestJoinGroupMutation();
-  const [deleteGroup, { isLoading: isDeleting }] = useDeleteGroupMutation();
   const [toggleLike, { isLoading: isLiking }] = useToggleLikeMutation();
   const [deletePost, { isLoading: isDeletingPost }] = useDeletePostMutation();
   const [updatePost, { isLoading: isUpdatingPost }] = useUpdatePostMutation();
@@ -840,6 +838,7 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
   const [leaveGroup, { isLoading: isLeaving }] = useLeaveGroupMutation();
   const handleExitGroup = async () => {
     if (!group?.id) return;
+    setExitDialogVisible(false);
     try {
       await leaveGroup(group.id.toString()).unwrap();
       Toast.success("You have left the group");
@@ -876,43 +875,60 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
     }
   };
 
-  const handleDeleteGroup = async () => {
-    if (!group?.id) return;
-    try {
-      await deleteGroup({ groupId: group.id.toString() }).unwrap();
-      Toast.success("Group deleted successfully");
-      if (typeof onClose === "function") {
-        onClose();
-      } else if (navigation && typeof navigation.goBack === "function") {
-        navigation.goBack();
-      }
-    } catch (error: any) {
-      Toast.error(error?.data?.message || "Failed to delete group");
-    }
-  };
-
-  const isCreator =
-    user?.id && group?.creatorId && Number(user.id) === Number(group.creatorId);
-  const isMember = group?.isMember || isCreator;
-
-  const joinRequestStatus = (group as any)?.joinRequestStatus ?? null;
-  const requiresApproval = Boolean(
-    group?.privacy && group.privacy !== "Public"
+  const isCreator = Boolean(
+    user?.id && group?.creatorId && Number(user.id) === Number(group.creatorId)
   );
+
+  // `/group/all` list rows don't reliably carry `isMember`, so fall back to
+  // looking ourselves up in the loaded member list before treating the viewer
+  // as an outsider and offering them a Join button they don't need.
+  const isInMemberList = useMemo(() => {
+    if (!user?.id) return false;
+    return displayedMembers.some(
+      (member: any) => String(member?.id) === String(user.id)
+    );
+  }, [displayedMembers, user?.id]);
+
+  const isMember = Boolean(group?.isMember) || isCreator || isInMemberList;
+
+  // Privacy comes back as a free-form string; compare case-insensitively so a
+  // "public" from the server isn't mistaken for an approval-gated group.
+  const privacyLabel = (group?.privacy ?? "").trim();
+  const normalizedPrivacy = privacyLabel.toLowerCase();
+  const requiresApproval =
+    normalizedPrivacy.length > 0 && normalizedPrivacy !== "public";
+
+  const joinRequestStatus = (group?.joinRequestStatus ?? "")
+    .toString()
+    .trim()
+    .toLowerCase();
 
   const joinButtonState = useMemo<
     "manage" | "member" | "pending" | "request" | "join"
   >(() => {
     if (isCreator) return "manage";
     if (isMember) return "member";
-    if (joinRequestStatus === "pending") return "pending";
+    if (joinRequestStatus === "pending" || requestJustSubmitted) {
+      return "pending";
+    }
+    // The server now sends authoritative canJoin/canRequestJoin per row —
+    // prefer them over inferring behaviour from the privacy string.
+    if (group?.canJoin === true) return "join";
+    if (group?.canRequestJoin === true) return "request";
     if (requiresApproval) return "request";
     return "join";
-  }, [isCreator, isMember, joinRequestStatus, requiresApproval]);
+  }, [
+    isCreator,
+    isMember,
+    joinRequestStatus,
+    requestJustSubmitted,
+    requiresApproval,
+    group?.canJoin,
+    group?.canRequestJoin,
+  ]);
 
   const joinButtonLoading =
     joinButtonState === "request" ? isRequestingJoin : isJoining;
-  const joinButtonDisabled = joinButtonState === "pending" || joinButtonLoading;
 
   const joinButtonLabel = useMemo(() => {
     switch (joinButtonState) {
@@ -926,6 +942,12 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
         return "Join Group";
     }
   }, [joinButtonState, joinRequestStatus]);
+
+  const handlePendingRequestPress = () => {
+    Toast.info(
+      "Your request is waiting for a group admin to approve it. You'll get access as soon as they do."
+    );
+  };
 
   const handleViewProfile = (member: any) => {
     setMemberMenuVisible(null);
@@ -977,8 +999,8 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
     try {
       setLikingPostId(postId);
       await toggleLike({ postId }).unwrap();
-    } catch (error) {
-      console.error("Failed to toggle like:", error);
+    } catch (error: any) {
+      Toast.error(error?.data?.message || "Couldn't update your reaction.");
     } finally {
       setLikingPostId(null);
     }
@@ -1092,17 +1114,25 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
   useEffect(() => {
     setMembersPage(1);
     setAccumulatedMembers([]);
+    setPostsPage(1);
+    setAccumulatedPosts([]);
+    setRequestJustSubmitted(false);
   }, [groupId]);
 
   useEffect(() => {
-    if (postsData && posts.length > 0) {
+    if (postsData) {
       if (postsPage === 1) {
-        setAccumulatedPosts(posts);
-      } else {
+        // An empty first page has to clear the list too, otherwise the posts of
+        // the previously opened group (or a post that was just deleted) keep
+        // showing as if they belonged here.
+        setAccumulatedPosts((prevPosts) =>
+          posts.length === 0 && prevPosts.length === 0 ? prevPosts : posts
+        );
+      } else if (posts.length > 0) {
         setAccumulatedPosts((prevPosts) => {
           const existingIds = new Set(prevPosts.map((p) => p.id));
           const newPosts = posts.filter((p) => !existingIds.has(p.id));
-          return [...prevPosts, ...newPosts];
+          return newPosts.length > 0 ? [...prevPosts, ...newPosts] : prevPosts;
         });
       }
     }
@@ -1130,7 +1160,11 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
     try {
       const response = await requestJoinGroup({ groupId }).unwrap();
       if (response.status) {
-        Toast.success(response.message || "Join request submitted");
+        setRequestJustSubmitted(true);
+        Toast.success(
+          response.message ||
+            "Request sent. A group admin has to approve it before you can join."
+        );
         refetchGroup();
       } else {
         Toast.error(response.message || "Failed to submit join request");
@@ -1171,17 +1205,6 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
     ) {
       handleLoadMorePosts();
     }
-  };
-
-  const handleContentSizeChange = (
-    contentWidth: number,
-    contentHeight: number
-  ) => {
-    setContentHeight(contentHeight);
-  };
-
-  const handleLayout = (event: any) => {
-    setScrollViewHeight(event.nativeEvent.layout.height);
   };
 
   useFocusEffect(
@@ -1256,29 +1279,38 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
           <Text style={styles.postContent}>{post.title}</Text>
 
           {post.workout && (
-            <View style={styles.workoutBadge}>
-              <Text style={styles.workoutIcon}>💪</Text>
-              <View style={styles.workoutInfo}>
-                <Text style={styles.workoutTitle}>{post.workout.title}</Text>
-                <Text style={styles.workoutDetails}>
-                  {post.workout.totalDuration} min • {post.workout.difficulty}
-                </Text>
+            <View style={styles.attachmentBadge}>
+              <Image source={Workout} style={styles.attachmentIcon} />
+              <View style={styles.attachmentInfo}>
+                <Text style={styles.attachmentTitle}>{post.workout.title}</Text>
+                {(post.workout.totalDuration || post.workout.difficulty) && (
+                  <Text style={styles.attachmentSubtitle}>
+                    {[
+                      formatWorkoutDurationMinutes(
+                        post.workout.totalDuration
+                      ),
+                      post.workout.difficulty,
+                    ]
+                      .filter(Boolean)
+                      .join("  •  ")}
+                  </Text>
+                )}
               </View>
             </View>
           )}
 
           {post.achievement && (
-            <View style={styles.achievementBadge}>
-              <Text style={styles.achievementIcon}>
-                {post.achievement.icon || "🏆"}
-              </Text>
-              <View style={styles.achievementInfo}>
-                <Text style={styles.achievementTitle}>
+            <View style={styles.attachmentBadge}>
+              <Image source={Achievement} style={styles.attachmentIcon} />
+              <View style={styles.attachmentInfo}>
+                <Text style={styles.attachmentTitle}>
                   {post.achievement.title}
                 </Text>
-                <Text style={styles.achievementDescription}>
-                  {post.achievement.description}
-                </Text>
+                {!!post.achievement.description && (
+                  <Text style={styles.attachmentSubtitle}>
+                    {post.achievement.description}
+                  </Text>
+                )}
               </View>
             </View>
           )}
@@ -1351,8 +1383,6 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
         refreshing={refreshing}
         onRefresh={handleRefresh}
         onScroll={handleScroll}
-        onContentSizeChange={handleContentSizeChange}
-        onLayout={handleLayout}
         scrollEventThrottle={16}
       >
         <BasicTopBar
@@ -1380,7 +1410,24 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
                       "General"}
                   </Text>
                 </View>
+                {requiresApproval && (
+                  <View style={styles.privacyTag}>
+                    <Image
+                      source={EyeHide}
+                      style={{ width: 20, height: 20, tintColor: COLORS.white }}
+                    />
+                    <Text style={styles.tagText}>{privacyLabel}</Text>
+                  </View>
+                )}
               </View>
+
+              {requiresApproval && !isMember && (
+                <Text style={styles.privacyNotice}>
+                  {joinButtonState === "pending"
+                    ? "A group admin still has to approve your request before you can post here."
+                    : "This group is not open to everyone. A group admin has to approve your request before you can join."}
+                </Text>
+              )}
 
               <Text style={styles.heroDescription}>
                 {group?.description || ""}
@@ -1411,10 +1458,11 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
                 marginTop: 10,
               },
             ]}
-            onPress={handleExitGroup}
+            onPress={() => setExitDialogVisible(true)}
+            disabled={isLeaving}
           >
             <Image
-              source={require("../../../assets/exit.png")}
+              source={Exit}
               style={{ width: 16, height: 16, tintColor: COLORS._EB3434 }}
             />
             <Text style={[styles.manageButtonText, { color: COLORS._EB3434 }]}>
@@ -1426,16 +1474,17 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
             style={[
               styles.manageButton,
               styles.joinButton,
-              joinButtonDisabled && styles.joinButtonDisabled,
+              (joinButtonLoading || joinButtonState === "pending") &&
+                styles.joinButtonDisabled,
             ]}
             onPress={
               joinButtonState === "join"
                 ? handleJoinGroup
                 : joinButtonState === "request"
                 ? handleRequestJoinGroup
-                : undefined
+                : handlePendingRequestPress
             }
-            disabled={joinButtonDisabled}
+            disabled={joinButtonLoading}
           >
             {joinButtonLoading ? (
               <ActivityIndicator size="small" color={COLORS.black} />
@@ -1693,49 +1742,19 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
         isUpdating={isUpdatingPost}
       />
 
-      {selectedPostId && (
-        <CommentsModal
-          visible={commentsModalVisible}
-          postId={selectedPostId}
-          onClose={handleCloseComments}
-        />
-      )}
-
-      <Modal
-        visible={showDeletePostDialog}
-        animationType="fade"
-        transparent={true}
-        onRequestClose={cancelDeletePost}
-      >
-        <View style={styles.deleteModalOverlay}>
-          <View style={styles.deleteModalContent}>
-            <Text style={styles.deleteModalTitle}>Delete Post</Text>
-            <Text style={styles.deleteModalMessage}>
-              Are you sure you want to delete this post? This action cannot be
-              undone.
-            </Text>
-            <View style={styles.deleteModalActions}>
-              <TouchableOpacity
-                style={styles.deleteModalCancelButton}
-                onPress={cancelDeletePost}
-              >
-                <Text style={styles.deleteModalCancelText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.deleteModalDeleteButton}
-                onPress={confirmDeletePost}
-                disabled={isDeletingPost}
-              >
-                {isDeletingPost ? (
-                  <ActivityIndicator size="small" color={COLORS.white} />
-                ) : (
-                  <Text style={styles.deleteModalDeleteText}>Delete</Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      <ConfirmDialog
+        visible={exitDialogVisible}
+        onClose={() => setExitDialogVisible(false)}
+        onConfirm={handleExitGroup}
+        title="Leave Group"
+        description={
+          requiresApproval
+            ? "You'll lose access to this group's posts, and an admin will have to approve you again if you want to come back."
+            : "You'll lose access to this group's posts. You can join again at any time."
+        }
+        confirmText="Leave Group"
+        cancelText="Stay"
+      />
     </SafeAreaView>
   );
 };

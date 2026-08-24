@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -7,15 +7,14 @@ import {
   Pressable,
   Dimensions,
   Image,
-  FlatList,
   Modal,
   ActivityIndicator,
 } from "react-native";
 import RefreshableScrollView from "../../components/RefreshableScrollView";
-import { Menu, Button, Divider, FAB } from "react-native-paper";
+import { Menu, Button, Divider } from "react-native-paper";
 import { COLORS, DIMENSIONS } from "../../config/constants";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Add, ArrowDown } from "../../../assets";
+import { Add, ArrowDown, EyeHide, Tick } from "../../../assets";
 import FontWeight from "../../hooks/useInterFonts";
 import { Group } from "../../types";
 import { r } from "../../designing/responsiveDesigns";
@@ -24,6 +23,7 @@ import STRINGS from "../../config/strings";
 import BasicTopBar from "../../components/BasicTopBar";
 import { useGetAllGroupsQuery } from "../../services/api/groupsApi";
 import { useAuth } from "../../contexts/AuthContext";
+import { Toast } from "../../components/ToastManager";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -42,11 +42,14 @@ const GroupsScreen: React.FC<GroupsScreenProps> = ({ navigation }) => {
   const { isAuthenticated } = useAuth();
 
   const categories = ["All", "Gym", "Running", "Cycling", "Yoga", "Swimming"];
+  const isFiltered = selectedCategory !== "All";
 
   const {
     data: groupsData,
     isLoading,
     isFetching,
+    isError,
+    error,
     refetch,
   } = useGetAllGroupsQuery(
     {
@@ -56,7 +59,7 @@ const GroupsScreen: React.FC<GroupsScreenProps> = ({ navigation }) => {
     },
     { skip: !isAuthenticated }
   );
-  const userGroups =
+  const groups =
     groupsData?.status && groupsData?.data?.groups
       ? groupsData.data.groups
       : [];
@@ -65,10 +68,37 @@ const GroupsScreen: React.FC<GroupsScreenProps> = ({ navigation }) => {
       ? groupsData.data.pagination
       : null;
 
+  // A failed request used to fall through to the "No Groups Yet" empty state,
+  // which reads as "the server says there are none" instead of "we couldn't
+  // reach the server".
+  const loadErrorMessage = useMemo(() => {
+    if (!isError && groupsData?.status !== false) return null;
+    if (groupsData && groupsData.status === false) {
+      return groupsData.message || null;
+    }
+    const data = (error as any)?.data;
+    if (typeof data === "string") return data;
+    if (data && typeof data.message === "string") return data.message;
+    return null;
+  }, [isError, error, groupsData]);
+
+  const hasLoadError = isError || groupsData?.status === false;
+
+  useEffect(() => {
+    if (hasLoadError) {
+      Toast.error(loadErrorMessage || "Couldn't load groups. Pull to refresh.");
+    }
+  }, [hasLoadError, loadErrorMessage]);
+
   const handleRefresh = async () => {
     setRefreshing(true);
-    setPage(1);
-    await refetch();
+    if (page !== 1) {
+      // Re-fetching page N would merge another copy of it into the accumulated
+      // cache entry; dropping back to page 1 refetches from the top instead.
+      setPage(1);
+    } else {
+      await refetch();
+    }
     setRefreshing(false);
   };
 
@@ -84,28 +114,58 @@ const GroupsScreen: React.FC<GroupsScreenProps> = ({ navigation }) => {
     setMenuVisible(false);
   };
 
-  const renderGroupItem = ({ item: group }: { item: Group }) => (
-    <Pressable
-      style={styles.groupCard}
-      onPress={() => {
-        setSelectedGroup(group);
-        setShowGroupDetails(true);
-      }}
-    >
-      <View style={styles.groupHeader}>
-        <Text style={styles.groupName}>{group.name}</Text>
-        <Text style={styles.memberCount}>
-          {(group as any).memberCount || 0} members
+  const renderGroupItem = ({ item: group }: { item: Group }) => {
+    const privacyLabel = (group.privacy ?? "").trim();
+    const requiresApproval =
+      privacyLabel.length > 0 && privacyLabel.toLowerCase() !== "public";
+    const isPending =
+      (group.joinRequestStatus ?? "").toString().toLowerCase() === "pending";
+
+    return (
+      <Pressable
+        style={styles.groupCard}
+        onPress={() => {
+          setSelectedGroup(group);
+          setShowGroupDetails(true);
+        }}
+      >
+        <View style={styles.groupHeader}>
+          <Text style={styles.groupName}>{group.name}</Text>
+          <Text style={styles.memberCount}>
+            {group.memberCount ?? 0} members
+          </Text>
+        </View>
+        <Text style={styles.groupCategory}>
+          {group.type || "General"}
+          {group.location ? `  •  ${group.location}` : ""}
         </Text>
-      </View>
-      <Text style={styles.groupCategory}>
-        {group.type || "General"}
-        {"  "}•{"  "}
-        {group.location}
-      </Text>
-      <Text style={styles.groupDescription}>{group.description}</Text>
-    </Pressable>
-  );
+        <Text style={styles.groupDescription}>{group.description}</Text>
+
+        {(group.isMember || isPending || requiresApproval) && (
+          <View style={styles.badgeRow}>
+            {group.isMember ? (
+              <View style={styles.badge}>
+                <Image source={Tick} style={styles.badgeIcon} />
+                <Text style={styles.badgeText}>Joined</Text>
+              </View>
+            ) : isPending ? (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>Request pending</Text>
+              </View>
+            ) : null}
+            {requiresApproval && !group.isMember && (
+              <View style={styles.badge}>
+                <Image source={EyeHide} style={styles.badgeIcon} />
+                <Text style={styles.badgeText}>
+                  {privacyLabel} · approval needed
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
+      </Pressable>
+    );
+  };
 
   const openMenu = () => setMenuVisible(true);
   const closeMenu = () => setMenuVisible(false);
@@ -177,12 +237,40 @@ const GroupsScreen: React.FC<GroupsScreenProps> = ({ navigation }) => {
           <ActivityIndicator size="large" color={COLORS.primary} />
           <Text style={styles.loadingText}>Loading groups...</Text>
         </View>
-      ) : userGroups.length === 0 ? (
+      ) : hasLoadError && groups.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyTitle}>No Groups Yet</Text>
+          <Text style={styles.emptyTitle}>Couldn't load groups</Text>
           <Text style={styles.emptyText}>
-            Create your first group to start building your fitness community!
+            {loadErrorMessage ||
+              "Something went wrong reaching the server. Check your connection and try again."}
           </Text>
+          <TouchableOpacity
+            style={styles.createButton}
+            onPress={() => refetch()}
+          >
+            <Text style={styles.createButtonText}>Try Again</Text>
+          </TouchableOpacity>
+        </View>
+      ) : groups.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyTitle}>
+            {isFiltered ? `No ${selectedCategory} groups yet` : "No Groups Yet"}
+          </Text>
+          <Text style={styles.emptyText}>
+            {isFiltered
+              ? "Nobody has created a group in this category. Clear the filter to see everything, or start one yourself."
+              : "Create the first group to start building your fitness community!"}
+          </Text>
+          {isFiltered && (
+            <TouchableOpacity
+              style={[styles.createButton, styles.secondaryButton]}
+              onPress={() => handleCategorySelect("All")}
+            >
+              <Text style={[styles.createButtonText, styles.secondaryButtonText]}>
+                Show All Groups
+              </Text>
+            </TouchableOpacity>
+          )}
           <TouchableOpacity
             style={styles.createButton}
             onPress={() => navigation.navigate("ManageGroup")}
@@ -198,7 +286,7 @@ const GroupsScreen: React.FC<GroupsScreenProps> = ({ navigation }) => {
           refreshing={refreshing}
           onRefresh={handleRefresh}
         >
-          {userGroups.map((group) => (
+          {groups.map((group) => (
             <React.Fragment key={group.id}>
               {renderGroupItem({ item: group })}
             </React.Fragment>
@@ -364,6 +452,43 @@ const styles = StyleSheet.create({
     color: COLORS._5E5E5E,
     marginTop: 3,
     lineHeight: 20,
+  },
+  badgeRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginTop: DIMENSIONS.spacing.sm,
+  },
+  badge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: COLORS.background,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    marginRight: 8,
+    marginTop: 4,
+  },
+  badgeIcon: {
+    width: 12,
+    height: 12,
+    tintColor: COLORS.textSecondary,
+    marginRight: 5,
+  },
+  badgeText: {
+    fontSize: 11,
+    fontFamily: FontWeight.Medium,
+    color: COLORS.textSecondary,
+  },
+  secondaryButton: {
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    marginBottom: DIMENSIONS.spacing.sm,
+  },
+  secondaryButtonText: {
+    color: COLORS.text,
   },
   fab: {
     position: "absolute",

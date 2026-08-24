@@ -163,8 +163,6 @@ export const STRINGS = {
     viewProfile: "View Profile",
     guestUser: "Guest User",
     developmentUser: "Development User",
-    defaultLocation: "San Francisco, CA",
-    bio: "Fitness enthusiast on a mission to lift heavy and inspire others. Let's connect and crush some goals together! 🚀",
     tabs: {
       activity: "activity",
       achievements: "achievements",
@@ -214,6 +212,23 @@ export const STRINGS = {
     about: "About",
     logout: "Logout",
     version: "Version",
+    aboutApp: "About Bolic",
+    appVersion: "App Version",
+    privacyPolicy: "Privacy Policy",
+    termsOfService: "Terms of Service",
+    linkUnavailable: "Not available yet",
+    updateNotPersisted: "The server didn't save that change",
+    // The server ignores an empty `trainingTypes` array, so the last style
+    // cannot be removed. See BACKEND-ASK.md item 65.
+    keepOneTrainingStyle: "Keep at least one training style — your profile needs one to match you with anybody.",
+    linkOpenError: "Couldn't open that link",
+    notificationsDeliveryNote:
+      "Saves your preference and your device permission. The server does not deliver push notifications yet.",
+    notificationsBlocked: "Notifications are blocked in your device settings",
+    notificationsPermissionRequired:
+      "Allow notifications in your device settings to turn this on",
+    openSystemSettings: "Open device settings",
+    matchingPreferencesHint: "Pick the training styles you want to be matched on",
   },
 
   SHARE_WORKOUT: {
@@ -318,6 +333,28 @@ export const STRINGS = {
     comingSoon: "Coming Soon!",
     description:
       "This screen will allow users to track their workouts, log exercises, sets, reps, and monitor their progress.",
+  },
+
+  WORKOUT_HISTORY: {
+    title: "Workout History",
+    subtitle: "View / Manage your workout history",
+    startNew: "Start New Workout",
+    postIt: "Post it",
+    completed: "Completed:",
+    loadFailed: "Failed to load workout history",
+    retry: "Retry",
+    emptyTitle: "No workout history yet",
+    emptySubtitle: "Complete your first workout to see it here!",
+    viewDetails: "Exercise details",
+    hideDetails: "Hide details",
+    loggedSets: "Logged sets",
+    plannedExercises: "Workout plan",
+    noExerciseDetail:
+      "Exercise details aren't available for this session yet.",
+    setLabel: "Set",
+    setsSuffix: "sets",
+    exercisesSuffix: "exercises",
+    sharePrefillCaption: "Just finished",
   },
 
   FORGOT_PASSWORD: {
@@ -429,23 +466,38 @@ export const STRINGS = {
     messages: {
       sessionCancelled: "Session cancelled successfully",
       cancellationFailed: "Failed to cancel session",
+      refundFailed:
+        "Session cancelled, but the refund could not be started. Please contact support.",
     },
     cancellationModal: {
       title: "Cancel Session",
       subtitle:
         "Are you sure you want to cancel this session?",
+      paymentSummary: "Payment",
       refundTerms: "Refund Breakdown",
       refundLabels: {
-        sessionAmount: "Session Amount:",
-        processingFee: "Processing Fee (3%):",
-        refundableAmount: "Refundable Amount:",
+        sessionAmount: "Amount Paid:",
+        processingFee: "Processing Fee:",
+        refundableAmount: "Refund Amount:",
+        expectedArrival: "Expected Arrival:",
       },
-      details: [
-        "You will receive the refund within 5-7 business days",
-        "A 3% processing fee will be deducted from your refund",
-      ],
+      refundPending:
+        "Your refund amount and arrival date are confirmed by the payment provider after the session is cancelled.",
       confirmButton: "Confirm Cancellation",
     },
+  },
+
+  SELECT_DATE_TIME: {
+    availableSlots: "Available Slots",
+    firstAvailable: "First available",
+    loadingAvailability: "Loading availability...",
+    noSlotsToday: "No slots left today",
+    notAvailable: "Not available",
+    missingTrainer: "Select a trainer to see their availability.",
+    availabilityError: "Could not load availability. Pull to refresh or try again.",
+    noAvailability: "No availability published yet",
+    noAvailabilityHint:
+      "This trainer has not opened any slots. Check back later or message them.",
   },
 
   COMMON: {
@@ -543,6 +595,30 @@ export const STRINGS = {
     userRatingsMenu: "Ratings",
     emptyTitle: "No ratings yet",
     emptySubtitle: "Ratings appear here once someone you have trained with leaves one.",
+  },
+
+  ACHIEVEMENTS: {
+    title: "Achievements",
+    titleOther: "User Achievements",
+    subtitle: "Track your achievements",
+    subtitleOther: "View user achievements",
+    bookSession: "Book New Session",
+    loading: "Loading achievements...",
+    loadFailed: "Failed to load achievements.",
+    empty: "No achievements yet.",
+    emptyOther: "This user has no achievements yet.",
+    earnedSection: "Earned",
+    lockedSection: "Locked",
+    summary: (earned: number, total: number) => `${earned} of ${total} unlocked`,
+    earnedCount: (earned: number) =>
+      `${earned} ${earned === 1 ? "achievement" : "achievements"} earned`,
+    earnedOn: (date: string) => `Earned ${date}`,
+    earnedLabel: "Earned",
+    lockedLabel: "Locked",
+    progressLabel: (progress: number, target: number) => `${progress}/${target}`,
+    catalogueUnavailable:
+      "Locked achievements are unavailable right now, so only earned ones are shown.",
+    noProgressData: "Progress not tracked yet",
   },
 };
 

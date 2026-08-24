@@ -255,6 +255,9 @@ const WorkoutSessionScreen: React.FC<WorkoutSessionScreenProps> = ({ navigation,
         repsCompleted: Number.isFinite(reps) && reps > 0 ? reps : undefined,
         durationCompleted: isTimed ? currentExercise.duration : undefined,
         weightUsed: Number.isFinite(weight) && weight > 0 ? weight : undefined,
+        // Logged in pounds (US market). Sent explicitly — the server defaults to
+        // kg when the field is omitted, which would silently mislabel the set.
+        weightUnit: Number.isFinite(weight) && weight > 0 ? ('lbs' as const) : undefined,
       }).unwrap();
 
       if (!res?.status) {
@@ -422,7 +425,7 @@ const WorkoutSessionScreen: React.FC<WorkoutSessionScreenProps> = ({ navigation,
                     />
                   </View>
                   <View style={styles.setInputBlock}>
-                    <Text style={styles.setInputLabel}>Weight (kg)</Text>
+                    <Text style={styles.setInputLabel}>Weight (lbs)</Text>
                     <TextInput
                       style={styles.setInput}
                       value={weightInput}

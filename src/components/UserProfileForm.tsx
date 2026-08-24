@@ -1,4 +1,4 @@
-import React, { useState, useImperativeHandle, useCallback } from "react";
+import React, { useState, useImperativeHandle, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -9,12 +9,23 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Button, ProgressBar } from "react-native-paper";
-import { COLORS, LOCATION_CONFIG, TRAINING_TYPES } from "../config/constants";
+import { COLORS, TRAINING_TYPES } from "../config/constants";
+import {
+  fetchLocationSuggestions,
+  geocodeLocation,
+  type Coordinates,
+  type LocationSuggestion,
+} from "../utils/location";
 import { useGetTrainingTypesQuery } from "../services/api/userApi";
 import { useAuth } from '../contexts/AuthContext';
 
 interface UserProfileFormProps {
-  onNext?: (data: { location: string; specialties: string[] }) => void;
+  onNext?: (data: {
+    location: string;
+    latitude?: number | null;
+    longitude?: number | null;
+    specialties: string[];
+  }) => void;
   onBack?: () => void;
   initialLocation?: string;
   initialSpecialties?: string[];
@@ -30,7 +41,11 @@ const UserProfileForm = React.forwardRef<
   const [location, setLocation] = useState(initialLocation);
   const [selectedSpecialties, setSelectedSpecialties] = useState<string[]>(initialSpecialties);
   const [isLocationFocused, setIsLocationFocused] = useState(false);
-  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
+  const [coordinates, setCoordinates] = useState<Coordinates | null>(null);
+  // Bumped on every location edit/select so a slow geocode can't land
+  // coordinates for an address the user has already replaced.
+  const geocodeRequestRef = useRef(0);
   const [errors, setErrors] = useState<{
     location?: string;
     specialties?: string;
@@ -67,36 +82,20 @@ const UserProfileForm = React.forwardRef<
   };
 
   const fetchSuggestions = useCallback(async (query: string) => {
-    const trimmed = query.trim();
-
-    if (!trimmed || trimmed.length < 2) {
-      setSuggestions([]);
-      return;
-    }
-
-    try {
-      const response = await fetch(
-        `${LOCATION_CONFIG.geocodeSuggestUrl}?text=${encodeURIComponent(
-          trimmed
-        )}&f=json`
-      );
-      const data = await response.json();
-
-      if (data?.suggestions) {
-        setSuggestions(data.suggestions);
-      } else {
-        setSuggestions([]);
-      }
-    } catch (error) {
-      console.error("Error fetching suggestions:", error);
-      setSuggestions([]);
-    }
+    setSuggestions(await fetchLocationSuggestions(query, 2));
   }, []);
 
-  const handleSelectSuggestion = (text: string) => {
-    setLocation(text);
+  const handleSelectSuggestion = async (suggestion: LocationSuggestion) => {
+    const requestId = ++geocodeRequestRef.current;
+    setLocation(suggestion?.text || "");
+    setCoordinates(null);
     setSuggestions([]);
     setIsLocationFocused(false);
+
+    const resolved = await geocodeLocation(suggestion);
+    if (geocodeRequestRef.current === requestId) {
+      setCoordinates(resolved);
+    }
   };
 
   const toggleSpecialty = (specialty: string) => {
@@ -118,10 +117,22 @@ const UserProfileForm = React.forwardRef<
     return Object.keys(newErrors).length === 0;
   };
 
-  const onSubmit = () => {
+  const onSubmit = async () => {
     if (validate()) {
       if (onNext) {
-        onNext({ location, specialties: selectedSpecialties });
+        // Geocode free-typed input too, so /user/update gets coordinates
+        // even when the user never tapped a suggestion.
+        const resolved = coordinates ?? (await geocodeLocation(location.trim()));
+        if (resolved) {
+          setCoordinates(resolved);
+        }
+
+        onNext({
+          location,
+          latitude: resolved?.latitude ?? null,
+          longitude: resolved?.longitude ?? null,
+          specialties: selectedSpecialties,
+        });
       }
     }
   };
@@ -138,6 +149,8 @@ const UserProfileForm = React.forwardRef<
               value={location}
               onChangeText={(text) => {
                 setLocation(text);
+                geocodeRequestRef.current += 1;
+                setCoordinates(null);
                 fetchSuggestions(text);
               }}
               onFocus={() => setIsLocationFocused(true)}
@@ -152,7 +165,7 @@ const UserProfileForm = React.forwardRef<
                   <TouchableOpacity
                     key={item.magicKey}
                     style={styles.suggestionItem}
-                    onPress={() => handleSelectSuggestion(item.text)}
+                    onPress={() => handleSelectSuggestion(item)}
                   >
                     <Text style={styles.suggestionText}>{item.text}</Text>
                   </TouchableOpacity>

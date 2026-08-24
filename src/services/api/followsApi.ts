@@ -18,7 +18,7 @@ export const followsApi = baseApi.injectEndpoints({
         method: 'POST',
         body,
       }),
-      invalidatesTags: ['User', 'Matching'],
+      invalidatesTags: ['User', 'Matching', 'Connections'],
     }),
     unfollowUser: builder.mutation<ApiResponse<any>, UnfollowPayload>({
       query: (body) => ({
@@ -26,7 +26,7 @@ export const followsApi = baseApi.injectEndpoints({
         method: 'POST',
         body,
       }),
-      invalidatesTags: ['User', 'Matching'],
+      invalidatesTags: ['User', 'Matching', 'Connections'],
     }),
     getFollowers: builder.query<ApiResponse<any>, { userId: string; page?: number; limit?: number }>({
       query: ({ userId, page = 1, limit = 10 }) => ({

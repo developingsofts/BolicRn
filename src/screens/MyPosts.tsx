@@ -20,7 +20,11 @@ import BasicTopBar from "../components/BasicTopBar";
 import ReactionSummary from "../components/ReactionSummary";
 import ReactionPicker from "../components/ReactionPicker";
 import { Like, CommentIcon, ThreeDots } from "../../assets";
-import { COLORS, DIMENSIONS } from "../config/constants";
+import {
+  COLORS,
+  DIMENSIONS,
+  formatWorkoutDurationMinutes,
+} from "../config/constants";
 import FontWeight from "../hooks/useInterFonts";
 import { useAuth } from "../contexts/AuthContext";
 import {
@@ -315,8 +319,14 @@ const MyPosts: React.FC = ({ navigation, route }: any) => {
                           {post.workout.title}
                         </Text>
                         <Text style={styles.postWorkoutDetails}>
-                          {post.workout.totalDuration} min •{" "}
-                          {post.workout.difficulty}
+                          {[
+                            formatWorkoutDurationMinutes(
+                              post.workout.totalDuration
+                            ),
+                            post.workout.difficulty,
+                          ]
+                            .filter(Boolean)
+                            .join("  •  ")}
                         </Text>
                       </View>
                     </View>

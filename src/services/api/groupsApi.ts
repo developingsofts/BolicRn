@@ -5,10 +5,6 @@ import type { ApiResponse } from './types';
 
 type GroupDetailsResponse = Group;
 
-interface GroupActionPayload {
-  groupId: string;
-}
-
 interface CreateGroupPayload {
   name: string;
   description: string;
@@ -51,6 +47,56 @@ interface RespondToJoinRequestPayload {
   action: "approve" | "reject";
 }
 
+type GroupListResponse = ApiResponse<{ groups: Group[]; pagination: any }>;
+
+/**
+ * Pages of `/group/all` and `/group/my-groups` accumulate into a single cache
+ * entry. RTK Query re-runs the *current* page arg whenever the `Groups` tag is
+ * invalidated (join / leave / create / delete), so a plain concat duplicated
+ * every group on the last-loaded page. Merge by id: refresh entries we already
+ * hold, append the ones we don't.
+ */
+const mergeGroupPages = (
+  currentCache: GroupListResponse,
+  newItems: GroupListResponse,
+  page?: number
+): GroupListResponse => {
+  if (!page || page === 1) {
+    return newItems;
+  }
+
+  if (!currentCache.status || !newItems.status) {
+    return newItems;
+  }
+
+  const existing = currentCache.data?.groups ?? [];
+  const incoming = newItems.data?.groups ?? [];
+  const incomingById = new Map(incoming.map((g) => [String(g.id), g]));
+  const seen = new Set<string>();
+
+  const merged: Group[] = [];
+  existing.forEach((group) => {
+    const key = String(group.id);
+    if (seen.has(key)) return;
+    seen.add(key);
+    merged.push(incomingById.get(key) ?? group);
+  });
+  incoming.forEach((group) => {
+    const key = String(group.id);
+    if (seen.has(key)) return;
+    seen.add(key);
+    merged.push(group);
+  });
+
+  return {
+    ...newItems,
+    data: {
+      groups: merged,
+      pagination: newItems.data?.pagination,
+    },
+  };
+};
+
 export const groupsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getAllGroups: builder.query<
@@ -62,9 +108,9 @@ export const groupsApi = baseApi.injectEndpoints({
         const limit = params?.limit || 10;
         const type = params?.type;
 
-        let url = `/group/all?page=${page}&limit=${limit}`;
+        let url = `${API_END_POINTS.groups.all}?page=${page}&limit=${limit}`;
         if (type && type !== 'All') {
-          url += `&type=${type}`;
+          url += `&type=${encodeURIComponent(type)}`;
         }
 
         return {
@@ -76,26 +122,8 @@ export const groupsApi = baseApi.injectEndpoints({
       serializeQueryArgs: ({ endpointName, queryArgs }) => {
         return `${endpointName}-${queryArgs?.type || 'All'}`;
       },
-      merge: (currentCache, newItems, { arg }) => {
-        if (!arg || arg.page === 1) {
-          return newItems;
-        }
-
-        if ('data' in currentCache && 'data' in newItems && currentCache.status && newItems.status) {
-          return {
-            ...newItems,
-            data: {
-              groups: [
-                ...(currentCache.data?.groups || []),
-                ...(newItems.data?.groups || [])
-              ],
-              pagination: newItems.data?.pagination
-            }
-          };
-        }
-
-        return newItems;
-      },
+      merge: (currentCache, newItems, { arg }) =>
+        mergeGroupPages(currentCache, newItems, arg?.page),
       forceRefetch({ currentArg, previousArg }) {
         return currentArg?.page !== previousArg?.page || currentArg?.type !== previousArg?.type;
       },
@@ -110,9 +138,9 @@ export const groupsApi = baseApi.injectEndpoints({
         const limit = params?.limit || 10;
         const type = params?.type;
 
-        let url = `/group/my-groups?page=${page}&limit=${limit}`;
+        let url = `${API_END_POINTS.groups.myGroups}?page=${page}&limit=${limit}`;
         if (type && type !== 'All') {
-          url += `&type=${type}`;
+          url += `&type=${encodeURIComponent(type)}`;
         }
 
         return {
@@ -124,26 +152,8 @@ export const groupsApi = baseApi.injectEndpoints({
       serializeQueryArgs: ({ endpointName, queryArgs }) => {
         return `${endpointName}-${queryArgs?.type || 'All'}`;
       },
-      merge: (currentCache, newItems, { arg }) => {
-        if (!arg || arg.page === 1) {
-          return newItems;
-        }
-
-        if ('data' in currentCache && 'data' in newItems && currentCache.status && newItems.status) {
-          return {
-            ...newItems,
-            data: {
-              groups: [
-                ...(currentCache.data?.groups || []),
-                ...(newItems.data?.groups || [])
-              ],
-              pagination: newItems.data?.pagination
-            }
-          };
-        }
-
-        return newItems;
-      },
+      merge: (currentCache, newItems, { arg }) =>
+        mergeGroupPages(currentCache, newItems, arg?.page),
       forceRefetch({ currentArg, previousArg }) {
         return currentArg?.page !== previousArg?.page || currentArg?.type !== previousArg?.type;
       },
@@ -154,7 +164,7 @@ export const groupsApi = baseApi.injectEndpoints({
       { groupId: string }
     >({
       query: ({ groupId }) => ({
-        url: `/group/${groupId}`,
+        url: API_END_POINTS.groups.details(groupId),
         method: 'GET',
       }),
       providesTags: ['Groups'],
@@ -165,7 +175,7 @@ export const groupsApi = baseApi.injectEndpoints({
       GetGroupMembersPayload
     >({
       query: ({ groupId, page = 1, limit = 20 }) => ({
-        url: `/group/members/${groupId}?page=${page}&limit=${limit}`,
+        url: `${API_END_POINTS.groups.members(groupId)}?page=${page}&limit=${limit}`,
         method: 'GET',
       }),
       providesTags: ['Groups'],
@@ -176,7 +186,7 @@ export const groupsApi = baseApi.injectEndpoints({
       GetGroupPostsPayload
     >({
       query: ({ groupId, page = 1, limit = 10 }) => ({
-        url: `/group/posts/${groupId}?page=${page}&limit=${limit}`,
+        url: `${API_END_POINTS.groups.posts(groupId)}?page=${page}&limit=${limit}`,
         method: 'GET',
       }),
       providesTags: ['Groups', 'Posts'],
@@ -187,7 +197,7 @@ export const groupsApi = baseApi.injectEndpoints({
       CreateGroupPayload
     >({
       query: (body) => ({
-        url: '/group/create',
+        url: API_END_POINTS.groups.create,
         method: 'POST',
         body,
       }),
@@ -199,7 +209,7 @@ export const groupsApi = baseApi.injectEndpoints({
       UpdateGroupPayload
     >({
       query: ({ groupId, ...body }) => ({
-        url: `/group/update/${groupId}`,
+        url: API_END_POINTS.groups.update(groupId),
         method: 'PUT',
         body,
       }),
@@ -211,7 +221,7 @@ export const groupsApi = baseApi.injectEndpoints({
       { groupId: string }
     >({
       query: ({ groupId }) => ({
-        url: `/group/delete/${groupId}`,
+        url: API_END_POINTS.groups.delete(groupId),
         method: 'DELETE',
       }),
       invalidatesTags: ['Groups'],
@@ -222,7 +232,7 @@ export const groupsApi = baseApi.injectEndpoints({
       { groupId: string }
     >({
       query: ({ groupId }) => ({
-        url: `/group/join/${groupId}`,
+        url: API_END_POINTS.groups.join(groupId),
         method: 'POST',
       }),
       invalidatesTags: ['Groups'],
@@ -233,7 +243,7 @@ export const groupsApi = baseApi.injectEndpoints({
       { groupId: string }
     >({
       query: ({ groupId }) => ({
-        url: `/group/request/${groupId}`,
+        url: API_END_POINTS.groups.requestJoin(groupId),
         method: 'POST',
       }),
       invalidatesTags: ['Groups'],
@@ -244,10 +254,12 @@ export const groupsApi = baseApi.injectEndpoints({
       GetGroupJoinRequestsPayload
     >({
       query: ({ groupId, status }) => ({
-        url: `/group/${groupId}/requests${status ? `?status=${status}` : ''}`,
+        url: `${API_END_POINTS.groups.joinRequests(groupId)}${
+          status ? `?status=${encodeURIComponent(status)}` : ''
+        }`,
         method: 'GET',
       }),
-  providesTags: ['Groups'],
+      providesTags: ['Groups'],
     }),
 
     respondToJoinRequest: builder.mutation<
@@ -255,11 +267,11 @@ export const groupsApi = baseApi.injectEndpoints({
       RespondToJoinRequestPayload
     >({
       query: ({ requestId, action }) => ({
-        url: `/group/requests/${requestId}/respond`,
+        url: API_END_POINTS.groups.respondToJoinRequest(requestId),
         method: 'POST',
         body: { action },
       }),
-  invalidatesTags: ['Groups'],
+      invalidatesTags: ['Groups'],
     }),
   }),
   overrideExisting: false,

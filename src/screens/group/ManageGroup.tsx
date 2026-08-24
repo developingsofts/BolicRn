@@ -107,7 +107,7 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
     isEditing && group ? group.description : ""
   );
   const [location, setLocation] = useState(
-    isEditing && group ? group.location : "Downtown"
+    isEditing && group ? group.location ?? "" : ""
   );
   const [groupType, setGroupType] = useState(
     isEditing && group ? group.type || "Gym" : "Gym"
@@ -117,7 +117,6 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
   );
   const [selectedMemberIds, setSelectedMemberIds] = useState<number[]>([]);
 
-  const [locationMenuVisible, setLocationMenuVisible] = useState(false);
   const [groupTypeMenuVisible, setGroupTypeMenuVisible] = useState(false);
   const [privacyMenuVisible, setPrivacyMenuVisible] = useState(false);
   const [memberMenuVisible, setMemberMenuVisible] = useState<string | null>(
@@ -203,9 +202,14 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
     [joinRequests, handledRequestIds]
   );
 
-  const locationOptions = ["Downtown", "Uptown", "Midtown", "Suburbs"];
   const groupTypeOptions = ["Gym", "Running", "Cycling", "Swimming", "Yoga"];
-  const privacyOptions = ["Public", "Private", "Invite Only"];
+  const privacyOptions = ["Public", "Private"];
+
+  // A group saved before this screen dropped unsupported privacy values (e.g.
+  // the old "Invite Only", which promised an invite flow the app never had) can
+  // still come back from the server. Keep showing the stored value so nothing is
+  // silently rewritten, but make the user pick a supported one before saving.
+  const isPrivacyUnsupported = Boolean(privacy) && !privacyOptions.includes(privacy);
 
   const handleSave = async () => {
     if (!groupName.trim()) {
@@ -218,6 +222,19 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
       return;
     }
 
+    if (!location.trim()) {
+      Alert.alert("Error", "Please enter a group location");
+      return;
+    }
+
+    if (isPrivacyUnsupported) {
+      Alert.alert(
+        "Unsupported privacy setting",
+        `"${privacy}" is no longer supported. Please choose Public or Private before saving.`
+      );
+      return;
+    }
+
     try {
       if (isEditing && group) {
         await updateGroup({
@@ -225,7 +242,7 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
           name: groupName.trim(),
           description: groupDescription.trim(),
           type: groupType,
-          location: location,
+          location: location.trim(),
           privacy: privacy,
         }).unwrap();
 
@@ -235,7 +252,7 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
           name: groupName.trim(),
           description: groupDescription.trim(),
           type: groupType,
-          location: location,
+          location: location.trim(),
           privacy: privacy,
           memberIds: selectedMemberIds,
         }).unwrap();
@@ -490,10 +507,12 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
           }
           bottomView={
             <View style={styles.heroTags}>
-              <View style={styles.locationTag}>
-                <Image source={Location} style={{ width: 16, height: 16, tintColor: COLORS.white }} />
-                <Text style={styles.tagText}>{location}</Text>
-              </View>
+              {location.trim() ? (
+                <View style={styles.locationTag}>
+                  <Image source={Location} style={{ width: 16, height: 16, tintColor: COLORS.white }} />
+                  <Text style={styles.tagText}>{location.trim()}</Text>
+                </View>
+              ) : null}
               <View style={styles.categoryTag}>
                 <Image source={Gym} style={{ width: 16, height: 16, tintColor: COLORS.white }} />
                 <Text style={styles.tagText}>{groupType}</Text>
@@ -529,53 +548,20 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
               />
             </View>
 
-            <View style={styles.dropdownRow}>
-              <View style={styles.dropdownItem}>
-                <Text style={styles.inputLabel}>Change Location</Text>
-                <Menu
-                  visible={locationMenuVisible}
-                  contentStyle={{
-                    backgroundColor: COLORS.white,
-                    width: "100%",
-                  }}
-                  style={{ width: "40%" }}
-                  onDismiss={() => setLocationMenuVisible(false)}
-                  anchorPosition="bottom"
-                  anchor={
-                    <TouchableOpacity
-                      style={styles.dropdown}
-                      onPress={() => setLocationMenuVisible(true)}
-                    >
-                      <Text style={styles.dropdownText}>
-                        {location ? location : "Select Location"}
-                      </Text>
-                      <Ionicons
-                        name="chevron-down"
-                        size={16}
-                        color={COLORS.primary}
-                      />
-                    </TouchableOpacity>
-                  }
-                >
-                  {locationOptions.map((option) => (
-                    <Menu.Item
-                      key={option}
-                      style={{ width: "100%" }}
-                      titleStyle={{
-                        color: COLORS.black,
-                        fontFamily: FontWeight.Medium,
-                        fontSize: 14,
-                      }}
-                      onPress={() => {
-                        setLocation(option);
-                        setLocationMenuVisible(false);
-                      }}
-                      title={option}
-                    />
-                  ))}
-                </Menu>
-              </View>
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Location</Text>
+              <TextInput
+                style={styles.textInput}
+                value={location}
+                onChangeText={setLocation}
+                placeholder="e.g. San Francisco, CA"
+                placeholderTextColor={COLORS._5E5E5E}
+                autoCapitalize="words"
+                maxLength={200}
+              />
+            </View>
 
+            <View style={styles.dropdownRow}>
               <View style={styles.dropdownItem}>
                 <Text style={styles.inputLabel}>Group Type</Text>
                 <Menu
@@ -675,6 +661,11 @@ const ManageGroup: React.FC<ManageGroupProps> = ({
                 />
               ))}
             </Menu>
+            {isPrivacyUnsupported && (
+              <Text style={styles.privacyNotice}>
+                {`"${privacy}" is no longer supported — this app has no invite flow, so nobody can be invited into the group. Choose Public or Private to save your changes.`}
+              </Text>
+            )}
           </View>
           {isEditing && (
             <View style={styles.groupInfoCard}>
@@ -1022,6 +1013,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.primary,
     fontFamily: FontWeight.Medium,
+  },
+  privacyNotice: {
+    marginTop: r(8),
+    fontSize: 12,
+    lineHeight: r(18),
+    fontFamily: FontWeight.Regular,
+    color: COLORS._EB3434,
   },
   membersHeader: {
     flexDirection: "row",

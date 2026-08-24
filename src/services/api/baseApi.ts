@@ -76,7 +76,17 @@ const baseQueryWithErrorHandling: BaseQueryFn<
         | string;
     };
 
-    if (error.status !== 404) {
+    const errorData =
+      error.data && typeof error.data === "object"
+        ? (error.data as { code?: string })
+        : null;
+    // A private group's roster answers 403 GROUP_PRIVATE to non-members; like
+    // the legacy 404, that renders as an empty list, not an error state (the
+    // details screen shows its privacy notice instead).
+    const isPrivateGroup =
+      error.status === 403 && errorData?.code === "GROUP_PRIVATE";
+
+    if (error.status !== 404 && !isPrivateGroup) {
       return null;
     }
 
@@ -140,6 +150,36 @@ const baseQueryWithErrorHandling: BaseQueryFn<
   const coercedMembersResponse = coerceEmptyMembers404();
   if (coercedMembersResponse) {
     result = { data: coercedMembersResponse } as typeof result;
+  }
+
+  // Same rule for a private group's posts: 403 GROUP_PRIVATE becomes an empty
+  // feed so the details screen renders its privacy notice, not an error.
+  if (
+    result?.error &&
+    (result.error as FetchBaseQueryError).status === 403 &&
+    typeof url === "string" &&
+    url.includes("/group/posts/") &&
+    typeof (result.error as any).data === "object" &&
+    (result.error as any).data?.code === "GROUP_PRIVATE"
+  ) {
+    result = {
+      data: {
+        status: true,
+        statusCode: 200,
+        message:
+          (result.error as any).data?.message || "This group is private",
+        data: {
+          posts: [],
+          pagination: {
+            page: 1,
+            limit: 10,
+            total: 0,
+            totalPages: 0,
+            hasNextPage: false,
+          },
+        },
+      },
+    } as unknown as typeof result;
   }
 
   if (

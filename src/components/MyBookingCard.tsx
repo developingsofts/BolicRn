@@ -1,22 +1,30 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { COLORS } from "../config/constants";
 import FontWeight from "../hooks/useInterFonts";
-import ConfirmDialog from "./ConfirmDialog";
+import ConfirmationDialog from "./ConfirmationDialog";
 import { BookingData } from "../services/api/bookingApi";
 
 interface MyBookingCardProps {
-  id: string;
+  id: string | number;
   sessionType: string;
   date: string;
   timeRange: string;
   clientName: string;
   clientInitial: string;
   booking: BookingData;
-  onDecline?: (clientName: string) => void;
+  onDecline?: (clientName: string) => void | Promise<void>;
   onReschedule?: (clientName: string) => void;
   hideActions?: boolean;
   navigation?: any;
+  /** Cancel request for this card is in flight. */
+  isDeclining?: boolean;
+  /** Another card's cancel is in flight — block this one too. */
+  disabled?: boolean;
+  declineDialogTitle?: string;
+  declineDialogMessage?: string;
+  declineConfirmLabel?: string;
+  declineCancelLabel?: string;
 }
 
 const MyBookingCard = ({
@@ -31,25 +39,49 @@ const MyBookingCard = ({
   onReschedule,
   hideActions,
   navigation,
+  isDeclining = false,
+  disabled = false,
+  declineDialogTitle = "Decline Client Request",
+  declineDialogMessage,
+  declineConfirmLabel = "Decline",
+  declineCancelLabel = "Keep Session",
 }: MyBookingCardProps) => {
   const [showDeclineDialog, setShowDeclineDialog] = useState(false);
   const [dateTimeHeight, setDateTimeHeight] = useState(0);
+  const [submitting, setSubmitting] = useState(false);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  const busy = submitting || isDeclining;
+  const actionsBlocked = busy || disabled;
 
   const handleDecline = () => {
+    if (actionsBlocked) return;
     setShowDeclineDialog(true);
   };
 
-  const handleDeclineConfirm = () => {
-    setShowDeclineDialog(false);
-    if (onDecline) onDecline(clientName);
+  const handleDeclineConfirm = async () => {
+    if (busy) return;
+    setSubmitting(true);
+    try {
+      await onDecline?.(clientName);
+    } finally {
+      if (mountedRef.current) {
+        setSubmitting(false);
+        setShowDeclineDialog(false);
+      }
+    }
   };
 
   const handleReschedule = () => {
+    if (actionsBlocked) return;
     if (navigation && typeof navigation.navigate === "function") {
-      console.log(
-        "Navigating to RescheduleSessionScreen with bookingId:",
-        clientName,
-      );
       if (booking) {
         navigation.navigate("RescheduleSession", {
           booking,
@@ -57,8 +89,6 @@ const MyBookingCard = ({
       }
     } else if (onReschedule) {
       onReschedule(clientName);
-    } else {
-      alert(`Booking with ${clientName} has been rescheduled`);
     }
   };
 
@@ -93,16 +123,26 @@ const MyBookingCard = ({
       {!hideActions && (
         <View style={styles.actions}>
           <TouchableOpacity
-            style={[styles.actionButton, styles.declineButton]}
+            style={[
+              styles.actionButton,
+              styles.declineButton,
+              actionsBlocked && styles.actionButtonDisabled,
+            ]}
             onPress={handleDecline}
+            disabled={actionsBlocked}
           >
             <Text style={[styles.actionButtonText, styles.declineButtonText]}>
-              Decline
+              {declineConfirmLabel}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.actionButton, styles.rescheduleButton]}
+            style={[
+              styles.actionButton,
+              styles.rescheduleButton,
+              actionsBlocked && styles.actionButtonDisabled,
+            ]}
             onPress={handleReschedule}
+            disabled={actionsBlocked}
           >
             <Text
               style={[styles.actionButtonText, styles.rescheduleButtonText]}
@@ -112,16 +152,18 @@ const MyBookingCard = ({
           </TouchableOpacity>
         </View>
       )}
-      <ConfirmDialog
+      <ConfirmationDialog
         visible={showDeclineDialog}
-        onClose={() => setShowDeclineDialog(false)}
+        onCancel={() => setShowDeclineDialog(false)}
         onConfirm={handleDeclineConfirm}
-        title="Decline Client Request"
-        description={`Confirm if you wish to decline upcoming client session request for the ${date} ${timeRange}.
-
-Client will be notified and refund will be initiated.`}
-        confirmText="Delete"
-        cancelText="Cancel"
+        loading={busy}
+        title={declineDialogTitle}
+        message={
+          declineDialogMessage ??
+          `Decline the upcoming client session on ${date} at ${timeRange}? The client will be notified and a refund will be initiated.`
+        }
+        confirmLabel={declineConfirmLabel}
+        cancelLabel={declineCancelLabel}
       />
     </View>
   );
@@ -235,6 +277,9 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     alignItems: "center",
     backgroundColor: COLORS.surface,
+  },
+  actionButtonDisabled: {
+    opacity: 0.5,
   },
   declineButton: {
     backgroundColor: COLORS.surface,

@@ -14,7 +14,11 @@ import {
 } from "react-native";
 import RefreshableScrollView from "../components/RefreshableScrollView";
 import { useAuth } from "../contexts/AuthContext";
-import { COLORS, DIMENSIONS } from "../config/constants";
+import {
+  COLORS,
+  DIMENSIONS,
+  formatWorkoutDurationMinutes,
+} from "../config/constants";
 import STRINGS from "../config/strings";
 import { useFocusEffect } from "@react-navigation/native";
 import { storageService } from "../services/storage";
@@ -67,6 +71,7 @@ import {
 import CommentsModal from "../components/CommentsModal";
 import ConfirmationDialog from "../components/ConfirmationDialog";
 import { r } from "../designing/responsiveDesigns";
+import { formatDistance } from "../utils/location";
 import { ResizeMode } from "expo-av";
 import SelectWorkoutScreen from "./SelectWorkoutScreen";
 
@@ -139,6 +144,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const [showDeletePostDialog, setShowDeletePostDialog] = useState(false);
   const [postToDelete, setPostToDelete] = useState<string | null>(null);
   const [showAllWorkoutExercises, setShowAllWorkoutExercises] = useState(false);
+  const [showAllNotes, setShowAllNotes] = useState(false);
   const [noteBeingDeleted, setNoteBeingDeleted] = useState<string | null>(null);
   const [quickActionsExpanded, setQuickActionsExpanded] = useState(false);
 
@@ -629,7 +635,14 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
       title: achievement?.title ?? "Achievement unlocked",
       description: achievement?.description ?? "Keep progressing!",
       icon: achievement?.icon ?? "",
-      unlocked: true,
+      // This endpoint returns the user's *earned* achievements, so a row is unlocked
+      // unless the payload says otherwise. Never hardcode it.
+      unlocked:
+        typeof achievement?.unlocked === "boolean"
+          ? achievement.unlocked
+          : typeof achievement?.earned === "boolean"
+            ? achievement.earned
+            : true,
       progress:
         achievement?.progress ??
         achievement?.currentProgress ??
@@ -674,6 +687,11 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         name,
         trainingTypes,
         location,
+        distance: formatDistance(partner?.distance),
+        compatibility:
+          typeof partner?.compatibility === "number"
+            ? Math.round(partner.compatibility)
+            : null,
         experienceLevel: partner?.experienceLevel ?? null,
         imageUrl: partner?.imageUrl ?? partner?.profilePicture ?? null,
       };
@@ -813,8 +831,11 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
           const postDetailParts: string[] = [];
           if (isWorkoutShare) {
-            if (workoutDetails?.totalDuration) {
-              postDetailParts.push(`${workoutDetails.totalDuration} min`);
+            const sharedDuration = formatWorkoutDurationMinutes(
+              workoutDetails?.totalDuration
+            );
+            if (sharedDuration) {
+              postDetailParts.push(sharedDuration);
             }
             if (workoutDetails?.difficulty) {
               postDetailParts.push(String(workoutDetails.difficulty));
@@ -1561,8 +1582,14 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                               {post.workout.title}
                             </Text>
                             <Text style={styles.postWorkoutDetails}>
-                              {post.workout.totalDuration} min •{" "}
-                              {post.workout.difficulty}
+                              {[
+                                formatWorkoutDurationMinutes(
+                                  post.workout.totalDuration
+                                ),
+                                post.workout.difficulty,
+                              ]
+                                .filter(Boolean)
+                                .join("  •  ")}
                             </Text>
                           </View>
                         </View>
@@ -1713,10 +1740,16 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                     detailParts.push(partner.trainingTypes[0]);
                   }
 
-                  if (partner.location) {
+                  if (partner.distance) {
+                    detailParts.push(partner.distance);
+                  } else if (partner.location) {
                     detailParts.push(partner.location);
                   } else if (partner.experienceLevel) {
                     detailParts.push(partner.experienceLevel);
+                  }
+
+                  if (partner.compatibility !== null) {
+                    detailParts.push(`${partner.compatibility}% match`);
                   }
 
                   const detailText =
@@ -1920,7 +1953,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                       <ActivityIndicator size="small" color={COLORS.primary} />
                     </View>
                   )}
-                  {notes.slice(0, 3).map((note) => (
+                  {(showAllNotes ? notes : notes.slice(0, 3)).map((note) => (
                     <View key={note.id} style={styles.noteItem}>
                       <Text style={styles.noteText} numberOfLines={2}>
                         {note.text}
@@ -1953,9 +1986,15 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                     </View>
                   ))}
                   {notes.length > 3 && (
-                    <TouchableOpacity style={styles.viewAllNotesButton}>
+                    <TouchableOpacity
+                      style={styles.viewAllNotesButton}
+                      onPress={() => setShowAllNotes((prev) => !prev)}
+                      activeOpacity={0.8}
+                    >
                       <Text style={styles.viewAllNotesText}>
-                        View all {notes.length} notes
+                        {showAllNotes
+                          ? "Show fewer notes"
+                          : `View all ${notes.length} notes`}
                       </Text>
                     </TouchableOpacity>
                   )}
@@ -1991,7 +2030,9 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                     ? `${achievement.progress}/${achievement.maxProgress}`
                     : achievement.unlocked
                       ? "Unlocked"
-                      : `${Math.round(progressPercentage)}%`;
+                      : // No real progress numbers from the API — say so rather than
+                        // showing a made-up percentage.
+                        STRINGS.ACHIEVEMENTS.lockedLabel;
 
                   return (
                     <View key={achievement.id} style={styles.achievementCard}>

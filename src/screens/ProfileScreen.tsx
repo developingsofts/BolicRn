@@ -14,6 +14,8 @@ import {
   useFollowUserMutation,
   useUnfollowUserMutation,
 } from "../services/api/followsApi";
+import { useGetUserConnectionsQuery } from "../services/api/connectionsApi";
+import { useGetUserAchievementsQuery } from "../services/api/workoutApi";
 import type { User, UserProfile } from "../types";
 import { COLORS, DIMENSIONS } from "../config/constants";
 import STRINGS from "../config/strings";
@@ -107,6 +109,41 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
   const { data: myProfileData, refetch: refetchMyProfile } = myProfileQuery;
   const { data: userProfileData, refetch: refetchUserProfile } =
     userProfileQuery;
+
+  // Whose stats we are counting: our own id on our own profile, otherwise the
+  // profile being viewed.
+  const statsUserId = isOwnProfile ? user?.id : userId;
+
+  // The profile endpoint's partnersCount is the platform-wide user total, so
+  // count the user's actual connections instead. page/limit match the
+  // Connections screen's first page so the cache entry is shared.
+  const { data: connectionsData, refetch: refetchConnections } =
+    useGetUserConnectionsQuery(
+      { userId: statsUserId ?? "", page: 1, limit: 20 },
+      { skip: !isAuthenticated || !statsUserId },
+    );
+  const connectionsPayload =
+    connectionsData && connectionsData.status === true
+      ? connectionsData.data
+      : undefined;
+  const partnersCount =
+    connectionsPayload?.pagination?.total ??
+    connectionsPayload?.users?.length ??
+    0;
+
+  // Awards = the achievements this user has actually earned, i.e. exactly the
+  // list the Achievements screen renders. Same args as that screen so the cache
+  // entry is shared. Falls back to the profile payload's awardsCount only until
+  // the list resolves.
+  const { data: achievementsData, refetch: refetchAchievements } =
+    useGetUserAchievementsQuery(
+      { userId: statsUserId },
+      { skip: !isAuthenticated || !statsUserId },
+    );
+  const earnedAchievementsCount =
+    achievementsData && achievementsData.status === true
+      ? (achievementsData.data ?? []).length
+      : undefined;
 
   useEffect(() => {
     const describe = (
@@ -212,6 +249,9 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
     } else if (userId) {
       await refetchUserProfile();
     }
+    if (statsUserId) {
+      await Promise.all([refetchConnections(), refetchAchievements()]);
+    }
     setRefreshing(false);
   };
 
@@ -219,9 +259,17 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
     const targetUserId = passedUser?.id || userId;
     if (!targetUserId) return;
     try {
-      await followUser({ followUserId: targetUserId });
+      // unwrap() + status check so a refused request throws — without it the
+      // button flipped to "Following" even when the server said no.
+      const response = await followUser({
+        followUserId: targetUserId,
+      }).unwrap();
+      if (!response.status) {
+        throw new Error(response.message || "Failed to follow this user");
+      }
       setIsFollowing(true);
-    } catch (error) {
+    } catch (error: any) {
+      Toast.error(error?.message || "Failed to follow this user");
       console.error("Follow error:", error);
     }
   };
@@ -230,9 +278,15 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
     const targetUserId = passedUser?.id || userId;
     if (!targetUserId) return;
     try {
-      await unfollowUser({ unfollowUserId: targetUserId });
+      const response = await unfollowUser({
+        unfollowUserId: targetUserId,
+      }).unwrap();
+      if (!response.status) {
+        throw new Error(response.message || "Failed to unfollow this user");
+      }
       setIsFollowing(false);
-    } catch (error) {
+    } catch (error: any) {
+      Toast.error(error?.message || "Failed to unfollow this user");
       console.error("Unfollow error:", error);
     }
   };
@@ -274,7 +328,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
       }
     }
 
-    return isGuest ? "No bio available" : STRINGS.PROFILE.bio;
+    return isGuest ? "No bio available" : "";
   })();
 
   const bookingsData =
@@ -437,7 +491,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
       (profileData as any)?.userName ||
       STRINGS.PROFILE.guestUser;
     const initial = displayName?.charAt(0)?.toUpperCase() || "G";
-    const location = profileData?.location || STRINGS.PROFILE.defaultLocation;
+    const location = profileData?.location?.trim() || "";
     const imageUrl =
       (profileData as any)?.imageUrl || (profileData as any)?.profilePicture;
     return (
@@ -460,7 +514,17 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
             />
           </TouchableOpacity>
           {isGuest ? (
-            <TouchableOpacity onPress={() => { }} style={styles.commentIcon}>
+            <TouchableOpacity
+              onPress={() => {
+                if (!userId) return;
+                navigation.navigate("Chat", {
+                  partnerId: String(userId),
+                  partnerName: displayName,
+                });
+              }}
+              disabled={!userId}
+              style={styles.commentIcon}
+            >
               <Image
                 source={CircleComment}
                 resizeMode="contain"
@@ -502,7 +566,9 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
             )}
           </View>
           <Text style={styles.displayName}>{displayName}</Text>
-          <Text style={styles.locationText}>{location}</Text>
+          {location ? (
+            <Text style={styles.locationText}>{location}</Text>
+          ) : null}
         </View>
 
         {profileBio ? <Text style={styles.bioText}>{profileBio}</Text> : null}
@@ -524,12 +590,12 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
     },
     {
       icon: Users,
-      count: profileData?.partnersCount || 0,
+      count: partnersCount,
       title: STRINGS.PROFILE.statsLabels.partners,
     },
     {
       icon: Awards,
-      count: profileData?.awardsCount || 0,
+      count: earnedAchievementsCount ?? profileData?.awardsCount ?? 0,
       title: STRINGS.PROFILE.statsLabels.awards,
     },
   ];

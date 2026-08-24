@@ -22,8 +22,8 @@ export interface TrainingPartner {
   age: number;
   type: string;
   trainingTypes?: string[];
-  distance: string;
-  compatibility: number;
+  distance?: string;
+  compatibility?: number;
   bio?: string;
   location?: string;
   experience?: string;
@@ -38,7 +38,7 @@ export interface Trainer {
   age: number;
   specialty: string;
   trainingTypes?: string[];
-  distance: string;
+  distance?: string;
   rating: number;
   hourlyRate: string;
   bio?: string;
@@ -78,6 +78,14 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
 }) => {
   const [imageError, setImageError] = useState(false);
   const isTrainer = "specialty" in partner || "hourlyRate" in partner;
+
+  const compatibility =
+    "compatibility" in partner && typeof partner.compatibility === "number"
+      ? `${Math.round(partner.compatibility)}% Match`
+      : null;
+  const accentTagLabel = isTrainer
+    ? ("hourlyRate" in partner && partner.hourlyRate) || "Contact for rates"
+    : compatibility;
 
   const translateX = useRef(new Animated.Value(0)).current;
   const opacity = useRef(new Animated.Value(0)).current;
@@ -152,6 +160,9 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
               {partner.location && (
                 <Text style={styles.location}>{partner.location}</Text>
               )}
+              {partner.distance ? (
+                <Text style={styles.distance}>{partner.distance}</Text>
+              ) : null}
             </View>
 
             {partner.trainingTypes && partner.trainingTypes.length > 0 && (
@@ -187,16 +198,11 @@ const SwipeableCard: React.FC<SwipeableCardProps> = ({
                 </View>
               )}
 
-              <View style={[styles.tag, styles.tagAccent]}>
-                <Text style={styles.tagTextAccent}>
-                  {"compatibility" in partner &&
-                  partner.compatibility !== undefined
-                    ? `${partner.compatibility}% Match`
-                    : "hourlyRate" in partner
-                      ? partner.hourlyRate || "Contact for rates"
-                      : "Contact for rates"}
-                </Text>
-              </View>
+              {accentTagLabel ? (
+                <View style={[styles.tag, styles.tagAccent]}>
+                  <Text style={styles.tagTextAccent}>{accentTagLabel}</Text>
+                </View>
+              ) : null}
 
               {partner.experience && (
                 <View style={styles.tag}>
@@ -385,6 +391,12 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   locationContainer: {
+    marginBottom: 6,
+  },
+  distance: {
+    fontSize: 13,
+    fontFamily: FontWeight.Medium,
+    color: COLORS.textSecondary,
     marginBottom: 6,
   },
   trainingTypesContainer: {

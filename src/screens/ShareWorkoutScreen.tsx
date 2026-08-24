@@ -36,15 +36,28 @@ import type { UserWorkout, Achievement as AchievementType } from "../types";
 
 interface ShareWorkoutScreenProps {
   navigation: any;
+  route?: {
+    params?: {
+      workoutId?: string;
+      workoutTitle?: string;
+      sessionId?: string;
+    };
+  };
 }
 
 const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
   navigation,
+  route,
 }) => {
+  const prefill = route?.params;
   const [selectedWorkout, setSelectedWorkout] = useState<UserWorkout | null>(
     null,
   );
-  const [postText, setPostText] = useState("");
+  const [postText, setPostText] = useState(
+    prefill?.workoutTitle
+      ? `${STRINGS.WORKOUT_HISTORY.sharePrefillCaption} ${prefill.workoutTitle}!`
+      : "",
+  );
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<any>(null);
   const [selectedAchievement, setSelectedAchievement] =
@@ -92,6 +105,21 @@ const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
       });
     }
   }, [currentPageWorkouts, page]);
+
+  useEffect(() => {
+    if (!prefill?.workoutId || selectedWorkout) {
+      return;
+    }
+
+    const match = allWorkouts.find(
+      (workout) => String(workout.workoutId) === String(prefill.workoutId),
+    );
+
+    if (match) {
+      setSelectedWorkout(match);
+    }
+  }, [allWorkouts, prefill?.workoutId, selectedWorkout]);
+
   const pagination =
     workoutsData?.status && workoutsData?.data?.pagination
       ? workoutsData.data.pagination
@@ -183,7 +211,13 @@ const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
   };
 
   const handlePost = async () => {
-    if (!selectedWorkout) {
+    const effectiveWorkoutId = selectedWorkout
+      ? String(selectedWorkout.workoutId)
+      : prefill?.workoutId
+        ? String(prefill.workoutId)
+        : null;
+
+    if (!effectiveWorkoutId) {
       Toast.error("Please select a workout to share");
       return;
     }
@@ -197,10 +231,24 @@ const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
       const payload: any = {
         title:
           postText.trim() ||
-          `Completed ${selectedWorkout.workout?.title || "workout"}!`,
+          `Completed ${
+            selectedWorkout?.workout?.title ||
+            prefill?.workoutTitle ||
+            "workout"
+          }!`,
         type: "workout_share",
-        workoutId: selectedWorkout.workoutId,
+        workoutId: effectiveWorkoutId,
       };
+
+      // The session's logged performance can only be attached when sharing the
+      // workout it belongs to — not a different workout picked from the list.
+      if (
+        prefill?.sessionId &&
+        prefill?.workoutId &&
+        String(prefill.workoutId) === effectiveWorkoutId
+      ) {
+        payload.sessionId = String(prefill.sessionId);
+      }
 
       if (selectedAchievement) {
         payload.achievementId = selectedAchievement.id;
@@ -210,13 +258,18 @@ const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
         payload.mediaFile = imageFile;
       }
 
-      await createPost(payload).unwrap();
+      const response = await createPost(payload).unwrap();
+      // This API reports failures as HTTP 200 + { status: false }, which unwrap()
+      // resolves as success — check it explicitly.
+      if (response?.status === false) {
+        throw new Error(response?.message || "Failed to share workout");
+      }
 
       Toast.success("Workout shared successfully!");
 
       handleBack();
     } catch (error: any) {
-      Toast.error(error?.data?.message || "Failed to share workout");
+      Toast.error(error?.data?.message || error?.message || "Failed to share workout");
     }
   };
 
@@ -300,16 +353,19 @@ const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
                           alignSelf: "flex-start",
                         }}
                       >
+                        {/* Category badge — the row used to print difficulty twice. */}
                         <Text style={styles.workoutType}>
-                          {workout.workout?.difficulty || "Medium"}
+                          {workout.workout?.type || "Workout"}
                         </Text>
                       </View>
                       <Text style={styles.workoutDetail}>
                         {Math.floor(workout.duration / 60)} mins
                       </Text>
-                      <Text style={styles.workoutDetail}>
-                        {workout.workout?.difficulty || "Medium"}
-                      </Text>
+                      {workout.workout?.difficulty ? (
+                        <Text style={styles.workoutDetail}>
+                          {workout.workout.difficulty}
+                        </Text>
+                      ) : null}
                     </View>
                     <Text
                       style={{

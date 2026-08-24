@@ -17,6 +17,27 @@ import { r } from "../designing/responsiveDesigns";
 import FontWeight from "../hooks/useInterFonts";
 import { BookingData } from "../services/api/bookingApi";
 
+/**
+ * Server-supplied refund quote. Every field is optional: only what the backend
+ * actually returns is rendered. Nothing here is ever computed client-side —
+ * fees, net amounts and arrival windows are financial terms and must come from
+ * the payment provider via the API.
+ */
+export interface RefundQuote {
+  /** Amount originally charged for the session. */
+  amount?: number | null;
+  /** Processing/cancellation fee withheld, as a positive number. */
+  fee?: number | null;
+  /** Net amount that will actually be refunded. */
+  net?: number | null;
+  /** Human-readable expected arrival window, e.g. "Mar 3 - Mar 7". */
+  eta?: string | null;
+  /** ISO currency code, e.g. "USD". Defaults to a "$" prefix when absent. */
+  currency?: string | null;
+  /** Cancellation-policy text as authored by the backend. */
+  policyText?: string | null;
+}
+
 interface CancellationConfirmationModalProps {
   visible: boolean;
   booking: BookingData | null;
@@ -27,7 +48,16 @@ interface CancellationConfirmationModalProps {
   subtitle?: string;
   confirmButtonText?: string;
   cancelButtonText?: string;
+  /**
+   * Real refund breakdown from the server. When omitted (the current state of
+   * the backend) the modal shows only the amount paid plus an honest
+   * "confirmed by the payment provider" note — never invented numbers.
+   */
+  refundQuote?: RefundQuote | null;
 }
+
+const isNumber = (value: unknown): value is number =>
+  typeof value === "number" && Number.isFinite(value);
 
 const CancellationConfirmationModal: React.FC<
   CancellationConfirmationModalProps
@@ -41,20 +71,35 @@ const CancellationConfirmationModal: React.FC<
   subtitle = STRINGS.SCHEDULED_SESSIONS.cancellationModal.subtitle,
   confirmButtonText = STRINGS.SCHEDULED_SESSIONS.cancellationModal.confirmButton,
   cancelButtonText = STRINGS.COMMON.cancel,
+  refundQuote = null,
 }) => {
-  const calculateRefundAmount = () => {
-    if (!booking?.price) return 0;
-    return booking.price.price || 0;
-  };
+  const labels = STRINGS.SCHEDULED_SESSIONS.cancellationModal.refundLabels;
 
-  const calculateProcessingFee = (amount: number) => {
-    return parseFloat(((amount * 3) / 100).toFixed(2));
-  };
+  const currencyPrefix = refundQuote?.currency
+    ? `${refundQuote.currency} `
+    : "$";
 
-  const totalRefundable = () => {
-    const amount = calculateRefundAmount();
-    const fee = calculateProcessingFee(amount);
-    return parseFloat((amount - fee).toFixed(2));
+  const formatAmount = (value: number) =>
+    `${currencyPrefix}${value.toFixed(2)}`;
+
+  // Amount paid comes from the booking record itself; it is a recorded charge,
+  // not a projection.
+  const paidAmount = isNumber(refundQuote?.amount)
+    ? refundQuote.amount
+    : isNumber(booking?.price?.price)
+    ? booking!.price.price
+    : null;
+
+  const fee = isNumber(refundQuote?.fee) ? refundQuote.fee : null;
+  const netRefund = isNumber(refundQuote?.net) ? refundQuote.net : null;
+  const eta = refundQuote?.eta || null;
+  const policyText = refundQuote?.policyText || null;
+
+  const hasServerBreakdown = fee !== null || netRefund !== null;
+
+  const handleConfirm = () => {
+    if (isLoading) return;
+    onConfirm();
   };
 
   return (
@@ -62,7 +107,9 @@ const CancellationConfirmationModal: React.FC<
       visible={visible}
       transparent
       animationType="slide"
-      onRequestClose={onClose}
+      onRequestClose={() => {
+        if (!isLoading) onClose();
+      }}
     >
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
@@ -93,61 +140,57 @@ const CancellationConfirmationModal: React.FC<
 
             <View style={styles.policySection}>
               <Text style={styles.policySectionTitle}>
-                {STRINGS.SCHEDULED_SESSIONS.cancellationModal.refundTerms}
+                {hasServerBreakdown
+                  ? STRINGS.SCHEDULED_SESSIONS.cancellationModal.refundTerms
+                  : STRINGS.SCHEDULED_SESSIONS.cancellationModal.paymentSummary}
               </Text>
 
-              <View style={styles.amountRow}>
-                <Text style={styles.amountLabel}>
-                  {STRINGS.SCHEDULED_SESSIONS.cancellationModal.refundLabels.sessionAmount}
-                </Text>
-                <Text style={styles.amountValue}>
-                  ${calculateRefundAmount().toFixed(2)}
-                </Text>
-              </View>
+              {paidAmount !== null && (
+                <View style={styles.amountRow}>
+                  <Text style={styles.amountLabel}>{labels.sessionAmount}</Text>
+                  <Text style={styles.amountValue}>
+                    {formatAmount(paidAmount)}
+                  </Text>
+                </View>
+              )}
 
-              <View style={styles.amountRow}>
-                <Text style={styles.amountLabel}>
-                  {STRINGS.SCHEDULED_SESSIONS.cancellationModal.refundLabels.processingFee}
-                </Text>
-                <Text style={[styles.amountValue, styles.feeAmount]}>
-                  -${calculateProcessingFee(calculateRefundAmount()).toFixed(2)}
-                </Text>
-              </View>
+              {fee !== null && (
+                <View style={styles.amountRow}>
+                  <Text style={styles.amountLabel}>{labels.processingFee}</Text>
+                  <Text style={[styles.amountValue, styles.feeAmount]}>
+                    -{formatAmount(Math.abs(fee))}
+                  </Text>
+                </View>
+              )}
 
-              <View style={styles.divider} />
+              {netRefund !== null && (
+                <>
+                  <View style={styles.divider} />
+                  <View style={[styles.amountRow, styles.totalRow]}>
+                    <Text style={styles.totalLabel}>
+                      {labels.refundableAmount}
+                    </Text>
+                    <Text style={styles.totalAmount}>
+                      {formatAmount(netRefund)}
+                    </Text>
+                  </View>
+                </>
+              )}
 
-              <View style={[styles.amountRow, styles.totalRow]}>
-                <Text style={styles.totalLabel}>
-                  {STRINGS.SCHEDULED_SESSIONS.cancellationModal.refundLabels.refundableAmount}
-                </Text>
-                <Text style={styles.totalAmount}>
-                  ${totalRefundable().toFixed(2)}
-                </Text>
-              </View>
+              {!!eta && (
+                <View style={styles.amountRow}>
+                  <Text style={styles.amountLabel}>
+                    {labels.expectedArrival}
+                  </Text>
+                  <Text style={styles.amountValue}>{eta}</Text>
+                </View>
+              )}
 
               <View style={styles.policyDetails}>
-                <View style={styles.policyDetailRow}>
-                  <View
-                    style={[
-                      styles.policyDetailDot,
-                      { backgroundColor: COLORS.primary },
-                    ]}
-                  />
-                  <Text style={styles.policyDetailText}>
-                    {STRINGS.SCHEDULED_SESSIONS.cancellationModal.details[0]}
-                  </Text>
-                </View>
-                <View style={styles.policyDetailRow}>
-                  <View
-                    style={[
-                      styles.policyDetailDot,
-                      { backgroundColor: COLORS.primary },
-                    ]}
-                  />
-                  <Text style={styles.policyDetailText}>
-                    {STRINGS.SCHEDULED_SESSIONS.cancellationModal.details[1]}
-                  </Text>
-                </View>
+                <Text style={styles.policyDetailText}>
+                  {policyText ||
+                    STRINGS.SCHEDULED_SESSIONS.cancellationModal.refundPending}
+                </Text>
               </View>
             </View>
 
@@ -172,7 +215,7 @@ const CancellationConfirmationModal: React.FC<
                   styles.confirmActionButton,
                   isLoading && styles.buttonDisabled,
                 ]}
-                onPress={onConfirm}
+                onPress={handleConfirm}
                 disabled={isLoading}
               >
                 {isLoading ? (
@@ -270,8 +313,7 @@ const styles = StyleSheet.create({
     color: COLORS.text,
   },
   feeAmount: {
-    color: COLORS.app_black
-    ,
+    color: COLORS.error,
   },
   divider: {
     height: 1,
@@ -290,7 +332,7 @@ const styles = StyleSheet.create({
   totalAmount: {
     fontSize: r(16, "font"),
     fontFamily: FontWeight.Bold,
-    color: COLORS.app_black,
+    color: COLORS.text,
   },
   policyDetails: {
     gap: r(8, "height"),
@@ -340,7 +382,7 @@ const styles = StyleSheet.create({
   cancelActionButtonText: {
     fontSize: r(13, "font"),
     fontFamily: FontWeight.SemiBold,
-    color: COLORS._383838,
+    color: COLORS.text,
   },
   confirmActionButton: {
     backgroundColor: COLORS.primary,

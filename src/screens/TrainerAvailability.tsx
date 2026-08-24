@@ -1,11 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
-  ScrollView,
   StyleSheet,
-  Alert,
   ActivityIndicator,
   Image,
 } from "react-native";
@@ -13,10 +11,12 @@ import TimePickerModal from "../components/TimePickerModal";
 import { SafeAreaView } from "react-native-safe-area-context";
 import BasicTopBar from "../components/BasicTopBar";
 import RefreshableScrollView from "../components/RefreshableScrollView";
-import { COLORS, DIMENSIONS, toUtc, toLocalTime } from "../config/constants";
-import { useUser } from "../store/hooks";
+import ConfirmationDialog from "../components/ConfirmationDialog";
+import { Toast } from "../components/ToastManager";
+import { COLORS, DIMENSIONS, toLocalTime } from "../config/constants";
 import {
   useGetAvailabilityQuery,
+  useCreateAvailabilityMutation,
   useUpdateAvailabilityMutation,
   useDeleteAvailabilityMutation,
 } from "../services/api/availabilityApi";
@@ -24,9 +24,53 @@ import { Close } from "../../assets";
 import { useAuth } from "../contexts/AuthContext";
 import FontWeight from "../hooks/useInterFonts";
 
+/**
+ * LOCAL COPY BLOCK — this belongs in `STRINGS.TRAINER_AVAILABILITY`
+ * (src/config/strings.ts). It lives here only because strings.ts is being
+ * edited concurrently by other work; move it into STRINGS verbatim and swap
+ * the references when that lands.
+ */
+const COPY = {
+  title: "My Availability",
+  subtitle: "Manage your availability",
+  off: "OFF",
+  discard: "Discard",
+  update: "Update",
+  updating: "Saving...",
+  removeDayA11y: (day: string) => `Remove availability for ${day}`,
+  setStartA11y: (day: string) => `Set start time for ${day}`,
+  setEndA11y: (day: string) => `Set end time for ${day}`,
+  discardTitle: "Discard unsaved changes?",
+  discardMessage:
+    "Your edits will be reverted to your last saved schedule. Nothing on the server changes.",
+  discardConfirm: "Discard edits",
+  discardCancel: "Keep editing",
+  discarded: "Unsaved changes discarded",
+  saved: "Availability saved",
+  savedWithDeleteFailures:
+    "Schedule saved, but some removed days could not be deleted. Pull to refresh and try again.",
+  saveFailed: "Could not save your availability. Please try again.",
+  invalidTime: "That time could not be read. Please pick it again.",
+  incompleteDay: (day: string) =>
+    `${day} needs both a start and an end time, or remove the day.`,
+  zeroLengthDay: (day: string) =>
+    `${day} starts and ends at the same time. Adjust it or remove the day.`,
+};
+
+/**
+ * Initial wheel positions for the time picker ONLY.
+ * These are never written into a day's schedule and are never sent to the
+ * server: an unset day stays unset until the trainer picks a time.
+ */
+const PICKER_FALLBACK_START = "09:00 AM";
+const PICKER_FALLBACK_END = "05:00 PM";
+
 interface DayAvailability {
+  /** Local wall-clock display time, "hh:mm AM". Empty string = unavailable. */
   start_time: string;
   end_time: string;
+  /** Server-side id for this day's slot, when the list response provides one. */
+  slotId?: string;
 }
 
 interface WeekAvailability {
@@ -43,10 +87,226 @@ const daysOfWeek = [
   "Sunday",
 ];
 
+// Narrow / non-breaking spaces that Intl time formatting emits on some devices.
+const UNICODE_SPACES =
+  /[\u202F\u00A0\u2007\u2060\u2009\u200A\u200B\u200C\u200D\uFEFF\s]+/g;
+
+const pad2 = (value: number) => value.toString().padStart(2, "0");
+
+const cleanTimeString = (raw?: string | null) =>
+  raw ? String(raw).replace(UNICODE_SPACES, " ").trim() : "";
+
+const from24Hour = (hour: number, minute: number) => {
+  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return "";
+  const ampm = hour >= 12 ? "PM" : "AM";
+  let display = hour % 12;
+  if (display === 0) display = 12;
+  return `${pad2(display)}:${pad2(minute)} ${ampm}`;
+};
+
+/**
+ * Canonicalise anything time-shaped into the "hh:mm AM" form that `toUtc`,
+ * `toLocalTime` and TimePickerModal all expect. Accepts 12-hour ("5:00 pm",
+ * "05:00 P.M."), 24-hour ("17:00", "17:00:00") and the "OFF" sentinel.
+ * Returns "" when the value is not a readable time, so a corrupt value is
+ * dropped loudly instead of being written to the server as garbage.
+ */
+const normalizeDisplayTime = (raw?: string | null): string => {
+  const cleaned = cleanTimeString(raw);
+  if (!cleaned || cleaned.toUpperCase() === "OFF") return "";
+
+  const twelve = cleaned.match(
+    /^(\d{1,2}):(\d{2})(?::\d{2})?\s*([AP])\.?\s*M\.?$/i
+  );
+  if (twelve) {
+    const hour = parseInt(twelve[1], 10);
+    const minute = parseInt(twelve[2], 10);
+    const isPm = twelve[3].toUpperCase() === "P";
+    if (Number.isNaN(hour) || Number.isNaN(minute) || minute > 59) return "";
+    if (hour <= 12) {
+      let hour24 = hour % 12;
+      if (isPm) hour24 += 12;
+      return from24Hour(hour24, minute);
+    }
+    // e.g. "17:00 PM" — the meridiem is noise, treat the value as 24-hour.
+    return from24Hour(hour, minute);
+  }
+
+  const twentyFour = cleaned.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+  if (twentyFour) {
+    const hour = parseInt(twentyFour[1], 10);
+    const minute = parseInt(twentyFour[2], 10);
+    if (Number.isNaN(hour) || Number.isNaN(minute)) return "";
+    return from24Hour(hour, minute);
+  }
+
+  return "";
+};
+
+/** Server (UTC) value -> local display time. Returns "" when unreadable. */
+const serverTimeToLocalDisplay = (
+  raw?: string | null,
+  recordTimezone?: string | null,
+): string => {
+  const cleaned = cleanTimeString(raw);
+  if (!cleaned || cleaned.toUpperCase() === "OFF") return "";
+  const asDisplay = normalizeDisplayTime(cleaned);
+  // New-contract records carry wall-clock times in their own IANA `timezone`
+  // — display them unshifted. Legacy records (timezone "UTC" or absent) hold
+  // values the old client shifted device→UTC on save; only those shift back.
+  const isLegacyUtcRecord = !recordTimezone || recordTimezone === "UTC";
+  if (asDisplay) {
+    if (!isLegacyUtcRecord) return asDisplay;
+    return normalizeDisplayTime(toLocalTime(asDisplay));
+  }
+  // Fall back for ISO / date-time payloads, which toLocalTime parses directly.
+  return normalizeDisplayTime(toLocalTime(cleaned));
+};
+
+const normalizeDayName = (raw?: string | null): string | undefined => {
+  const cleaned = cleanTimeString(raw);
+  if (!cleaned) return undefined;
+  const lower = cleaned.toLowerCase();
+  return daysOfWeek.find(
+    (day) =>
+      day.toLowerCase() === lower ||
+      day.toLowerCase().slice(0, 3) === lower.slice(0, 3)
+  );
+};
+
+const emptyWeek = (): WeekAvailability => {
+  const week: WeekAvailability = {};
+  daysOfWeek.forEach((day) => {
+    week[day] = { start_time: "", end_time: "" };
+  });
+  return week;
+};
+
+const isDayOff = (day?: DayAvailability) => !day?.start_time && !day?.end_time;
+
+/**
+ * Build the editor state from the server's slot list. A day the server does not
+ * mention, or mentions as OFF / empty / a zero-length range, is simply
+ * unavailable — never a fabricated 9-to-5.
+ */
+const buildWeekFromSlots = (
+  slots: ReadonlyArray<{
+    day?: string;
+    start_time?: string;
+    end_time?: string;
+    id?: string | number;
+    _id?: string | number;
+  }>,
+  parentId?: string | number,
+  recordTimezone?: string | null
+): WeekAvailability => {
+  const week = emptyWeek();
+  slots.forEach((slot) => {
+    const day = normalizeDayName(slot.day);
+    if (!day) return;
+
+    const start = serverTimeToLocalDisplay(slot.start_time, recordTimezone);
+    const end = serverTimeToLocalDisplay(slot.end_time, recordTimezone);
+
+    // A per-slot id is what /trainer-availability-slot/delete needs. Never
+    // treat the parent availability id as a slot id — deleting that would wipe
+    // the trainer's whole schedule.
+    const rawSlotId = slot.id ?? slot._id;
+    const slotId =
+      rawSlotId !== undefined &&
+      rawSlotId !== null &&
+      String(rawSlotId) !== String(parentId ?? "")
+        ? String(rawSlotId)
+        : undefined;
+
+    // Zero-length or empty ranges are not availability.
+    if (!start && !end) {
+      week[day] = { start_time: "", end_time: "", slotId };
+      return;
+    }
+    if (start && end && start === end) {
+      week[day] = { start_time: "", end_time: "", slotId };
+      return;
+    }
+
+    week[day] = { start_time: start, end_time: end, slotId };
+  });
+  return week;
+};
+
+const weeksEqual = (a: WeekAvailability, b: WeekAvailability) =>
+  daysOfWeek.every(
+    (day) =>
+      (a[day]?.start_time || "") === (b[day]?.start_time || "") &&
+      (a[day]?.end_time || "") === (b[day]?.end_time || "")
+  );
+
 const TrainerAvailability: React.FC<{ navigation: any }> = ({ navigation }) => {
   const { user } = useAuth();
-  const [availability, setAvailability] = useState<WeekAvailability>({});
+  const [availability, setAvailability] = useState<WeekAvailability>(emptyWeek);
+  const [savedAvailability, setSavedAvailability] =
+    useState<WeekAvailability>(emptyWeek);
   const [refreshing, setRefreshing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [confirmDiscardVisible, setConfirmDiscardVisible] = useState(false);
+  const [picker, setPicker] = useState<{
+    day: string;
+    mode: "start" | "end";
+  } | null>(null);
+
+  // Mirrors of the two states, so the fetch effect can decide synchronously
+  // whether there are in-progress edits it must not clobber.
+  const editorRef = useRef<WeekAvailability>(availability);
+  const savedRef = useRef<WeekAvailability>(savedAvailability);
+  const hasLoadedRef = useRef(false);
+
+  const [createAvailability] = useCreateAvailabilityMutation();
+  const [updateAvailability] = useUpdateAvailabilityMutation();
+  const [deleteAvailability] = useDeleteAvailabilityMutation();
+
+  const { data, isLoading, refetch } = useGetAvailabilityQuery(
+    user?.id ? { trainerId: user.id } : { trainerId: "" },
+    { skip: !user?.id }
+  );
+
+  const serverRecord = useMemo(() => {
+    if (!data || !data.status || !Array.isArray(data.data)) return undefined;
+    return data.data[0];
+  }, [data]);
+
+  const applySnapshot = useCallback((week: WeekAvailability) => {
+    editorRef.current = week;
+    savedRef.current = week;
+    setAvailability(week);
+    setSavedAvailability(week);
+  }, []);
+
+  const setEditorWeek = useCallback((week: WeekAvailability) => {
+    editorRef.current = week;
+    setAvailability(week);
+  }, []);
+
+  useEffect(() => {
+    if (!data) return;
+    const week = buildWeekFromSlots(
+      serverRecord?.slots ?? [],
+      serverRecord?.id,
+      serverRecord?.timezone
+    );
+    const hasPendingEdits =
+      hasLoadedRef.current && !weeksEqual(editorRef.current, savedRef.current);
+    if (hasPendingEdits) {
+      // A background refetch must not throw away what the trainer is typing.
+      return;
+    }
+    hasLoadedRef.current = true;
+    applySnapshot(week);
+  }, [data, serverRecord, applySnapshot]);
+
+  const isDirty = useMemo(
+    () => !weeksEqual(availability, savedAvailability),
+    [availability, savedAvailability]
+  );
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -56,123 +316,6 @@ const TrainerAvailability: React.FC<{ navigation: any }> = ({ navigation }) => {
       setRefreshing(false);
     }
   };
-  const [initialAvailability, setInitialAvailability] =
-    useState<WeekAvailability>({});
-  const [picker, setPicker] = useState<{
-    day: string;
-    mode: "start" | "end";
-  } | null>(null);
-  const [updateAvailability, { isLoading: isUpdating }] =
-    useUpdateAvailabilityMutation();
-  const [deleteAvailability] = useDeleteAvailabilityMutation();
-
-  const { data, isLoading, isFetching, refetch } = useGetAvailabilityQuery(
-    user?.id ? { trainerId: user.id } : { trainerId: "" },
-    { skip: !user?.id }
-  );
-
-  useEffect(() => {
-    const week: WeekAvailability = {};
-    daysOfWeek.forEach((day) => {
-      week[day] = { start_time: "", end_time: "" };
-    });
-    if (
-      data &&
-      data.status &&
-      Array.isArray(data.data) &&
-      data.data.length > 0
-    ) {
-      const slots = data.data[0]?.slots || [];
-      slots.forEach((slot) => {
-        const day = slot.day;
-        const isOff =
-          (slot && slot.start_time === "OFF" && slot.end_time === "OFF") ||
-          (slot.start_time === "" && slot.end_time === "");
-        if (day && week[day] !== undefined) {
-          if (isOff) {
-            week[day] = { start_time: "", end_time: "" };
-          } else {
-            const localStartTime = slot.start_time
-              ? toLocalTime(slot.start_time)
-              : "";
-            const localEndTime = slot.end_time
-              ? toLocalTime(slot.end_time)
-              : "";
-            console.log(
-              "[useEffect] slot:",
-              slot,
-              "localStartTime:",
-              localStartTime,
-              "localEndTime:",
-              localEndTime
-            );
-            week[day] = {
-              start_time: localStartTime,
-              end_time: localEndTime,
-            };
-          }
-        }
-      });
-    }
-    daysOfWeek.forEach((day) => {
-      const dayObj = week[day] || { start_time: "", end_time: "" };
-      if (!dayObj.start_time || dayObj.start_time === "OFF") {
-        dayObj.start_time =
-          !dayObj.start_time && !dayObj.end_time ? "" : "09:00 AM";
-      } else if (
-        dayObj.start_time &&
-        !dayObj.start_time.includes("AM") &&
-        !dayObj.start_time.includes("PM")
-      ) {
-        if (dayObj.start_time === "09:00" || dayObj.start_time === "9:00") {
-          dayObj.start_time = "09:00 AM";
-        } else {
-          dayObj.start_time = to12Hour(dayObj.start_time);
-        }
-      }
-      if (!dayObj.end_time || dayObj.end_time === "OFF") {
-        dayObj.end_time =
-          !dayObj.start_time && !dayObj.end_time ? "" : "05:00 PM";
-      } else if (
-        dayObj.end_time &&
-        !dayObj.end_time.includes("AM") &&
-        !dayObj.end_time.includes("PM")
-      ) {
-        if (dayObj.end_time === "17:00" || dayObj.end_time === "5:00") {
-          dayObj.end_time = "05:00 PM";
-        } else {
-          dayObj.end_time = to12Hour(dayObj.end_time);
-        }
-      }
-      week[day] = dayObj;
-    });
-    setAvailability(week);
-    setInitialAvailability(week);
-  }, [data]);
-
-  function to12Hour(time: string) {
-    if (!time || time === "OFF") return time;
-    const [h, m] = time.split(":");
-    let hour = parseInt(h, 10);
-    const min = m || "00";
-    const ampm = hour >= 12 ? "PM" : "AM";
-    hour = hour % 12;
-    if (hour === 0) hour = 12;
-    return `${hour.toString().padStart(2, "0")}:${min} ${ampm}`;
-  }
-
-  const formatTime = (date: Date) => {
-    let [time, ampm] = date
-      .toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: true,
-      })
-      .split(" ");
-    let [hour, minute] = time.split(":");
-    if (hour.length === 1) hour = "0" + hour;
-    return `${hour}:${minute} ${ampm ? ampm.toUpperCase() : ""}`.trim();
-  };
 
   const openPicker = (day: string, mode: "start" | "end") => {
     setPicker({ day, mode });
@@ -180,135 +323,155 @@ const TrainerAvailability: React.FC<{ navigation: any }> = ({ navigation }) => {
 
   const handleTimeConfirm = (time: string) => {
     if (picker) {
-      setAvailability((prev) => ({
-        ...prev,
+      const normalized = normalizeDisplayTime(time);
+      if (!normalized) {
+        Toast.error(COPY.invalidTime);
+        setPicker(null);
+        return;
+      }
+      const current = editorRef.current[picker.day] || {
+        start_time: "",
+        end_time: "",
+      };
+      setEditorWeek({
+        ...editorRef.current,
         [picker.day]: {
-          ...prev[picker.day],
-          [picker.mode === "start" ? "start_time" : "end_time"]: time,
+          ...current,
+          [picker.mode === "start" ? "start_time" : "end_time"]: normalized,
         },
-      }));
+      });
     }
     setPicker(null);
   };
 
-  const handleToggleOff = (day: string) => {
-    setAvailability((prev) => {
-      const dayObj = prev[day] || { start_time: "", end_time: "" };
-      const isCurrentlyOff = !dayObj.start_time && !dayObj.end_time;
-      if (isCurrentlyOff) {
-        return {
-          ...prev,
-          [day]: {
-            start_time: "09:00 AM",
-            end_time: "05:00 PM",
-          },
-        };
-      } else {
-        return {
-          ...prev,
-          [day]: {
-            start_time: "",
-            end_time: "",
-          },
-        };
-      }
+  /** Mark a day unavailable locally; persisted (and deleted server-side) on save. */
+  const handleRemoveDay = (day: string) => {
+    const current = editorRef.current[day] || { start_time: "", end_time: "" };
+    setEditorWeek({
+      ...editorRef.current,
+      [day]: { ...current, start_time: "", end_time: "" },
     });
   };
 
-  const handleDiscard = async () => {
-    const slots = daysOfWeek.map((day) => {
-      const startUtc = toUtc("09:00 AM");
-      const endUtc = toUtc("05:00 PM");
-      console.log(
-        "[handleDiscard] day:",
-        day,
-        "startUtc:",
-        startUtc,
-        "endUtc:",
-        endUtc
-      );
-      return {
-        day,
-        start_time: startUtc,
-        end_time: endUtc,
-      };
-    });
-    try {
-      if (data && data.status && data.data && data.data.length > 0) {
-        await updateAvailability({
-          id: data.data[0]?.id ?? "",
-          slots,
-        }).unwrap();
+  const handleDiscardPress = () => {
+    if (!isDirty || isSaving) return;
+    setConfirmDiscardVisible(true);
+  };
 
-        await refetch();
-
-        Alert.alert("Success", "Changes discarded and reset to default");
-      }
-    } catch (e) {
-      Alert.alert("Error", "Failed to reset availability.");
-    }
+  /** Pure local revert to the last-loaded server state. Makes zero write calls. */
+  const handleDiscardConfirm = () => {
+    setConfirmDiscardVisible(false);
+    setEditorWeek(savedRef.current);
+    Toast.success(COPY.discarded);
   };
 
   const handleUpdate = async () => {
-    console.log("Updating availability with state:", user?.id);
-    if (!user?.id) return;
-    const slots = daysOfWeek.map((day) => {
-      const dayObj = availability[day] || { start_time: "", end_time: "" };
-      const { start_time, end_time } = dayObj;
-      const isOff = !start_time && !end_time;
+    if (!user?.id || isSaving || !isDirty) return;
 
-      const startUtc = isOff ? "" : toUtc(start_time);
-      const endUtc = isOff ? "" : toUtc(end_time);
-      console.log(
-        "[handleUpdate] day:",
-        day,
-        "localStart:",
-        start_time,
-        "startUtc:",
-        startUtc,
-        "localEnd:",
-        end_time,
-        "endUtc:",
-        endUtc
-      );
+    const current = editorRef.current;
 
-      return {
+    // Validate before writing: a half-filled or zero-length day must not be
+    // silently completed or dropped.
+    for (const day of daysOfWeek) {
+      const dayObj = current[day];
+      if (isDayOff(dayObj)) continue;
+      if (!dayObj?.start_time || !dayObj?.end_time) {
+        Toast.error(COPY.incompleteDay(day));
+        return;
+      }
+      if (dayObj.start_time === dayObj.end_time) {
+        Toast.error(COPY.zeroLengthDay(day));
+        return;
+      }
+    }
+
+    // Only days that actually have hours are sent. Off days are omitted rather
+    // than sent as empty strings (the server rejects blanks with a 400). Times
+    // go up as the trainer's wall clock — the API slice attaches the IANA
+    // timezone and the server does all UTC/DST conversion; no device shifting.
+    const activeSlots = daysOfWeek
+      .filter((day) => !isDayOff(current[day]))
+      .map((day) => ({
         day,
-        start_time: startUtc,
-        end_time: endUtc,
-      };
-    });
+        start_time: normalizeDisplayTime(current[day].start_time),
+        end_time: normalizeDisplayTime(current[day].end_time),
+      }));
+
+    if (activeSlots.some((slot) => !slot.start_time || !slot.end_time)) {
+      // normalizeDisplayTime returns "" for an unparseable value — never ship that.
+      Toast.error(COPY.saveFailed);
+      return;
+    }
+
+    // Days the trainer removed that exist server-side with a deletable id.
+    const removedSlotIds = daysOfWeek
+      .filter(
+        (day) =>
+          isDayOff(current[day]) &&
+          !isDayOff(savedRef.current[day]) &&
+          !!savedRef.current[day]?.slotId
+      )
+      .map((day) => savedRef.current[day].slotId as string);
+
+    setIsSaving(true);
     try {
-      if (
-        data &&
-        data.status &&
-        Array.isArray(data.data) &&
-        data.data.length > 0
-      ) {
-        await updateAvailability({
-          id: data.data[0]?.id ?? "",
-          slots,
-        }).unwrap();
+      let failedDeletes = 0;
+      if (removedSlotIds.length > 0) {
+        const results = await Promise.allSettled(
+          removedSlotIds.map((id) => deleteAvailability({ id }).unwrap())
+        );
+        failedDeletes = results.filter((r) => r.status === "rejected").length;
       }
 
-      Alert.alert("Success", "Availability updated successfully!");
+      if (serverRecord?.id) {
+        await updateAvailability({
+          id: serverRecord.id,
+          slots: activeSlots,
+        }).unwrap();
+      } else if (activeSlots.length > 0) {
+        // No availability record yet (trainer skipped setup): create one,
+        // instead of the previous silent no-op that still claimed success.
+        await createAvailability({ slots: activeSlots }).unwrap();
+      }
+
+      // Baseline := what we just saved, dropping ids of deleted days, so the
+      // incoming refetch is allowed to land and dirty state resets.
+      const savedWeek: WeekAvailability = {};
+      daysOfWeek.forEach((day) => {
+        const dayObj = current[day] || { start_time: "", end_time: "" };
+        savedWeek[day] = isDayOff(dayObj)
+          ? { start_time: "", end_time: "" }
+          : { ...dayObj };
+      });
+      applySnapshot(savedWeek);
+
+      if (failedDeletes > 0) {
+        Toast.error(COPY.savedWithDeleteFailures);
+      } else {
+        Toast.success(COPY.saved);
+      }
+      await refetch();
     } catch (e) {
-      Alert.alert("Error", "Failed to update availability.");
+      Toast.error(COPY.saveFailed);
+    } finally {
+      setIsSaving(false);
     }
   };
+
+  const actionsDisabled = !isDirty || isSaving;
 
   return (
     <SafeAreaView edges={[]} style={styles.container}>
       <BasicTopBar
         onBackPress={() => navigation.goBack()}
-        title="My Availability"
-        subtitle="Manage your availability"
+        title={COPY.title}
+        subtitle={COPY.subtitle}
         containerStyle={{
           paddingTop: DIMENSIONS.spacing.xxl,
           paddingBottom: DIMENSIONS.spacing.lg,
         }}
       />
-      {isLoading || isFetching ? (
+      {isLoading ? (
         <View
           style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
         >
@@ -321,10 +484,8 @@ const TrainerAvailability: React.FC<{ navigation: any }> = ({ navigation }) => {
           onRefresh={handleRefresh}
         >
           <View style={styles.sessionCard}>
-            {daysOfWeek.map((day, idx) => {
-              const isOff =
-                !availability[day]?.start_time &&
-                !availability[day]?.end_time;
+            {daysOfWeek.map((day) => {
+              const isOff = isDayOff(availability[day]);
               return (
                 <View key={day} style={styles.scheduleRow}>
                   <Text style={styles.dayText}>{day}</Text>
@@ -333,19 +494,21 @@ const TrainerAvailability: React.FC<{ navigation: any }> = ({ navigation }) => {
                       <>
                         <TouchableOpacity
                           style={{ width: "40%" }}
-                          onPress={() => handleToggleOff(day)}
+                          accessibilityLabel={COPY.setStartA11y(day)}
+                          onPress={() => openPicker(day, "start")}
                         >
                           <View style={styles.badgeOff}>
-                            <Text style={styles.badgeText}>OFF</Text>
+                            <Text style={styles.badgeText}>{COPY.off}</Text>
                           </View>
                         </TouchableOpacity>
                         <Text style={styles.dash}>-</Text>
                         <TouchableOpacity
                           style={{ width: "40%" }}
-                          onPress={() => handleToggleOff(day)}
+                          accessibilityLabel={COPY.setEndA11y(day)}
+                          onPress={() => openPicker(day, "end")}
                         >
                           <View style={styles.badgeOff}>
-                            <Text style={styles.badgeText}>OFF</Text>
+                            <Text style={styles.badgeText}>{COPY.off}</Text>
                           </View>
                         </TouchableOpacity>
                       </>
@@ -360,6 +523,7 @@ const TrainerAvailability: React.FC<{ navigation: any }> = ({ navigation }) => {
                             width: "40%",
                             borderRadius: 32,
                           }}
+                          accessibilityLabel={COPY.setStartA11y(day)}
                           onPress={() => openPicker(day, "start")}
                         >
                           <Text style={styles.timeText}>
@@ -378,6 +542,7 @@ const TrainerAvailability: React.FC<{ navigation: any }> = ({ navigation }) => {
                             width: "40%",
                             borderRadius: 32,
                           }}
+                          accessibilityLabel={COPY.setEndA11y(day)}
                           onPress={() => openPicker(day, "end")}
                         >
                           <Text style={styles.timeText}>
@@ -386,7 +551,8 @@ const TrainerAvailability: React.FC<{ navigation: any }> = ({ navigation }) => {
                         </TouchableOpacity>
                         <TouchableOpacity
                           style={{ position: "absolute", right: 0 }}
-                          onPress={() => handleToggleOff(day)}
+                          accessibilityLabel={COPY.removeDayA11y(day)}
+                          onPress={() => handleRemoveDay(day)}
                         >
                           <Image
                             source={Close}
@@ -410,9 +576,10 @@ const TrainerAvailability: React.FC<{ navigation: any }> = ({ navigation }) => {
             initialTime={
               picker
                 ? picker.mode === "start"
-                  ? availability[picker.day]?.start_time || "09:00 AM"
-                  : availability[picker.day]?.end_time || "05:00 PM"
-                : "09:00 AM"
+                  ? availability[picker.day]?.start_time ||
+                    PICKER_FALLBACK_START
+                  : availability[picker.day]?.end_time || PICKER_FALLBACK_END
+                : PICKER_FALLBACK_START
             }
             onConfirm={handleTimeConfirm}
             onCancel={() => setPicker(null)}
@@ -420,23 +587,42 @@ const TrainerAvailability: React.FC<{ navigation: any }> = ({ navigation }) => {
 
           <View style={styles.actionRow}>
             <TouchableOpacity
-              style={[styles.actionBtn, styles.discardBtn]}
-              onPress={handleDiscard}
+              style={[
+                styles.actionBtn,
+                styles.discardBtn,
+                actionsDisabled && styles.disabledBtn,
+              ]}
+              onPress={handleDiscardPress}
+              disabled={actionsDisabled}
             >
-              <Text style={styles.discardText}>Discard</Text>
+              <Text style={styles.discardText}>{COPY.discard}</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.actionBtn, styles.updateBtn]}
+              style={[
+                styles.actionBtn,
+                styles.updateBtn,
+                actionsDisabled && styles.disabledBtn,
+              ]}
               onPress={handleUpdate}
-              disabled={isUpdating}
+              disabled={actionsDisabled}
             >
               <Text style={styles.updateText}>
-                {isUpdating ? "Updating..." : "Update"}
+                {isSaving ? COPY.updating : COPY.update}
               </Text>
             </TouchableOpacity>
           </View>
         </RefreshableScrollView>
       )}
+
+      <ConfirmationDialog
+        visible={confirmDiscardVisible}
+        title={COPY.discardTitle}
+        message={COPY.discardMessage}
+        confirmLabel={COPY.discardConfirm}
+        cancelLabel={COPY.discardCancel}
+        onConfirm={handleDiscardConfirm}
+        onCancel={() => setConfirmDiscardVisible(false)}
+      />
     </SafeAreaView>
   );
 };

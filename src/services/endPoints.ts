@@ -31,6 +31,7 @@ export const API_END_POINTS = {
   workouts: {
     all: "/workout/all",
     byId: (id: string) => `/workout/${id}`,
+    categories: "/workout/categories",
     userWorkouts: "/user-workout/all",
     achievements: "/achivement/all",
     sessions: {
@@ -77,11 +78,22 @@ export const API_END_POINTS = {
       `/chat/messages/${messageId}/reaction`,
   },
 
+  // NOTE: the backend mounts these under the singular `/group` prefix.
   groups: {
-    list: "/groups",
-    details: (groupId: string) => `/groups/${groupId}`,
-    join: (groupId: string) => `/groups/${groupId}/join`,
-    leave: (groupId: string) => `/groups/${groupId}/leave`,
+    all: "/group/all",
+    myGroups: "/group/my-groups",
+    details: (groupId: string) => `/group/${groupId}`,
+    members: (groupId: string) => `/group/members/${groupId}`,
+    posts: (groupId: string) => `/group/posts/${groupId}`,
+    create: "/group/create",
+    update: (groupId: string) => `/group/update/${groupId}`,
+    delete: (groupId: string) => `/group/delete/${groupId}`,
+    join: (groupId: string) => `/group/join/${groupId}`,
+    requestJoin: (groupId: string) => `/group/request/${groupId}`,
+    joinRequests: (groupId: string) => `/group/${groupId}/requests`,
+    respondToJoinRequest: (requestId: string) =>
+      `/group/requests/${requestId}/respond`,
+    leave: (groupId: string) => `/group/leave/${groupId}`,
   },
 
   payments: {
@@ -99,6 +111,8 @@ export const API_END_POINTS = {
   bookings: {
     create: "/booking/create",
     update: "/booking/update",
+    cancel: "/booking/cancel",
+    refundQuote: "/booking/refund-quote",
     delete: "/booking/delete",
     userBookings: "/booking/user",
     trainerBookings: "/booking/trainer",

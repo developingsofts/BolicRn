@@ -36,6 +36,8 @@ export const LOCATION_CONFIG = {
   distanceInterval: 10,
   geocodeSuggestUrl:
     "https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/suggest",
+  geocodeFindUrl:
+    "https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/findAddressCandidates",
 };
 
 export const NOTIFICATION_CONFIG = {
@@ -625,7 +627,46 @@ export const TRAINING_TYPES = [
   "Swimming",
   "Strength",
   "Cardio"
-];
+] as const;
+
+// Single source of truth for the training-type taxonomy (AuthScreen onboarding,
+// FindScreen filters, UserProfileForm, Settings matching preferences).
+export type TrainingType = (typeof TRAINING_TYPES)[number];
+
+// Legal / support destinations.
+// AN EMPTY STRING MEANS "NOT PROVIDED YET" — product/legal owns these values.
+// SettingsScreen renders any empty entry as an explicitly unavailable row rather
+// than opening a placeholder or invented page. Fill these in once the real
+// pages/mailbox exist; nothing else needs to change.
+export const LEGAL_LINKS = {
+  privacyPolicyUrl: "",
+  termsOfServiceUrl: "",
+  supportEmail: "",
+};
+
+// Feature flags for optional Settings UI.
+// notificationsSection: shows the Settings notification row. The toggle persists
+// `notificationEnabled` via PUT /user/update and requests the OS notification
+// permission; there is NO server-side push delivery behind it yet, which the row's
+// own note states plainly. Set to false to hide the row again (that also stops the
+// screen reading or requesting any OS permission).
+export const FEATURE_FLAGS = {
+  notificationsSection: true,
+};
+
+// `totalDuration` on workouts and sessions is in SECONDS (the catalogue returns
+// 1800 for a 30-minute workout). Always format through this rather than printing
+// the raw value — several screens used to render "1800 min". Returns null when
+// there is no usable value, so callers can omit the row instead of showing "0 min".
+export const formatWorkoutDurationMinutes = (
+  seconds?: number | string | null
+): string | null => {
+  const value = Number(seconds);
+  if (!Number.isFinite(value) || value <= 0) {
+    return null;
+  }
+  return `${Math.max(1, Math.round(value / 60))} min`;
+};
 
 export const GENDER_OPTIONS = [
   "Male",

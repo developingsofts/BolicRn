@@ -791,6 +791,12 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
                 try {
                   const updateResponse = await updateProfile({
                     location: data.location,
+                    ...(data.latitude != null && data.longitude != null
+                      ? {
+                          latitude: data.latitude,
+                          longitude: data.longitude,
+                        }
+                      : {}),
                     trainingTypes: data.specialties,
                     onboardingStep: 2,
                   }).unwrap();

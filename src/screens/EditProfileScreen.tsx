@@ -15,7 +15,13 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
-import { COLORS, DIMENSIONS, LOCATION_CONFIG } from "../config/constants";
+import { COLORS, DIMENSIONS } from "../config/constants";
+import {
+  fetchLocationSuggestions,
+  geocodeLocation,
+  type Coordinates,
+  type LocationSuggestion,
+} from "../utils/location";
 import STRINGS from "../config/strings";
 import FontWeight from "../hooks/useInterFonts";
 import { useAuth } from "../contexts/AuthContext";
@@ -39,11 +45,6 @@ interface EditProfileScreenProps {
   };
 }
 
-type Suggestion = {
-  text?: string;
-  magicKey?: string;
-};
-
 const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
   navigation,
   route,
@@ -62,6 +63,11 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
 
   const [name, setName] = useState(user?.displayName || "");
   const [location, setLocation] = useState(user?.location || "");
+  const [coordinates, setCoordinates] = useState<Coordinates | null>(
+    user?.latitude != null && user?.longitude != null
+      ? { latitude: user.latitude, longitude: user.longitude }
+      : null,
+  );
   const [bio, setBio] = useState(user?.bio || user?.currentPRs || "");
   const [selectedImage, setSelectedImage] = useState<string | null>(
     user?.imageUrl || null,
@@ -74,9 +80,12 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
   const [isLocationFocused, setIsLocationFocused] = useState(false);
   const [isBioFocused, setIsBioFocused] = useState(false);
   const [isNameFocused, setIsNameFocused] = useState(false);
-  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
   const fetchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isSelectingSuggestionRef = useRef(false);
+  // Bumped on every location edit/select so a slow geocode can't land
+  // coordinates for an address the user has already replaced.
+  const geocodeRequestRef = useRef(0);
   const scrollViewRef = useRef<ScrollView | null>(null);
   const bioInputRef = useRef<any>(null);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
@@ -85,6 +94,11 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
     if (user) {
       setName(user.displayName || "");
       setLocation(user.location || "");
+      setCoordinates(
+        user.latitude != null && user.longitude != null
+          ? { latitude: user.latitude, longitude: user.longitude }
+          : null,
+      );
       setBio(user.bio || user.currentPRs || "");
       setSelectedImage(user.imageUrl || null);
       setImageFile(null);
@@ -94,6 +108,8 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
     user?.imageUrl,
     user?.displayName,
     user?.location,
+    user?.latitude,
+    user?.longitude,
     user?.bio,
     user?.currentPRs,
   ]);
@@ -211,45 +227,35 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
   };
 
   const fetchSuggestions = useCallback(async (query: string) => {
-    const trimmed = query.trim();
-
-    if (!trimmed || trimmed.length < 3) {
-      setSuggestions([]);
-      return;
-    }
-
-    try {
-      const response = await fetch(
-        `${LOCATION_CONFIG.geocodeSuggestUrl}?text=${encodeURIComponent(
-          trimmed,
-        )}&f=json`,
-      );
-      const data = await response.json();
-
-      if (data?.suggestions) {
-        setSuggestions(data.suggestions);
-      } else {
-        setSuggestions([]);
-      }
-    } catch (error) {
-      console.error("Error fetching suggestions:", error);
-      setSuggestions([]);
-    }
+    setSuggestions(await fetchLocationSuggestions(query));
   }, []);
 
-  const handleSelectSuggestion = (text: string) => {
+  const handleSelectSuggestion = async (suggestion: LocationSuggestion) => {
+    const text = suggestion?.text || "";
+    const requestId = ++geocodeRequestRef.current;
     isSelectingSuggestionRef.current = true;
     setLocation(text);
+    setCoordinates(null);
     setSuggestions([]);
     setIsLocationFocused(false);
     Keyboard.dismiss();
     setTimeout(() => {
       isSelectingSuggestionRef.current = false;
     }, 150);
+
+    const resolved = await geocodeLocation(suggestion);
+    if (geocodeRequestRef.current === requestId) {
+      setCoordinates(resolved);
+    }
   };
 
   const handleLocationChange = (text: string) => {
     setLocation(text);
+    // Typed text no longer matches the geocoded suggestion — drop the stale
+    // coordinates (and any in-flight lookup); they are resolved again on
+    // select or on save.
+    geocodeRequestRef.current += 1;
+    setCoordinates(null);
 
     if (fetchTimeoutRef.current) {
       clearTimeout(fetchTimeoutRef.current);
@@ -274,11 +280,35 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
     try {
       let response;
 
+      const trimmedLocation = location.trim();
+      // A location typed without picking a suggestion still gets geocoded here,
+      // so /user/update always receives coordinates when we can resolve them.
+      let resolvedCoordinates = coordinates;
+      if (trimmedLocation && !resolvedCoordinates) {
+        const requestId = ++geocodeRequestRef.current;
+        resolvedCoordinates = await geocodeLocation(trimmedLocation);
+        if (geocodeRequestRef.current === requestId) {
+          setCoordinates(resolvedCoordinates);
+        }
+      }
+
+      const locationFields = trimmedLocation
+        ? {
+            location: trimmedLocation,
+            ...(resolvedCoordinates
+              ? {
+                  latitude: resolvedCoordinates.latitude,
+                  longitude: resolvedCoordinates.longitude,
+                }
+              : {}),
+          }
+        : { location: "", latitude: null, longitude: null };
+
       if (imageFile || videoFile) {
         const payload: any = {
           displayName: name.trim(),
           bio: bio.trim(),
-          location: location.trim(),
+          ...locationFields,
           workExperience: workExperience.trim(),
           imageFile: imageFile,
           videoFile: videoFile,
@@ -289,7 +319,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
         const payload: any = {
           displayName: name.trim(),
           bio: bio.trim(),
-          location: location.trim(),
+          ...locationFields,
           workExperience: workExperience.trim(),
           imageUrl: "",
         };
@@ -299,7 +329,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
         const payload: any = {
           displayName: name.trim(),
           bio: bio.trim(),
-          location: location.trim(),
+          ...locationFields,
           workExperience: workExperience.trim(),
         };
 
@@ -441,7 +471,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({
                     item?.magicKey || `${item?.text || "suggestion"}-${index}`
                   }
                   style={styles.suggestionItem}
-                  onPress={() => handleSelectSuggestion(item?.text || "")}
+                  onPress={() => handleSelectSuggestion(item)}
                 >
                   <Text style={styles.suggestionText}>{item?.text}</Text>
                 </TouchableOpacity>
