@@ -191,7 +191,18 @@ export const workoutApi = baseApi.injectEndpoints({
         method: 'POST',
         body: { sessionId },
       }),
-      invalidatesTags: ['WorkoutSession', 'WeeklyGoal', 'Activity', 'User'],
+      // Finishing a workout changes more than the session: it adds to the
+      // user's workout list, can earn an achievement, and moves the weekly
+      // goal, streak and activity feed. Missing UserWorkout/Achievements here
+      // is why ShareWorkout and Achievements showed stale data after a workout.
+      invalidatesTags: [
+        'WorkoutSession',
+        'UserWorkout',
+        'Achievements',
+        'WeeklyGoal',
+        'Activity',
+        'User',
+      ],
     }),
 
     pauseWorkoutSession: builder.mutation<ApiResponse<UserWorkoutSession>, { sessionId: string }>({

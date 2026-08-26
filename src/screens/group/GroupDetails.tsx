@@ -9,6 +9,7 @@ import {
   Image,
   Modal,
   ActivityIndicator,
+  InteractionManager,
 } from "react-native";
 import { Menu } from "react-native-paper";
 import RefreshableScrollView from "../../components/RefreshableScrollView";
@@ -55,7 +56,7 @@ import { Toast } from "../../components/ToastManager";
 import CommentsModal from "../../components/CommentsModal";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import EditPostModal from "../../components/EditPostModal";
-import { useFocusEffect } from "@react-navigation/native";
+import { useFocusEffect, StackActions } from "@react-navigation/native";
 import type { FetchBaseQueryError } from "@reduxjs/toolkit/query";
 import type { SerializedError } from "@reduxjs/toolkit";
 
@@ -814,17 +815,24 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
   const { status: membersErrorStatus, message: membersErrorMessage } =
     membersErrorDetails;
 
+  // The server answers 403 GROUP_PRIVATE for a non-member's roster request and
+  // baseApi turns that into an empty list, so an empty list on its own does not
+  // mean the group is empty.
+  const membersRestricted = Boolean((membersData as any)?.restricted);
+
   const membersListEmptyMessage = useMemo(() => {
     const cleanedMessage =
       membersErrorMessage && membersErrorMessage.trim().length > 0
         ? membersErrorMessage.trim()
         : null;
 
-    if (membersErrorStatus === 404) {
-      return cleanedMessage || "No members yet. Invite someone to join!";
+    // Access, not emptiness. Never claim a private group has no members —
+    // the header can be showing a real member count at the same time.
+    if (membersRestricted) {
+      return "Only members can see who's in this group. Ask to join to see the member list.";
     }
 
-    if (cleanedMessage) {
+    if (isMembersError && cleanedMessage) {
       return cleanedMessage;
     }
 
@@ -832,8 +840,15 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
       return "We couldn't load the members list. Pull to refresh and try again.";
     }
 
-    return "No members yet. Invite someone to join!";
-  }, [isMembersError, membersErrorMessage, membersErrorStatus]);
+    // A genuinely empty roster. There is no invite feature anywhere in the app,
+    // so don't tell anyone to use one.
+    return "No members to show yet.";
+  }, [
+    isMembersError,
+    membersErrorMessage,
+    membersErrorStatus,
+    membersRestricted,
+  ]);
 
   const [leaveGroup, { isLoading: isLeaving }] = useLeaveGroupMutation();
   const handleExitGroup = async () => {
@@ -950,11 +965,30 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({
   };
 
   const handleViewProfile = (member: any) => {
+    const userId = member.id?.toString?.() || member.id;
+
+    // Close the members sheet AND this screen. When opened from GroupsScreen,
+    // GroupDetails is itself rendered inside a React Native `Modal`, which is a
+    // native overlay sitting above the whole navigator — so a screen pushed from
+    // here renders *underneath* it and is invisible. Both layers have to come
+    // down before the profile can be seen.
     setMemberMenuVisible(null);
     setMembersModalVisible(false);
-    navigation?.navigate("UserProfile", {
-      userId: member.id?.toString?.() || member.id,
-      isGuest: true,
+    onClose?.();
+
+    // Then navigate once those dismissals have finished; pushing in the same
+    // tick loses the navigation to the dismissal animation.
+    InteractionManager.runAfterInteractions(() => {
+      // `push` rather than `navigate`: the route name "UserProfile" exists in
+      // BOTH the root stack and the Find tab's stack, and `navigate` resolves
+      // that ambiguity by jumping to an existing instance instead of pushing a
+      // new one — which left the screen with nothing behind it, so neither the
+      // back button nor the swipe gesture could pop it. Dispatching an explicit
+      // push guarantees a new entry on the nearest stack, and therefore a way
+      // back.
+      navigation?.dispatch(
+        StackActions.push("UserProfile", { userId, isGuest: true }),
+      );
     });
   };
 

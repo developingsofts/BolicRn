@@ -432,11 +432,26 @@ export const useChat = ({
 
       if (isFromSelf && !skipPendingResolution) {
         for (const [tempId, pending] of pendingMessagesRef.current.entries()) {
+          // An upload's attachment URL *always* changes: the optimistic bubble
+          // holds the local `file://` URI and the server returns the stored
+          // remote URL. Requiring them to be equal meant a sent image never
+          // matched its own optimistic bubble, so both rendered — the same
+          // photo twice. For a local upload, any remote URL coming back is the
+          // match.
+          const pendingIsLocalUpload =
+            typeof pending.attachmentUrl === "string" &&
+            pending.attachmentUrl.startsWith("file://");
+
+          const attachmentMatches = pendingIsLocalUpload
+            ? Boolean(incoming.attachmentUrl)
+            : (pending.attachmentUrl ?? null) ===
+              (incoming.attachmentUrl ?? null);
+
           if (
             pending.conversationId === incomingConversationId &&
             pending.messageType === incoming.messageType &&
             pending.content === normalizeMessageContent(incoming.content) &&
-            (pending.attachmentUrl ?? null) === (incoming.attachmentUrl ?? null)
+            attachmentMatches
           ) {
             matchedTempId = tempId;
             pendingMessagesRef.current.delete(tempId);
@@ -866,17 +881,27 @@ export const useChat = ({
     return (conversationsResponse.data ?? []).map(
       (conversation: Conversation) => {
         const latestMessage = conversation.messages?.[0] ?? null;
-        const unreadCount = latestMessage?.statuses?.filter((status) => {
+
+        // Prefer the server's per-conversation count. The fallback below only
+        // inspects the statuses of the *latest* message, so it can never report
+        // more than 1 and returns 0 whenever the list payload omits embedded
+        // messages or their statuses — which is why no unread badge showed.
+        const derivedUnread = latestMessage?.statuses?.filter((status) => {
           if (userIdNumeric == null) {
             return false;
           }
           return status.userId === userIdNumeric && status.status !== "read";
         }).length;
 
+        const serverUnread =
+          typeof conversation.unreadCount === "number"
+            ? conversation.unreadCount
+            : null;
+
         return {
           ...conversation,
           latestMessage: latestMessage ?? null,
-          unreadCount: unreadCount ?? 0,
+          unreadCount: serverUnread ?? derivedUnread ?? 0,
         } as ConversationListItem;
       }
     );
@@ -1271,9 +1296,11 @@ export const useChat = ({
         createdAt: timestamp,
       });
 
-      if (!isFileAttachment) {
-        integrateMessage(optimisticMessage, { skipPendingResolution: true });
-      }
+      // Render the bubble straight away, file attachments included — the local
+      // `file://` URI displays fine while the upload runs. Skipping this for
+      // attachments meant a failed image upload had no bubble to mark as failed,
+      // so it vanished silently.
+      integrateMessage(optimisticMessage, { skipPendingResolution: true });
 
       const socket = socketRef.current;
       const socketIsActive = socket?.connected ?? false;
@@ -1297,6 +1324,27 @@ export const useChat = ({
         }).unwrap();
 
         if (isSuccessResponse(response) && response.data) {
+          // Don't trust a 200 for an upload. If the server's multipart field
+          // name doesn't match the one we send, the file is dropped and the
+          // message saves with no attachment — a success response describing a
+          // message that lost its image. Verify the attachment came back as a
+          // real (remote) URL before treating the send as done, otherwise the
+          // bubble would silently keep showing the local preview and appear to
+          // have worked until the next app launch.
+          const savedAttachment = (response.data as any)?.attachmentUrl;
+          const attachmentPersisted =
+            typeof savedAttachment === "string" &&
+            savedAttachment.trim().length > 0 &&
+            !savedAttachment.startsWith("file://");
+
+          if (isFileAttachment && !attachmentPersisted) {
+            markMessageAsFailed(payloadConversationId, tempId);
+            setChatError(
+              "The image couldn't be attached. The message wasn't sent."
+            );
+            return;
+          }
+
           integrateMessage(
             {
               ...response.data,

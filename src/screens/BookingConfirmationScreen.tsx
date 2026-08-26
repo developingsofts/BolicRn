@@ -470,30 +470,20 @@ const BookingConfirmationScreen: React.FC = () => {
               <Text style={styles.policyTitle}>
                 {STRINGS.BOOKING_CONFIRMATION.cancellationPolicy.title}
               </Text>
+              {/* Copy comes from STRINGS, which mirrors the server's refund
+                  policy config. The fee/timeline were previously interpolated
+                  from hardcoded "3%" and "5-7 business days" values. */}
               <Text style={styles.policyDescription}>
-                In the event of session cancellation, a processing fee of{" "}
-                <Text style={styles.policyHighlight}>
-                  {
-                    STRINGS.BOOKING_CONFIRMATION.cancellationPolicy
-                      .processingFee
-                  }
-                </Text>{" "}
-                will be deducted from the refund amount. The remaining balance
-                will be returned to your original payment method within{" "}
-                <Text style={styles.policyHighlight}>
-                  {
-                    STRINGS.BOOKING_CONFIRMATION.cancellationPolicy
-                      .refundTimeline
-                  }
-                </Text>
-                .
+                {STRINGS.BOOKING_CONFIRMATION.cancellationPolicy.description}
               </Text>
-              <View style={styles.policyDetailRow}>
-                <View style={styles.policyDetailDot} />
-                <Text style={styles.policyDetail}>
-                  {STRINGS.BOOKING_CONFIRMATION.cancellationPolicy.details[0]}
-                </Text>
-              </View>
+              {STRINGS.BOOKING_CONFIRMATION.cancellationPolicy.details.map(
+                (detail) => (
+                  <View key={detail} style={styles.policyDetailRow}>
+                    <View style={styles.policyDetailDot} />
+                    <Text style={styles.policyDetail}>{detail}</Text>
+                  </View>
+                ),
+              )}
             </View>
           </View>
         </View>

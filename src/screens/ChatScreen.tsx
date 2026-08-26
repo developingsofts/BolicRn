@@ -98,7 +98,16 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ navigation, route }) => {
     isSocketConnected,
     hasMoreMessages,
     loadOlderMessages,
+    chatError,
   } = useChat({ conversationId: resolvedConversationId });
+
+  // `useChat` records send failures in `chatError`; nothing rendered it, so a
+  // failed send — an image upload in particular — was completely silent.
+  useEffect(() => {
+    if (chatError) {
+      Toast.error(chatError);
+    }
+  }, [chatError]);
 
   const [messageInput, setMessageInput] = useState(initialMessage ?? "");
   const flatListRef = useRef<FlatList<MessageListItem>>(null);

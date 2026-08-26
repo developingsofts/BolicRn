@@ -13,6 +13,9 @@ import {
   ActivityIndicator,
   TouchableWithoutFeedback,
   Keyboard,
+  Pressable,
+  Dimensions,
+  type GestureResponderEvent,
 } from "react-native";
 import RefreshableScrollView from "../components/RefreshableScrollView";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -45,7 +48,15 @@ const MyPosts: React.FC = ({ navigation, route }: any) => {
   const isOwnProfile =
     !route?.params?.userId || route?.params?.userId === user?.id;
   const [refreshing, setRefreshing] = useState(false);
-  const [openPostMenuId, setOpenPostMenuId] = useState<string | null>(null);
+  // The menu renders in a Modal at the screen root rather than inside the post
+  // card. Inside the card it was painted *under* the following card: every
+  // `postCard` has `elevation: 2`, and on Android a later sibling at the same
+  // elevation wins over an earlier sibling's absolutely-positioned children no
+  // matter what zIndex they carry. `top` is the tap position, so the menu still
+  // appears beside the dots it belongs to.
+  const [postMenu, setPostMenu] = useState<{ id: string; top: number } | null>(
+    null,
+  );
   const [showDeletePostDialog, setShowDeletePostDialog] = useState(false);
   const [postToDelete, setPostToDelete] = useState<string | null>(null);
   const [editingPost, setEditingPost] = useState<{
@@ -97,18 +108,29 @@ const MyPosts: React.FC = ({ navigation, route }: any) => {
     setRefreshing(false);
   };
 
-  const handlePostMenuPress = (postId: string) => {
-    setOpenPostMenuId(openPostMenuId === postId ? null : postId);
+  const handlePostMenuPress = (postId: string, event: GestureResponderEvent) => {
+    if (postMenu?.id === postId) {
+      setPostMenu(null);
+      return;
+    }
+
+    // Keep the menu on screen for posts near the bottom of the list.
+    const MENU_HEIGHT = 88;
+    const screenHeight = Dimensions.get("window").height;
+    const desiredTop = event.nativeEvent.pageY + 12;
+    const top = Math.min(desiredTop, screenHeight - MENU_HEIGHT - 24);
+
+    setPostMenu({ id: postId, top });
   };
 
   const handleDeletePostPress = (postId: string) => {
-    setOpenPostMenuId(null);
+    setPostMenu(null);
     setPostToDelete(postId);
     setShowDeletePostDialog(true);
   };
 
   const handleEditPostPress = (postId: string, caption: string) => {
-    setOpenPostMenuId(null);
+    setPostMenu(null);
     setEditingPost({ id: postId, caption });
     setEditPostText(caption);
   };
@@ -285,31 +307,12 @@ const MyPosts: React.FC = ({ navigation, route }: any) => {
                     {isOwnProfile && (
                       <TouchableOpacity
                         style={styles.postMenuButton}
-                        onPress={() => handlePostMenuPress(postId)}
+                        onPress={(event) => handlePostMenuPress(postId, event)}
                       >
                         <Image source={ThreeDots} style={styles.postMenuDots} />
                       </TouchableOpacity>
                     )}
                   </View>
-
-                  {isOwnProfile && openPostMenuId === postId && (
-                    <View style={styles.postMenuDropdown}>
-                      <TouchableOpacity
-                        onPress={() =>
-                          handleEditPostPress(postId, post.title || "")
-                        }
-                        style={styles.postMenuOption}
-                      >
-                        <Text style={styles.postMenuOptionText}>Edit</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={() => handleDeletePostPress(postId)}
-                        style={styles.postMenuOption}
-                      >
-                        <Text style={styles.postMenuOptionText}>Delete</Text>
-                      </TouchableOpacity>
-                    </View>
-                  )}
 
                   {post.workout && (
                     <View style={styles.postWorkoutBadge}>
@@ -347,8 +350,6 @@ const MyPosts: React.FC = ({ navigation, route }: any) => {
                       </View>
                     </View>
                   )}
-                  {console.log("Post media URL:", post.mediaUrl)}
-
                   {post.mediaUrl && (
                     <Image
                       source={{ uri: post.mediaUrl }}
@@ -420,6 +421,46 @@ const MyPosts: React.FC = ({ navigation, route }: any) => {
           )}
         </View>
       </RefreshableScrollView>
+
+      {/* Post menu, rendered at the root so no post card can paint over it and
+          so a tap anywhere dismisses it. */}
+      <Modal
+        visible={postMenu !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPostMenu(null)}
+      >
+        <Pressable
+          style={styles.postMenuBackdrop}
+          onPress={() => setPostMenu(null)}
+        >
+          {postMenu !== null && (
+            <View style={[styles.postMenuDropdown, { top: postMenu.top }]}>
+              <TouchableOpacity
+                onPress={() => {
+                  const post: any = posts.find(
+                    (candidate: any) =>
+                      String(candidate?.id) === postMenu.id,
+                  );
+                  handleEditPostPress(
+                    postMenu.id,
+                    post?.title || post?.content || "",
+                  );
+                }}
+                style={styles.postMenuOption}
+              >
+                <Text style={styles.postMenuOptionText}>Edit</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => handleDeletePostPress(postMenu.id)}
+                style={styles.postMenuOption}
+              >
+                <Text style={styles.postMenuDeleteText}>Delete</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </Pressable>
+      </Modal>
 
       <ReactionPicker
         visible={Boolean(reactionPickerPostId)}
@@ -736,26 +777,37 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginTop: -2,
   },
+  // Full-screen catcher: any tap that isn't on the menu itself closes it.
+  postMenuBackdrop: {
+    flex: 1,
+  },
   postMenuDropdown: {
     position: "absolute",
-    top: 50,
-    right: 16,
+    // `top` is supplied at render time from the tap position.
+    right: DIMENSIONS.spacing.lg,
     backgroundColor: COLORS.surface,
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS.border,
     paddingVertical: DIMENSIONS.spacing.xs,
     minWidth: 140,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 6,
-    elevation: 999,
-    zIndex: 9999,
+    elevation: 8,
   },
   postMenuOption: {
     paddingVertical: DIMENSIONS.spacing.sm,
     paddingHorizontal: DIMENSIONS.spacing.md,
   },
   postMenuOptionText: {
+    fontSize: 14,
+    color: COLORS.text,
+    fontWeight: "500",
+  },
+  // Delete is the destructive option — it is the one that should read as such.
+  postMenuDeleteText: {
     fontSize: 14,
     color: COLORS.error,
     fontWeight: "500",

@@ -565,7 +565,9 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, route }) => {
               <Text style={styles.avatarText}>{initial}</Text>
             )}
           </View>
-          <Text style={styles.displayName}>{displayName}</Text>
+          <Text style={styles.displayName} numberOfLines={1}>
+            {displayName}
+          </Text>
           {location ? (
             <Text style={styles.locationText}>{location}</Text>
           ) : null}
@@ -907,7 +909,13 @@ const styles = StyleSheet.create({
   },
   profileHeader: {
     backgroundColor: COLORS.gradient3,
-    paddingBottom: 40,
+    // Reserves room for the floating `StatsRow`, which is absolutely
+    // positioned and so occupies no layout height of its own. This must stay
+    // comfortably larger than the card's rendered height minus its -40 offset,
+    // or the card lands on the display name — which is exactly what happened
+    // at 40. Don't reduce this without checking a profile that has no location
+    // and no bio, where the name sits closest to this edge.
+    paddingBottom: 64,
     paddingTop: DIMENSIONS.spacing.xl,
     alignItems: "center",
     position: "relative",
@@ -976,6 +984,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: FontWeight.SemiBold,
     color: "white",
+    textAlign: "center",
+    // Keep a long name inside the header instead of letting it run to the edges.
+    maxWidth: "80%",
   },
   locationText: {
     fontSize: 12,

@@ -134,6 +134,12 @@ const baseQueryWithErrorHandling: BaseQueryFn<
       status: true,
       statusCode: 200,
       message,
+      // `restricted` distinguishes "you are not allowed to see this roster"
+      // from "this group genuinely has no members". Without it the UI told a
+      // non-member of a private group that the group was empty, which is both
+      // false and a small privacy leak in the other direction — it implied the
+      // group had nobody in it.
+      restricted: isPrivateGroup,
       data: {
         members: [],
         pagination: {
@@ -255,6 +261,14 @@ const baseQueryWithErrorHandling: BaseQueryFn<
 export const baseApi = createApi({
   reducerPath: "api",
   baseQuery: baseQueryWithErrorHandling,
+  // Re-fetch whenever a screen mounts with data already in the cache. Without
+  // this, RTK Query serves the cached result for `keepUnusedDataFor` (60s by
+  // default) and never hits the network, so re-entering a screen showed stale
+  // data no matter what the user did in between. Cached data still renders
+  // immediately while the refetch runs in the background (`isLoading` stays
+  // false, only `isFetching` flips), so this does not introduce loading
+  // flicker — gate spinners on `isLoading`, not `isFetching`.
+  refetchOnMountOrArgChange: true,
   tagTypes: [
     "Auth",
     "User",
@@ -265,6 +279,10 @@ export const baseApi = createApi({
     "UserWorkout",
     "Matching",
     "Messaging",
+    // Separate from "Messaging" (the conversation list) so a send can refresh
+    // the list without refetching a conversation's messages — refetching those
+    // fights useChat's optimistic bubbles and duplicated sent images.
+    "MessagingMessages",
     "Groups",
     "Posts",
     "Ratings",

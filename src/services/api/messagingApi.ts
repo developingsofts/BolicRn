@@ -64,7 +64,7 @@ export const messagingApi = baseApi.injectEndpoints({
           ...(limit ? { limit } : {}),
         },
       }),
-      providesTags: ['Messaging'],
+      providesTags: ['MessagingMessages'],
     }),
     sendMessage: builder.mutation<ApiResponse<ChatMessage>, SendMessagePayload>({
       query: ({ conversationId, content, attachmentUrl, messageType }) => {
@@ -72,7 +72,10 @@ export const messagingApi = baseApi.injectEndpoints({
           const formData = new FormData();
           if (content) formData.append('content', content);
           formData.append('messageType', messageType || 'image');
-          formData.append('attachmentUrl', {
+          // The server's upload field is `attachment`. Note this is NOT the same
+          // name as the `attachmentUrl` *string* the read models return — the
+          // file must go up as `attachment` or multer never sees it.
+          formData.append('attachment', {
             uri: attachmentUrl.uri,
             type: attachmentUrl.type,
             name: attachmentUrl.name,
@@ -95,6 +98,13 @@ export const messagingApi = baseApi.injectEndpoints({
           },
         };
       },
+      // Only the conversation LIST is invalidated, never 'MessagingMessages'.
+      // `useChat` already integrates this mutation's response alongside its
+      // optimistic bubble; refetching the messages as well rebuilt the thread
+      // from the server while the optimistic entry was still cached, which
+      // rendered a sent image twice. Invalidating just the list keeps each
+      // conversation's preview and ordering current.
+      invalidatesTags: ['Messaging'],
     }),
     markConversationAsRead: builder.mutation<ApiResponse<{ updatedCount: number }>, MarkConversationAsReadPayload>({
       query: ({ conversationId, messageIds }) => ({
@@ -102,6 +112,8 @@ export const messagingApi = baseApi.injectEndpoints({
         method: 'POST',
         body: messageIds?.length ? { messageIds } : {},
       }),
+      // Without this the unread badge stayed put after opening a conversation.
+      invalidatesTags: ['Messaging'],
     }),
     markMessageAsRead: builder.mutation<ApiResponse<{ updated: number }>, MarkMessageAsReadPayload>({
       query: ({ messageId }) => ({
@@ -120,6 +132,10 @@ export const messagingApi = baseApi.injectEndpoints({
         body: { reactionType },
       }),
     }),
+    // NOTE: mutations here must invalidate 'Messaging'. `useChat` also patches
+    // the cache manually for socket events, but that only covers messages that
+    // arrive over the socket — an HTTP-created conversation or an HTTP-sent
+    // message left both the list and the message cache stale.
     createConversation: builder.mutation<
       ApiResponse<{ conversation: Conversation; initialMessage?: ChatMessage | null }>,
       CreateConversationPayload
@@ -136,7 +152,8 @@ export const messagingApi = baseApi.injectEndpoints({
           }
           if (payload.initialMessage) formData.append('initialMessage', payload.initialMessage);
           formData.append('messageType', payload.messageType || 'image');
-          formData.append('attachmentUrl', {
+          // Same field name as sendMessage — see the note there.
+          formData.append('attachment', {
             uri: payload.attachmentUrl.uri,
             type: payload.attachmentUrl.type,
             name: payload.attachmentUrl.name,
@@ -155,6 +172,7 @@ export const messagingApi = baseApi.injectEndpoints({
           body: payload,
         };
       },
+      invalidatesTags: ['Messaging'],
     }),
   }),
   overrideExisting: false,

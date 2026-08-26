@@ -71,6 +71,13 @@ export interface Conversation {
   members?: ConversationMember[];
   messages?: ChatMessage[];
   creator?: ChatUserSummary | null;
+  /**
+   * Per-conversation unread count as reported by the server. Preferred over
+   * deriving one from the latest message's statuses, which can only ever
+   * produce 0 or 1. Optional because it is not confirmed on every payload —
+   * `useChat` falls back to the derived count when it is absent.
+   */
+  unreadCount?: number;
 }
 
 export interface ConversationListItem extends Conversation {

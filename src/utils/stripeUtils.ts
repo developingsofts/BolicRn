@@ -1,4 +1,4 @@
-import { useStripe } from "@stripe/stripe-react-native";
+import { useStripe, PaymentSheet } from "@stripe/stripe-react-native";
 import { API_CONFIG } from "../config/constants";
 import * as Linking from "expo-linking";
 import Constants from "expo-constants";
@@ -185,7 +185,18 @@ export const useStripePayment = () => {
         merchantDisplayName: "Bolic",
         customerId: customer,
         paymentIntentClientSecret: paymentIntent,
-        allowsDelayedPaymentMethods: true,
+        // Card + Apple/Google Pay only. `false` drops the delayed-settlement
+        // methods (bank debits, SEPA, Cash App and friends) from the sheet.
+        allowsDelayedPaymentMethods: false,
+        // Kills the billing-address section. `never` on a field means the sheet
+        // does not render it at all; `name` stays automatic because the card
+        // form needs a cardholder name.
+        billingDetailsCollectionConfiguration: {
+          name: PaymentSheet.CollectionMode.AUTOMATIC,
+          email: PaymentSheet.CollectionMode.NEVER,
+          phone: PaymentSheet.CollectionMode.NEVER,
+          address: PaymentSheet.AddressCollectionMode.NEVER,
+        },
         defaultBillingDetails: {
           name: paymentRequest.metadata?.customerName,
           email: paymentRequest.metadata?.customerEmail,

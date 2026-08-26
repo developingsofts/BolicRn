@@ -75,12 +75,16 @@ const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
     data: workoutsData,
     isLoading: workoutsLoading,
     isFetching,
+    refetch: refetchWorkouts,
   } = useGetUserWorkoutsQuery({ page, limit: 3 }, { skip: !isAuthenticated });
-  const { data: achievementsData, isLoading: achievementsLoading } =
-    useGetUserAchievementsQuery(
-      { userId: undefined },
-      { skip: !isAuthenticated },
-    );
+  const {
+    data: achievementsData,
+    isLoading: achievementsLoading,
+    refetch: refetchAchievements,
+  } = useGetUserAchievementsQuery(
+    { userId: undefined },
+    { skip: !isAuthenticated },
+  );
   const [createPost, { isLoading: isCreating }] = useCreatePostMutation();
 
   const currentPageWorkouts = useMemo(
@@ -135,10 +139,19 @@ const ShareWorkoutScreen: React.FC<ShareWorkoutScreenProps> = ({
     }
   };
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     setRefreshing(true);
-    setPage(1);
-    setTimeout(() => setRefreshing(false), 300);
+    try {
+      // Make the next accumulation pass *replace* the list instead of appending
+      // to it, so a refresh can't duplicate or strand rows.
+      isInitialMount.current = true;
+      setPage(1);
+      // `setPage(1)` is a no-op when we are already on page 1 — the query args
+      // don't change, so nothing refetches. Ask for the data explicitly.
+      await Promise.all([refetchWorkouts(), refetchAchievements()]);
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const renderFooter = () => {

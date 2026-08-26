@@ -420,15 +420,18 @@ export const STRINGS = {
       session: "Training Session",
       location: "Location to be confirmed",
     },
+    // Business-approved policy (Stripe standard): full refund, no fee.
+    // NOTE: this must stay in step with the server's REFUND_POLICY_TEXT /
+    // REFUND_ARRIVAL_BUSINESS_DAYS config, which is what the *post*-booking
+    // cancellation sheet renders. Never put a fee or a timeline here that the
+    // server does not also return.
     cancellationPolicy: {
       title: "Cancellation Policy",
       description:
-        "In the event of session cancellation, a processing fee of 3% will be deducted from the refund amount. The remaining balance will be returned to your original payment method within 5-7 business days.",
-      processingFee: "3%",
-      refundTimeline: "5-7 business days",
+        "Cancelled sessions are refunded in full to your original payment method. Refunds usually appear within 5-10 business days, depending on your bank.",
       details: [
         "Applies to cancellations by both clients and trainers",
-        "No refund within 2 hours of session start time",
+        "A session that has already started can no longer be cancelled",
       ],
     },
     buttons: {

@@ -7,7 +7,6 @@ import {
   Pressable,
   Dimensions,
   Image,
-  Modal,
   ActivityIndicator,
 } from "react-native";
 import RefreshableScrollView from "../../components/RefreshableScrollView";
@@ -18,7 +17,6 @@ import { Add, ArrowDown, EyeHide, Tick } from "../../../assets";
 import FontWeight from "../../hooks/useInterFonts";
 import { Group } from "../../types";
 import { r } from "../../designing/responsiveDesigns";
-import GroupDetails from "./GroupDetails";
 import STRINGS from "../../config/strings";
 import BasicTopBar from "../../components/BasicTopBar";
 import { useGetAllGroupsQuery } from "../../services/api/groupsApi";
@@ -33,9 +31,7 @@ interface GroupsScreenProps {
 
 const GroupsScreen: React.FC<GroupsScreenProps> = ({ navigation }) => {
   const [selectedCategory, setSelectedCategory] = useState("All");
-  const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
   const [menuVisible, setMenuVisible] = useState(false);
-  const [showGroupDetails, setShowGroupDetails] = useState(false);
   const [page, setPage] = useState(1);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -124,10 +120,7 @@ const GroupsScreen: React.FC<GroupsScreenProps> = ({ navigation }) => {
     return (
       <Pressable
         style={styles.groupCard}
-        onPress={() => {
-          setSelectedGroup(group);
-          setShowGroupDetails(true);
-        }}
+        onPress={() => navigation.navigate("GroupDetails", { group })}
       >
         <View style={styles.groupHeader}>
           <Text style={styles.groupName}>{group.name}</Text>
@@ -314,26 +307,6 @@ const GroupsScreen: React.FC<GroupsScreenProps> = ({ navigation }) => {
         <Image source={Add} style={{ width: 16, height: 16, tintColor: COLORS.black }} />
       </TouchableOpacity>
 
-      <Modal
-        visible={showGroupDetails}
-        transparent
-        navigationBarTranslucent
-        statusBarTranslucent
-        animationType="slide"
-        onRequestClose={() => {
-          setShowGroupDetails(false);
-          setSelectedGroup(null);
-        }}
-      >
-        <GroupDetails
-          navigation={navigation}
-          group={selectedGroup}
-          onClose={() => {
-            setShowGroupDetails(false);
-            setSelectedGroup(null);
-          }}
-        />
-      </Modal>
     </SafeAreaView>
   );
 };

@@ -43,6 +43,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     borderRadius: 10,
     width: '90%',
+    // Floats over the bottom edge of the profile header. Because this is
+    // absolutely positioned it has no layout height, so the header reserves
+    // space via its own paddingBottom (see `profileHeader` in ProfileScreen)
+    // and the content below compensates with its own top margin. Changing
+    // this offset means revisiting both.
     position: 'absolute',
     alignSelf: 'center',
     bottom: -40,
